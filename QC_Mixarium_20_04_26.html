@@ -4326,9 +4326,14 @@ async function boot(){
       R.forEach(r=>{if(imgMap[r.id])r.img=imgMap[r.id];});
     }
   }catch(e){}
+  // Migration: alte Essens-Blank-Karten entfernen
+  {
+    const OLD_FOOD=['vorsp','suppe','fleisch','fisch','vegi','kuchen','dessert'];
+    R=R.filter(r=>!(r.blank&&OLD_FOOD.includes(r.cat)));
+  }
   // Seed blank slots on first run (nur echte Rezepte zählen)
   if(!R.some(r=>!r.blank)){
-    const BLANKS={vorsp:10,suppe:10,fleisch:10,fisch:10,vegi:10,kuchen:10,dessert:10};
+    const BLANKS={smooth:5,mock:5,afckt:5,limo:5,tee:3,ckt:5,sirup:3};
     R=[];
     let bid=2000;
     for(const[cat,n]of Object.entries(BLANKS))
@@ -4337,10 +4342,10 @@ async function boot(){
           flavors:[],ings:[],steps:[],rating:{stars:0,comment:'',imps:[]}});
     sv();
   }
-  // Fehlende Blank-Karten auffüllen (auf 10 pro Kategorie)
+  // Fehlende Blank-Karten auffüllen (auf 5 pro Kategorie)
   {
-    const TARGET=10;
-    const CATS_LIST=['vorsp','suppe','fleisch','fisch','vegi','kuchen','dessert'];
+    const TARGET=5;
+    const CATS_LIST=['smooth','mock','afckt','limo','tee','ckt','sirup'];
     let bid=R.reduce((m,r)=>Math.max(m,r.id||0),1999)+1;
     CATS_LIST.forEach(cat=>{
       const blanks=R.filter(r=>r.cat===cat&&r.blank).length;
@@ -5552,7 +5557,7 @@ Return ONLY a valid JSON object — no markdown, no explanation, just the raw JS
 {
   "name": "recipe name",
   "servings": 4,
-  "category": "fleisch|fisch|vegi|suppe|vorsp|kuchen|dessert",
+  "category": "smooth|mock|afckt|limo|tee|ckt|sirup",
   "flavor": "one short flavor description",
   "ingredients": [{"amt": "amount as string", "unit": "unit", "name": "ingredient name"}],
   "steps": ["step 1 text", "step 2 text"]
@@ -5579,7 +5584,7 @@ Rules:
       const txt=cleanJSON(data.content.map(c=>c.text||'').join(''));
       const rec=JSON.parse(txt);
       // Auto-accept
-      const catId=CATS.find(c=>c.id===rec.category)?rec.category:'fleisch';
+      const catId=CATS.find(c=>c.id===rec.category)?rec.category:'mock';
       const srvNum=parseInt(rec.servings)||4;
       const nr={id:Date.now()+i,name:rec.name||'Gescanntes Rezept',cat:catId,shut:false,
         img:storeData||'',folder:'',blank:false,servings:srvNum,imgCrop:{x:50,y:50,scale:1},
@@ -5648,7 +5653,7 @@ Return ONLY a valid JSON object — no markdown, no explanation, just the raw JS
 {
   "name": "recipe name",
   "servings": 4,
-  "category": "fleisch|fisch|vegi|suppe|vorsp|kuchen|dessert",
+  "category": "smooth|mock|afckt|limo|tee|ckt|sirup",
   "flavor": "one short flavor description",
   "ingredients": [{"amt": "amount as string", "unit": "unit", "name": "ingredient name"}],
   "steps": ["step 1 text", "step 2 text"]
@@ -5887,7 +5892,7 @@ function _importPendingShare(){
   const data=_pendingShare;_pendingShare=null;
   if(!data)return;
   const maxId=R.reduce((m,r)=>Math.max(m,r.id||0),0)+1;
-  const nr={id:maxId,name:data.n,cat:data.c||'fleisch',
+  const nr={id:maxId,name:data.n,cat:data.c||'mock',
     shut:false,img:'',folder:'',blank:false,
     servings:data.s||4,imgCrop:{x:50,y:50,scale:1},
     flavors:data.fl||[],
@@ -5898,7 +5903,7 @@ function _importPendingShare(){
   toast('✅ '+h(nr.name)+' gespeichert!');
 }
 function renderScanResult(rec){
-  const catId=CATS.find(c=>c.id===rec.category)?rec.category:'fleisch';
+  const catId=CATS.find(c=>c.id===rec.category)?rec.category:'mock';
   const cc=catCol(catId);
   const ingCount=(rec.ingredients||[]).length;
   const stpCount=(rec.steps||[]).length;
@@ -5944,7 +5949,7 @@ function renderScanResult(rec){
 }
 function acceptScan(){
   const rec=window._scanRec;if(!rec)return;
-  const catId=CATS.find(c=>c.id===rec.category)?rec.category:'fleisch';
+  const catId=CATS.find(c=>c.id===rec.category)?rec.category:'mock';
   const empty=R.find(r=>r.blank&&!r.name&&r.cat===catId);
   const srvNum=parseInt(rec.servings)||4;
   const nr={id:Date.now(),name:rec.name||'Gescanntes Rezept',cat:catId,shut:false,
@@ -6809,8 +6814,8 @@ function buildMV(){
      kw:['möhre','karotte','tomate','zwiebel','schalotte','paprika','gurke','salat','spinat','brokkoli','blumenkohl','zucchini','kohl','rotkohl','lauch','porree','sellerie','staudensellerie','fenchel','artischocke','aubergine','mais','avocado','kürbis','pilz','champignon','schnittlauch','lauchzwiebel','frühlingszwiebel','knoblauch','rettich','radieschen','rote bete','rübe','spargel','rosenkohl','kohlrabi','mangold','rucola','feldsalat','pak choi','ingwer']},
     {key:'obst',     ico:'🍋', label:{de:'Obst',en:'Fruit',ru:'Фрукты',zh:'水果',es:'Frutas',fr:'Fruits',it:'Frutta',pt:'Frutas'},
      kw:['zitrone','limette','orange','mandarine','grapefruit','apfel','birne','banane','erdbeere','himbeere','blaubeere','heidelbeere','kirsche','pfirsich','nektarine','mango','ananas','kiwi','traube','weintraube','pflaume','aprikose','melone','feige','granatapfel','zitronensaft','limettensaft','orangensaft','apfelsaft']},
-    {key:'fleisch',  ico:'🥩', label:{de:'Fleisch & Fisch',en:'Meat & Fish',ru:'Мясо',zh:'肉类',es:'Carne',fr:'Viande',it:'Carne',pt:'Carne'},
-     kw:['hackfleisch','gehacktes','hähnchen','hühnchen','huhn','hühnerbrust','rind','rindfleisch','rinderhack','schwein','schweinefleisch','lamm','pute','putenbrust','speck','bacon','schinken','kochschinken','salami','wurst','bratwurst','chorizo','schnitzel','steak','gulasch','filet','lachs','forelle','thunfisch','kabeljau','scholle','garnele','shrimp','muschel','sardine','hering','fisch']},
+    {key:'alkohol',  ico:'🍶', label:{de:'Spirituosen & Alkohol',en:'Spirits & Alcohol',ru:'Алкоголь',zh:'烈酒',es:'Licores',fr:'Alcool',it:'Alcolici',pt:'Bebidas alcoólicas'},
+     kw:['wodka','vodka','rum','gin','tequila','whisky','whiskey','bourbon','brandy','cognac','champagner','prosecco','sekt','wein','rotwein','weißwein','rosé','bier','likör','amaretto','baileys','kahlúa','triple sec','cointreau','curacao','campari','aperol','vermouth','absinth','sambuca','schnapps','schnaps','tonic','soda','cola','sprite','ginger ale','ginger beer']},
     {key:'milch',    ico:'🧀', label:{de:'Milch & Käse',en:'Dairy',ru:'Молочное',zh:'乳制品',es:'Lácteos',fr:'Laitier',it:'Latticini',pt:'Laticínios'},
      kw:['milch','vollmilch','halbfettmilch','buttermilch','käse','mozzarella','parmesan','gouda','edamer','cheddar','emmentaler','feta','ricotta','mascarpone','gorgonzola','brie','camembert','joghurt','quark','sahnequark','magerquark','sahne','schlagsahne','saure sahne','butter','schmand','frischkäse','crème fraîche','kokosmilch','pflanzenmilch','hafermilch','mandelmilch','sojamilch']},
     {key:'eier',     ico:'🥚', label:{de:'Eier & Backen',en:'Eggs & Baking',ru:'Яйца',zh:'鸡蛋',es:'Huevos',fr:'Œufs',it:'Uova',pt:'Ovos'},
@@ -7235,8 +7240,8 @@ function deleteFolder(fid,name){
   FD=FD.filter(f=>String(f.id)!==String(fid));
   // Blank-Slots des Ordners entfernen
   R=R.filter(r=>!(r.cat===('fld_'+String(fid))&&r.blank));
-  // Rezepte aus Ordner: cat zurück auf 'fleisch', folder leeren
-  R.forEach(r=>{if(r.cat===('fld_'+String(fid))||r.folder===String(fid)){r.cat='fleisch';r.folder='';}});
+  // Rezepte aus Ordner: cat zurück auf 'mock', folder leeren
+  R.forEach(r=>{if(r.cat===('fld_'+String(fid))||r.folder===String(fid)){r.cat='mock';r.folder='';}});
   sv();svFD();
   if(CAT==='fld_'+fid){CAT='all';}
   renderFolders();renderCatNav();render();
@@ -9303,7 +9308,7 @@ Gib NUR ein valides JSON-Objekt zurück — kein Markdown, keine Erklärung, nur
 {
   "name": "Rezeptname",
   "servings": 4,
-  "category": "fleisch|fisch|vegi|suppe|vorsp|kuchen|dessert",
+  "category": "smooth|mock|afckt|limo|tee|ckt|sirup",
   "flavor": "kurze Geschmacksbeschreibung",
   "ingredients": [{"amt": "Menge", "unit": "Einheit", "name": "Zutatname"}],
   "steps": ["Schritt 1 Text", "Schritt 2 Text"]
@@ -9355,7 +9360,7 @@ ${raw}`;
 }
 
 function renderTxtResult(rec) {
-  const catId = CATS.find(c => c.id === rec.category) ? rec.category : 'fleisch';
+  const catId = CATS.find(c => c.id === rec.category) ? rec.category : 'mock';
   const cc = catCol(catId);
   const ingCount = (rec.ingredients || []).length;
   const stpCount = (rec.steps || []).length;
@@ -9482,7 +9487,7 @@ async function _aiExtractWeb(html,url){
   const key=getSavedKey();if(!key)return null;
   const text=_htmlToText(html);
   const prompt=`Extrahiere das Rezept von "${url}" und gib NUR valides JSON zurück (kein Markdown):
-{"name":"","servings":4,"category":"fleisch|fisch|vegi|suppe|vorsp|kuchen|dessert","flavor":"","ingredients":[{"amt":"","unit":"","name":""}],"steps":[""]}
+{"name":"","servings":4,"category":"smooth|mock|afckt|limo|tee|ckt|sirup","flavor":"","ingredients":[{"amt":"","unit":"","name":""}],"steps":[""]}
 Seite:\n${text}`;
   const resp=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
@@ -9507,7 +9512,7 @@ function _webSetSt(msg,cls){
 }
 
 function _webRenderResult(rec,url,method){
-  const catId=CATS.find(c=>c.id===rec.category)?rec.category:'fleisch';
+  const catId=CATS.find(c=>c.id===rec.category)?rec.category:'mock';
   const cc=catCol(catId);
   const ings=rec.ings||[];
   const ingPrev=ings.slice(0,5).map(i=>`<div class="scan-prev-ing"><span style="font-weight:700;color:${cc};min-width:52px;display:inline-block">${h(i.amt||'')} ${h(i.unit||'')}</span>${h(i.name||'')}</div>`).join('');
@@ -9572,7 +9577,7 @@ async function fetchWebRecipe(){
 
 function acceptWebImport(){
   const rec=_webRec;if(!rec)return;
-  const catId=CATS.find(c=>c.id===rec.category)?rec.category:'fleisch';
+  const catId=CATS.find(c=>c.id===rec.category)?rec.category:'mock';
   const nr={
     id:Date.now(),name:rec.name||'Web-Rezept',cat:catId,
     shut:false,img:rec.img||'',folder:'',blank:false,servings:parseInt(rec.servings)||4,
@@ -9605,7 +9610,7 @@ function resetWebImport(){
 function acceptTxtImport() {
   const rec = window._txtRec;
   if (!rec) return;
-  const catId = CATS.find(c => c.id === rec.category) ? rec.category : 'fleisch';
+  const catId = CATS.find(c => c.id === rec.category) ? rec.category : 'mock';
   const empty = R.find(r => r.blank && !r.name && r.cat === catId);
   const srvNum = parseInt(rec.servings) || 4;
   const nr = {
