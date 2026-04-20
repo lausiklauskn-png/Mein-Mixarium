@@ -2141,8 +2141,8 @@ Vielen Dank für deine Unterstützung.</div>
   <div class="fov-body">
     <div class="fov-pane on" id="imp-img">
       <div style="background:var(--teals);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1.5px solid var(--teal)">
-        <div id="imgInfoTitle" style="font-size:.94rem;font-weight:700;color:var(--teal);font-family:Georgia,serif;margin-bottom:4px">🖼️ Bilder zu Rezepten hinzufügen</div>
-        <div id="imgInfoDesc" style="font-size:.76rem;color:#1e4a45;line-height:1.55">Wähle ein oder mehrere Fotos aus oder ziehe sie direkt hierher. Weise danach jedem Bild ein Rezept zu — das Foto wird dann automatisch dem gewählten Rezept zugeordnet.</div>
+        <div id="imgInfoTitle" style="font-size:.94rem;font-weight:700;color:var(--teal);font-family:Georgia,serif;margin-bottom:4px">🖼️ Fotos zu Getränken hinzufügen</div>
+        <div id="imgInfoDesc" style="font-size:.76rem;color:#1e4a45;line-height:1.55">Wähle ein oder mehrere Fotos aus oder ziehe sie direkt hierher. Weise danach jedem Bild ein Getränk zu — das Foto wird dann automatisch dem gewählten Rezept zugeordnet.</div>
       </div>
       <div class="dropzone" onclick="document.getElementById('imgFileIn').click()">
         <span class="dz-ico">🖼️</span>
@@ -2162,9 +2162,9 @@ Vielen Dank für deine Unterstützung.</div>
           <div style="flex:1">
             <div id="scanInfoCol1Hdr" style="font-size:.66rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Erkennbare Vorlagen</div>
             <ul id="scanInfoCol1Items" style="margin:0;padding-left:15px;font-size:.73rem;color:#1e4a45;line-height:1.75">
-              <li>Handgeschriebene Rezeptzettel</li>
-              <li>Kochbücher &amp; Zeitschriften</li>
-              <li>Rezeptkarten &amp; Ausschnitte</li>
+              <li>Handgeschriebene Getränkerezepte</li>
+              <li>Cocktailbücher &amp; Magazine</li>
+              <li>Barkarten &amp; Ausschnitte</li>
               <li>Screenshots &amp; Fotos</li>
               <li>PDF-Dateien</li>
             </ul>
@@ -2172,10 +2172,10 @@ Vielen Dank für deine Unterstützung.</div>
           <div style="flex:1">
             <div id="scanInfoCol2Hdr" style="font-size:.66rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Wird übertragen</div>
             <ul id="scanInfoCol2Items" style="margin:0;padding-left:15px;font-size:.73rem;color:#1e4a45;line-height:1.75">
-              <li>Rezepttitel &amp; Kategorie</li>
+              <li>Getränkename &amp; Kategorie</li>
               <li>Zutaten mit Mengen &amp; Einheiten</li>
-              <li>Zubereitungsschritte</li>
-              <li>Portionen, Temp. &amp; Garzeit</li>
+              <li>Zubereitung &amp; Mixer-Tipps</li>
+              <li>Glastyp, Garnitur &amp; Alkoholgehalt</li>
             </ul>
           </div>
         </div>
@@ -2402,7 +2402,7 @@ Vielen Dank für deine Unterstützung.</div>
     <div class="fov-pane" id="imp-json">
       <div style="background:var(--teals);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1.5px solid var(--teal)">
         <div style="font-size:.94rem;font-weight:700;color:var(--teal);font-family:Georgia,serif;margin-bottom:4px" id="bakTitle">📥 Rezeptsammlung laden</div>
-        <div style="font-size:.76rem;color:#1e4a45;line-height:1.55" id="bakDesc">Hast du deine Rezepte früher schon gesichert, möchtest du sie auf ein neues Gerät übertragen, oder hat dir jemand seine Rezeptsammlung geschickt? Wähle einfach die Datei aus — alle Rezepte werden automatisch in dein Buch übernommen.</div>
+        <div style="font-size:.76rem;color:#1e4a45;line-height:1.55" id="bakDesc">Hast du deine Rezepte früher schon gesichert, möchtest du sie auf ein neues Gerät übertragen, oder hat dir jemand sein Mixbuch geschickt? Wähle einfach die Datei aus — alle Rezepte wandern automatisch in dein Mixarium.</div>
       </div>
       <div style="background:var(--parch);border-radius:10px;border:1px solid var(--sand2);padding:13px">
         <p id="bakHint" style="font-size:.74rem;color:var(--br3);margin-bottom:11px;line-height:1.5">💡 Die Datei hat die Endung .json und wurde vorher über Exportieren → Rezepte sichern erstellt. Vorhandene Rezepte bleiben erhalten – neue kommen einfach dazu.</p>
@@ -2541,7 +2541,7 @@ Vielen Dank für deine Unterstützung.</div>
         </div>
 
         <div style="font-size:.76rem;color:var(--br3);line-height:1.5;margin-bottom:10px">
-          <span id="txtIntroEl">Rezeptzettel, Notizen oder kopierte Texte einfügen — die KI strukturiert alles automatisch ins Rezeptbuch.</span>
+          <span id="txtIntroEl">Getränkerezept, Notizen oder kopierten Text einfügen — die KI strukturiert alles automatisch in dein Mixarium.</span>
         </div>
 
         <div class="scan-photo-zone" id="txtDropZone"
@@ -2854,13 +2854,13 @@ const LANGS={
     bnRec:'Drinks',bnFld:'Ordner',bnMen:'Planer',bnSet:'Einst.',bnBv:'Tresor',
     impTitle:'📥 Importieren',impTabImg:'🖼️ Bilder',impTabWeb:'🌐 Web',impTabScan:'📄 KI-Scan',impTabTxt:'📝 Text',impTabJson:'📥 Rezept laden',
     imgDropLbl:'Bilder auswählen oder hierher ziehen',
-    imgInfoTitle:'🖼️ Bilder zu Rezepten hinzufügen',
-    imgInfoDesc:'Wähle ein oder mehrere Fotos aus oder ziehe sie direkt hierher. Weise danach jedem Bild ein Rezept zu — das Foto wird dann automatisch dem gewählten Rezept zugeordnet.',
+    imgInfoTitle:'🖼️ Fotos zu Getränken hinzufügen',
+    imgInfoDesc:'Wähle ein oder mehrere Fotos aus oder ziehe sie direkt hierher. Weise danach jedem Bild ein Getränk zu — das Foto wird dann automatisch dem gewählten Rezept zugeordnet.',
     scanInfoTitle:'📸 Was der KI-Scan erkennt',
     scanInfoCol1Hdr:'Erkennbare Vorlagen',
-    scanInfoCol1Items:'<li>Handgeschriebene Rezeptzettel</li><li>Kochbücher &amp; Zeitschriften</li><li>Rezeptkarten &amp; Ausschnitte</li><li>Screenshots &amp; Fotos</li><li>PDF-Dateien</li>',
+    scanInfoCol1Items:'<li>Handgeschriebene Getränkerezepte</li><li>Cocktailbücher &amp; Magazine</li><li>Barkarten &amp; Ausschnitte</li><li>Screenshots &amp; Fotos</li><li>PDF-Dateien</li>',
     scanInfoCol2Hdr:'Wird übertragen',
-    scanInfoCol2Items:'<li>Rezepttitel &amp; Kategorie</li><li>Zutaten mit Mengen &amp; Einheiten</li><li>Zubereitungsschritte</li><li>Portionen, Temp. &amp; Garzeit</li>',
+    scanInfoCol2Items:'<li>Getränkename &amp; Kategorie</li><li>Zutaten mit Mengen &amp; Einheiten</li><li>Zubereitung &amp; Mixer-Tipps</li><li>Glastyp, Garnitur &amp; Alkoholgehalt</li>',
     webInfoTitle:'🌐 Rezept aus dem Internet laden',
     webInfoDesc:'Gib die Adresse einer Rezeptseite ein — z.B. von Chefkoch, Allrecipes oder anderen Kochseiten. Das Rezept wird automatisch erkannt und strukturiert ins Rezeptbuch übertragen.',
     webInfoHint:'💡 Funktioniert ohne KI-Schlüssel bei den meisten großen Kochseiten (Chefkoch, Allrecipes, BBC Good Food, Lecker.de u.v.m.). Für unbekannte Seiten wird ein KI-Schlüssel benötigt.',
@@ -2874,7 +2874,7 @@ const LANGS={
     scanPhSub:'Foto, Screenshot, Scan oder PDF · JPG · PNG · PDF',
     pdfReading:'⏳ PDF wird gelesen …',pdfOk:'✅ PDF-Text extrahiert',pdfErr:'❌ PDF-Fehler: ',
     bakTitle:'📥 Rezeptsammlung laden',
-    bakDesc:'Hast du deine Rezepte früher schon gesichert, möchtest du sie auf ein neues Gerät übertragen, oder hat dir jemand seine Rezeptsammlung geschickt? Wähle einfach die Datei aus — alle Rezepte werden automatisch in dein Buch übernommen.',
+    bakDesc:'Hast du deine Rezepte früher schon gesichert, möchtest du sie auf ein neues Gerät übertragen, oder hat dir jemand sein Mixbuch geschickt? Wähle einfach die Datei aus — alle Rezepte wandern automatisch in dein Mixarium.',
     bakBtn:'📂 Datei auswählen',
     bakHint:'💡 Die Datei hat die Endung .json und wurde vorher über Exportieren → Rezepte sichern erstellt. Vorhandene Rezepte bleiben erhalten – neue kommen einfach dazu.',
     sBvScreenTitle:'Backup-Tresor',sBvLbl:'Backup-Tresor',sBvSub:'Mehrere Sicherungen verwalten',
@@ -2947,7 +2947,7 @@ const LANGS={
     ,txtTitle:'✍️ Rezept per Text übertragen'
     ,txtDesc:'Kopiere oder tippe einen Rezepttext — die KI erkennt alle Felder automatisch und trägt das Rezept strukturiert ins Buch ein.'
     ,txtReadyLbl:'Text-KI aktiv'
-    ,txtIntro:'Rezeptzettel, Notizen oder kopierte Texte einfügen — die KI strukturiert alles automatisch ins Rezeptbuch.'
+    ,txtIntro:'Getränkerezept, Notizen oder kopierten Text einfügen — die KI strukturiert alles automatisch in dein Mixarium.'
     ,txtDropLbl:'Rezepttext eintippen oder einfügen'
     ,txtDropSub:'Strg+V · Tippen · oder .txt / .pdf hierher ziehen'
     ,txtScanBtn:'Rezept automatisch erkennen'
@@ -2979,13 +2979,13 @@ const LANGS={
     bnRec:'Drinks',bnFld:'Folders',bnMen:'Planner',bnSet:'Settings',bnBv:'Vault',
     impTitle:'📥 Import',impTabImg:'🖼️ Images',impTabWeb:'🌐 Web',impTabScan:'📄 AI Scan',impTabTxt:'📝 Text',impTabJson:'📥 Load recipes',
     imgDropLbl:'Select images or drag here',
-    imgInfoTitle:'🖼️ Add images to recipes',
-    imgInfoDesc:'Select one or more photos or drag them here. Then assign each image to a recipe — the photo will be automatically linked to the chosen recipe.',
+    imgInfoTitle:'🖼️ Add photos to drinks',
+    imgInfoDesc:'Select one or more photos or drag them here. Then assign each image to a drink — the photo will be automatically linked to the chosen recipe.',
     scanInfoTitle:'📸 What the AI scan recognises',
     scanInfoCol1Hdr:'Recognisable sources',
-    scanInfoCol1Items:'<li>Handwritten recipe notes</li><li>Cookbooks &amp; magazines</li><li>Recipe cards &amp; clippings</li><li>Screenshots &amp; photos</li><li>PDF files</li>',
+    scanInfoCol1Items:'<li>Handwritten drink recipes</li><li>Cocktail books &amp; magazines</li><li>Bar menus &amp; clippings</li><li>Screenshots &amp; photos</li><li>PDF files</li>',
     scanInfoCol2Hdr:'What gets transferred',
-    scanInfoCol2Items:'<li>Recipe title &amp; category</li><li>Ingredients with quantities &amp; units</li><li>Preparation steps</li><li>Servings, temp. &amp; cooking time</li>',
+    scanInfoCol2Items:'<li>Drink name &amp; category</li><li>Ingredients with quantities &amp; units</li><li>Preparation &amp; mixing tips</li><li>Glass type, garnish &amp; alcohol content</li>',
     webInfoTitle:'🌐 Load recipe from the web',
     webInfoDesc:'Enter the address of a recipe page — e.g. from Allrecipes, BBC Good Food or other cooking sites. The recipe is recognised automatically and transferred to your recipe book.',
     webInfoHint:'💡 Works without an AI key for most major cooking sites (Allrecipes, BBC Good Food, etc.). An AI key is required for unknown sites.',
@@ -2999,7 +2999,7 @@ const LANGS={
     scanPhSub:'Photo, screenshot, scan or PDF · JPG · PNG · PDF',
     pdfReading:'⏳ Reading PDF …',pdfOk:'✅ PDF text extracted',pdfErr:'❌ PDF error: ',
     bakTitle:'📥 Load recipe collection',
-    bakDesc:'Did you back up your recipes before, want to transfer them to a new device, or did someone share their collection with you? Just select the file — all recipes will be added to your book automatically.',
+    bakDesc:'Did you back up your drink recipes before, want to transfer them to a new device, or did someone share their Mixarium with you? Just select the file — all recipes will be added to your Mixarium automatically.',
     bakBtn:'📂 Select file',
     bakHint:'💡 The file has the .json extension and was created via Export → Create backup. Existing recipes are kept — new ones are simply added.',
     sBvScreenTitle:'Backup Vault',sBvLbl:'Backup Vault',sBvSub:'Manage multiple backups',
@@ -3072,7 +3072,7 @@ const LANGS={
     ,txtTitle:'📋 Paste any recipe text'
     ,txtDesc:'Handwritten notes, copied recipes or typed text — the AI automatically recognises ingredients, quantities and steps and adds everything to your recipe book.'
     ,txtReadyLbl:'Text AI active'
-    ,txtIntro:'Paste notes, copied text or any recipe — the AI structures everything automatically into your recipe book.'
+    ,txtIntro:'Paste a drink recipe, notes or copied text — the AI structures everything automatically into your Mixarium.'
     ,txtDropLbl:'Type or paste recipe text'
     ,txtDropSub:'Ctrl+V · Type · or drag a .txt / .pdf file here'
     ,txtScanBtn:'Recognise recipe automatically'
@@ -3104,13 +3104,13 @@ const LANGS={
     bnRec:'Рецепты',bnFld:'Папки',bnMen:'Планир.',bnSet:'Настр.',bnBv:'Архив',
     impTitle:'📥 Импорт',impTabImg:'🖼️ Фото',impTabWeb:'🌐 Интернет',impTabScan:'📄 ИИ-скан',impTabTxt:'📝 Текст',impTabJson:'📥 Загрузить',
     imgDropLbl:'Выбрать фото или перетащить',
-    imgInfoTitle:'🖼️ Добавить фото к рецептам',
-    imgInfoDesc:'Выберите одно или несколько фото или перетащите их сюда. Затем назначьте каждому фото рецепт — фотография будет автоматически привязана к выбранному рецепту.',
+    imgInfoTitle:'🖼️ Добавить фото к напиткам',
+    imgInfoDesc:'Выберите одно или несколько фото или перетащите их сюда. Затем назначьте каждому фото напиток — фотография будет автоматически привязана к выбранному рецепту.',
     scanInfoTitle:'📸 Что распознаёт KI-сканер',
     scanInfoCol1Hdr:'Распознаваемые источники',
-    scanInfoCol1Items:'<li>Рукописные записи рецептов</li><li>Кулинарные книги &amp; журналы</li><li>Карточки рецептов &amp; вырезки</li><li>Скриншоты &amp; фотографии</li><li>PDF-файлы</li>',
-    scanInfoCol2Hdr:'Переносится в книгу',
-    scanInfoCol2Items:'<li>Название &amp; категория рецепта</li><li>Ингредиенты с количеством &amp; единицами</li><li>Шаги приготовления</li><li>Порции, темп. &amp; время готовки</li>',
+    scanInfoCol1Items:'<li>Рукописные рецепты напитков</li><li>Коктейльные книги &amp; журналы</li><li>Карты бара &amp; вырезки</li><li>Скриншоты &amp; фотографии</li><li>PDF-файлы</li>',
+    scanInfoCol2Hdr:'Переносится в Mixarium',
+    scanInfoCol2Items:'<li>Название &amp; категория напитка</li><li>Ингредиенты с количеством &amp; единицами</li><li>Приготовление &amp; советы бармена</li><li>Тип бокала, украшение &amp; крепость</li>',
     webInfoTitle:'🌐 Загрузить рецепт из интернета',
     webInfoDesc:'Введите адрес страницы с рецептом — например, с Povarenok, Allrecipes или других кулинарных сайтов. Рецепт будет автоматически распознан и перенесён в книгу рецептов.',
     webInfoHint:'💡 Работает без ключа ИИ для большинства крупных кулинарных сайтов. Для неизвестных сайтов требуется ключ ИИ.',
@@ -3124,7 +3124,7 @@ const LANGS={
     scanPhSub:'Фото, скриншот, скан или PDF · JPG · PNG · PDF',
     pdfReading:'⏳ Читаем PDF …',pdfOk:'✅ Текст PDF извлечён',pdfErr:'❌ Ошибка PDF: ',
     bakTitle:'📥 Загрузить коллекцию рецептов',
-    bakDesc:'Вы делали резервную копию рецептов, хотите перенести их на новое устройство или кто-то поделился с вами своей коллекцией? Просто выберите файл — все рецепты автоматически добавятся в вашу книгу.',
+    bakDesc:'Вы делали резервную копию рецептов напитков, хотите перенести их на новое устройство или кто-то поделился своим Mixarium с вами? Просто выберите файл — все рецепты автоматически добавятся в ваш Mixarium.',
     bakBtn:'📂 Выбрать файл',
     bakHint:'💡 Файл имеет расширение .json и создан через Экспорт → Создать резервную копию. Имеющиеся рецепты сохранятся — новые просто добавятся.',
     sBvScreenTitle:'Архив резервных копий',sBvLbl:'Архив резервных копий',sBvSub:'Управление несколькими резервными копиями',
@@ -3197,7 +3197,7 @@ const LANGS={
     ,txtTitle:'📋 Вставьте текст рецепта'
     ,txtDesc:'Рукописные записи, скопированные тексты или напечатанные рецепты — ИИ автоматически распознаёт ингредиенты, количества и шаги и вносит всё в книгу рецептов.'
     ,txtReadyLbl:'Текстовый ИИ активен'
-    ,txtIntro:'Вставьте заметки, скопированный текст или любой рецепт — ИИ автоматически структурирует всё в книгу рецептов.'
+    ,txtIntro:'Вставьте рецепт напитка, заметки или скопированный текст — ИИ автоматически структурирует всё в ваш Mixarium.'
     ,txtDropLbl:'Введите или вставьте текст рецепта'
     ,txtDropSub:'Ctrl+V · Ввод · или перетащите .txt / .pdf'
     ,txtScanBtn:'Распознать рецепт автоматически'
@@ -3229,13 +3229,13 @@ const LANGS={
     bnRec:'食谱',bnFld:'文件夹',bnMen:'菜单计划',bnSet:'设置',bnBv:'备份',
     impTitle:'📥 导入',impTabImg:'🖼️ 图片',impTabWeb:'🌐 网络',impTabScan:'📄 AI扫描',impTabTxt:'📝 文本',impTabJson:'📥 加载食谱',
     imgDropLbl:'选择或拖拽图片至此',
-    imgInfoTitle:'🖼️ 为食谱添加图片',
-    imgInfoDesc:'选择一张或多张照片，或直接拖放至此。然后为每张图片指定一个食谱——照片将自动关联到所选食谱。',
+    imgInfoTitle:'🖼️ 为饮品添加图片',
+    imgInfoDesc:'选择一张或多张照片，或直接拖放至此。然后为每张图片指定一款饮品——照片将自动关联到所选配方。',
     scanInfoTitle:'📸 AI扫描能识别什么',
     scanInfoCol1Hdr:'可识别的来源',
-    scanInfoCol1Items:'<li>手写食谱便条</li><li>食谱书 &amp; 杂志</li><li>食谱卡 &amp; 剪报</li><li>截图 &amp; 照片</li><li>PDF文件</li>',
+    scanInfoCol1Items:'<li>手写饮品配方</li><li>鸡尾酒书 &amp; 杂志</li><li>酒单 &amp; 剪报</li><li>截图 &amp; 照片</li><li>PDF文件</li>',
     scanInfoCol2Hdr:'将被提取的内容',
-    scanInfoCol2Items:'<li>食谱标题 &amp; 类别</li><li>食材及用量 &amp; 单位</li><li>制作步骤</li><li>份量、温度 &amp; 烹饪时间</li>',
+    scanInfoCol2Items:'<li>饮品名称 &amp; 类别</li><li>食材及用量 &amp; 单位</li><li>调制方法 &amp; 技巧</li><li>杯型、装饰 &amp; 酒精含量</li>',
     webInfoTitle:'🌐 从网上加载食谱',
     webInfoDesc:'输入食谱页面的网址——例如来自下厨房、Allrecipes或其他烹饪网站。食谱将自动识别并整理到食谱书中。',
     webInfoHint:'💡 大多数主要烹饪网站无需AI密钥即可使用。对于未知网站，需要AI密钥。',
@@ -3249,7 +3249,7 @@ const LANGS={
     scanPhSub:'照片、截图、扫描或PDF · JPG · PNG · PDF',
     pdfReading:'⏳ 正在读取PDF …',pdfOk:'✅ PDF文字已提取',pdfErr:'❌ PDF错误：',
     bakTitle:'📥 加载食谱集',
-    bakDesc:'曾经备份过食谱，想把它们转移到新设备，或者有人与你分享了他们的食谱集？只需选择文件，所有食谱将自动添加到你的食谱书中。',
+    bakDesc:'曾经备份过饮品配方，想把它们转移到新设备，或者有人与你分享了他们的 Mixarium？只需选择文件，所有配方将自动添加到你的 Mixarium 中。',
     bakBtn:'📂 选择文件',
     bakHint:'💡 文件扩展名为 .json，通过导出 → 创建备份生成。现有食谱将保留，新食谱只是添加进来。',
     sBvScreenTitle:'备份库',sBvLbl:'备份库',sBvSub:'管理多个备份',
@@ -3322,7 +3322,7 @@ const LANGS={
     ,txtTitle:'📋 粘贴任何食谱文字'
     ,txtDesc:'手写笔记、复制的文字或输入的食谱 — AI 自动识别食材、用量和步骤，并将所有内容添加到食谱书中。'
     ,txtReadyLbl:'文字AI已激活'
-    ,txtIntro:'粘贴笔记、复制的文字或任何食谱 — AI 自动将所有内容整理进食谱书。'
+    ,txtIntro:'粘贴饮品配方、笔记或复制的文字 — AI 自动将所有内容整理进你的 Mixarium。'
     ,txtDropLbl:'在此输入或粘贴食谱文字'
     ,txtDropSub:'Ctrl+V · 输入 · 或拖入.txt / .pdf文件'
     ,txtScanBtn:'自动识别食谱'
@@ -3354,13 +3354,13 @@ const LANGS={
     bnRec:'Recetas',bnFld:'Carpetas',bnMen:'Planif.',bnSet:'Ajustes',bnBv:'Bóveda',
     impTitle:'📥 Importar',impTabImg:'🖼️ Imágenes',impTabWeb:'🌐 Web',impTabScan:'📄 Scan IA',impTabTxt:'📝 Texto',impTabJson:'📥 Cargar recetas',
     imgDropLbl:'Seleccionar imágenes o arrastrar aquí',
-    imgInfoTitle:'🖼️ Añadir imágenes a recetas',
-    imgInfoDesc:'Selecciona una o varias fotos o arrástralas aquí. Luego asigna cada imagen a una receta — la foto se vinculará automáticamente a la receta elegida.',
+    imgInfoTitle:'🖼️ Añadir fotos a bebidas',
+    imgInfoDesc:'Selecciona una o varias fotos o arrástralas aquí. Luego asigna cada imagen a una bebida — la foto se vinculará automáticamente a la receta elegida.',
     scanInfoTitle:'📸 Qué reconoce el escáner IA',
     scanInfoCol1Hdr:'Fuentes reconocibles',
-    scanInfoCol1Items:'<li>Notas de recetas escritas a mano</li><li>Libros de cocina &amp; revistas</li><li>Tarjetas de recetas &amp; recortes</li><li>Capturas de pantalla &amp; fotos</li><li>Archivos PDF</li>',
+    scanInfoCol1Items:'<li>Recetas de bebidas escritas a mano</li><li>Libros de cócteles &amp; revistas</li><li>Cartas de bar &amp; recortes</li><li>Capturas de pantalla &amp; fotos</li><li>Archivos PDF</li>',
     scanInfoCol2Hdr:'Lo que se transfiere',
-    scanInfoCol2Items:'<li>Título &amp; categoría de receta</li><li>Ingredientes con cantidades &amp; unidades</li><li>Pasos de preparación</li><li>Porciones, temp. &amp; tiempo de cocción</li>',
+    scanInfoCol2Items:'<li>Nombre &amp; categoría de bebida</li><li>Ingredientes con cantidades &amp; unidades</li><li>Preparación &amp; consejos de mezcla</li><li>Tipo de vaso, guarnición &amp; graduación</li>',
     webInfoTitle:'🌐 Cargar receta de Internet',
     webInfoDesc:'Introduce la dirección de una página de recetas — p.ej. de Allrecipes, Recetas.com u otras webs de cocina. La receta se reconoce automáticamente y se transfiere al recetario.',
     webInfoHint:'💡 Funciona sin clave IA en la mayoría de los grandes sitios de cocina. Para sitios desconocidos se necesita una clave IA.',
@@ -3374,7 +3374,7 @@ const LANGS={
     scanPhSub:'Foto, captura, escaneo o PDF · JPG · PNG · PDF',
     pdfReading:'⏳ Leyendo PDF …',pdfOk:'✅ Texto PDF extraído',pdfErr:'❌ Error PDF: ',
     bakTitle:'📥 Cargar colección de recetas',
-    bakDesc:'¿Hiciste una copia de seguridad antes, quieres transferir tus recetas a un nuevo dispositivo o alguien compartió su colección contigo? Selecciona el archivo y todas las recetas se añadirán automáticamente a tu libro.',
+    bakDesc:'¿Hiciste una copia de seguridad antes, quieres transferir tus recetas de bebidas a un nuevo dispositivo o alguien compartió su Mixarium contigo? Selecciona el archivo y todas las recetas se añadirán automáticamente a tu Mixarium.',
     bakBtn:'📂 Seleccionar archivo',
     bakHint:'💡 El archivo tiene extensión .json y fue creado con Exportar → Crear copia de seguridad. Las recetas existentes se conservan — las nuevas se añaden automáticamente.',
     sBvScreenTitle:'Bóveda de copias',sBvLbl:'Bóveda de copias',sBvSub:'Gestionar múltiples copias de seguridad',
@@ -3445,7 +3445,7 @@ const LANGS={
     ,txtTitle:'📋 Pega cualquier texto de receta'
     ,txtDesc:'Notas escritas a mano, textos copiados o recetas escritas — la IA reconoce automáticamente ingredientes, cantidades y pasos y lo añade todo al recetario.'
     ,txtReadyLbl:'IA de texto activa'
-    ,txtIntro:'Pega notas, textos copiados o cualquier receta — la IA estructura todo automáticamente en el recetario.'
+    ,txtIntro:'Pega una receta de bebida, notas o texto copiado — la IA estructura todo automáticamente en tu Mixarium.'
     ,txtDropLbl:'Escribe o pega el texto de la receta'
     ,txtDropSub:'Ctrl+V · Escribir · o arrastra un archivo .txt / .pdf'
     ,txtScanBtn:'Reconocer receta automáticamente'
@@ -3505,13 +3505,13 @@ const LANGS={
     impTabTxt:'📝 Texte',
     impTabJson:'📥 Charger recettes',
     imgDropLbl:'Sélectionner des images',
-    imgInfoTitle:'🖼️ Ajouter des images aux recettes',
-    imgInfoDesc:'Sélectionnez une ou plusieurs photos ou faites-les glisser ici. Associez ensuite chaque image à une recette — la photo sera automatiquement liée à la recette choisie.',
+    imgInfoTitle:'🖼️ Ajouter des photos aux boissons',
+    imgInfoDesc:'Sélectionnez une ou plusieurs photos ou faites-les glisser ici. Associez ensuite chaque image à une boisson — la photo sera automatiquement liée à la recette choisie.',
     scanInfoTitle:'📸 Ce que le scanner IA reconnaît',
     scanInfoCol1Hdr:'Sources reconnaissables',
-    scanInfoCol1Items:'<li>Notes de recettes manuscrites</li><li>Livres de cuisine &amp; magazines</li><li>Fiches recettes &amp; découpures</li><li>Captures d\'écran &amp; photos</li><li>Fichiers PDF</li>',
+    scanInfoCol1Items:'<li>Recettes de boissons manuscrites</li><li>Livres de cocktails &amp; magazines</li><li>Cartes de bar &amp; découpures</li><li>Captures d\'écran &amp; photos</li><li>Fichiers PDF</li>',
     scanInfoCol2Hdr:'Ce qui est transféré',
-    scanInfoCol2Items:'<li>Titre &amp; catégorie de recette</li><li>Ingrédients avec quantités &amp; unités</li><li>Étapes de préparation</li><li>Portions, temp. &amp; temps de cuisson</li>',
+    scanInfoCol2Items:'<li>Nom &amp; catégorie de boisson</li><li>Ingrédients avec quantités &amp; unités</li><li>Préparation &amp; conseils de mélange</li><li>Type de verre, garniture &amp; degré d\'alcool</li>',
     webInfoTitle:'🌐 Charger une recette depuis Internet',
     webInfoDesc:'Entrez l\'adresse d\'une page de recettes — p.ex. d\'Allrecipes, Marmiton ou d\'autres sites de cuisine. La recette est reconnue automatiquement et transférée dans votre livre.',
     webInfoHint:'💡 Fonctionne sans clé IA sur la plupart des grands sites de cuisine. Une clé IA est nécessaire pour les sites inconnus.',
@@ -3530,7 +3530,7 @@ const LANGS={
     scanPhSub:'Photo, capture, scan ou PDF · JPG · PNG · PDF',
     pdfReading:'⏳ Lecture du PDF …',pdfOk:'✅ Texte PDF extrait',pdfErr:'❌ Erreur PDF : ',
     bakTitle:'📥 Charger une collection de recettes',
-    bakDesc:'Vous avez sauvegardé vos recettes auparavant, souhaitez les transférer sur un nouvel appareil ou quelqu\'un a partagé sa collection avec vous ? Sélectionnez simplement le fichier — toutes les recettes seront automatiquement ajoutées à votre livre.',
+    bakDesc:'Vous avez sauvegardé vos recettes de boissons auparavant, souhaitez les transférer sur un nouvel appareil ou quelqu\'un a partagé son Mixarium avec vous ? Sélectionnez simplement le fichier — toutes les recettes seront automatiquement ajoutées à votre Mixarium.',
     bakBtn:'📂 Sélectionner fichier',
     bakHint:'💡 Le fichier a l\'extension .json et a été créé via Exporter → Créer une sauvegarde. Les recettes existantes sont conservées — les nouvelles s\'ajoutent simplement.',
     sBvScreenTitle:'Coffre de sauvegardes',sBvLbl:'Coffre de sauvegardes',sBvSub:'Gérer plusieurs sauvegardes',
@@ -3679,7 +3679,7 @@ const LANGS={
     ,txtTitle:'📋 Collez n\'importe quel texte de recette'
     ,txtDesc:'Notes manuscrites, textes copiés ou recettes tapées — l\'IA reconnaît automatiquement ingrédients, quantités et étapes et les ajoute au livre de recettes.'
     ,txtReadyLbl:'IA texte active'
-    ,txtIntro:'Collez des notes, textes copiés ou toute recette — l\'IA structure tout automatiquement dans votre livre de recettes.'
+    ,txtIntro:'Collez une recette de boisson, des notes ou du texte copié — l\'IA structure tout automatiquement dans votre Mixarium.'
     ,txtDropLbl:'Tapez ou collez le texte de la recette'
     ,txtDropSub:'Ctrl+V · Taper · ou glisser un fichier .txt / .pdf'
     ,txtScanBtn:'Reconnaître la recette automatiquement'
@@ -3739,13 +3739,13 @@ const LANGS={
     impTabTxt:'📝 Testo',
     impTabJson:'📥 Carica ricette',
     imgDropLbl:'Seleziona immagini',
-    imgInfoTitle:'🖼️ Aggiungi immagini alle ricette',
-    imgInfoDesc:'Seleziona una o più foto o trascinale qui. Poi assegna ogni immagine a una ricetta — la foto verrà collegata automaticamente alla ricetta scelta.',
+    imgInfoTitle:'🖼️ Aggiungi foto alle bevande',
+    imgInfoDesc:'Seleziona una o più foto o trascinale qui. Poi assegna ogni immagine a una bevanda — la foto verrà collegata automaticamente alla ricetta scelta.',
     scanInfoTitle:'📸 Cosa riconosce lo scanner IA',
     scanInfoCol1Hdr:'Fonti riconoscibili',
-    scanInfoCol1Items:'<li>Note di ricette scritte a mano</li><li>Libri di cucina &amp; riviste</li><li>Schede ricette &amp; ritagli</li><li>Schermate &amp; foto</li><li>File PDF</li>',
+    scanInfoCol1Items:'<li>Ricette di drink scritte a mano</li><li>Libri di cocktail &amp; riviste</li><li>Carte del bar &amp; ritagli</li><li>Schermate &amp; foto</li><li>File PDF</li>',
     scanInfoCol2Hdr:'Cosa viene trasferito',
-    scanInfoCol2Items:'<li>Titolo &amp; categoria ricetta</li><li>Ingredienti con quantità &amp; unità</li><li>Passi di preparazione</li><li>Porzioni, temp. &amp; tempo di cottura</li>',
+    scanInfoCol2Items:'<li>Nome &amp; categoria della bevanda</li><li>Ingredienti con quantità &amp; unità</li><li>Preparazione &amp; consigli di miscelazione</li><li>Tipo di bicchiere, guarnizione &amp; gradazione</li>',
     webInfoTitle:'🌐 Carica ricetta da Internet',
     webInfoDesc:'Inserisci l\'indirizzo di una pagina di ricette — p.es. da Giallozafferano, Allrecipes o altri siti di cucina. La ricetta viene riconosciuta automaticamente e trasferita nel ricettario.',
     webInfoHint:'💡 Funziona senza chiave IA per la maggior parte dei grandi siti di cucina. Per siti sconosciuti è necessaria una chiave IA.',
@@ -3764,7 +3764,7 @@ const LANGS={
     scanPhSub:'Foto, schermata, scansione o PDF · JPG · PNG · PDF',
     pdfReading:'⏳ Lettura PDF …',pdfOk:'✅ Testo PDF estratto',pdfErr:'❌ Errore PDF: ',
     bakTitle:'📥 Carica la tua collezione di ricette',
-    bakDesc:'Hai già salvato le tue ricette, vuoi trasferirle su un nuovo dispositivo o qualcuno ha condiviso la sua collezione con te? Seleziona il file e tutte le ricette verranno aggiunte automaticamente al tuo libro.',
+    bakDesc:'Hai già salvato le tue ricette di drink, vuoi trasferirle su un nuovo dispositivo o qualcuno ha condiviso il suo Mixarium con te? Seleziona il file e tutte le ricette verranno aggiunte automaticamente al tuo Mixarium.',
     bakBtn:'📂 Seleziona file',
     bakHint:'💡 Il file ha estensione .json ed è stato creato tramite Esporta → Crea backup. Le ricette esistenti vengono mantenute — quelle nuove vengono semplicemente aggiunte.',
     sBvScreenTitle:'Archivio backup',sBvLbl:'Archivio backup',sBvSub:'Gestisci più backup',
@@ -3913,7 +3913,7 @@ const LANGS={
     ,txtTitle:'📋 Incolla qualsiasi testo di ricetta'
     ,txtDesc:'Note scritte a mano, testi copiati o ricette digitate — l\'IA riconosce automaticamente ingredienti, quantità e passaggi e aggiunge tutto al ricettario.'
     ,txtReadyLbl:'IA testo attiva'
-    ,txtIntro:'Incolla note, testi copiati o qualsiasi ricetta — l\'IA struttura tutto automaticamente nel ricettario.'
+    ,txtIntro:'Incolla una ricetta di drink, note o testo copiato — l\'IA struttura tutto automaticamente nel tuo Mixarium.'
     ,txtDropLbl:'Digita o incolla il testo della ricetta'
     ,txtDropSub:'Ctrl+V · Digitare · o trascinare un file .txt / .pdf'
     ,txtScanBtn:'Riconoscere la ricetta automaticamente'
@@ -3973,13 +3973,13 @@ const LANGS={
     impTabTxt:'📝 Texto',
     impTabJson:'📥 Carregar receitas',
     imgDropLbl:'Selecionar imagens',
-    imgInfoTitle:'🖼️ Adicionar imagens às receitas',
-    imgInfoDesc:'Selecione uma ou mais fotos ou arraste-as para aqui. De seguida, associe cada imagem a uma receita — a foto será automaticamente ligada à receita escolhida.',
+    imgInfoTitle:'🖼️ Adicionar fotos a bebidas',
+    imgInfoDesc:'Selecione uma ou mais fotos ou arraste-as para aqui. De seguida, associe cada imagem a uma bebida — a foto será automaticamente ligada à receita escolhida.',
     scanInfoTitle:'📸 O que o scanner IA reconhece',
     scanInfoCol1Hdr:'Fontes reconhecíveis',
-    scanInfoCol1Items:'<li>Notas de receitas manuscritas</li><li>Livros de culinária &amp; revistas</li><li>Fichas de receitas &amp; recortes</li><li>Capturas de ecrã &amp; fotos</li><li>Ficheiros PDF</li>',
+    scanInfoCol1Items:'<li>Receitas de bebidas manuscritas</li><li>Livros de coquetéis &amp; revistas</li><li>Cardápios de bar &amp; recortes</li><li>Capturas de ecrã &amp; fotos</li><li>Ficheiros PDF</li>',
     scanInfoCol2Hdr:'O que é transferido',
-    scanInfoCol2Items:'<li>Título &amp; categoria da receita</li><li>Ingredientes com quantidades &amp; unidades</li><li>Passos de preparação</li><li>Porções, temp. &amp; tempo de cozimento</li>',
+    scanInfoCol2Items:'<li>Nome &amp; categoria da bebida</li><li>Ingredientes com quantidades &amp; unidades</li><li>Preparação &amp; dicas de mistura</li><li>Tipo de copo, guarnição &amp; teor alcoólico</li>',
     webInfoTitle:'🌐 Carregar receita da Internet',
     webInfoDesc:'Introduza o endereço de uma página de receitas — p.ex. do Allrecipes, Continente ou outros sites de culinária. A receita é reconhecida automaticamente e transferida para o livro.',
     webInfoHint:'💡 Funciona sem chave de IA na maioria dos grandes sites de culinária. Para sites desconhecidos é necessária uma chave de IA.',
@@ -3998,7 +3998,7 @@ const LANGS={
     scanPhSub:'Foto, captura, digitalização ou PDF · JPG · PNG · PDF',
     pdfReading:'⏳ A ler PDF …',pdfOk:'✅ Texto PDF extraído',pdfErr:'❌ Erro PDF: ',
     bakTitle:'📥 Carregar coleção de receitas',
-    bakDesc:'Já fez uma cópia de segurança das suas receitas, quer transferi-las para um novo dispositivo ou alguém partilhou a sua coleção consigo? Selecione o ficheiro e todas as receitas serão adicionadas automaticamente ao seu livro.',
+    bakDesc:'Já fez uma cópia de segurança das suas receitas de bebidas, quer transferi-las para um novo dispositivo ou alguém partilhou o seu Mixarium consigo? Selecione o ficheiro e todas as receitas serão adicionadas automaticamente ao seu Mixarium.',
     bakBtn:'📂 Selecionar ficheiro',
     bakHint:'💡 O ficheiro tem a extensão .json e foi criado através de Exportar → Criar cópia de segurança. As receitas existentes são mantidas — as novas são simplesmente adicionadas.',
     sBvScreenTitle:'Cofre de cópias',sBvLbl:'Cofre de cópias',sBvSub:'Gerir múltiplas cópias de segurança',
@@ -4147,7 +4147,7 @@ const LANGS={
     ,txtTitle:'📋 Colar qualquer texto de receita'
     ,txtDesc:'Notas manuscritas, textos copiados ou receitas digitadas — a IA reconhece automaticamente ingredientes, quantidades e passos e adiciona tudo ao livro de receitas.'
     ,txtReadyLbl:'IA de texto ativa'
-    ,txtIntro:'Cole notas, textos copiados ou qualquer receita — a IA estrutura tudo automaticamente no livro de receitas.'
+    ,txtIntro:'Cole uma receita de bebida, notas ou texto copiado — a IA estrutura tudo automaticamente no seu Mixarium.'
     ,txtDropLbl:'Digite ou cole o texto da receita'
     ,txtDropSub:'Ctrl+V · Digitar · ou arrastar ficheiro .txt / .pdf'
     ,txtScanBtn:'Reconhecer receita automaticamente'
