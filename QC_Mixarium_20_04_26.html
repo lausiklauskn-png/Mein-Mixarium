@@ -1373,14 +1373,12 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 .rcard{transition:transform 200ms ease,box-shadow 200ms ease}
 .rcard:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
 
-/* ── Getränke-Karussell (Horizontal Snap) ── */
-#rcont{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:scroll;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
-#rcont::-webkit-scrollbar{display:none}
-#rcont .rcard{flex:0 0 calc(100% - 18px);width:calc(100% - 18px);margin:9px;scroll-snap-align:center;scroll-snap-stop:always}
+/* ── Getränke-Karussell (JS-gesteuert) ── */
+#rcont .rcard{margin:9px}
 #rcont .rcard:hover{transform:none;box-shadow:0 2px 9px var(--sh)}
 #rcont .rcard-img-wrap{aspect-ratio:3/4 !important;height:auto !important}
 #rcont .rcard-img{height:100% !important}
-#rcont .empty-state{flex:0 0 calc(100% - 18px);margin:9px auto}
+#carousel-ctr{text-align:center;padding:3px 0 1px;font-size:.72rem;color:var(--br3);letter-spacing:.06em}
 /* ── Labor-Shortcut Banner ── */
 #labor-shortcut{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;background:var(--teals);border-top:1px solid rgba(0,0,0,.05);border-bottom:1.5px solid var(--teal);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--teal);user-select:none;-webkit-tap-highlight-color:transparent;letter-spacing:.02em}
 #labor-shortcut:active{background:var(--teal);color:#fff}
@@ -1618,6 +1616,7 @@ button:active{transform:scale(0.97)}
     </div>
   </div>
   <div id="labor-shortcut" onclick="navTo('labor')">🔬 Zum Labor wechseln →</div>
+  <div id="carousel-ctr"></div>
   <div id="rcont"></div>
 </div>
 
@@ -4737,6 +4736,19 @@ function navTo(n){
   if(closed)return; // einen Schritt zurück – Ziel-Tab wird beim nächsten Klick aufgerufen
   showSc(n);
 }
+// ── KARUSSELL ──────────────────────────────────────────
+let _carIdx=0,_carCards=[];
+function carouselInit(){
+  _carCards=Array.from(document.querySelectorAll('#rcont .rcard'));
+  _carIdx=0;carouselShow();
+}
+function carouselShow(){
+  _carCards.forEach((c,i)=>{c.style.display=i===_carIdx?'':'none';});
+  const ctr=document.getElementById('carousel-ctr');
+  if(ctr)ctr.textContent=_carCards.length>1?`${_carIdx+1} / ${_carCards.length}`:'';
+}
+function carouselNext(){if(_carIdx<_carCards.length-1){_carIdx++;carouselShow();}}
+function carouselPrev(){if(_carIdx>0){_carIdx--;carouselShow();}}
 // ═══════════════════════════════════════════════════════
 // KI-LABOR (Mix-Labor) — Getränke erfinden & bewerten
 // ═══════════════════════════════════════════════════════
@@ -8097,7 +8109,7 @@ function render(){
     html+=grp.map(r=>rndCard(r)).join('');
     if(!grp.length)html+=`<div class="empty-state"><div class="empty-state__icon">🍽️</div><h3 class="empty-state__title">${T('noRecipes')}</h3></div>`;
   }
-  c.innerHTML=html;renderCatNav();badge();restoreTranslPanels();setupTouchDrag();
+  c.innerHTML=html;renderCatNav();badge();restoreTranslPanels();setupTouchDrag();carouselInit();
 }
 function rndDiv(cat,grp){
   const filled=grp.filter(r=>r.name).length,name=cat[CL]||cat.de;
@@ -9225,6 +9237,7 @@ function _initTooltips(){
   }
   function _doSwipe(dx){
     const cur=document.querySelector('.sc.on')?.id?.replace('sc-','');
+    if(cur==='recipes'){dx<0?carouselNext():carouselPrev();return;}
     const idx=SC_ORDER.indexOf(cur);
     if(idx<0)return;
     if(dx<0&&idx<SC_ORDER.length-1)showSc(SC_ORDER[idx+1],'left');
@@ -9255,8 +9268,8 @@ function _initTooltips(){
     const dy=e.changedTouches[0].clientY-ty;
     // Mindest-Wischweite 55px, deutlich horizontaler als vertikal
     if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.5)return;
-    // Nicht auf horizontalem Scroll-Element (z.B. Kategorie-Leiste, Karussell)
-    if(e.target.closest('#catNav')||e.target.closest('#rcont'))return;
+    // Nicht auf horizontalem Scroll-Element (z.B. Kategorie-Leiste)
+    if(e.target.closest('#catNav'))return;
     _doSwipe(dx);
   },{passive:true});
   // Maus-Swipe für DeX-Modus (Samsung DeX / Desktop)
@@ -9278,7 +9291,7 @@ function _initTooltips(){
     if(anyModalOpen())return;
     const dx=e.clientX-mx,dy=e.clientY-my;
     if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.5)return;
-    if(e.target.closest('#catNav')||e.target.closest('#rcont'))return;
+    if(e.target.closest('#catNav'))return;
     _doSwipe(dx);
   });
   // Seitliches Scrollrad (Rapoo 9900M u.ä.) → Seiten wechseln
@@ -9614,7 +9627,7 @@ function startRename(id) {
   openInlineEdit(id);
   // scroll card into view if needed
   const el = document.getElementById('rname-' + id);
-  el?.closest('.rcard')?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  const _sc=el?.closest('.rcard');if(_sc){const _ci=_carCards.indexOf(_sc);if(_ci>=0){_carIdx=_ci;carouselShow();}}
 }
 
 function saveInlineName(id) {
