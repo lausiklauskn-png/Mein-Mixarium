@@ -4182,7 +4182,7 @@ const CATS=[
   {id:'mock',  ico:'🍹',de:'Mocktails',           en:'Mocktails',     ru:'Мокт.',      zh:'无酒',  es:'Mocktails', fr:'Mocktails', it:'Mocktail',pt:'Mocktail',col:'#c05a8a'},
   {id:'afckt', ico:'🍸',de:'Alkfr. Cocktails',   en:'Alcohol-free',  ru:'Безалк.',    zh:'无酒鸡尾',es:'Sin alcohol',fr:'Sans alcool',it:'Analcolici',pt:'Sem álcool',col:'#7a3a9a'},
   {id:'limo',  ico:'🍋',de:'Limonaden',           en:'Lemonades',     ru:'Лимонады',   zh:'柠檬水', es:'Limonadas',fr:'Limonades', it:'Limoniate',pt:'Limonadas',col:'#c8a020'},
-  {id:'tee',   ico:'🍵',de:'Tees',               en:'Teas',          ru:'Чаи',        zh:'茶',    es:'Tés',       fr:'Thés',      it:'Tè',      pt:'Chás',    col:'#6b4a2a'},
+  {id:'tee',   ico:'☕',de:'Tees & Kaffees',    en:'Teas & Coffees', ru:'Чаи & Кофе',  zh:'茶 & 咖啡', es:'Tés & Cafés',  fr:'Thés & Cafés',  it:'Tè & Caffè', pt:'Chás & Cafés', col:'#6b4a2a'},
   {id:'ckt',   ico:'🍸',de:'Cocktails',           en:'Cocktails',     ru:'Коктейли',   zh:'鸡尾酒', es:'Cócteles',fr:'Cocktails', it:'Cocktail',pt:'Coquetéis',col:'#c04030',alcohol:true},
   {id:'sirup', ico:'🫙',de:'Sirup & Basis',       en:'Syrups & Base', ru:'Сиропы',     zh:'糖浆',  es:'Siropes',   fr:'Sirops',    it:'Sciroppi',pt:'Xaropes', col:'#5a8a3a'},
 ];
@@ -4992,23 +4992,40 @@ function _discoverCatFor(d){
 function _discoverShow(drinks,fullData){
   const el=document.getElementById('discoverResults');
   if(!el)return;
+  window._discoverLastDrinks=drinks;
+  window._discoverLastFullData=fullData;
   if(!drinks.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--br3);font-size:.78rem">Keine Ergebnisse gefunden</div>';return;}
   el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     ${drinks.map(d=>{
       const catId=_discoverCat||(fullData?_discoverCatFor(d):null);
       const catObj=catId?CATS.find(c=>c.id===catId):null;
       const thumb=d.strDrinkThumb?d.strDrinkThumb+(fullData?'/preview':''):null;
+      const added=R.some(r=>r.dbId===String(d.idDrink));
+      const btn=added
+        ?`<button onclick="discoverRemove('${h(d.idDrink)}')" style="width:100%;padding:5px;border-radius:7px;border:1.5px solid var(--rust,#b85535);background:var(--rusts,#fce8dc);color:var(--rust,#b85535);font-size:.68rem;cursor:pointer;font-weight:700">– Entfernen</button>`
+        :`<button onclick="discoverPreview('${h(d.idDrink)}')" style="width:100%;padding:5px;border-radius:7px;border:1.5px solid var(--teal);background:var(--teals);color:var(--teal);font-size:.68rem;cursor:pointer;font-weight:700">+ Übernehmen</button>`;
       return`<div style="border:1px solid var(--sand2);border-radius:10px;overflow:hidden;background:var(--parch)">
         ${thumb?`<img src="${h(thumb)}" style="width:100%;height:85px;object-fit:cover" loading="lazy">`
           :'<div style="height:85px;background:var(--sand2);display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍹</div>'}
         <div style="padding:6px 8px">
           <div style="font-size:.7rem;font-weight:700;color:var(--br);margin-bottom:2px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h(d.strDrink||'')}">${h(d.strDrink||'')}</div>
           ${catObj?`<div style="font-size:.62rem;color:var(--br3);margin-bottom:4px">${catObj.ico} ${catObj.de}</div>`:''}
-          <button onclick="discoverPreview('${h(d.idDrink)}')" style="width:100%;padding:5px;border-radius:7px;border:1.5px solid var(--teal);background:var(--teals);color:var(--teal);font-size:.68rem;cursor:pointer;font-weight:700">+ Übernehmen</button>
+          ${btn}
         </div>
       </div>`;
     }).join('')}
   </div>`;
+}
+
+function discoverRemove(dbId){
+  const idx=R.findIndex(r=>r.dbId===String(dbId));
+  if(idx<0)return;
+  const name=R[idx].name;
+  if(!confirm(name+' aus deinem Mixarium entfernen?'))return;
+  R.splice(idx,1);
+  sv();render();
+  toast('🗑 '+name+' entfernt');
+  if(window._discoverLastDrinks)_discoverShow(window._discoverLastDrinks,window._discoverLastFullData);
 }
 
 // Sprach-Felder der TheCocktailDB (eingebaute Übersetzungen, kein API-Key nötig)
@@ -5104,10 +5121,11 @@ async function discoverConfirmImport(){
     // If translation requested but no native DB translation → trigger AI translation
     if(withTransl&&!(_DB_LANG_FIELD[CL]&&(d[_DB_LANG_FIELD[CL]]||'').trim())){
       const key=localStorage.getItem('mxkey9m')||'';
-      if(key){R.unshift(nr);sv();render();navTo(0);toast('✅ '+h(nr.name)+' übernommen – Übersetzung läuft …');doTranslate(nr,[CL],null);return;}
+      if(key){R.unshift(nr);sv();render();toast('✅ '+h(nr.name)+' übernommen – Übersetzung läuft …');doTranslate(nr,[CL],null);if(window._discoverLastDrinks)_discoverShow(window._discoverLastDrinks,window._discoverLastFullData);return;}
     }
-    R.unshift(nr);sv();render();navTo(0);
+    R.unshift(nr);sv();render();
     toast('✅ '+h(nr.name)+' ins Buch übernommen!'+(withTransl?' ('+CL.toUpperCase()+'*)':''));
+    if(window._discoverLastDrinks)_discoverShow(window._discoverLastDrinks,window._discoverLastFullData);
   }catch(e){toast('Fehler beim Importieren');}
 }
 
