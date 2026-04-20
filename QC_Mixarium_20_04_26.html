@@ -1657,6 +1657,32 @@ button:active{transform:scale(0.97)}
   <!-- Ergebnis-Bereich -->
   <div id="labResult" style="display:none;padding:0 16px 16px"></div>
 
+  <!-- Bekannte Drinks entdecken -->
+  <div style="border-top:1px solid var(--sand2);margin:0 16px 0"></div>
+  <div style="padding:0 16px">
+    <button onclick="discoverToggle()" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;padding:12px 0;cursor:pointer">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="font-size:1.05rem">🔍</span>
+        <div style="text-align:left">
+          <div style="font-size:.87rem;font-weight:700;color:var(--br)">Bekannte Drinks entdecken</div>
+          <div style="font-size:.66rem;color:var(--br3)">Cocktail-Datenbank durchsuchen &amp; übernehmen</div>
+        </div>
+      </div>
+      <span id="discoverChevron" style="color:var(--br3);font-size:.72rem;flex-shrink:0;margin-left:6px">▶</span>
+    </button>
+    <div id="discoverPanel" style="display:none;padding-bottom:16px">
+      <div id="discoverCatWrap" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px"></div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input id="discoverQ" placeholder="Name suchen …"
+          style="flex:1;border:1.5px solid var(--sand2);border-radius:10px;padding:8px 11px;font-size:.82rem;color:var(--ink);background:var(--parch);outline:none"
+          onkeydown="if(event.key==='Enter')discoverSearch()"/>
+        <button onclick="discoverSearch()" class="bigbtn teal" style="padding:8px 14px;font-size:.8rem;min-width:0">Suchen</button>
+      </div>
+      <button onclick="discoverRandom()" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid var(--sand2);background:var(--parch);font-size:.76rem;cursor:pointer;color:var(--br2);margin-bottom:10px">🎲 Neue Vorschläge</button>
+      <div id="discoverResults"></div>
+    </div>
+  </div>
+
   <!-- Einzelpersonen-Modus Toggle -->
   <div style="padding:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
     <div>
@@ -4795,6 +4821,146 @@ function labSave(){
     labRenderPool();
     toast('🧫 '+nr.name+' im Labor gespeichert');
   }catch(e){toast('Fehler beim Speichern');}
+}
+
+// ── Datenbank: Bekannte Drinks entdecken ──
+const _DB_BASE='https://www.thecocktaildb.com/api/json/v1/1/';
+let _discoverCat=null;
+const _DB_CAT_MAP={
+  smooth:{type:'category',val:'Milk / Float / Shake'},
+  mock:  {type:'alcoholic',val:'Non_Alcoholic'},
+  afckt: {type:'alcoholic',val:'Non_Alcoholic'},
+  limo:  {type:'category',val:'Soft Drink'},
+  tee:   {type:'category',val:'Coffee / Tea'},
+  ckt:   {type:'category',val:'Cocktail'},
+  sirup: {type:'category',val:'Homemade Liqueur'},
+};
+
+function discoverToggle(){
+  const panel=document.getElementById('discoverPanel');
+  const chev=document.getElementById('discoverChevron');
+  const open=panel.style.display==='none';
+  panel.style.display=open?'block':'none';
+  if(chev)chev.textContent=open?'▼':'▶';
+  if(open){_discoverInitCats();if(!document.getElementById('discoverResults').innerHTML)discoverRandom();}
+}
+
+function _discoverInitCats(){
+  const wrap=document.getElementById('discoverCatWrap');
+  if(!wrap||wrap.children.length)return;
+  const items=[{id:null,ico:'🍹',de:'Alle'},...CATS];
+  wrap.innerHTML=items.map(c=>`<button class="dcb" data-cid="${c.id||''}" onclick="discoverSetCat('${c.id||''}')"
+    style="padding:5px 11px;border-radius:20px;border:1.5px solid var(--sand2);background:${(!_discoverCat&&!c.id)||_discoverCat===c.id?'var(--teal)':'var(--parch)'};color:${(!_discoverCat&&!c.id)||_discoverCat===c.id?'#fff':'var(--ink)'};font-size:.7rem;cursor:pointer;transition:background .15s,color .15s">
+    ${c.ico} ${c.de}</button>`).join('');
+}
+
+async function discoverSetCat(catId){
+  _discoverCat=catId||null;
+  document.querySelectorAll('.dcb').forEach(b=>{
+    const on=b.dataset.cid===(catId||'');
+    b.style.background=on?'var(--teal)':'var(--parch)';
+    b.style.color=on?'#fff':'var(--ink)';
+  });
+  document.getElementById('discoverQ').value='';
+  await _discoverFetch();
+}
+
+async function discoverSearch(){
+  const q=(document.getElementById('discoverQ').value||'').trim();
+  if(!q){await _discoverFetch();return;}
+  _discoverLoading();
+  try{
+    const d=await fetch(`${_DB_BASE}search.php?s=${encodeURIComponent(q)}`).then(r=>r.json());
+    _discoverShow(d.drinks||[],true);
+  }catch(e){_discoverErr();}
+}
+
+async function discoverRandom(){
+  _discoverLoading();
+  try{
+    const res=await Promise.all(Array.from({length:6},()=>fetch(`${_DB_BASE}random.php`).then(r=>r.json()).then(d=>d.drinks?.[0]).catch(()=>null)));
+    _discoverShow(res.filter(Boolean),true);
+  }catch(e){_discoverErr();}
+}
+
+async function _discoverFetch(){
+  _discoverLoading();
+  const map=_discoverCat?_DB_CAT_MAP[_discoverCat]:null;
+  try{
+    if(!map){
+      const res=await Promise.all(Array.from({length:6},()=>fetch(`${_DB_BASE}random.php`).then(r=>r.json()).then(d=>d.drinks?.[0]).catch(()=>null)));
+      _discoverShow(res.filter(Boolean),true);
+    }else{
+      const param=map.type==='alcoholic'?`a=${encodeURIComponent(map.val)}`:`c=${encodeURIComponent(map.val)}`;
+      const d=await fetch(`${_DB_BASE}filter.php?${param}`).then(r=>r.json());
+      const shuffled=(d.drinks||[]).sort(()=>Math.random()-.5).slice(0,12);
+      _discoverShow(shuffled,false);
+    }
+  }catch(e){_discoverErr();}
+}
+
+function _discoverLoading(){const el=document.getElementById('discoverResults');if(el)el.innerHTML='<div style="text-align:center;padding:20px;color:var(--br3);font-size:.78rem">⏳ Lade …</div>';}
+function _discoverErr(){const el=document.getElementById('discoverResults');if(el)el.innerHTML='<div style="text-align:center;padding:16px;color:#c04030;font-size:.78rem">❌ Verbindungsfehler – Internetverbindung prüfen</div>';}
+
+function _discoverCatFor(d){
+  const alc=d.strAlcoholic==='Alcoholic';
+  const dbCat=(d.strCategory||'').toLowerCase();
+  if(dbCat.includes('shake')||dbCat.includes('milk'))return'smooth';
+  if(dbCat.includes('tea')||dbCat.includes('coffee'))return'tee';
+  if(dbCat.includes('soft'))return'limo';
+  if(dbCat.includes('punch'))return alc?'ckt':'limo';
+  if(dbCat.includes('liqueur'))return'sirup';
+  return alc?'ckt':'mock';
+}
+
+function _discoverShow(drinks,fullData){
+  const el=document.getElementById('discoverResults');
+  if(!el)return;
+  if(!drinks.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--br3);font-size:.78rem">Keine Ergebnisse gefunden</div>';return;}
+  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    ${drinks.map(d=>{
+      const catId=_discoverCat||(fullData?_discoverCatFor(d):null);
+      const catObj=catId?CATS.find(c=>c.id===catId):null;
+      const thumb=d.strDrinkThumb?d.strDrinkThumb+(fullData?'/preview':''):null;
+      return`<div style="border:1px solid var(--sand2);border-radius:10px;overflow:hidden;background:var(--parch)">
+        ${thumb?`<img src="${h(thumb)}" style="width:100%;height:85px;object-fit:cover" loading="lazy">`
+          :'<div style="height:85px;background:var(--sand2);display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍹</div>'}
+        <div style="padding:6px 8px">
+          <div style="font-size:.7rem;font-weight:700;color:var(--br);margin-bottom:2px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h(d.strDrink||'')}">${h(d.strDrink||'')}</div>
+          ${catObj?`<div style="font-size:.62rem;color:var(--br3);margin-bottom:4px">${catObj.ico} ${catObj.de}</div>`:''}
+          <button onclick="discoverImport('${h(d.idDrink)}')" style="width:100%;padding:5px;border-radius:7px;border:1.5px solid var(--teal);background:var(--teals);color:var(--teal);font-size:.68rem;cursor:pointer;font-weight:700">+ Übernehmen</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function discoverImport(id){
+  try{
+    const d=(await fetch(`${_DB_BASE}lookup.php?i=${encodeURIComponent(id)}`).then(r=>r.json())).drinks?.[0];
+    if(!d){toast('Drink nicht gefunden');return;}
+    const ings=[];
+    for(let i=1;i<=15;i++){
+      const name=(d[`strIngredient${i}`]||'').trim();
+      const amt=(d[`strMeasure${i}`]||'').trim();
+      if(!name)break;
+      ings.push({id:i,amt,unit:'',name,ck:false,note:''});
+    }
+    const rawSteps=(d.strInstructions||'').split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>3);
+    const steps=rawSteps.length?rawSteps.map((s,i)=>({id:i+1,txt:s.trim()})):[{id:1,txt:(d.strInstructions||'').trim()}];
+    const cat=_discoverCat||_discoverCatFor(d);
+    const now=Date.now();
+    const nr={
+      id:now,name:d.strDrink||'Drink',cat,alcohol:d.strAlcoholic==='Alcoholic',
+      glass:d.strGlass||'',prepTime:0,servings:2,difficulty:1,
+      ings,steps,tags:[],flavors:[],
+      img:d.strDrinkThumb||'',imgCrop:{x:50,y:50,scale:1},
+      rating:{stars:0,comment:'',imps:[]},blank:false,folder:'',
+      created:now,modified:now,dbSource:'thecocktaildb',dbId:String(id)
+    };
+    R.unshift(nr);sv();render();navTo(0);
+    toast('✅ '+h(nr.name)+' ins Buch übernommen!');
+  }catch(e){toast('Fehler beim Importieren');}
 }
 
 // ── Transparenz-Log ──
