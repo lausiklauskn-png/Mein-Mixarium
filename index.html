@@ -4741,6 +4741,13 @@ function navTo(n){
 let _carIdx=0,_carCards=[];
 function carouselInit(){
   _carCards=Array.from(document.querySelectorAll('#rcont .rcard'));
+  const h=Math.round(window.innerHeight*0.6)+'px';
+  _carCards.forEach(card=>{
+    const wrap=card.querySelector('.rcard-img-wrap');
+    const img=card.querySelector('.rcard-img');
+    if(wrap)wrap.style.setProperty('height',h,'important');
+    if(img)img.style.setProperty('height',h,'important');
+  });
   _carIdx=0;carouselShow();
 }
 function carouselShow(){
