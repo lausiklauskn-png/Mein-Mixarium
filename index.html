@@ -5013,7 +5013,7 @@ function labRenderPool(){
   if(hdrEl)hdrEl.style.display=pool.length?'block':'none';
   const badge=document.getElementById('labBadge');
   if(badge){badge.style.display=pool.length?'flex':'none';badge.textContent=pool.length;}
-  if(!pool.length){poolEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--br3);font-size:.78rem">Noch keine experimentellen Getränke.<br>Erfinde dein erstes oben! 🧪</div>';labRenderRemoved();return;}
+  if(!pool.length){const hasAny=R.some(r=>r.labGen);poolEl.innerHTML=`<div style="text-align:center;padding:20px;color:var(--br3);font-size:.78rem">${hasAny?'🎉 Alle Getränke angenommen oder entfernt.<br><span style="font-size:.72rem">Im Getränkebuch sichtbar ✓</span>':'Noch keine experimentellen Getränke.<br>Erfinde dein erstes oben! 🧪'}</div>`;labRenderRemoved();return;}
   poolEl.innerHTML=pool.map(r=>{
     const st=LAB_STATUS[r.labStatus||'experimentell']||LAB_STATUS.experimentell;
     const cat=CATS.find(c=>c.id===r.cat)||{ico:'🧪',de:''};
@@ -7893,6 +7893,7 @@ function rndCard(r){
           ${(_undoStack[r.id]||[]).length>0?`<button class="ra" onclick="event.stopPropagation();undoRec(${r.id})" title="${T('undoTtl')}" style="background:var(--sand);border:1.5px solid var(--sand2);color:var(--br2)">↩ ${(_undoStack[r.id]||[]).length}</button>`:''}
         </div>`:''}
         ${inMenu?`<span class="mnbadge">${mSlot.ico} ${mSlot.lbl}</span>`:''}
+        ${r.labGen?`<span style="display:inline-flex;align-items:center;gap:3px;background:#fef3e8;color:#e07c20;border:1px solid #f5c89a;border-radius:7px;padding:2px 6px;font-size:.6rem;font-weight:700;margin-top:3px">🧪 Labor${r.labScore?` · ⭐ ${r.labScore.toFixed(1)}`:''}</span>`:''}
         ${isBlank?`<div style="font-size:.68rem;color:var(--br3);margin-top:3px;font-style:italic">👆 Tippen um Namen einzugeben</div>`:``}
       </div>
       ${isBlank?'':`<div class="rcard-hd-right">
@@ -7990,6 +7991,28 @@ function rndCard(r){
           <button class="saverat" id="srb-${r.id}" onclick="saveRat(${r.id})">${T('saveRat')}</button>
         </div>
       </div>
+      ${r.labGen?(()=>{
+        const lst=LAB_STATUS[r.labStatus||'experimentell']||LAB_STATUS.experimentell;
+        const score=r.labScore?r.labScore.toFixed(1):'–';
+        const nRatings=(r.labRatings||[]).length;
+        const minR=labSoloActive()?1:3;
+        let hint='';
+        if(r.labStatus==='experimentell')hint='1 Bewertung → In Bewertung';
+        else if(r.labStatus==='inReview'&&nRatings<minR)hint=`Noch ${minR-nRatings} Bewertung${minR-nRatings!==1?'en':''} → Entscheidung`;
+        else if(r.labStatus==='inReview'&&nRatings>=minR)hint=parseFloat(score)>=3.5?'✅ Score ≥ 3,5 → Akzeptiert':'⚠️ Nächste Bewertung entscheidend';
+        else if(r.labStatus==='warning')hint='Überarbeitung läuft oder weiterer Rauswurf möglich';
+        else if(r.labStatus==='accepted')hint='Im Getränkebuch aufgenommen – weitere Bewertungen erlaubt';
+        return`<div class="sec" style="background:#fffaf5;border-top:1px solid #f5c89a">
+          <div class="slbl" style="color:#e07c20">🧪 Labor-Status</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+            <span style="background:${lst.bg};color:${lst.col};border-radius:7px;padding:3px 9px;font-size:.68rem;font-weight:700">${lst.label}</span>
+            ${score!=='–'?`<span style="font-size:.72rem;color:var(--br2)">⭐ Score: <b>${score}</b></span>`:''}
+            <span style="font-size:.68rem;color:var(--br3)">${nRatings} Bewertung${nRatings!==1?'en':''}</span>
+          </div>
+          ${hint?`<div style="font-size:.66rem;color:var(--br3);margin-bottom:8px">ℹ️ ${hint}</div>`:''}
+          <button onclick="event.stopPropagation();labRate(${r.id})" style="padding:7px 16px;border-radius:9px;border:1.5px solid var(--teal);background:var(--teals);color:var(--teal);font-size:.76rem;cursor:pointer;font-weight:700">⭐ Labor bewerten</button>
+        </div>`;
+      })():''}
     </div>
     ${r.name&&!isBlank?`<button class="print-bar" onclick="event.stopPropagation();printRecipe(${r.id})">
       <span class="print-bar-txt">
