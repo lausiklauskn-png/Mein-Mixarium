@@ -4661,6 +4661,7 @@ Antworte NUR als gültiges JSON-Objekt, kein Text davor/danach:
 function labShowResult(recipe,cat){
   const res=document.getElementById('labResult');
   if(!res)return;
+  window._labPendingRecipe=recipe;
   res.style.display='block';
   const st=LAB_STATUS.experimentell;
   res.innerHTML=`
@@ -4687,16 +4688,17 @@ function labShowResult(recipe,cat){
         ${(recipe.schritte||[]).map(s=>`<li>${h(s)}</li>`).join('')}
       </ol>
       <div style="display:flex;gap:8px">
-        <button onclick="labSave(${JSON.stringify(JSON.stringify(recipe)).slice(1,-1)})" class="bigbtn teal" style="flex:1;font-size:.78rem;padding:9px">💾 Ins Buch</button>
+        <button onclick="labSave()" class="bigbtn teal" style="flex:1;font-size:.78rem;padding:9px">📒 Ins Buch</button>
         <button onclick="document.getElementById('labResult').style.display='none'" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--sand2);background:transparent;font-size:.78rem;cursor:pointer;color:var(--br3)">✕</button>
       </div>
     </div>
   </div>`;
 }
 
-function labSave(jsonStr){
+function labSave(){
   try{
-    const recipe=JSON.parse(jsonStr);
+    const recipe=window._labPendingRecipe;
+    if(!recipe)return;
     const cat=CATS.find(c=>c.id===LAB_CAT)||CATS[1];
     const now=Date.now();
     const nr={
@@ -4720,7 +4722,7 @@ function labSave(jsonStr){
       modified:now
     };
     R.unshift(nr);
-    saveR();
+    sv();
     document.getElementById('labResult').style.display='none';
     labRenderPool();
     toast('🧫 '+nr.name+' im Labor gespeichert');
@@ -4781,7 +4783,7 @@ function labRate(rid){
   if(n>=1&&r.labStatus==='experimentell')r.labStatus='inReview';
   if(n>=3&&r.labScore>=3.5)r.labStatus='accepted';
   else if(n>=3&&r.labScore<2.5&&r.labStatus==='inReview')r.labStatus='warning';
-  saveR();
+  sv();
   labRenderPool();
   if(r.labStatus==='accepted'){toast('✅ '+r.name+' ins Rezeptbuch aufgenommen!');render();}
   else if(r.labStatus==='warning')toast('⚠️ '+r.name+' unter Beobachtung (Score: '+r.labScore.toFixed(1)+')');
@@ -4792,7 +4794,7 @@ function labAccept(rid){
   const r=R.find(x=>x.id===rid);
   if(!r)return;
   r.labStatus='accepted';
-  saveR();
+  sv();
   labRenderPool();
   render();
   toast('✅ '+r.name+' ins Getränkebuch übernommen!');
@@ -4803,8 +4805,8 @@ function labRemove(rid){
   if(!r)return;
   if(!confirm(r.name+' aus dem Labor entfernen?'))return;
   r.labStatus='removed';
-  r.labGen=false; // aus Pool verbergen
-  saveR();
+  r.labGen=false;
+  sv();
   labRenderPool();
   toast('🗑️ '+r.name+' entfernt');
 }
