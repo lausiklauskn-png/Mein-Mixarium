@@ -1374,10 +1374,10 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 .rcard:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
 
 /* ── Getränke-Karussell (JS-gesteuert) ── */
-#rcont .rcard{margin:9px}
+#rcont .rcard{margin:6px;min-height:calc(100svh - var(--hh) - var(--bnh) - 130px)}
 #rcont .rcard:hover{transform:none;box-shadow:0 2px 9px var(--sh)}
-#rcont .rcard-img-wrap{height:400px !important}
-#rcont .rcard-img{height:400px !important}
+#rcont .rcard-img-wrap{height:max(280px,52svh) !important}
+#rcont .rcard-img{height:max(280px,52svh) !important}
 #rcont .drag-hdl{display:none !important}
 #carousel-ctr{text-align:center;padding:3px 0 1px;font-size:.72rem;color:var(--br3);letter-spacing:.06em}
 /* ── Labor-Shortcut Banner ── */
