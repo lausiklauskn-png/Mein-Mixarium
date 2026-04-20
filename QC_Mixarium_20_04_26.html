@@ -1657,10 +1657,27 @@ button:active{transform:scale(0.97)}
   <!-- Ergebnis-Bereich -->
   <div id="labResult" style="display:none;padding:0 16px 16px"></div>
 
+  <!-- Einzelpersonen-Modus Toggle -->
+  <div style="padding:0 16px 12px;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-size:.76rem;font-weight:700;color:var(--br)">👤 Einzelpersonen-Modus</div>
+      <div style="font-size:.68rem;color:var(--br3)">1 Bewertung reicht für Status-Änderung</div>
+    </div>
+    <div id="labSoloToggle" onclick="labToggleSolo()" style="width:40px;height:22px;border-radius:11px;background:var(--sand2);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s">
+      <div id="labSoloThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s"></div>
+    </div>
+  </div>
+
   <!-- Experimentelle Rezepte im Pool -->
   <div style="padding:0 16px 4px">
     <div id="labPoolHeader" style="display:none;font-size:.68rem;font-weight:700;color:var(--br3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Im Labor-Pool</div>
     <div id="labPool"></div>
+    <!-- Entfernte Rezepte -->
+    <div id="labRemovedHeader" style="display:none;margin-top:16px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="labToggleRemoved()">
+      <span style="font-size:.68rem;font-weight:700;color:var(--br3);text-transform:uppercase;letter-spacing:.07em">Entfernte Rezepte</span>
+      <span id="labRemovedChevron" style="font-size:.7rem;color:var(--br3)">▶</span>
+    </div>
+    <div id="labRemoved" style="display:none"></div>
   </div>
 </div>
 
@@ -2528,6 +2545,39 @@ Vielen Dank für deine Unterstützung.</div>
   </div>
 </div>
 
+
+<!-- ── LABOR BEWERTUNGS-MODAL ── -->
+<div id="labRateOv" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.45);align-items:flex-end;justify-content:center">
+  <div style="background:var(--sand);border-radius:18px 18px 0 0;width:100%;max-width:480px;padding:20px 20px 32px;box-sizing:border-box;animation:fup .18s ease">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:.9rem;font-weight:700;color:var(--br)">⭐ Bewerten: <span id="labRateName"></span></div>
+      <button onclick="labCloseRate()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--br3);padding:2px 6px">✕</button>
+    </div>
+    <div id="labRateSliders">
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:4px"><span style="color:var(--br)">🍹 Geschmack <span style="font-size:.68rem;color:var(--br3)">(40%)</span></span><span id="lrv-taste" style="font-weight:700;color:var(--teal)">3</span></div>
+        <input type="range" id="lr-taste" min="1" max="5" step="1" value="3" oninput="labUpdateSlider('taste')" style="width:100%;accent-color:var(--teal)">
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:4px"><span style="color:var(--br)">🛒 Umsetzbarkeit <span style="font-size:.68rem;color:var(--br3)">(25%)</span></span><span id="lrv-practicality" style="font-weight:700;color:var(--teal)">3</span></div>
+        <input type="range" id="lr-practicality" min="1" max="5" step="1" value="3" oninput="labUpdateSlider('practicality')" style="width:100%;accent-color:var(--teal)">
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:4px"><span style="color:var(--br)">💡 Originalität <span style="font-size:.68rem;color:var(--br3)">(20%)</span></span><span id="lrv-originality" style="font-weight:700;color:var(--teal)">3</span></div>
+        <input type="range" id="lr-originality" min="1" max="5" step="1" value="3" oninput="labUpdateSlider('originality')" style="width:100%;accent-color:var(--teal)">
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:4px"><span style="color:var(--br)">📝 Beschreibung <span style="font-size:.68rem;color:var(--br3)">(15%)</span></span><span id="lrv-description" style="font-weight:700;color:var(--teal)">3</span></div>
+        <input type="range" id="lr-description" min="1" max="5" step="1" value="3" oninput="labUpdateSlider('description')" style="width:100%;accent-color:var(--teal)">
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:.76rem;color:var(--br);margin-bottom:4px">💬 Feedback <span style="color:var(--br3);font-weight:400">(optional – hilft der KI beim Verbessern)</span></div>
+        <textarea id="labRateFeedback" rows="2" placeholder="Was war gut, was könnte besser sein?" style="width:100%;box-sizing:border-box;border:1.5px solid var(--sand2);border-radius:10px;padding:8px 10px;font-size:.8rem;color:var(--ink);background:var(--parch);resize:none;font-family:inherit"></textarea>
+      </div>
+    </div>
+    <button onclick="labSubmitRate()" class="bigbtn teal" style="width:100%;font-size:.88rem">⭐ Bewertung speichern</button>
+  </div>
+</div>
 
 <div id="courseSheet" style="display:none">
   <div class="sheet-bg" onclick="closeCSheet()">
@@ -4585,7 +4635,6 @@ const LAB_STATUS={
 const LAB_WEIGHTS={taste:0.40,practicality:0.25,originality:0.20,description:0.15};
 
 function labInit(){
-  // Kategorie-Chips rendern
   const wrap=document.getElementById('labCatWrap');
   if(!wrap)return;
   wrap.innerHTML='';
@@ -4599,6 +4648,7 @@ function labInit(){
     wrap.appendChild(btn);
   });
   labSetCat(LAB_CAT);
+  _labUpdateSoloUI(labSoloActive());
 }
 
 function labSetCat(id){
@@ -4734,86 +4784,316 @@ function labSave(){
   }catch(e){toast('Fehler beim Speichern');}
 }
 
+// ── Transparenz-Log ──
+function labAddLog(r,type,detail){
+  if(!r.labLog)r.labLog=[];
+  r.labLog.push({ts:Date.now(),type,detail});
+}
+
+// ── Einzelpersonen-Modus ──
+function labSoloActive(){return!!localStorage.getItem('mxLabSolo9');}
+function labToggleSolo(){
+  const on=!labSoloActive();
+  if(on)localStorage.setItem('mxLabSolo9','1');else localStorage.removeItem('mxLabSolo9');
+  _labUpdateSoloUI(on);
+  toast(on?'👤 Einzelpersonen-Modus aktiv (1 Bewertung)':'👥 Standard-Modus aktiv (3 Bewertungen)');
+}
+function _labUpdateSoloUI(on){
+  const tog=document.getElementById('labSoloToggle');
+  const thumb=document.getElementById('labSoloThumb');
+  if(tog)tog.style.background=on?'var(--teal)':'var(--sand2)';
+  if(thumb)thumb.style.left=on?'21px':'3px';
+}
+
+// ── Score-Berechnung ──
+function _labCalcScore(ratings){
+  if(!ratings||!ratings.length)return 0;
+  const avg=arr=>arr.reduce((s,x)=>s+x,0)/arr.length;
+  return avg(ratings.map(x=>x.taste))*LAB_WEIGHTS.taste
+       + avg(ratings.map(x=>x.practicality))*LAB_WEIGHTS.practicality
+       + avg(ratings.map(x=>x.originality))*LAB_WEIGHTS.originality
+       + avg(ratings.map(x=>x.description))*LAB_WEIGHTS.description;
+}
+
+// ── Status-Logik (3-stufig laut PDF) ──
+async function _labApplyStatusLogic(r,feedback){
+  const solo=labSoloActive();
+  const minR=solo?1:3;
+  const n=(r.labRatings||[]).length;
+  const score=r.labScore||0;
+  const prev=r.labStatus;
+
+  // Stufe 0: experimentell → inReview nach 1. Bewertung
+  if(n>=1&&r.labStatus==='experimentell'){
+    r.labStatus='inReview';
+    labAddLog(r,'status','inReview: erste Bewertung');
+  }
+  // Akzeptiert wenn Score ≥ 3,5
+  if(n>=minR&&score>=3.5&&r.labStatus==='inReview'){
+    r.labStatus='accepted';
+    labAddLog(r,'status','accepted: Score '+score.toFixed(2));
+    return;
+  }
+  // Stufe 1 – Warnung: Score < 2,5 nach minR Bewertungen
+  if(n>=minR&&score<2.5&&r.labStatus==='inReview'){
+    r.labStatus='warning';
+    labAddLog(r,'status','warning: Score '+score.toFixed(2));
+  }
+  // Stufe 2 – Überarbeitung: warning + 2 weitere schlechte Bewertungen
+  if(r.labStatus==='warning'&&n>=minR+2&&!r.labRevisionPending){
+    const recentScore=_labCalcScore((r.labRatings||[]).slice(-(minR+2)));
+    if(recentScore<2.5){
+      r.labRevisionPending=true;
+      labAddLog(r,'revision','Überarbeitung ausgelöst nach weiterhin Score '+recentScore.toFixed(2));
+      sv();labRenderPool();
+      await labRevise(r,feedback||'');
+      return;
+    }
+  }
+  // Stufe 3 – Rauswurf: revised + 3 neue schlechte Bewertungen (nur ohne Favorit-Schutz)
+  if(r.labStatus==='revised'&&!r.labFavorite){
+    const revisedRatings=(r.labRatings||[]).filter(x=>x.ts>(r.labRevisionTs||0));
+    if(revisedRatings.length>=minR&&_labCalcScore(revisedRatings)<2.5){
+      r.labStatus='removed';
+      r.labGen=false;
+      labAddLog(r,'status','removed: Stufe 3 – 3x schlechte Bewertung nach Überarbeitung');
+      sv();labRenderPool();labRenderRemoved();
+      toast('🗑️ '+h(r.name)+' nach 3x schlechter Bewertung entfernt');
+      return;
+    }
+  }
+  // Akzeptiert nach revised wenn Score ≥ 3,5
+  if(r.labStatus==='revised'&&n>=1){
+    const revisedRatings=(r.labRatings||[]).filter(x=>x.ts>(r.labRevisionTs||0));
+    if(revisedRatings.length>=1&&_labCalcScore(revisedRatings)>=3.5){
+      r.labStatus='accepted';
+      labAddLog(r,'status','accepted: überarbeitete Version angenommen');
+    }
+  }
+}
+
+// ── Rating Modal ──
+function labRate(rid){
+  const r=R.find(x=>x.id===rid);
+  if(!r)return;
+  window._labRatingRid=rid;
+  document.getElementById('labRateName').textContent=r.name;
+  ['taste','practicality','originality','description'].forEach(dim=>{
+    const el=document.getElementById('lr-'+dim);
+    if(el){el.value=3;document.getElementById('lrv-'+dim).textContent='3';}
+  });
+  document.getElementById('labRateFeedback').value='';
+  document.getElementById('labRateOv').style.display='flex';
+}
+function labUpdateSlider(dim){
+  const val=document.getElementById('lr-'+dim)?.value||3;
+  const lbl=document.getElementById('lrv-'+dim);
+  if(lbl)lbl.textContent=val;
+}
+function labCloseRate(){
+  document.getElementById('labRateOv').style.display='none';
+  window._labRatingRid=null;
+}
+async function labSubmitRate(){
+  const rid=window._labRatingRid;
+  const r=R.find(x=>x.id===rid);
+  if(!r)return labCloseRate();
+  const clamp=v=>Math.max(1,Math.min(5,parseInt(v)||3));
+  const rating={
+    ts:Date.now(),
+    taste:clamp(document.getElementById('lr-taste')?.value),
+    practicality:clamp(document.getElementById('lr-practicality')?.value),
+    originality:clamp(document.getElementById('lr-originality')?.value),
+    description:clamp(document.getElementById('lr-description')?.value)
+  };
+  const feedback=(document.getElementById('labRateFeedback')?.value||'').trim();
+  labCloseRate();
+  if(!r.labRatings)r.labRatings=[];
+  r.labRatings.push(rating);
+  r.labScore=_labCalcScore(r.labRatings);
+  labAddLog(r,'rating','Score '+r.labScore.toFixed(2)+(feedback?' – Feedback: '+feedback.slice(0,60):''));
+  const prevStatus=r.labStatus;
+  await _labApplyStatusLogic(r,feedback);
+  sv();labRenderPool();labRenderRemoved();
+  if(r.labStatus==='accepted'&&prevStatus!=='accepted'){toast('✅ '+h(r.name)+' ins Getränkebuch aufgenommen!');render();}
+  else if(r.labStatus==='warning'&&prevStatus!=='warning')toast('⚠️ '+h(r.name)+' unter Beobachtung (Score: '+r.labScore.toFixed(1)+')');
+  else if(r.labRevisionPending)toast('🔄 Überarbeitung wird generiert…');
+  else toast('⭐ Bewertung gespeichert – Score: '+r.labScore.toFixed(1));
+}
+
+// ── KI-Überarbeitung (Stufe 2) ──
+async function labRevise(r,feedback){
+  const key=localStorage.getItem('mxkey9m')||'';
+  if(!key){r.labRevisionPending=false;sv();labRenderPool();toast('❌ Kein API-Key – Überarbeitung nicht möglich');return;}
+  const cat=CATS.find(c=>c.id===r.cat)||CATS[1];
+  const ingList=(r.ings||[]).map(i=>i.a+' '+i.n).join(', ');
+  const stepList=(r.steps||[]).map((s,i)=>(i+1)+'. '+(s.txt||s)).join(' ');
+  const feedbackText=feedback||(r.labLog||[]).filter(l=>l.detail&&l.detail.includes('Feedback')).map(l=>l.detail).slice(-3).join('; ')||'Keine spezifisches Feedback';
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1024,messages:[{role:'user',content:
+        `Du bist Mixologe. Verbessere dieses ${cat.de}-Rezept basierend auf dem Nutzer-Feedback.\nOriginal: "${r.name}"\nZutaten: ${ingList}\nZubereitung: ${stepList}\nBewertungsscore: ${r.labScore.toFixed(1)}/5\nFeedback: ${feedbackText}\nAntworte NUR als JSON:\n{"titel":"...","beschreibung":"...","portionen":2,"zubereitungszeit_min":5,"schwierigkeit":2,"glastyp":"highball","alkohol":false,"zutaten":[{"menge":"...","name":"..."}],"schritte":["..."],"tags":["..."]}`
+      }]})
+    });
+    const data=await resp.json();
+    const txt=data?.content?.[0]?.text||'';
+    const match=txt.match(/\{[\s\S]*\}/);
+    if(!match)throw new Error('Kein JSON');
+    const revised=JSON.parse(match[0]);
+    r.labRevisionDraft=revised;
+    r.labRevisionTs=Date.now();
+    r.labRevisionPending=false;
+    labAddLog(r,'revision','KI-Entwurf bereit: '+revised.titel);
+    sv();labRenderPool();
+    toast('🔄 Überarbeiteter Entwurf bereit – bitte prüfen!');
+  }catch(e){
+    r.labRevisionPending=false;
+    labAddLog(r,'revision','Fehler: '+String(e).slice(0,80));
+    sv();labRenderPool();
+    toast('❌ Überarbeitung fehlgeschlagen');
+  }
+}
+
+function labAcceptRevision(rid){
+  const r=R.find(x=>x.id===rid);
+  if(!r||!r.labRevisionDraft)return;
+  const draft=r.labRevisionDraft;
+  r.name=draft.titel||r.name;
+  r.ings=(draft.zutaten||[]).map((z,i)=>({id:i,a:z.menge||'',n:z.name||'',ck:false}));
+  r.steps=(draft.schritte||[]).map((s,i)=>({id:i,txt:s}));
+  r.labStatus='revised';
+  r.labRevisionDraft=null;
+  r.labRevision=(r.labRevision||0)+1;
+  labAddLog(r,'revision','Überarbeitung angenommen – neue Version aktiv');
+  sv();labRenderPool();
+  toast('✅ Überarbeitete Version übernommen!');
+}
+
+function labRejectRevision(rid){
+  const r=R.find(x=>x.id===rid);
+  if(!r)return;
+  r.labRevisionDraft=null;
+  labAddLog(r,'revision','Überarbeitung abgelehnt');
+  sv();labRenderPool();
+  toast('↩️ Überarbeitung abgelehnt – Original bleibt');
+}
+
+// ── Favorit-Schutz ──
+function labToggleFavorite(rid){
+  const r=R.find(x=>x.id===rid);
+  if(!r)return;
+  r.labFavorite=!r.labFavorite;
+  labAddLog(r,'favorite',r.labFavorite?'Favorit-Schutz aktiviert':'Favorit-Schutz deaktiviert');
+  sv();labRenderPool();
+  toast(r.labFavorite?'⭐ '+h(r.name)+' vor Rauswurf geschützt':'☆ Schutz aufgehoben');
+}
+
+// ── Pool rendern ──
 function labRenderPool(){
-  const pool=R.filter(r=>r.labGen&&r.labStatus&&r.labStatus!=='accepted');
+  _labUpdateSoloUI(labSoloActive());
+  const pool=R.filter(r=>r.labGen&&r.labStatus&&r.labStatus!=='accepted'&&r.labStatus!=='removed');
   const poolEl=document.getElementById('labPool');
   const hdrEl=document.getElementById('labPoolHeader');
   if(!poolEl)return;
   if(hdrEl)hdrEl.style.display=pool.length?'block':'none';
-  // Badge in nav
   const badge=document.getElementById('labBadge');
   if(badge){badge.style.display=pool.length?'flex':'none';badge.textContent=pool.length;}
-  if(!pool.length){poolEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--br3);font-size:.78rem">Noch keine experimentellen Getränke.<br>Erfinde dein erstes oben! 🧪</div>';return;}
+  if(!pool.length){poolEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--br3);font-size:.78rem">Noch keine experimentellen Getränke.<br>Erfinde dein erstes oben! 🧪</div>';labRenderRemoved();return;}
   poolEl.innerHTML=pool.map(r=>{
     const st=LAB_STATUS[r.labStatus||'experimentell']||LAB_STATUS.experimentell;
     const cat=CATS.find(c=>c.id===r.cat)||{ico:'🧪',de:''};
     const score=r.labScore?r.labScore.toFixed(1):'–';
     const ratingCount=(r.labRatings||[]).length;
+    const favBtn=`<button onclick="labToggleFavorite(${r.id})" title="${r.labFavorite?'Schutz aufheben':'Vor Rauswurf schützen'}" style="padding:5px 8px;border-radius:8px;border:1.5px solid ${r.labFavorite?'#e8a020':'var(--sand2)'};background:${r.labFavorite?'#fff8e8':'transparent'};font-size:.8rem;cursor:pointer">${r.labFavorite?'⭐':'☆'}</button>`;
+    const logHtml=r.labLog&&r.labLog.length?`<div style="font-size:.64rem;color:var(--br3);margin-top:6px;border-top:1px solid ${st.col}22;padding-top:6px">`+r.labLog.slice(-2).map(l=>`<div>${new Date(l.ts).toLocaleDateString('de')}: ${h(l.detail)}</div>`).join('')+'</div>':'';
+    const revisionHtml=r.labRevisionDraft?`<div style="background:#f3e8fc;border:1px solid #7c3aa888;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:.74rem;color:#5a2a8a">
+      <div style="font-weight:700;margin-bottom:4px">🔄 Überarbeiteter Entwurf: ${h(r.labRevisionDraft.titel||'')}</div>
+      <div style="color:#7c3aa8;margin-bottom:6px">${h((r.labRevisionDraft.beschreibung||'').slice(0,80))}…</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="labAcceptRevision(${r.id})" style="padding:4px 10px;border-radius:7px;border:1.5px solid var(--grn);background:var(--grns);color:var(--grn);font-size:.7rem;cursor:pointer;font-weight:700">✅ Annehmen</button>
+        <button onclick="labRejectRevision(${r.id})" style="padding:4px 10px;border-radius:7px;border:1.5px solid #ddd;background:#f5f5f5;color:#888;font-size:.7rem;cursor:pointer">↩️ Ablehnen</button>
+      </div>
+    </div>`:'';
+    const pendingHtml=r.labRevisionPending?`<div style="font-size:.72rem;color:#7c3aa8;margin-top:6px">⏳ KI überarbeitet gerade…</div>`:'';
     return `<div style="border:1px solid ${st.col}44;border-radius:12px;padding:12px;margin-bottom:8px;background:${st.bg}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-weight:700;font-size:.84rem;color:var(--br)">${h(r.name)}</span>
+        <span style="font-weight:700;font-size:.84rem;color:var(--br)">${h(r.name)}${r.labFavorite?' ⭐':''}</span>
         <span style="font-size:.64rem;font-weight:700;color:${st.col};background:${st.bg};padding:2px 8px;border-radius:10px;border:1px solid ${st.col}44">${st.label}</span>
       </div>
-      <div style="font-size:.7rem;color:var(--br3);margin-bottom:8px">${cat.ico} ${cat.de} · ⭐ ${score} (${ratingCount} Bew.)</div>
-      <div style="display:flex;gap:6px">
+      <div style="font-size:.7rem;color:var(--br3);margin-bottom:8px">${cat.ico} ${cat.de} · ⭐ ${score} (${ratingCount} Bew.) · Rev. ${r.labRevision||0}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button onclick="labRate(${r.id})" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--teal);background:var(--teals);color:var(--teal);font-size:.72rem;cursor:pointer;font-weight:700">⭐ Bewerten</button>
         <button onclick="labAccept(${r.id})" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--grn);background:var(--grns);color:var(--grn);font-size:.72rem;cursor:pointer">✅ Annehmen</button>
+        ${favBtn}
         <button onclick="labRemove(${r.id})" style="padding:5px 10px;border-radius:8px;border:1.5px solid #ddd;background:#f5f5f5;color:#888;font-size:.72rem;cursor:pointer">✕</button>
       </div>
+      ${pendingHtml}${revisionHtml}${logHtml}
     </div>`;
   }).join('');
-}
-
-function labRate(rid){
-  const r=R.find(x=>x.id===rid);
-  if(!r)return;
-  // Einfaches Rating-Dialog via prompt (kann später zu einem echten Modal werden)
-  const taste=parseInt(prompt('Geschmack (1-5):','3'))||3;
-  const practicality=parseInt(prompt('Umsetzbarkeit (1-5):','3'))||3;
-  const originality=parseInt(prompt('Originalität (1-5):','3'))||3;
-  const description=parseInt(prompt('Beschreibungsqualität (1-5):','3'))||3;
-  const clamp=v=>Math.max(1,Math.min(5,v));
-  const rating={ts:Date.now(),taste:clamp(taste),practicality:clamp(practicality),originality:clamp(originality),description:clamp(description)};
-  if(!r.labRatings)r.labRatings=[];
-  r.labRatings.push(rating);
-  // Gewichteten Score berechnen
-  const avg=arr=>arr.reduce((s,x)=>s+x,0)/arr.length;
-  const allTaste=r.labRatings.map(x=>x.taste);
-  const allPrac=r.labRatings.map(x=>x.practicality);
-  const allOrig=r.labRatings.map(x=>x.originality);
-  const allDesc=r.labRatings.map(x=>x.description);
-  r.labScore=avg(allTaste)*LAB_WEIGHTS.taste+avg(allPrac)*LAB_WEIGHTS.practicality+avg(allOrig)*LAB_WEIGHTS.originality+avg(allDesc)*LAB_WEIGHTS.description;
-  // Status-Logik (laut PDF Selektionssystem)
-  const n=r.labRatings.length;
-  if(n>=1&&r.labStatus==='experimentell')r.labStatus='inReview';
-  if(n>=3&&r.labScore>=3.5)r.labStatus='accepted';
-  else if(n>=3&&r.labScore<2.5&&r.labStatus==='inReview')r.labStatus='warning';
-  sv();
-  labRenderPool();
-  if(r.labStatus==='accepted'){toast('✅ '+r.name+' ins Rezeptbuch aufgenommen!');render();}
-  else if(r.labStatus==='warning')toast('⚠️ '+r.name+' unter Beobachtung (Score: '+r.labScore.toFixed(1)+')');
-  else toast('⭐ Bewertung gespeichert – Score: '+r.labScore.toFixed(1));
+  labRenderRemoved();
 }
 
 function labAccept(rid){
   const r=R.find(x=>x.id===rid);
   if(!r)return;
   r.labStatus='accepted';
-  sv();
-  labRenderPool();
-  render();
-  toast('✅ '+r.name+' ins Getränkebuch übernommen!');
+  labAddLog(r,'status','accepted: manuell angenommen');
+  sv();labRenderPool();render();
+  toast('✅ '+h(r.name)+' ins Getränkebuch übernommen!');
 }
 
 function labRemove(rid){
   const r=R.find(x=>x.id===rid);
   if(!r)return;
+  if(r.labFavorite){toast('⭐ Favorit-Schutz aktiv – zuerst Schutz aufheben');return;}
   if(!confirm(r.name+' aus dem Labor entfernen?'))return;
   r.labStatus='removed';
   r.labGen=false;
-  sv();
-  labRenderPool();
-  toast('🗑️ '+r.name+' entfernt');
+  labAddLog(r,'status','removed: manuell entfernt');
+  sv();labRenderPool();labRenderRemoved();
+  toast('🗑️ '+h(r.name)+' entfernt');
+}
+
+// ── Entfernte Rezepte ──
+let _labRemovedOpen=false;
+function labToggleRemoved(){
+  _labRemovedOpen=!_labRemovedOpen;
+  const el=document.getElementById('labRemoved');
+  const ch=document.getElementById('labRemovedChevron');
+  if(el)el.style.display=_labRemovedOpen?'block':'none';
+  if(ch)ch.textContent=_labRemovedOpen?'▼':'▶';
+  if(_labRemovedOpen)labRenderRemoved();
+}
+function labRenderRemoved(){
+  const removed=R.filter(r=>r.labGen&&r.labStatus==='removed');
+  const hdr=document.getElementById('labRemovedHeader');
+  const el=document.getElementById('labRemoved');
+  if(hdr)hdr.style.display=removed.length?'flex':'none';
+  if(!el||!_labRemovedOpen)return;
+  if(!removed.length){el.innerHTML='';return;}
+  el.innerHTML=removed.map(r=>{
+    const cat=CATS.find(c=>c.id===r.cat)||{ico:'🧪',de:''};
+    const lastLog=r.labLog?(r.labLog.filter(l=>l.type==='status').slice(-1)[0]):null;
+    return `<div style="border:1px solid #ccc;border-radius:10px;padding:10px 12px;margin-bottom:6px;background:#f8f8f8;opacity:.85">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-weight:700;font-size:.82rem;color:#666">${h(r.name)}</span>
+        <span style="font-size:.62rem;color:#999">${cat.ico} ${cat.de}</span>
+      </div>
+      ${lastLog?`<div style="font-size:.64rem;color:#aaa;margin-bottom:6px">${new Date(lastLog.ts).toLocaleDateString('de')}: ${h(lastLog.detail)}</div>`:''}
+      <button onclick="labRestore(${r.id})" style="padding:4px 10px;border-radius:7px;border:1.5px solid var(--teal);background:var(--teals);color:var(--teal);font-size:.68rem;cursor:pointer">↩️ Wiederherstellen</button>
+    </div>`;
+  }).join('');
+}
+function labRestore(rid){
+  const r=R.find(x=>x.id===rid);
+  if(!r)return;
+  r.labStatus='inReview';
+  r.labGen=true;
+  labAddLog(r,'status','inReview: wiederhergestellt');
+  sv();labRenderPool();
+  toast('↩️ '+h(r.name)+' wiederhergestellt');
 }
 
 // ═══════════════════════════════════════════════════════
