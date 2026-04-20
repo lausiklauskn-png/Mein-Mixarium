@@ -1373,6 +1373,18 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 .rcard{transition:transform 200ms ease,box-shadow 200ms ease}
 .rcard:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
 
+/* ── Getränke-Karussell (Horizontal Snap) ── */
+#rcont{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+#rcont::-webkit-scrollbar{display:none}
+#rcont .rcard{flex:none;width:calc(100vw - 18px);margin:9px;scroll-snap-align:center;scroll-snap-stop:always;margin-bottom:9px}
+#rcont .rcard:hover{transform:none;box-shadow:0 2px 9px var(--sh)}
+#rcont .rcard-img-wrap{height:clamp(200px,48vh,360px)}
+#rcont .rcard-img{height:clamp(200px,48vh,360px)}
+#rcont .empty-state{flex:none;width:calc(100vw - 18px);margin:9px auto}
+/* ── Labor-Shortcut Banner ── */
+#labor-shortcut{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;background:var(--teals);border-top:1px solid rgba(0,0,0,.05);border-bottom:1.5px solid var(--teal);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--teal);user-select:none;-webkit-tap-highlight-color:transparent;letter-spacing:.02em}
+#labor-shortcut:active{background:var(--teal);color:#fff}
+
 /* ── Micro-Animations: Button Active ── */
 button{transition:transform 100ms ease,background 150ms ease,background-color 150ms ease}
 button:active{transform:scale(0.97)}
@@ -1604,8 +1616,9 @@ button:active{transform:scale(0.97)}
         <button class="fsec" onclick="closeNewPanel()" id="btnCancel">Abbrechen</button>
       </div>
     </div>
-    <div id="rcont"></div>
   </div>
+  <div id="labor-shortcut" onclick="navTo(1)">🔬 Zum Labor wechseln →</div>
+  <div id="rcont"></div>
 </div>
 
 
@@ -8061,7 +8074,7 @@ function render(){
   }else if(CAT==='all'){
     for(const cat of CATS.filter(c=>c.id!=='all')){
       const grp=list.filter(r=>r.cat===cat.id);if(!grp.length)continue;
-      html+=rndDiv(cat,grp)+grp.map(r=>rndCard(r)).join('');
+      html+=grp.map(r=>rndCard(r)).join('');
     }
     // Ordner-Gruppen in Alle-Ansicht
     if(FD&&FD.length){
@@ -8069,27 +8082,18 @@ function render(){
         const fid='fld_'+f.id;
         const grp=R.filter(r=>r.cat===fid);
         if(!grp.length)return;
-        const fc={id:fid,ico:f.ico,de:f.name,col:'#7a5840'};fc[CL]=f.name;
-        html+=rndDiv(fc,grp)+grp.map(r=>rndCard(r)).join('');
+        html+=grp.map(r=>rndCard(r)).join('');
       });
     }
     if(!html)html=`<div class="empty-state"><div class="empty-state__icon">🍳</div><h3 class="empty-state__title">${T('noRecipes')}</h3><p class="empty-state__desc">${T('emptyStateDesc')||'Füge dein erstes Rezept hinzu — per Foto, Weblink oder manuell.'}</p><button class="empty-state__btn" onclick="openNewPanel()">+ ${T('hAddLbl')||'Rezept'} ${T('emptyStateAdd')||'hinzufügen'}</button></div>`;
   }else if(CAT.startsWith('fld_')){
     // Ordner-Filter
     const fid=CAT.slice(4);
-    const f=FD.find(f=>String(f.id)===fid);
     const grpAll=list.filter(r=>r.cat===('fld_'+fid)||r.folder===fid);
-    const grpNamed=grpAll.filter(r=>r.name);
-    if(f){
-      const fc={id:'fld_'+fid,ico:f.ico,de:f.name,col:'#7a5840'};fc[CL]=f.name;
-      html+=rndDiv(fc,grpAll);
-    }
     html+=grpAll.map(r=>rndCard(r)).join('');
     if(!grpAll.length)html+=`<div class="empty-state"><div class="empty-state__icon">📂</div><h3 class="empty-state__title">${T('noRecipes')}</h3></div>`;
   }else{
-    const cat=CATS.find(c=>c.id===CAT);
     const grp=list.filter(r=>r.cat===CAT);
-    if(cat)html+=rndDiv(cat,grp);
     html+=grp.map(r=>rndCard(r)).join('');
     if(!grp.length)html+=`<div class="empty-state"><div class="empty-state__icon">🍽️</div><h3 class="empty-state__title">${T('noRecipes')}</h3></div>`;
   }
@@ -9610,7 +9614,7 @@ function startRename(id) {
   openInlineEdit(id);
   // scroll card into view if needed
   const el = document.getElementById('rname-' + id);
-  el?.closest('.rcard')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  el?.closest('.rcard')?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }
 
 function saveInlineName(id) {
