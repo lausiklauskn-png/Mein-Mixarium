@@ -258,3 +258,21 @@ Das `#mv`-Overlay (Mein Menü / Wochenplan) soll **optisch identisch** mit dem `
 `.mv-hdr` und `.mv-tabs` haben denselben Regenbogen-Verlauf wie `.fov-hdr`/`.fov-tabs`.
 
 **Regel:** Bei Änderungen an `.fov-hdr`/`.fovtab` immer prüfen ob `.mv-hdr`/`.mvtab` ebenfalls angepasst werden müssen.
+
+---
+
+## CSS-Debugging Regeln
+
+### Neue CSS-Einheiten vermeiden
+- Kein `svh`, `dvh`, `svw`, `dvw` — nicht universell unterstützt
+- Stattdessen: `vh`, `vw`, `px`
+- Ungültige CSS-Werte werden still ignoriert (kein Fehler im Browser!)
+
+### CSS greift nicht → Eskalationsreihenfolge
+1. `!important` hinzufügen
+2. Spezifität erhöhen (ID statt Klasse)
+3. JavaScript: `element.style.setProperty('height', wert, 'important')`
+→ Nicht mehrere CSS-Varianten stapeln bevor Benutzer bestätigt hat
+
+### Commits: Erst bestätigen lassen
+Eine Variante pushen → auf Feedback warten → nächste. Nicht mehrere Fixes in Folge ohne Rückmeldung.
