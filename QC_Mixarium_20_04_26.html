@@ -1767,6 +1767,14 @@ button:active{transform:scale(0.97)}
   </div>
 </div>
 
+<!-- Discover-Vorschau-Modal -->
+<div id="discoverModal" onclick="if(event.target===this)discoverModalClose()"
+  style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45)">
+  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--parch);border-radius:16px 16px 0 0;padding:0 0 env(safe-area-inset-bottom,0);max-height:88vh;overflow-y:auto">
+    <div id="discoverModalContent"></div>
+  </div>
+</div>
+
 <div class="sc" id="sc-menu">
   <div class="menu-top">
     <div class="menu-top-hdr">
@@ -4996,17 +5004,79 @@ function _discoverShow(drinks,fullData){
         <div style="padding:6px 8px">
           <div style="font-size:.7rem;font-weight:700;color:var(--br);margin-bottom:2px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h(d.strDrink||'')}">${h(d.strDrink||'')}</div>
           ${catObj?`<div style="font-size:.62rem;color:var(--br3);margin-bottom:4px">${catObj.ico} ${catObj.de}</div>`:''}
-          <button onclick="discoverImport('${h(d.idDrink)}')" style="width:100%;padding:5px;border-radius:7px;border:1.5px solid var(--teal);background:var(--teals);color:var(--teal);font-size:.68rem;cursor:pointer;font-weight:700">+ Übernehmen</button>
+          <button onclick="discoverPreview('${h(d.idDrink)}')" style="width:100%;padding:5px;border-radius:7px;border:1.5px solid var(--teal);background:var(--teals);color:var(--teal);font-size:.68rem;cursor:pointer;font-weight:700">+ Übernehmen</button>
         </div>
       </div>`;
     }).join('')}
   </div>`;
 }
 
-async function discoverImport(id){
+// Sprach-Felder der TheCocktailDB (eingebaute Übersetzungen, kein API-Key nötig)
+const _DB_LANG_FIELD={
+  de:'strInstructionsDE',es:'strInstructionsES',fr:'strInstructionsFR',
+  it:'strInstructionsIT',zh:'strInstructionsZH-HANS',pt:'strInstructionsPT',ru:'strInstructionsRU'
+};
+
+async function discoverPreview(id){
+  const mc=document.getElementById('discoverModalContent');
+  const modal=document.getElementById('discoverModal');
+  if(!mc||!modal)return;
+  mc.innerHTML='<div style="text-align:center;padding:30px;color:var(--br3);font-size:.78rem">⏳ Lade Vorschau …</div>';
+  modal.style.display='block';
   try{
     const d=(await fetch(`${_DB_BASE}lookup.php?i=${encodeURIComponent(id)}`).then(r=>r.json())).drinks?.[0];
-    if(!d){toast('Drink nicht gefunden');return;}
+    if(!d){mc.innerHTML='<div style="padding:20px;text-align:center;color:#c04030">❌ Nicht gefunden</div>';return;}
+    window._discoverPending=d;
+    const autoCat=_discoverCat||_discoverCatFor(d);
+    const dbLangField=_DB_LANG_FIELD[CL];
+    const hasNativeTransl=dbLangField&&!!(d[dbLangField]||'').trim();
+    const needsTransl=CL!=='en';
+    const langNames={de:'Deutsch',en:'English',ru:'Русский',zh:'中文',es:'Español',fr:'Français',it:'Italiano',pt:'Português'};
+    const langName=langNames[CL]||CL.toUpperCase();
+    mc.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px">
+        <div style="font-size:.92rem;font-weight:700;color:var(--br)">${h(d.strDrink||'')}</div>
+        <button onclick="discoverModalClose()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--br3);padding:0 0 0 10px">✕</button>
+      </div>
+      ${d.strDrinkThumb?`<img src="${h(d.strDrinkThumb)}" style="width:100%;height:160px;object-fit:cover">`:''}
+      <div style="padding:14px 16px">
+        <div style="font-size:.72rem;color:var(--br3);margin-bottom:12px">${d.strAlcoholic||''} · ${d.strCategory||''} · ${d.strGlass||''}</div>
+
+        <div style="font-size:.68rem;font-weight:700;color:var(--br3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Kategorie im Buch</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px">
+          ${CATS.map(c=>`<button class="dpc" data-cat="${c.id}" onclick="document.querySelectorAll('.dpc').forEach(b=>{b.style.background=b.dataset.cat===this.dataset.cat?'var(--teal)':'var(--parch)';b.style.color=b.dataset.cat===this.dataset.cat?'#fff':'var(--ink)'})"
+            style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--sand2);font-size:.7rem;cursor:pointer;background:${c.id===autoCat?'var(--teal)':'var(--parch)'};color:${c.id===autoCat?'#fff':'var(--ink)'}">
+            ${c.ico} ${c.de}</button>`).join('')}
+        </div>
+
+        ${needsTransl?`<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:14px;padding:10px;background:var(--teals);border-radius:10px;border:1.5px solid var(--teal)">
+          <input type="checkbox" id="discoverTranslChk" ${hasNativeTransl?'checked':''} style="margin-top:2px;accent-color:var(--teal);width:16px;height:16px;flex-shrink:0">
+          <div>
+            <div style="font-size:.76rem;font-weight:700;color:var(--teal)">Schritte ins ${h(langName)} übersetzen</div>
+            <div style="font-size:.66rem;color:var(--br3);margin-top:2px">${hasNativeTransl?'✅ Direkt verfügbar (kein API-Key nötig)':'⚠️ Benötigt API-Key (Einstellungen)'}</div>
+          </div>
+        </label>`:''}
+
+        <button onclick="discoverConfirmImport()" class="bigbtn teal" style="width:100%;font-size:.86rem;padding:12px">✅ Ins Buch übernehmen</button>
+        <button onclick="discoverModalClose()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1.5px solid var(--sand2);background:transparent;font-size:.78rem;cursor:pointer;color:var(--br3)">Abbrechen</button>
+      </div>`;
+  }catch(e){mc.innerHTML='<div style="padding:20px;text-align:center;color:#c04030">❌ Fehler beim Laden</div>';}
+}
+
+function discoverModalClose(){
+  const modal=document.getElementById('discoverModal');
+  if(modal)modal.style.display='none';
+  window._discoverPending=null;
+}
+
+async function discoverConfirmImport(){
+  const d=window._discoverPending;
+  if(!d){discoverModalClose();return;}
+  const catBtn=document.querySelector('.dpc[style*="var(--teal)"]');
+  const cat=catBtn?catBtn.dataset.cat:(_discoverCat||_discoverCatFor(d));
+  const withTransl=CL!=='en'&&document.getElementById('discoverTranslChk')?.checked;
+  discoverModalClose();
+  try{
     const ings=[];
     for(let i=1;i<=15;i++){
       const name=(d[`strIngredient${i}`]||'').trim();
@@ -5014,9 +5084,14 @@ async function discoverImport(id){
       if(!name)break;
       ings.push({id:i,amt,unit:'',name,ck:false,note:''});
     }
-    const rawSteps=(d.strInstructions||'').split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>3);
-    const steps=rawSteps.length?rawSteps.map((s,i)=>({id:i+1,txt:s.trim()})):[{id:1,txt:(d.strInstructions||'').trim()}];
-    const cat=_discoverCat||_discoverCatFor(d);
+    // Steps: use native DB translation if available and requested, else English
+    let stepsRaw=d.strInstructions||'';
+    if(withTransl){
+      const dbField=_DB_LANG_FIELD[CL];
+      if(dbField&&(d[dbField]||'').trim())stepsRaw=d[dbField];
+    }
+    const rawSteps=stepsRaw.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>3);
+    const steps=rawSteps.length?rawSteps.map((s,i)=>({id:i+1,txt:s.trim()})):[{id:1,txt:stepsRaw.trim()}];
     const now=Date.now();
     const nr={
       id:now,name:d.strDrink||'Drink',cat,alcohol:d.strAlcoholic==='Alcoholic',
@@ -5024,10 +5099,15 @@ async function discoverImport(id){
       ings,steps,tags:[],flavors:[],
       img:d.strDrinkThumb||'',imgCrop:{x:50,y:50,scale:1},
       rating:{stars:0,comment:'',imps:[]},blank:false,folder:'',
-      created:now,modified:now,dbSource:'thecocktaildb',dbId:String(id)
+      created:now,modified:now,dbSource:'thecocktaildb',dbId:String(d.idDrink)
     };
+    // If translation requested but no native DB translation → trigger AI translation
+    if(withTransl&&!(_DB_LANG_FIELD[CL]&&(d[_DB_LANG_FIELD[CL]]||'').trim())){
+      const key=localStorage.getItem('mxkey9m')||'';
+      if(key){R.unshift(nr);sv();render();navTo(0);toast('✅ '+h(nr.name)+' übernommen – Übersetzung läuft …');doTranslate(nr,[CL],null);return;}
+    }
     R.unshift(nr);sv();render();navTo(0);
-    toast('✅ '+h(nr.name)+' ins Buch übernommen!');
+    toast('✅ '+h(nr.name)+' ins Buch übernommen!'+(withTransl?' ('+CL.toUpperCase()+'*)':''));
   }catch(e){toast('Fehler beim Importieren');}
 }
 
