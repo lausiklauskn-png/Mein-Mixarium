@@ -1945,7 +1945,7 @@ button:active{transform:scale(0.97)}
       <div class="sett-row" onclick="checkAppUpdate()">
         <div class="sett-ico">🔄</div>
         <div class="sett-body"><div class="sett-lbl" id="sUpdLbl">Auf Updates prüfen</div>
-          <div class="sett-sub" id="updateStatus">Aktuelle Version: 9.2</div></div>
+          <div class="sett-sub" id="updateStatus">Version: 1.0</div></div>
         <div class="sett-arr">›</div>
       </div>
       <div class="sett-row" onclick="toggleDonate()" id="sDonateRow">
@@ -2770,7 +2770,7 @@ const LANGS={
     scanLoading:'⏳ Claude liest das Rezept …',noPend:'Noch keine Bilder ausgewählt.',
     assignBtn:'✅ Zuordnung speichern',assignOK:'Bilder zugewiesen',
     uploadOK:'Rezepte importiert',uploadErr:'Fehler beim Import',
-    pwaText:'Als App installieren — offline nutzen',pwaBtn:'Installieren',updText:'🔄 Update verfügbar! Neue Version bereit.',updBtn:'Jetzt laden',sUpdLbl:'Auf Updates prüfen',sUpdSub:'Aktuelle Version: ',sUpdCheck:'⏳ Prüfe …',sUpdOk:'✅ Bereits aktuell',sUpdAvail:'Update verfügbar!',sUpdInfo:'Deine Rezepte bleiben erhalten.\nDie neue App-Datei wird heruntergeladen.',sUpdDl:'⬇️ Jetzt aktualisieren',sUpdLater:'Später',sUpdDone:'✅ Download gestartet — alte Datei durch neue ersetzen',sDonateTitle:'Projekt unterstützen',sDonateSub:'Freiwillig · PayPal',sImprintLbl:'Impressum & Datenschutz',sImprintSub:'Rechtliche Hinweise',sImprintFooter:'Impressum & Datenschutz',sDonateText:'Diese App ist ein privates, nicht kommerzielles Projekt und wird in der Freizeit entwickelt.\n\nWenn dir die App gefällt, kannst du das Projekt freiwillig unterstützen.',sDonateBtn:'☕ Unterstützen',sDonateNote:'Die Unterstützung erfolgt ohne Gegenleistung und begründet keinen Anspruch auf Funktionen, Updates oder Support.\nVielen Dank für deine Unterstützung.',
+    pwaText:'Als App installieren — offline nutzen',pwaBtn:'Installieren',updText:'🔄 Update verfügbar! Neue Version bereit.',updBtn:'Jetzt laden',sUpdLbl:'Auf Updates prüfen',sUpdSub:'Version: ',sUpdCheck:'⏳ Prüfe …',sUpdOk:'App ist aktuell',sUpdAvail:'Update verfügbar!',sUpdBgHint:'Updates werden im Hintergrund geladen — beim nächsten Start aktiv.',sDonateTitle:'Projekt unterstützen',sDonateSub:'Freiwillig · PayPal',sImprintLbl:'Impressum & Datenschutz',sImprintSub:'Rechtliche Hinweise',sImprintFooter:'Impressum & Datenschutz',sDonateText:'Diese App ist ein privates, nicht kommerzielles Projekt und wird in der Freizeit entwickelt.\n\nWenn dir die App gefällt, kannst du das Projekt freiwillig unterstützen.',sDonateBtn:'☕ Unterstützen',sDonateNote:'Die Unterstützung erfolgt ohne Gegenleistung und begründet keinen Anspruch auf Funktionen, Updates oder Support.\nVielen Dank für deine Unterstützung.',
     resetShop:'Zurücksetzen',recPickerTitle:'Rezept wählen',noFolder:'— keiner —',
     thDefault:'Landhaus',thSpring:'Frühling',thNight:'Nacht',thModern:'Modern',thColor:'Bunt',thNeon:'Neon',thPastel:'Pastell',
     noRecipes:'Noch keine Getränke',emptyStateDesc:'Füge dein erstes Getränk hinzu — per Foto, Weblink oder KI-Labor.',emptyStateAdd:'hinzufügen',clearConfirm:'ALLE Daten wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
@@ -2895,7 +2895,7 @@ const LANGS={
     scanLoading:'⏳ Claude is reading the recipe …',noPend:'No images selected yet.',
     assignBtn:'✅ Save assignment',assignOK:'Images assigned',
     uploadOK:'Recipes imported',uploadErr:'Import error',
-    pwaText:'Install as app — use offline',pwaBtn:'Install',updText:'🔄 Update available! New version ready.',updBtn:'Reload now',sUpdLbl:'Check for updates',sUpdSub:'Current version: ',sUpdCheck:'⏳ Checking…',sUpdOk:'✅ Already up to date',sUpdAvail:'Update available!',sUpdInfo:'Your recipes are safe.\nThe new app file will be downloaded.',sUpdDl:'⬇️ Update now',sUpdLater:'Later',sUpdDone:'✅ Download started — replace the old file with the new one',sDonateTitle:'Support the project',sDonateSub:'Voluntary · PayPal',sImprintLbl:'Imprint & Privacy Policy',sImprintSub:'Legal information',sImprintFooter:'Imprint & Privacy',sDonateText:'This app is a private, non-commercial project developed in spare time.\n\nIf you enjoy the app, you can voluntarily support the project.',sDonateBtn:'☕ Support',sDonateNote:'Support is given voluntarily and does not entitle you to features, updates or technical support.\nThank you for your support.',
+    pwaText:'Install as app — use offline',pwaBtn:'Install',updText:'🔄 Update available! New version ready.',updBtn:'Reload now',sUpdLbl:'Check for updates',sUpdSub:'Version: ',sUpdCheck:'⏳ Checking…',sUpdOk:'App is up to date',sUpdAvail:'Update available!',sUpdBgHint:'Updates are loaded in the background — active on next start.',sDonateTitle:'Support the project',sDonateSub:'Voluntary · PayPal',sImprintLbl:'Imprint & Privacy Policy',sImprintSub:'Legal information',sImprintFooter:'Imprint & Privacy',sDonateText:'This app is a private, non-commercial project developed in spare time.\n\nIf you enjoy the app, you can voluntarily support the project.',sDonateBtn:'☕ Support',sDonateNote:'Support is given voluntarily and does not entitle you to features, updates or technical support.\nThank you for your support.',
     resetShop:'Reset',recPickerTitle:'Choose recipe',noFolder:'— none —',
     thDefault:'Country',thSpring:'Spring',thNight:'Night',thModern:'Modern',thColor:'Colorful',thNeon:'Neon',thPastel:'Pastel',
     noRecipes:'No drinks yet',emptyStateDesc:'Add your first drink — by photo, web link, or AI Lab.',emptyStateAdd:'add',clearConfirm:'Really delete ALL data? This cannot be undone.',
@@ -6038,48 +6038,31 @@ function setUpSt(msg,type){
   el.textContent=msg;el.className='upst '+type;el.style.display='block';
   setTimeout(()=>el.style.display='none',5000);
 }
-const _APP_VER='9.2';
-const _APP_UPDATE_URL='https://lausiklauskn-png.github.io/Mein-Mixarium/index.html';
+const _APP_VER='1.0';
 async function checkAppUpdate(){
   const st=document.getElementById('updateStatus');
   if(st)st.textContent=T('sUpdCheck')||'⏳ Prüfe …';
   try{
-    const resp=await fetch(_APP_UPDATE_URL+'?t='+Date.now(),{cache:'no-store'});
-    if(!resp.ok)throw new Error('Netzwerkfehler '+resp.status);
-    const html=await resp.text();
-    const m=html.match(/id="appVersion"[^>]*>v([\d.]+)<\/span>/);
-    const remoteVer=m?m[1]:null;
-    if(!remoteVer)throw new Error('Version nicht lesbar');
-    if(st)st.textContent=(T('sUpdSub')||'Aktuelle Version: ')+_APP_VER;
-    if(remoteVer===_APP_VER){
-      toast((T('sUpdOk')||'✅ Bereits aktuell')+' (v'+_APP_VER+')');
+    const reg=await navigator.serviceWorker?.getRegistration();
+    if(reg){
+      await reg.update();
+      const waiting=reg.waiting;
+      if(st)st.textContent=(T('sUpdSub')||'Version: ')+_APP_VER;
+      if(waiting){
+        toast('🆕 '+(T('sUpdAvail')||'Update verfügbar!')+'  '+
+          (T('sUpdBgHint')||'Updates werden im Hintergrund geladen — beim nächsten Start aktiv.'));
+      }else{
+        toast('✅ '+(T('sUpdOk')||'App ist aktuell')+
+          ' — '+(T('sUpdBgHint')||'Updates werden im Hintergrund geladen.'));
+      }
     }else{
-      _showAppUpdateDialog(remoteVer,html);
+      if(st)st.textContent=(T('sUpdSub')||'Version: ')+_APP_VER;
+      toast('ℹ️ '+(T('sUpdBgHint')||'Updates werden im Hintergrund automatisch geladen.'));
     }
   }catch(e){
-    if(st)st.textContent=(T('sUpdSub')||'Aktuelle Version: ')+_APP_VER;
-    toast('⚠️ '+e.message);
+    if(st)st.textContent=(T('sUpdSub')||'Version: ')+_APP_VER;
+    toast('ℹ️ '+(T('sUpdBgHint')||'Updates werden im Hintergrund automatisch geladen.'));
   }
-}
-function _showAppUpdateDialog(newVer,html){
-  const ov=document.createElement('div');
-  ov.className='share-ov';
-  ov.innerHTML=`<div class="share-box">
-    <div style="font-size:1.6rem;margin-bottom:6px">🆕</div>
-    <div class="share-box-title">${T('sUpdAvail')||'Update verfügbar!'}</div>
-    <div class="share-box-sub" style="margin-bottom:4px">v${_APP_VER} &rarr; v${newVer}</div>
-    <div style="font-size:.75rem;color:var(--muted);margin:10px 0 14px;text-align:center;line-height:1.5">${(T('sUpdInfo')||'Deine Rezepte bleiben erhalten.\nDie neue App-Datei wird heruntergeladen.').replace('\n','<br>')}</div>
-    <button class="share-btn-p" id="_updDl">${T('sUpdDl')||'⬇️ Jetzt aktualisieren'}</button>
-    <button class="share-btn-cl" id="_updCn" style="margin-top:8px">${T('sUpdLater')||'Später'}</button>
-  </div>`;
-  document.body.appendChild(ov);
-  ov.querySelector('#_updDl').onclick=()=>{
-    ov.remove();
-    dlBlob(new Blob([html],{type:'text/html'}),'mein-mixarium.html');
-    toast(T('sUpdDone')||'✅ Download gestartet — alte Datei durch neue ersetzen');
-  };
-  ov.querySelector('#_updCn').onclick=()=>ov.remove();
-  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
 }
 function dlBlob(blob,fname){
   const u=URL.createObjectURL(blob),a=document.createElement('a');
