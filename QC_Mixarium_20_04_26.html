@@ -1378,8 +1378,8 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 #rcont::-webkit-scrollbar{display:none}
 #rcont .rcard{flex:0 0 calc(100% - 18px);width:calc(100% - 18px);margin:9px;scroll-snap-align:center;scroll-snap-stop:always}
 #rcont .rcard:hover{transform:none;box-shadow:0 2px 9px var(--sh)}
-#rcont .rcard-img-wrap{height:280px}
-#rcont .rcard-img{height:280px}
+#rcont .rcard-img-wrap{height:280px !important}
+#rcont .rcard-img{height:280px !important}
 #rcont .empty-state{flex:0 0 calc(100% - 18px);margin:9px auto}
 /* ── Labor-Shortcut Banner ── */
 #labor-shortcut{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;background:var(--teals);border-top:1px solid rgba(0,0,0,.05);border-bottom:1.5px solid var(--teal);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--teal);user-select:none;-webkit-tap-highlight-color:transparent;letter-spacing:.02em}
@@ -9255,8 +9255,8 @@ function _initTooltips(){
     const dy=e.changedTouches[0].clientY-ty;
     // Mindest-Wischweite 55px, deutlich horizontaler als vertikal
     if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.5)return;
-    // Nicht auf horizontalem Scroll-Element (z.B. Kategorie-Leiste)
-    if(e.target.closest('#catNav'))return;
+    // Nicht auf horizontalem Scroll-Element (z.B. Kategorie-Leiste, Karussell)
+    if(e.target.closest('#catNav')||e.target.closest('#rcont'))return;
     _doSwipe(dx);
   },{passive:true});
   // Maus-Swipe für DeX-Modus (Samsung DeX / Desktop)
@@ -9278,7 +9278,7 @@ function _initTooltips(){
     if(anyModalOpen())return;
     const dx=e.clientX-mx,dy=e.clientY-my;
     if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.5)return;
-    if(e.target.closest('#catNav'))return;
+    if(e.target.closest('#catNav')||e.target.closest('#rcont'))return;
     _doSwipe(dx);
   });
   // Seitliches Scrollrad (Rapoo 9900M u.ä.) → Seiten wechseln
