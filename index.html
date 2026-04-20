@@ -4720,7 +4720,7 @@ function labSave(jsonStr){
       modified:now
     };
     R.unshift(nr);
-    saveR();
+    sv();
     document.getElementById('labResult').style.display='none';
     labRenderPool();
     toast('🧫 '+nr.name+' im Labor gespeichert');
