@@ -4722,7 +4722,7 @@ function labSave(){
       modified:now
     };
     R.unshift(nr);
-    saveR();
+    sv();
     document.getElementById('labResult').style.display='none';
     labRenderPool();
     toast('🧫 '+nr.name+' im Labor gespeichert');
@@ -4783,7 +4783,7 @@ function labRate(rid){
   if(n>=1&&r.labStatus==='experimentell')r.labStatus='inReview';
   if(n>=3&&r.labScore>=3.5)r.labStatus='accepted';
   else if(n>=3&&r.labScore<2.5&&r.labStatus==='inReview')r.labStatus='warning';
-  saveR();
+  sv();
   labRenderPool();
   if(r.labStatus==='accepted'){toast('✅ '+r.name+' ins Rezeptbuch aufgenommen!');render();}
   else if(r.labStatus==='warning')toast('⚠️ '+r.name+' unter Beobachtung (Score: '+r.labScore.toFixed(1)+')');
@@ -4794,7 +4794,7 @@ function labAccept(rid){
   const r=R.find(x=>x.id===rid);
   if(!r)return;
   r.labStatus='accepted';
-  saveR();
+  sv();
   labRenderPool();
   render();
   toast('✅ '+r.name+' ins Getränkebuch übernommen!');
@@ -4805,8 +4805,8 @@ function labRemove(rid){
   if(!r)return;
   if(!confirm(r.name+' aus dem Labor entfernen?'))return;
   r.labStatus='removed';
-  r.labGen=false; // aus Pool verbergen
-  saveR();
+  r.labGen=false;
+  sv();
   labRenderPool();
   toast('🗑️ '+r.name+' entfernt');
 }
