@@ -1846,6 +1846,7 @@ button:active{transform:scale(0.97)}
     <div class="pwa-install" id="pwaBar">
       <div class="pwa-txt" id="pwaText">Als App installieren — offline verfügbar</div>
       <button class="pwa-btn" onclick="triggerPWA()" id="pwaBtn">Installieren</button>
+      <a class="pwa-btn" href="invite-v5.html" id="pwaGuide" style="display:none;text-decoration:none">Anleitung</a>
     </div>
     <div class="upd-banner" id="updBanner">
       <div class="upd-txt">🔄 <strong>Update verfügbar!</strong><br>Neue Version bereit.</div>
@@ -4567,6 +4568,18 @@ function triggerPWA(){
   deferredPWA.prompt();
   deferredPWA.userChoice.then(r=>{if(r.outcome==='accepted')toast('✅ Installation!');deferredPWA=null;});
 }
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    if(window.matchMedia('(display-mode: standalone)').matches)return;
+    if(navigator.standalone)return;
+    if(deferredPWA)return;
+    if(localStorage.getItem('mxInstGuide9'))return;
+    localStorage.setItem('mxInstGuide9','1');
+    document.getElementById('pwaBtn').style.display='none';
+    document.getElementById('pwaGuide').style.display='';
+    document.getElementById('pwaBar').classList.add('show');
+  },800);
+});
 
 // ═══════════════════════════════════════════════════════
 // TOAST
