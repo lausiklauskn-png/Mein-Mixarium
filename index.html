@@ -4778,7 +4778,7 @@ function labSave(){
       prepTime:recipe.zubereitungszeit_min||0,
       servings:recipe.portionen||2,
       difficulty:recipe.schwierigkeit||1,
-      ings:(recipe.zutaten||[]).map((z,i)=>({id:i,a:z.menge||'',n:z.name||'',ck:false})),
+      ings:(recipe.zutaten||[]).map((z,i)=>({id:i,amt:z.menge||'',unit:'',name:z.name||'',ck:false,note:''})),
       steps:(recipe.schritte||[]).map((s,i)=>({id:i,txt:s})),
       tags:recipe.tags||[],
       labStatus:'experimentell',
@@ -4939,7 +4939,7 @@ async function labRevise(r,feedback){
   const key=localStorage.getItem('mxkey9m')||'';
   if(!key){r.labRevisionPending=false;sv();labRenderPool();toast('❌ Kein API-Key – Überarbeitung nicht möglich');return;}
   const cat=CATS.find(c=>c.id===r.cat)||CATS[1];
-  const ingList=(r.ings||[]).map(i=>i.a+' '+i.n).join(', ');
+  const ingList=(r.ings||[]).map(i=>(i.amt||i.a||'')+' '+(i.name||i.n||'')).join(', ');
   const stepList=(r.steps||[]).map((s,i)=>(i+1)+'. '+(s.txt||s)).join(' ');
   const feedbackText=feedback||(r.labLog||[]).filter(l=>l.detail&&l.detail.includes('Feedback')).map(l=>l.detail).slice(-3).join('; ')||'Keine spezifisches Feedback';
   try{
@@ -4974,7 +4974,7 @@ function labAcceptRevision(rid){
   if(!r||!r.labRevisionDraft)return;
   const draft=r.labRevisionDraft;
   r.name=draft.titel||r.name;
-  r.ings=(draft.zutaten||[]).map((z,i)=>({id:i,a:z.menge||'',n:z.name||'',ck:false}));
+  r.ings=(draft.zutaten||[]).map((z,i)=>({id:i,amt:z.menge||'',unit:'',name:z.name||'',ck:false,note:''}));
   r.steps=(draft.schritte||[]).map((s,i)=>({id:i,txt:s}));
   r.labStatus='revised';
   r.labRevisionDraft=null;
