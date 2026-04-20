@@ -224,7 +224,7 @@ body.nav-collapsed{padding-bottom:calc(16px + var(--sb))}
 .crop-close{background:rgba(255,255,255,.12);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .crop-close:active{background:rgba(255,255,255,.25)}
 .crop-stage{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;touch-action:none}
-.crop-frame{width:calc(100% - 24px);max-width:496px;height:calc((100% - 24px) * 0.42);max-height:208px;border-radius:10px;overflow:hidden;position:relative;box-shadow:0 0 0 3px rgba(255,255,255,.18),0 8px 32px rgba(0,0,0,.6);cursor:grab;touch-action:none}
+.crop-frame{width:min(calc(100% - 24px),280px);max-width:280px;aspect-ratio:3/4;border-radius:10px;overflow:hidden;position:relative;box-shadow:0 0 0 3px rgba(255,255,255,.18),0 8px 32px rgba(0,0,0,.6);cursor:grab;touch-action:none}
 .crop-frame:active{cursor:grabbing}
 .crop-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;touch-action:none;user-select:none;pointer-events:none;-webkit-user-drag:none;will-change:transform}
 .crop-grid{position:absolute;inset:0;pointer-events:none;background:
@@ -1378,8 +1378,8 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 #rcont::-webkit-scrollbar{display:none}
 #rcont .rcard{flex:0 0 calc(100% - 18px);width:calc(100% - 18px);margin:9px;scroll-snap-align:center;scroll-snap-stop:always}
 #rcont .rcard:hover{transform:none;box-shadow:0 2px 9px var(--sh)}
-#rcont .rcard-img-wrap{height:280px !important}
-#rcont .rcard-img{height:280px !important}
+#rcont .rcard-img-wrap{aspect-ratio:3/4 !important;height:auto !important}
+#rcont .rcard-img{height:100% !important}
 #rcont .empty-state{flex:0 0 calc(100% - 18px);margin:9px auto}
 /* ── Labor-Shortcut Banner ── */
 #labor-shortcut{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;background:var(--teals);border-top:1px solid rgba(0,0,0,.05);border-bottom:1.5px solid var(--teal);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--teal);user-select:none;-webkit-tap-highlight-color:transparent;letter-spacing:.02em}
