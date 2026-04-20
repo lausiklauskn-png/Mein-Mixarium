@@ -1374,13 +1374,13 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 .rcard:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
 
 /* ── Getränke-Karussell (Horizontal Snap) ── */
-#rcont{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+#rcont{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:scroll;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
 #rcont::-webkit-scrollbar{display:none}
-#rcont .rcard{flex:none;width:calc(100vw - 18px);margin:9px;scroll-snap-align:center;scroll-snap-stop:always;margin-bottom:9px}
+#rcont .rcard{flex:0 0 calc(100% - 18px);width:calc(100% - 18px);margin:9px;scroll-snap-align:center;scroll-snap-stop:always}
 #rcont .rcard:hover{transform:none;box-shadow:0 2px 9px var(--sh)}
-#rcont .rcard-img-wrap{height:clamp(200px,48vh,360px)}
-#rcont .rcard-img{height:clamp(200px,48vh,360px)}
-#rcont .empty-state{flex:none;width:calc(100vw - 18px);margin:9px auto}
+#rcont .rcard-img-wrap{height:280px}
+#rcont .rcard-img{height:280px}
+#rcont .empty-state{flex:0 0 calc(100% - 18px);margin:9px auto}
 /* ── Labor-Shortcut Banner ── */
 #labor-shortcut{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;background:var(--teals);border-top:1px solid rgba(0,0,0,.05);border-bottom:1.5px solid var(--teal);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--teal);user-select:none;-webkit-tap-highlight-color:transparent;letter-spacing:.02em}
 #labor-shortcut:active{background:var(--teal);color:#fff}
@@ -1617,7 +1617,7 @@ button:active{transform:scale(0.97)}
       </div>
     </div>
   </div>
-  <div id="labor-shortcut" onclick="navTo(1)">🔬 Zum Labor wechseln →</div>
+  <div id="labor-shortcut" onclick="navTo('labor')">🔬 Zum Labor wechseln →</div>
   <div id="rcont"></div>
 </div>
 
