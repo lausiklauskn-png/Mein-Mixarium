@@ -210,47 +210,8 @@ body.nav-collapsed{padding-bottom:calc(16px + var(--sb))}
   overflow:hidden;margin-bottom:9px;border:1px solid var(--sand2);
   scroll-margin-top:calc(var(--hh)+var(--st)+80px)}
 .rcard.blank{border:1.5px dashed var(--sand2);box-shadow:none;background:var(--parch)}
-.rcard-img-wrap{width:100%;height:160px;overflow:hidden;position:relative;border-bottom:1px solid var(--sand2);cursor:pointer}
-.rcard-img-wrap:hover .crop-hint{opacity:1}
-.rcard-img{width:100%;height:160px;object-fit:cover;display:block;transition:transform .1s}
-.crop-hint{position:absolute;inset:0;background:rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .18s;pointer-events:none}
-.crop-hint-lbl{background:rgba(0,0,0,.55);color:#fff;font-size:.7rem;font-weight:700;padding:5px 11px;border-radius:16px;display:flex;align-items:center;gap:5px}
-.img-resize-hdl{display:none;position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.38);border-radius:5px 5px 0 0;padding:3px 10px 2px;cursor:ns-resize;z-index:6;touch-action:none;user-select:none;align-items:center;justify-content:center}.img-resize-hdl:hover{background:rgba(0,0,0,.6)}
-#rcont .img-resize-hdl{display:flex}
-/* ── CROP EDITOR OVERLAY ── */
-.crop-ov{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.92);display:flex;flex-direction:column;padding-top:var(--st)}
-.crop-hdr{padding:10px 13px;display:flex;align-items:center;gap:9px;flex-shrink:0}
-.crop-hdr-title{color:#fff;font-family:Georgia,serif;font-size:.96rem;flex:1}
-.crop-close{background:rgba(255,255,255,.12);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.crop-close:active{background:rgba(255,255,255,.25)}
-.crop-stage{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;touch-action:none}
-.crop-frame{width:min(calc(100% - 24px),280px);max-width:280px;aspect-ratio:3/4;border-radius:10px;overflow:hidden;position:relative;box-shadow:0 0 0 3px rgba(255,255,255,.18),0 8px 32px rgba(0,0,0,.6);cursor:grab;touch-action:none}
-.crop-frame:active{cursor:grabbing}
-.crop-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;touch-action:none;user-select:none;pointer-events:none;-webkit-user-drag:none;will-change:transform}
-.crop-grid{position:absolute;inset:0;pointer-events:none;background:
-  linear-gradient(rgba(255,255,255,.14) 1px,transparent 1px) 0 0/33.33% 50%,
-  linear-gradient(90deg,rgba(255,255,255,.14) 1px,transparent 1px) 0 0/33.33% 50%;
-  border-radius:10px;opacity:0;transition:opacity .15s}
-.crop-frame.dragging .crop-grid{opacity:1}
-.crop-controls{flex-shrink:0;padding:14px 16px 8px}
-.crop-zoom-row{display:flex;align-items:center;gap:11px;margin-bottom:12px}
-.crop-zoom-ico{font-size:1rem;flex-shrink:0;color:rgba(255,255,255,.5)}
-.crop-zoom-ico.big{font-size:1.3rem;color:rgba(255,255,255,.7)}
-.crop-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,.22);outline:none;cursor:pointer}
-.crop-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.4);cursor:pointer}
-.crop-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:none;box-shadow:0 1px 6px rgba(0,0,0,.4);cursor:pointer}
-.crop-zoom-val{color:rgba(255,255,255,.55);font-size:.68rem;min-width:32px;text-align:right}
-.crop-presets{display:flex;gap:7px;margin-bottom:13px;justify-content:center}
-.crop-preset{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.18);color:rgba(255,255,255,.7);border-radius:8px;padding:6px 11px;font-size:.69rem;font-weight:700;cursor:pointer;transition:all .12s}
-.crop-preset:active{background:rgba(255,255,255,.25);color:#fff}
-.crop-preset.on{background:rgba(255,255,255,.22);border-color:#fff;color:#fff}
-.crop-footer{padding:0 14px calc(var(--sb)+10px);display:flex;gap:8px;flex-shrink:0}
-.crop-save{flex:1;padding:13px;border:none;border-radius:10px;font-weight:700;font-size:.88rem;cursor:pointer;background:var(--rust);color:#fff}
-.crop-save:active{opacity:.85}
-.crop-cancel{padding:13px 16px;border:1.5px solid rgba(255,255,255,.22);border-radius:10px;font-size:.84rem;color:rgba(255,255,255,.65);background:none;cursor:pointer}
-.crop-cancel:active{background:rgba(255,255,255,.1)}
-.crop-reset{padding:13px 13px;border:1.5px solid rgba(255,255,255,.15);border-radius:10px;font-size:.84rem;color:rgba(255,255,255,.45);background:none;cursor:pointer}
-.crop-reset:active{background:rgba(255,255,255,.08)}
+.rcard-img-wrap{width:100%;height:160px;overflow:hidden;position:relative;border-bottom:1px solid var(--sand2)}
+.rcard-img{width:100%;height:160px;object-fit:cover;display:block}
 .rcard-hd{padding:10px 10px 7px 14px;position:relative;cursor:pointer;background:var(--parch);display:flex;align-items:flex-start;gap:6px}
 .rcard-hd-content{flex:1;min-width:0}
 .rcard-hd-right{display:flex;flex-direction:column;align-items:center;justify-content:space-between;flex-shrink:0;align-self:stretch;padding:2px 0 4px}
@@ -2815,39 +2776,6 @@ Vielen Dank für deine Unterstützung.</div>
 <div class="toast" id="toast"></div>
 
 
-<div class="crop-ov" id="cropOv" style="display:none">
-  <div class="crop-hdr">
-    <button class="crop-close" onclick="closeCrop()" title="Schließen">✕</button>
-    <div class="crop-hdr-title" id="cropTitle">Bildausschnitt anpassen</div>
-  </div>
-  <div class="crop-stage">
-    <div class="crop-frame" id="cropFrame">
-      <img class="crop-img" id="cropImg" src="" alt="" draggable="false"/>
-      <div class="crop-grid"></div>
-    </div>
-  </div>
-  <div class="crop-controls">
-    <div class="crop-zoom-row">
-      <span class="crop-zoom-ico">🔍</span>
-      <input class="crop-slider" id="cropZoom" type="range" min="100" max="300" value="100" step="1"
-        oninput="onCropZoom(this.value)"/>
-      <span class="crop-zoom-ico big">🔍</span>
-      <span class="crop-zoom-val" id="cropZoomVal">1×</span>
-    </div>
-    <div class="crop-presets" id="cropPresets">
-      <button class="crop-preset" onclick="cropPreset('center')" id="cpCenter">⬛ Mitte</button>
-      <button class="crop-preset" onclick="cropPreset('top')" id="cpTop">⬆ Oben</button>
-      <button class="crop-preset" onclick="cropPreset('bottom')" id="cpBottom">⬇ Unten</button>
-      <button class="crop-preset" onclick="cropPreset('left')" id="cpLeft">◀ Links</button>
-      <button class="crop-preset" onclick="cropPreset('right')" id="cpRight">▶ Rechts</button>
-    </div>
-  </div>
-  <div class="crop-footer">
-    <button class="crop-reset" onclick="cropReset()" id="cropResetBtn" title="Zurücksetzen">↺</button>
-    <button class="crop-cancel" onclick="closeCrop()" id="cropCancelBtn">Abbrechen</button>
-    <button class="crop-save" onclick="saveCrop()" id="cropSaveBtn">✓ Speichern</button>
-  </div>
-</div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false">
 // ═══════════════════════════════════════════════════════
@@ -4245,7 +4173,6 @@ let EN={},EI={},ES={},CST={rid:null,slotId:null,sel:null};
 let DoneS={},DoneI={},DoneAL={};
 let pendImgs=[],scanData=null,scanDataStore=null;
 let SERV={}; // rid → current serving count (active scaling)
-let cropQueue=[]; // rids waiting for crop editor after bulk import
 let deferredPWA=null;
 
 // ═══════════════════════════════════════════════════════
@@ -4739,14 +4666,6 @@ function navTo(n){
 let _carIdx=0,_carCards=[];
 function carouselInit(){
   _carCards=Array.from(document.querySelectorAll('#rcont .rcard'));
-  _carCards.forEach(card=>{
-    const rid=parseInt(card.id.replace('c',''));
-    const r=R.find(x=>x.id===rid);
-    if(r&&r.imgCrop&&r.imgCrop.hRatio){
-      const wrap=card.querySelector('.rcard-img-wrap');
-      if(wrap)wrap.style.setProperty('padding-top',(r.imgCrop.hRatio*100)+'%','important');
-    }
-  });
   _carIdx=0;carouselShow();
 }
 function carouselShow(){
@@ -4756,46 +4675,7 @@ function carouselShow(){
 }
 function carouselNext(){if(_carIdx<_carCards.length-1){_carIdx++;carouselShow();}}
 function carouselPrev(){if(_carIdx>0){_carIdx--;carouselShow();}}
-let _imgRes={active:false};
-function imgResizeStart(e,rid){
-  e.stopPropagation();e.preventDefault();
-  const card=document.getElementById('c'+rid);if(!card)return;
-  const wrap=card.querySelector('.rcard-img-wrap');if(!wrap)return;
-  const clientY=e.touches?e.touches[0].clientY:e.clientY;
-  const curPct=parseFloat(wrap.style.paddingTop)||133.33;
-  const wrapW=wrap.offsetWidth||1;
-  _imgRes={active:true,rid,wrap,startY:clientY,startPct:curPct,wrapW};
-  document.addEventListener('mousemove',_imgResMove);
-  document.addEventListener('mouseup',_imgResEnd);
-  document.addEventListener('touchmove',_imgResMove,{passive:false});
-  document.addEventListener('touchend',_imgResEnd);
-  document.addEventListener('touchcancel',_imgResEnd);
-}
-function _imgResMove(e){
-  if(!_imgRes.active)return;
-  e.preventDefault();
-  const clientY=e.touches?e.touches[0].clientY:e.clientY;
-  const dy=clientY-_imgRes.startY;
-  const newPct=Math.max(133.33,_imgRes.startPct+dy/_imgRes.wrapW*100);
-  _imgRes.wrap.style.setProperty('padding-top',newPct+'%','important');
-}
-function _imgResEnd(){
-  if(!_imgRes.active)return;
-  _imgRes.active=false;
-  document.removeEventListener('mousemove',_imgResMove);
-  document.removeEventListener('mouseup',_imgResEnd);
-  document.removeEventListener('touchmove',_imgResMove);
-  document.removeEventListener('touchend',_imgResEnd);
-  document.removeEventListener('touchcancel',_imgResEnd);
-  const r=R.find(x=>x.id===_imgRes.rid);
-  if(r){
-    if(!r.imgCrop)r.imgCrop={x:50,y:50,scale:1};
-    const pct=parseFloat(_imgRes.wrap.style.paddingTop)||133.33;
-    if(Math.abs(pct-133.33)<0.1)delete r.imgCrop.hRatio;
-    else r.imgCrop.hRatio=pct/100;
-    sv();
-  }
-}
+
 // ═══════════════════════════════════════════════════════
 // KI-LABOR (Mix-Labor) — Getränke erfinden & bewerten
 // ═══════════════════════════════════════════════════════
@@ -5698,15 +5578,8 @@ function assignAllImgs(){
   });
   sv();render();pendImgs=[];renderPendImgs();
   if(!ok){toast('⚠️ Kein Rezept ausgewählt');return;}
-  // Close import overlay, then open crop editor for each assigned image
   closeImport();
-  if(assigned.length===1){
-    setTimeout(()=>openCrop(assigned[0]),260);
-  }else{
-    // Queue: show each crop editor one after the other
-    cropQueue=[...assigned];
-    setTimeout(()=>nextCropInQueue(),260);
-  }
+  toast('✅ '+ok+' Bild'+(ok===1?'':'er')+' zugewiesen');
 }
 // Drag&drop (file dropzone)
 window.addEventListener('DOMContentLoaded',()=>{
@@ -6608,12 +6481,7 @@ function acceptScan(){
   window._scanRec=null;
   const newRid=(empty?empty.id:nr.id);
   closeImport();
-  // Open crop editor so user can frame the dish right away
-  if(scanDataStore){
-    setTimeout(()=>openCrop(newRid),260);
-  }else{
-    toast('✅ '+h(nr.name));
-  }
+  toast('✅ '+h(nr.name));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -7957,9 +7825,8 @@ function pickImgForCard(rid){
     fr.onload=async ev=>{
       const r=R.find(r=>r.id===rid);if(!r)return;
       r.img=await resizeImage(ev.target.result,800,0.75);
-      r.imgCrop={x:50,y:50,scale:1};
+      r.imgCrop={x:50,y:50};
       sv();render();
-      setTimeout(()=>openCrop(rid),120);
     };
     fr.readAsDataURL(f);
   };inp.click();
@@ -8209,7 +8076,7 @@ function rndCard(r){
   const imps=(rat.imps||[]).map((t,i)=>`<li class="imp-li"><span class="impbull">→</span><span class="imptxt">${h(t)}</span><button class="xbtn" onclick="delImp(${r.id},${i})" title="${T('ttlDelImp')}">✕</button></li>`).join('')
     ||`<li style="padding:3px 0;color:#c4aa7a;font-size:.76rem;font-style:italic">…</li>`;
   return`<div class="rcard ${isBlank?'blank':''}" id="c${r.id}">
-    ${r.img?(()=>{const cr=r.imgCrop||{x:50,y:50,scale:1};return`<div class="rcard-img-wrap" onclick="event.stopPropagation();openCrop(${r.id})" title="${T('cropTitle')}"><img class="rcard-img" src="${r.img}" alt="${h(r.name)}" loading="lazy" style="transform:scale(${cr.scale});transform-origin:${cr.x}% ${cr.y}%"/><div class="crop-hint"><div class="crop-hint-lbl">${T('cropHint')}</div></div><div class="img-resize-hdl" onmousedown="imgResizeStart(event,${r.id})" ontouchstart="imgResizeStart(event,${r.id})" onclick="event.stopPropagation()"><svg width="24" height="6" viewBox="0 0 24 6" fill="rgba(255,255,255,.8)" style="display:block"><polygon points="0,3 4,0 4,6"/><rect x="6" y="2" width="12" height="2" rx="1"/><polygon points="24,3 20,0 20,6"/></svg></div></div>`;})():''}
+    ${r.img?(()=>{const cr=r.imgCrop||{x:50,y:50};return`<div class="rcard-img-wrap"><img class="rcard-img" src="${r.img}" alt="${h(r.name)}" loading="lazy" style="object-position:${cr.x}% ${cr.y}%"/></div>`;})():''}
     <div class="rcard-hd" onclick="${isBlank?'openInlineEdit('+r.id+')':'togCard('+r.id+')'}">
       <div class="stripe" style="background:${cc}"></div>
       <div class="rcard-hd-content">
@@ -8234,7 +8101,7 @@ function rndCard(r){
         <div class="chint">${r.shut?'▼ aufklappen':'▲ einklappen'}</div>
       </div>`}
     </div>
-    ${r.name&&!r.img?`<button class="imgbar" style="${r.shut?'display:none':''}" onclick="pickImgForCard(${r.id})">🖼️ ${T('addImg')}</button>`:r.img?`<div style="display:${r.shut?'none':'flex'};border-bottom:1px solid var(--sand2)"><button class="imgbar" style="flex:1" onclick="pickImgForCard(${r.id})">🖼️ ${T('addImg')}</button><button class="imgbar" style="flex:1;border-left:1px solid var(--sand2)" onclick="openCrop(${r.id})">✂️ ${T('cropBtn')}</button></div>`:''}
+    ${r.name?`<button class="imgbar" style="${r.shut?'display:none':''}" onclick="pickImgForCard(${r.id})">🖼️ ${T('addImg')}</button>`:''}
     ${r.name&&!isBlank?'':''}
     <div class="rbody ${r.shut?'shut':''}">
       ${isBlank?`<div style="padding:7px 11px;background:var(--teals);font-size:.72rem;color:#1e4a45;display:flex;gap:5px;border-bottom:1px solid var(--sand2)"><span>✏️</span>${T('blankHint')}</div>`:''}
@@ -8799,232 +8666,6 @@ function saveRat(id){
 function addImp(id){const el=document.getElementById('ii-'+id),v=el?.value.trim();if(!v)return;const r=R.find(r=>r.id===id);if(!r.rating)r.rating={stars:0,comment:'',imps:[]};r.rating.imps.push(v);el.value='';sv();render();setTimeout(()=>document.getElementById('ii-'+id)?.focus(),20);}
 function delImp(rid,i){const r=R.find(r=>r.id===rid);if(r?.rating?.imps)r.rating.imps.splice(i,1);sv();render();}
 
-// ═══════════════════════════════════════════════════════
-// CROP EDITOR
-// ═══════════════════════════════════════════════════════
-let CE={rid:null,x:50,y:50,scale:1,drag:false,lastX:0,lastY:0,pinchDist:0,lastScale:1};
-
-function openCrop(rid){
-  const r=R.find(r=>r.id===rid);if(!r||!r.img)return;
-  CE.rid=rid;
-  const cr=r.imgCrop||{x:50,y:50,scale:1};
-  CE.x=cr.x;CE.y=cr.y;CE.scale=cr.scale;
-  CE.drag=false;
-
-  // Set image
-  const img=document.getElementById('cropImg');
-  img.src=r.img;
-
-  // Sync slider and display
-  const sl=document.getElementById('cropZoom');
-  sl.value=Math.round(CE.scale*100);
-  document.getElementById('cropZoomVal').textContent=(CE.scale).toFixed(1)+'×';
-
-  // Apply initial transform
-  applyCropTransform();
-
-  // Update translations
-  applyLangToCrop();
-
-  document.getElementById('cropOv').style.display='flex';
-  document.body.style.overflow='hidden';
-
-  // Bind events (remove any stale first)
-  bindCropEvents();
-}
-
-function applyLangToCrop(){
-  const ids=['cropTitle','cpCenter','cpTop','cpBottom','cpLeft','cpRight','cropSaveBtn','cropCancelBtn','cropResetBtn'];
-  const keys=['cropTitle','cpCenter','cpTop','cpBottom','cpLeft','cpRight','cropSave','cropCancel','cropReset'];
-  ids.forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=T(keys[i]);});
-}
-
-function closeCrop(){
-  document.getElementById('cropOv').style.display='none';
-  document.body.style.overflow='';
-  unbindCropEvents();
-  cropQueue=[];
-}
-
-function saveCrop(){
-  const r=R.find(r=>r.id===CE.rid);
-  if(r){
-    r.imgCrop={x:round2(CE.x),y:round2(CE.y),scale:round2(CE.scale)};
-    sv();render();
-  }
-  // Close overlay first, then open next in queue (if any)
-  document.getElementById('cropOv').style.display='none';
-  document.body.style.overflow='';
-  unbindCropEvents();
-  if(cropQueue.length>0){
-    const remaining=cropQueue.length;
-    // Update header to show progress
-    setTimeout(()=>{
-      nextCropInQueue();
-    },180);
-  }else{
-    toast('✅ '+T('cropSave'));
-  }
-}
-
-// Step through queued rids one by one after bulk import
-function nextCropInQueue(){
-  if(cropQueue.length===0){toast('✅ '+T('cropSave'));return;}
-  const nextRid=cropQueue.shift();
-  const r=R.find(r=>r.id===nextRid);
-  if(!r||!r.img){nextCropInQueue();return;} // skip if no image
-  openCrop(nextRid);
-  // Show progress in header title
-  const remaining=cropQueue.length;
-  if(remaining>0){
-    const titleEl=document.getElementById('cropTitle');
-    if(titleEl)titleEl.textContent=T('cropTitle')+' ('+(remaining+1)+' Bilder)';
-  }
-}
-
-function round2(n){return Math.round(n*100)/100;}
-
-function applyCropTransform(){
-  const img=document.getElementById('cropImg');
-  if(!img)return;
-  img.style.transformOrigin=CE.x+'% '+CE.y+'%';
-  img.style.transform='scale('+CE.scale+')';
-}
-
-function onCropZoom(val){
-  CE.scale=Math.max(1,Math.min(3,val/100));
-  applyCropTransform();
-  document.getElementById('cropZoomVal').textContent=CE.scale.toFixed(1)+'×';
-}
-
-function cropPreset(pos){
-  const map={center:{x:50,y:50},top:{x:50,y:10},bottom:{x:50,y:90},left:{x:10,y:50},right:{x:90,y:50}};
-  const p=map[pos];if(!p)return;
-  CE.x=p.x;CE.y=p.y;
-  if(CE.scale<1.2)CE.scale=1.4;
-  applyCropTransform();
-  const sl=document.getElementById('cropZoom');
-  sl.value=Math.round(CE.scale*100);
-  document.getElementById('cropZoomVal').textContent=CE.scale.toFixed(1)+'×';
-}
-
-function cropReset(){
-  CE.x=50;CE.y=50;CE.scale=1;
-  applyCropTransform();
-  const sl=document.getElementById('cropZoom');
-  sl.value=100;
-  document.getElementById('cropZoomVal').textContent='1×';
-}
-
-// ── Drag (mouse) ───────────────────────────────────────
-function onCropMouseDown(e){
-  if(e.button!==0)return;
-  CE.drag=true;CE.lastX=e.clientX;CE.lastY=e.clientY;
-  document.getElementById('cropFrame').classList.add('dragging');
-  e.preventDefault();
-}
-function onCropMouseMove(e){
-  if(!CE.drag)return;
-  const frame=document.getElementById('cropFrame');
-  if(!frame)return;
-  const fw=frame.offsetWidth,fh=frame.offsetHeight;
-  const dx=e.clientX-CE.lastX,dy=e.clientY-CE.lastY;
-  CE.lastX=e.clientX;CE.lastY=e.clientY;
-  // Move focal point opposite to drag direction
-  // sensitivity: 100% movement across full frame width moves focal point 100/(scale-1)% when zoomed
-  const sens=CE.scale<=1?0:100/(CE.scale-1+0.01);
-  CE.x=clamp(CE.x-dx/fw*sens,0,100);
-  CE.y=clamp(CE.y-dy/fh*sens,0,100);
-  applyCropTransform();
-}
-function onCropMouseUp(){
-  CE.drag=false;
-  document.getElementById('cropFrame')?.classList.remove('dragging');
-}
-
-// ── Drag (touch) ───────────────────────────────────────
-function onCropTouchStart(e){
-  if(e.touches.length===1){
-    CE.drag=true;
-    CE.lastX=e.touches[0].clientX;CE.lastY=e.touches[0].clientY;
-    document.getElementById('cropFrame').classList.add('dragging');
-  }else if(e.touches.length===2){
-    CE.drag=false;
-    CE.pinchDist=getTouchDist(e.touches);
-    CE.lastScale=CE.scale;
-    document.getElementById('cropFrame').classList.add('dragging');
-  }
-  e.preventDefault();
-}
-function onCropTouchMove(e){
-  e.preventDefault();
-  if(e.touches.length===1&&CE.drag){
-    const frame=document.getElementById('cropFrame');
-    const fw=frame.offsetWidth,fh=frame.offsetHeight;
-    const dx=e.touches[0].clientX-CE.lastX;
-    const dy=e.touches[0].clientY-CE.lastY;
-    CE.lastX=e.touches[0].clientX;CE.lastY=e.touches[0].clientY;
-    const sens=CE.scale<=1?0:100/(CE.scale-1+0.01);
-    CE.x=clamp(CE.x-dx/fw*sens,0,100);
-    CE.y=clamp(CE.y-dy/fh*sens,0,100);
-    applyCropTransform();
-  }else if(e.touches.length===2){
-    const dist=getTouchDist(e.touches);
-    const ratio=dist/CE.pinchDist;
-    CE.scale=clamp(CE.lastScale*ratio,1,3);
-    applyCropTransform();
-    const sl=document.getElementById('cropZoom');
-    sl.value=Math.round(CE.scale*100);
-    document.getElementById('cropZoomVal').textContent=CE.scale.toFixed(1)+'×';
-  }
-}
-function onCropTouchEnd(e){
-  if(e.touches.length===0){
-    CE.drag=false;
-    document.getElementById('cropFrame')?.classList.remove('dragging');
-  }
-}
-function getTouchDist(touches){
-  const dx=touches[0].clientX-touches[1].clientX;
-  const dy=touches[0].clientY-touches[1].clientY;
-  return Math.sqrt(dx*dx+dy*dy);
-}
-function clamp(v,mn,mx){return Math.max(mn,Math.min(mx,v));}
-
-// ── Scroll-to-zoom on desktop ──────────────────────────
-function onCropWheel(e){
-  e.preventDefault();
-  const delta=e.deltaY>0?-0.08:0.08;
-  CE.scale=clamp(CE.scale+delta,1,3);
-  applyCropTransform();
-  const sl=document.getElementById('cropZoom');
-  sl.value=Math.round(CE.scale*100);
-  document.getElementById('cropZoomVal').textContent=CE.scale.toFixed(1)+'×';
-}
-
-// ── Bind / unbind events ───────────────────────────────
-function bindCropEvents(){
-  const frame=document.getElementById('cropFrame');
-  if(!frame)return;
-  frame.addEventListener('mousedown',onCropMouseDown);
-  frame.addEventListener('touchstart',onCropTouchStart,{passive:false});
-  frame.addEventListener('touchmove',onCropTouchMove,{passive:false});
-  frame.addEventListener('touchend',onCropTouchEnd);
-  frame.addEventListener('wheel',onCropWheel,{passive:false});
-  document.addEventListener('mousemove',onCropMouseMove);
-  document.addEventListener('mouseup',onCropMouseUp);
-}
-function unbindCropEvents(){
-  const frame=document.getElementById('cropFrame');
-  if(!frame)return;
-  frame.removeEventListener('mousedown',onCropMouseDown);
-  frame.removeEventListener('touchstart',onCropTouchStart);
-  frame.removeEventListener('touchmove',onCropTouchMove);
-  frame.removeEventListener('touchend',onCropTouchEnd);
-  frame.removeEventListener('wheel',onCropWheel);
-  document.removeEventListener('mousemove',onCropMouseMove);
-  document.removeEventListener('mouseup',onCropMouseUp);
-}
 
 // ═══════════════════════════════════════════════════════
 // KEYBOARD SHORTCUTS
@@ -9035,7 +8676,7 @@ document.addEventListener('keydown',e=>{
   if(meta&&e.key==='n'){e.preventDefault();openNewPanel();}
   if(meta&&e.key==='m'){e.preventDefault();showSc('menu');}
   if(meta&&e.key==='z'&&!e.shiftKey){e.preventDefault();undoRec(_lastEditRid||(R.find(r=>!r.shut)||{}).id);}
-  if(e.key==='Escape'){if(document.getElementById('cropOv')?.style.display!=='none'){closeCrop();return;}closeImport();closeExport();closeLang();closeMV();
+  if(e.key==='Escape'){closeImport();closeExport();closeLang();closeMV();
     document.getElementById('courseSheet').style.display='none';
     document.getElementById('folderSheet').style.display='none';
     document.getElementById('_rp')?.remove();}
@@ -9140,7 +8781,7 @@ function _initTooltips(){
     if(dx<0&&idx<SC_ORDER.length-1)showSc(SC_ORDER[idx+1],'left');
     else if(dx>0&&idx>0)showSc(SC_ORDER[idx-1],'right');
   }
-  const SWIPE_DRAG_SEL='.drag-hdl,.ing-drag-hdl,.fld-drag-hdl,.wk-drag-hdl,.img-resize-hdl';
+  const SWIPE_DRAG_SEL='.drag-hdl,.ing-drag-hdl,.fld-drag-hdl,.wk-drag-hdl';
   // Touch-Swipe (Finger / Stift)
   let tx=0,ty=0,locked=false,_swTarget=null;
   document.addEventListener('touchstart',function(e){
@@ -9214,8 +8855,7 @@ boot();
 // ── ZURÜCK-TASTE (Android-Hardware + Maus-Zurück) ────────
 (function(){
   var OVERLAY_MAP=[
-    {id:'cropOv',         close:function(){closeCrop();}},
-    {id:'ob-scan-ov',     close:function(){obCloseIntercept();}},
+{id:'ob-scan-ov',     close:function(){obCloseIntercept();}},
     {id:'ob-wizard-bg',   close:function(){obCloseWizard();}},
     {id:'ob-helper-bg',   close:function(){obCloseHelper();}},
     {id:'ob-settings-bg', close:function(){obCloseSettings();}},
