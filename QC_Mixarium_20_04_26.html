@@ -4666,6 +4666,17 @@ function navTo(n){
 let _carIdx=0,_carCards=[];
 function carouselInit(){
   _carCards=Array.from(document.querySelectorAll('#rcont .rcard'));
+  const cont=document.getElementById('rcont');
+  const cw=cont?cont.offsetWidth:0;
+  if(cw>=50){
+    const h=Math.round(cw*4/3);
+    _carCards.forEach(card=>{
+      const wrap=card.querySelector('.rcard-img-wrap');
+      const img=card.querySelector('.rcard-img');
+      if(wrap){wrap.style.setProperty('height',h+'px','important');}
+      if(img){img.style.setProperty('height',h+'px','important');}
+    });
+  }
   _carIdx=0;carouselShow();
 }
 function carouselShow(){
