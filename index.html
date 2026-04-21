@@ -215,6 +215,8 @@ body.nav-collapsed{padding-bottom:calc(16px + var(--sb))}
 .rcard-img{width:100%;height:160px;object-fit:cover;display:block;transition:transform .1s}
 .crop-hint{position:absolute;inset:0;background:rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .18s;pointer-events:none}
 .crop-hint-lbl{background:rgba(0,0,0,.55);color:#fff;font-size:.7rem;font-weight:700;padding:5px 11px;border-radius:16px;display:flex;align-items:center;gap:5px}
+.img-resize-hdl{display:none;position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.38);border-radius:5px 5px 0 0;padding:3px 10px 2px;cursor:ns-resize;z-index:6;touch-action:none;user-select:none;align-items:center;justify-content:center}.img-resize-hdl:hover{background:rgba(0,0,0,.6)}
+#rcont .img-resize-hdl{display:flex}
 /* ── CROP EDITOR OVERLAY ── */
 .crop-ov{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.92);display:flex;flex-direction:column;padding-top:var(--st)}
 .crop-hdr{padding:10px 13px;display:flex;align-items:center;gap:9px;flex-shrink:0}
@@ -4737,6 +4739,14 @@ function navTo(n){
 let _carIdx=0,_carCards=[];
 function carouselInit(){
   _carCards=Array.from(document.querySelectorAll('#rcont .rcard'));
+  _carCards.forEach(card=>{
+    const rid=parseInt(card.id.replace('c',''));
+    const r=R.find(x=>x.id===rid);
+    if(r&&r.imgCrop&&r.imgCrop.hRatio){
+      const wrap=card.querySelector('.rcard-img-wrap');
+      if(wrap)wrap.style.setProperty('padding-top',(r.imgCrop.hRatio*100)+'%','important');
+    }
+  });
   _carIdx=0;carouselShow();
 }
 function carouselShow(){
@@ -4746,6 +4756,46 @@ function carouselShow(){
 }
 function carouselNext(){if(_carIdx<_carCards.length-1){_carIdx++;carouselShow();}}
 function carouselPrev(){if(_carIdx>0){_carIdx--;carouselShow();}}
+let _imgRes={active:false};
+function imgResizeStart(e,rid){
+  e.stopPropagation();e.preventDefault();
+  const card=document.getElementById('c'+rid);if(!card)return;
+  const wrap=card.querySelector('.rcard-img-wrap');if(!wrap)return;
+  const clientY=e.touches?e.touches[0].clientY:e.clientY;
+  const curPct=parseFloat(wrap.style.paddingTop)||133.33;
+  const wrapW=wrap.offsetWidth||1;
+  _imgRes={active:true,rid,wrap,startY:clientY,startPct:curPct,wrapW};
+  document.addEventListener('mousemove',_imgResMove);
+  document.addEventListener('mouseup',_imgResEnd);
+  document.addEventListener('touchmove',_imgResMove,{passive:false});
+  document.addEventListener('touchend',_imgResEnd);
+  document.addEventListener('touchcancel',_imgResEnd);
+}
+function _imgResMove(e){
+  if(!_imgRes.active)return;
+  e.preventDefault();
+  const clientY=e.touches?e.touches[0].clientY:e.clientY;
+  const dy=clientY-_imgRes.startY;
+  const newPct=Math.max(133.33,_imgRes.startPct+dy/_imgRes.wrapW*100);
+  _imgRes.wrap.style.setProperty('padding-top',newPct+'%','important');
+}
+function _imgResEnd(){
+  if(!_imgRes.active)return;
+  _imgRes.active=false;
+  document.removeEventListener('mousemove',_imgResMove);
+  document.removeEventListener('mouseup',_imgResEnd);
+  document.removeEventListener('touchmove',_imgResMove);
+  document.removeEventListener('touchend',_imgResEnd);
+  document.removeEventListener('touchcancel',_imgResEnd);
+  const r=R.find(x=>x.id===_imgRes.rid);
+  if(r){
+    if(!r.imgCrop)r.imgCrop={x:50,y:50,scale:1};
+    const pct=parseFloat(_imgRes.wrap.style.paddingTop)||133.33;
+    if(Math.abs(pct-133.33)<0.1)delete r.imgCrop.hRatio;
+    else r.imgCrop.hRatio=pct/100;
+    sv();
+  }
+}
 // ═══════════════════════════════════════════════════════
 // KI-LABOR (Mix-Labor) — Getränke erfinden & bewerten
 // ═══════════════════════════════════════════════════════
@@ -8159,7 +8209,7 @@ function rndCard(r){
   const imps=(rat.imps||[]).map((t,i)=>`<li class="imp-li"><span class="impbull">→</span><span class="imptxt">${h(t)}</span><button class="xbtn" onclick="delImp(${r.id},${i})" title="${T('ttlDelImp')}">✕</button></li>`).join('')
     ||`<li style="padding:3px 0;color:#c4aa7a;font-size:.76rem;font-style:italic">…</li>`;
   return`<div class="rcard ${isBlank?'blank':''}" id="c${r.id}">
-    ${r.img?(()=>{const cr=r.imgCrop||{x:50,y:50,scale:1};return`<div class="rcard-img-wrap" onclick="event.stopPropagation();openCrop(${r.id})" title="${T('cropTitle')}"><img class="rcard-img" src="${r.img}" alt="${h(r.name)}" loading="lazy" style="transform:scale(${cr.scale});transform-origin:${cr.x}% ${cr.y}%"/><div class="crop-hint"><div class="crop-hint-lbl">${T('cropHint')}</div></div></div>`;})():''}
+    ${r.img?(()=>{const cr=r.imgCrop||{x:50,y:50,scale:1};return`<div class="rcard-img-wrap" onclick="event.stopPropagation();openCrop(${r.id})" title="${T('cropTitle')}"><img class="rcard-img" src="${r.img}" alt="${h(r.name)}" loading="lazy" style="transform:scale(${cr.scale});transform-origin:${cr.x}% ${cr.y}%"/><div class="crop-hint"><div class="crop-hint-lbl">${T('cropHint')}</div></div><div class="img-resize-hdl" onmousedown="imgResizeStart(event,${r.id})" ontouchstart="imgResizeStart(event,${r.id})" onclick="event.stopPropagation()"><svg width="24" height="6" viewBox="0 0 24 6" fill="rgba(255,255,255,.8)" style="display:block"><polygon points="0,3 4,0 4,6"/><rect x="6" y="2" width="12" height="2" rx="1"/><polygon points="24,3 20,0 20,6"/></svg></div></div>`;})():''}
     <div class="rcard-hd" onclick="${isBlank?'openInlineEdit('+r.id+')':'togCard('+r.id+')'}">
       <div class="stripe" style="background:${cc}"></div>
       <div class="rcard-hd-content">
@@ -9090,7 +9140,7 @@ function _initTooltips(){
     if(dx<0&&idx<SC_ORDER.length-1)showSc(SC_ORDER[idx+1],'left');
     else if(dx>0&&idx>0)showSc(SC_ORDER[idx-1],'right');
   }
-  const SWIPE_DRAG_SEL='.drag-hdl,.ing-drag-hdl,.fld-drag-hdl,.wk-drag-hdl';
+  const SWIPE_DRAG_SEL='.drag-hdl,.ing-drag-hdl,.fld-drag-hdl,.wk-drag-hdl,.img-resize-hdl';
   // Touch-Swipe (Finger / Stift)
   let tx=0,ty=0,locked=false,_swTarget=null;
   document.addEventListener('touchstart',function(e){
