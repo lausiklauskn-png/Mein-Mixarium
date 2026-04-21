@@ -237,6 +237,16 @@ body.nav-collapsed{padding-bottom:calc(16px + var(--sb))}
 .imgbar{width:100%;padding:7px;background:var(--sand);border:none;border-bottom:1px solid var(--sand2);
   font-size:.68rem;color:var(--br3);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
 .imgbar:active{background:var(--sand2)}
+/* Ausschnitt-Button auf Getränkebild */
+.img-crop-btn{position:absolute;bottom:7px;right:7px;background:rgba(0,0,0,.55);border:none;border-radius:8px;color:#fff;font-size:.68rem;padding:4px 8px;cursor:pointer;z-index:2;line-height:1.3;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);font-family:inherit;font-weight:600}
+.img-crop-btn:active{background:rgba(0,0,0,.8)}
+/* Crop-Overlay Vorschau (Hochformat 3:4) */
+.crop-prev-wrap{width:100%;max-width:260px;position:relative;overflow:hidden;border-radius:14px;cursor:move;touch-action:none;background:#111;align-self:center;flex-shrink:0}
+.crop-prev-wrap::before{content:'';display:block;padding-top:133.33%}
+.crop-prev-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+/* Crop Positionierungs-Buttons */
+.cpbtn{border:1.5px solid var(--sand2);border-radius:8px;background:var(--sand);color:var(--br2);font-size:.7rem;padding:8px 3px;cursor:pointer;font-family:inherit;font-weight:600;line-height:1.2;white-space:nowrap}
+.cpbtn:active{background:var(--sand2);transform:scale(0.95)}
 
 /* section */
 .sec{padding:10px 11px;border-top:1px solid var(--sand2)}
@@ -4511,7 +4521,7 @@ function applyLang(code){
     'txtSc1T','txtSc1D','txtWebLbl','txtSc2T','txtSc3T',
     'sc1T','sc1D','sc2T','sc2D','sc3T','sc3D','scanDropLbl','apiKeyLbl','apiHint','scanBtn',
     'scanOpenLink','scanReadyLbl','scanChangeLbl','scanBtnLbl','pasteBtnLbl',
-    'cropTitle','cpCenter','cpTop','cpBottom','cpLeft','cpRight',
+    'cropTitle','cpCenter','cpTop','cpBottom','cpLeft','cpRight','cropSave','cropCancel','cropReset','cropHint',
     'bakTitle','bakDesc','bakBtn','bakHint',
     'sBvScreenTitle','sBvLbl','sBvSub',
     'expTitle','expPdfT','expPdfD','expPdfBtn','expFlipT','expFlipD','expFlipBtn',
@@ -4653,6 +4663,7 @@ function navTo(n){
     {id:'langOv',     fn:function(){closeLang();}},
     {id:'helpOv',     fn:function(){closeHelpOv();}},
     {id:'manualOv',   fn:function(){var e=document.getElementById('manualOv');if(e)e.style.display='none';}},
+    {id:'cropOv',     fn:function(){closeCropOv();}},
   ];
   var closed=false;
   for(var i=0;i<_fovClose.length;i++){
@@ -7844,6 +7855,73 @@ function pickImgForCard(rid){
 }
 
 // ═══════════════════════════════════════════════════════
+// BILD-AUSSCHNITT ANPASSEN (Crop)
+// ═══════════════════════════════════════════════════════
+let _cropRid=null,_cropCr={x:50,y:50},_cropDrag=null;
+
+function openCropOv(rid){
+  const r=R.find(r=>r.id===rid);if(!r||!r.img)return;
+  _cropRid=rid;
+  _cropCr={...(r.imgCrop||{x:50,y:50})};
+  const img=document.getElementById('cropPrevImg');
+  if(img){img.src=r.img;img.style.objectPosition=`${_cropCr.x}% ${_cropCr.y}%`;}
+  document.getElementById('cropOv').style.display='flex';
+  _cropInitDrag();
+}
+function closeCropOv(){
+  document.getElementById('cropOv').style.display='none';
+  document.removeEventListener('mousemove',_cropMouseMove);
+  document.removeEventListener('mouseup',_cropMouseUp);
+  _cropRid=null;_cropDrag=null;
+}
+function saveCropOv(){
+  if(_cropRid===null)return;
+  const r=R.find(r=>r.id===_cropRid);if(!r)return;
+  r.imgCrop={x:Math.round(_cropCr.x),y:Math.round(_cropCr.y)};
+  sv();render();closeCropOv();
+}
+function resetCropOv(){_cropCr={x:50,y:50};_cropApplyPos();}
+function setCropPos(x,y){_cropCr={x,y};_cropApplyPos();}
+function _cropApplyPos(){
+  const img=document.getElementById('cropPrevImg');
+  if(img)img.style.objectPosition=`${_cropCr.x}% ${_cropCr.y}%`;
+}
+function _cropInitDrag(){
+  const wrap=document.getElementById('cropPrevWrap');if(!wrap)return;
+  const fresh=wrap.cloneNode(true);
+  wrap.parentNode.replaceChild(fresh,wrap);
+  fresh.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    _cropDrag={startX:e.clientX,startY:e.clientY,origX:_cropCr.x,origY:_cropCr.y};
+  });
+  document.addEventListener('mousemove',_cropMouseMove);
+  document.addEventListener('mouseup',_cropMouseUp);
+  fresh.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    e.preventDefault();
+    const t=e.touches[0];
+    _cropDrag={startX:t.clientX,startY:t.clientY,origX:_cropCr.x,origY:_cropCr.y};
+  },{passive:false});
+  fresh.addEventListener('touchmove',e=>{
+    if(!_cropDrag||e.touches.length!==1)return;
+    e.preventDefault();
+    const t=e.touches[0];
+    _cropMoveDelta(t.clientX-_cropDrag.startX,t.clientY-_cropDrag.startY);
+  },{passive:false});
+  fresh.addEventListener('touchend',()=>{_cropDrag=null;});
+}
+function _cropMouseMove(e){if(!_cropDrag)return;_cropMoveDelta(e.clientX-_cropDrag.startX,e.clientY-_cropDrag.startY);}
+function _cropMouseUp(){_cropDrag=null;}
+function _cropMoveDelta(dx,dy){
+  const wrap=document.getElementById('cropPrevWrap');
+  const w=wrap?wrap.offsetWidth:260;
+  const hh=wrap?wrap.offsetHeight:347;
+  _cropCr.x=Math.max(0,Math.min(100,_cropDrag.origX-dx/w*100));
+  _cropCr.y=Math.max(0,Math.min(100,_cropDrag.origY-dy/hh*100));
+  _cropApplyPos();
+}
+
+// ═══════════════════════════════════════════════════════
 // NOTES
 // ═══════════════════════════════════════════════════════
 function openNote(nk){EN[nk]=true;render();setTimeout(()=>{const ta=document.getElementById('nte-'+nk);if(ta){ta.focus();ta.selectionStart=ta.value.length;}},30);}
@@ -8087,7 +8165,7 @@ function rndCard(r){
   const imps=(rat.imps||[]).map((t,i)=>`<li class="imp-li"><span class="impbull">→</span><span class="imptxt">${h(t)}</span><button class="xbtn" onclick="delImp(${r.id},${i})" title="${T('ttlDelImp')}">✕</button></li>`).join('')
     ||`<li style="padding:3px 0;color:#c4aa7a;font-size:.76rem;font-style:italic">…</li>`;
   return`<div class="rcard ${isBlank?'blank':''}" id="c${r.id}">
-    ${r.img?(()=>{const cr=r.imgCrop||{x:50,y:50};return`<div class="rcard-img-wrap"><img class="rcard-img" src="${r.img}" alt="${h(r.name)}" loading="lazy" style="object-position:${cr.x}% ${cr.y}%"/></div>`;})():''}
+    ${r.img?(()=>{const cr=r.imgCrop||{x:50,y:50};return`<div class="rcard-img-wrap"><img class="rcard-img" src="${r.img}" alt="${h(r.name)}" loading="lazy" style="object-position:${cr.x}% ${cr.y}%"/><button class="img-crop-btn" onclick="event.stopPropagation();openCropOv(${r.id})" title="${T('cropHint')}">✂️ ${T('cropBtn')}</button></div>`;})():''}
     <div class="rcard-hd" onclick="${isBlank?'openInlineEdit('+r.id+')':'togCard('+r.id+')'}">
       <div class="stripe" style="background:${cc}"></div>
       <div class="rcard-hd-content">
@@ -11165,6 +11243,36 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       <button class="exp-btn tl" style="width:100%;padding:11px;font-size:.82rem" id="hlpCacheOk"
         onclick="document.getElementById('cacheOv').style.display='none'">✓ Verstanden</button>
     </div>
+  </div>
+</div>
+
+<!-- BILD-AUSSCHNITT ANPASSEN OVERLAY -->
+<div class="fov" id="cropOv" style="display:none">
+  <div class="fov-hdr" onclick="closeCropOv()">
+    <button class="fov-back" onclick="event.stopPropagation();closeCropOv()" title="Zurück">←</button>
+    <div class="fov-title" id="cropTitle">✂️ Bildausschnitt anpassen</div>
+  </div>
+  <div class="fov-body" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 14px 30px">
+    <div class="crop-prev-wrap" id="cropPrevWrap">
+      <img class="crop-prev-img" id="cropPrevImg" src="" alt="" draggable="false"/>
+    </div>
+    <div id="cropHint" style="font-size:.72rem;color:var(--br3);text-align:center">✂️ Ausschnitt anpassen</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;max-width:260px">
+      <div></div>
+      <button class="cpbtn" onclick="setCropPos(50,0)" id="cpTop">⬆ Oben</button>
+      <div></div>
+      <button class="cpbtn" onclick="setCropPos(0,50)" id="cpLeft">◀ Links</button>
+      <button class="cpbtn" onclick="setCropPos(50,50)" id="cpCenter">⬛ Mitte</button>
+      <button class="cpbtn" onclick="setCropPos(100,50)" id="cpRight">▶ Rechts</button>
+      <div></div>
+      <button class="cpbtn" onclick="setCropPos(50,100)" id="cpBottom">⬇ Unten</button>
+      <div></div>
+    </div>
+    <div style="display:flex;gap:8px;width:100%;max-width:260px">
+      <button onclick="resetCropOv()" id="cropReset" style="flex:1;padding:10px;border:1.5px solid var(--sand2);background:var(--sand);border-radius:9px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--br2)">↺ Zurücksetzen</button>
+      <button onclick="saveCropOv()" id="cropSave" style="flex:2;padding:10px;border:none;background:var(--teal);border-radius:9px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;color:#fff">✓ Speichern</button>
+    </div>
+    <button onclick="closeCropOv()" id="cropCancel" style="width:100%;max-width:260px;padding:9px;border:1.5px solid var(--sand2);background:none;border-radius:9px;font-size:.8rem;cursor:pointer;font-family:inherit;color:var(--br3)">Abbrechen</button>
   </div>
 </div>
 
