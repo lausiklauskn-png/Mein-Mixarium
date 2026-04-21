@@ -274,5 +274,30 @@ Das `#mv`-Overlay (Mein Menü / Wochenplan) soll **optisch identisch** mit dem `
 3. JavaScript: `element.style.setProperty('height', wert, 'important')`
 → Nicht mehrere CSS-Varianten stapeln bevor Benutzer bestätigt hat
 
+### ⚠️ REGEL: Elementhöhe niemals per CSS `calc(vw)` setzen — immer JS
+
+**Problem aus der Praxis:** `height:calc((100vw - 12px) * 4/3) !important` auf `.rcard-img-wrap` hat in Chrome/Android nie gegriffen — das Element blieb bei `height:160px`. Auch `height:0 + padding-top:133%` kollabiert bei `overflow:hidden` auf 0 sichtbare Höhe.
+
+**Regel:** Wenn eine Elementhöhe von der gemessenen Breite abhängt (Seitenverhältnis erzwingen), immer JavaScript verwenden:
+
+```javascript
+// In carouselInit() oder showSc()-Hook:
+const cw = document.getElementById('rcont').offsetWidth;
+if (cw >= 50) {
+  const h = Math.round(cw * 4 / 3);
+  cards.forEach(card => {
+    const wrap = card.querySelector('.rcard-img-wrap');
+    const img  = card.querySelector('.rcard-img');
+    if (wrap) wrap.style.setProperty('height', h + 'px', 'important');
+    if (img)  img.style.setProperty('height',  h + 'px', 'important');
+  });
+}
+```
+
+**Warum `offsetWidth` zuverlässig ist:**
+- `showSc('recipes')` setzt `.on` (display:block) **vor** `render()` → Element ist sichtbar
+- `offsetWidth` gibt echte CSS-Pixel, unabhängig von URL-Leiste oder Viewport-Tricks
+- Inline `!important` via `setProperty` schlägt **jede** Stylesheet-Regel
+
 ### Commits: Erst bestätigen lassen
 Eine Variante pushen → auf Feedback warten → nächste. Nicht mehrere Fixes in Folge ohne Rückmeldung.
