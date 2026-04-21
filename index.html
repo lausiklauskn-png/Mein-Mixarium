@@ -1336,8 +1336,8 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 /* ── Getränke-Karussell (JS-gesteuert) ── */
 #rcont .rcard{margin:6px;min-height:calc(100vh - var(--hh) - var(--bnh) - 130px)}
 #rcont .rcard:hover{transform:none;box-shadow:0 2px 9px var(--sh)}
-#rcont .rcard-img-wrap{height:0 !important;padding-top:calc(100% * 4 / 3) !important}
-#rcont .rcard-img{position:absolute !important;top:0 !important;left:0 !important;height:100% !important}
+#rcont .rcard-img-wrap{height:calc((100vw - 12px) * 4 / 3) !important;padding-top:0 !important;overflow:hidden !important}
+#rcont .rcard-img{position:static !important;top:auto !important;left:auto !important;width:100% !important;height:100% !important;object-fit:cover !important;display:block !important}
 #carousel-ctr{text-align:center;padding:3px 0 1px;font-size:.72rem;color:var(--br3);letter-spacing:.06em}
 /* ── Labor-Shortcut Banner ── */
 #labor-shortcut{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;background:var(--teals);border-top:1px solid rgba(0,0,0,.05);border-bottom:1.5px solid var(--teal);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--teal);user-select:none;-webkit-tap-highlight-color:transparent;letter-spacing:.02em}
