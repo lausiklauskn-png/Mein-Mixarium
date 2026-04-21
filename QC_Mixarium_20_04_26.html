@@ -243,7 +243,11 @@ body.nav-collapsed{padding-bottom:calc(16px + var(--sb))}
 /* Crop-Overlay Vorschau (Hochformat 3:4) */
 .crop-prev-wrap{width:100%;max-width:260px;position:relative;overflow:hidden;border-radius:14px;cursor:move;touch-action:none;background:#111;align-self:center;flex-shrink:0}
 .crop-prev-wrap::before{content:'';display:block;padding-top:133.33%}
-.crop-prev-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.crop-prev-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;transition:transform .08s ease}
+/* Zoom-Schieberegler */
+.crop-zoom-row{display:flex;align-items:center;gap:8px;width:100%;max-width:260px}
+.crop-zoom-row span{font-size:.66rem;color:var(--br3);white-space:nowrap;min-width:30px}
+.crop-zoom-row input[type=range]{flex:1;accent-color:var(--teal);height:4px;cursor:pointer}
 /* Crop Positionierungs-Buttons */
 .cpbtn{border:1.5px solid var(--sand2);border-radius:8px;background:var(--sand);color:var(--br2);font-size:.7rem;padding:8px 3px;cursor:pointer;font-family:inherit;font-weight:600;line-height:1.2;white-space:nowrap}
 .cpbtn:active{background:var(--sand2);transform:scale(0.95)}
@@ -7857,15 +7861,21 @@ function pickImgForCard(rid){
 // ═══════════════════════════════════════════════════════
 // BILD-AUSSCHNITT ANPASSEN (Crop)
 // ═══════════════════════════════════════════════════════
-let _cropRid=null,_cropCr={x:50,y:50},_cropDrag=null;
+let _cropRid=null,_cropCr={x:50,y:50,scale:1},_cropDrag=null;
 
 function openCropOv(rid){
   const r=R.find(r=>r.id===rid);if(!r||!r.img)return;
   _cropRid=rid;
-  _cropCr={...(r.imgCrop||{x:50,y:50})};
+  const saved=r.imgCrop||{x:50,y:50,scale:1};
+  _cropCr={x:saved.x??50,y:saved.y??50,scale:saved.scale||1};
   const img=document.getElementById('cropPrevImg');
-  if(img){img.src=r.img;img.style.objectPosition=`${_cropCr.x}% ${_cropCr.y}%`;}
+  if(img){img.src=r.img;}
+  const sl=document.getElementById('cropZoomSlider');
+  if(sl)sl.value=Math.round(_cropCr.scale*100);
+  const lb=document.getElementById('cropZoomLbl');
+  if(lb)lb.textContent=_cropCr.scale.toFixed(1)+'×';
   document.getElementById('cropOv').style.display='flex';
+  _cropApplyPos();
   _cropInitDrag();
 }
 function closeCropOv(){
@@ -7877,14 +7887,29 @@ function closeCropOv(){
 function saveCropOv(){
   if(_cropRid===null)return;
   const r=R.find(r=>r.id===_cropRid);if(!r)return;
-  r.imgCrop={x:Math.round(_cropCr.x),y:Math.round(_cropCr.y)};
+  r.imgCrop={x:Math.round(_cropCr.x),y:Math.round(_cropCr.y),scale:Math.round(_cropCr.scale*100)/100};
   sv();render();closeCropOv();
 }
-function resetCropOv(){_cropCr={x:50,y:50};_cropApplyPos();}
-function setCropPos(x,y){_cropCr={x,y};_cropApplyPos();}
+function resetCropOv(){
+  _cropCr={x:50,y:50,scale:1};
+  const sl=document.getElementById('cropZoomSlider');if(sl)sl.value=100;
+  const lb=document.getElementById('cropZoomLbl');if(lb)lb.textContent='1.0×';
+  _cropApplyPos();
+}
+function setCropPos(x,y){_cropCr.x=x;_cropCr.y=y;_cropApplyPos();}
+function setCropZoom(val){
+  _cropCr.scale=Math.max(1,Math.min(3,val));
+  const lb=document.getElementById('cropZoomLbl');
+  if(lb)lb.textContent=_cropCr.scale.toFixed(1)+'×';
+  _cropApplyPos();
+}
 function _cropApplyPos(){
   const img=document.getElementById('cropPrevImg');
-  if(img)img.style.objectPosition=`${_cropCr.x}% ${_cropCr.y}%`;
+  if(!img)return;
+  img.style.objectPosition=`${_cropCr.x}% ${_cropCr.y}%`;
+  const s=_cropCr.scale||1;
+  img.style.transform=s>1?`scale(${s})`:'none';
+  img.style.transformOrigin=`${_cropCr.x}% ${_cropCr.y}%`;
 }
 function _cropInitDrag(){
   const wrap=document.getElementById('cropPrevWrap');if(!wrap)return;
@@ -8165,7 +8190,7 @@ function rndCard(r){
   const imps=(rat.imps||[]).map((t,i)=>`<li class="imp-li"><span class="impbull">→</span><span class="imptxt">${h(t)}</span><button class="xbtn" onclick="delImp(${r.id},${i})" title="${T('ttlDelImp')}">✕</button></li>`).join('')
     ||`<li style="padding:3px 0;color:#c4aa7a;font-size:.76rem;font-style:italic">…</li>`;
   return`<div class="rcard ${isBlank?'blank':''}" id="c${r.id}">
-    ${r.img?(()=>{const cr=r.imgCrop||{x:50,y:50};return`<div class="rcard-img-wrap"><img class="rcard-img" src="${r.img}" alt="${h(r.name)}" loading="lazy" style="object-position:${cr.x}% ${cr.y}%"/><button class="img-crop-btn" onclick="event.stopPropagation();openCropOv(${r.id})" title="${T('cropHint')}">✂️ ${T('cropBtn')}</button></div>`;})():''}
+    ${r.img?(()=>{const cr=r.imgCrop||{x:50,y:50,scale:1};const sc=cr.scale||1;return`<div class="rcard-img-wrap"><img class="rcard-img" src="${r.img}" alt="${h(r.name)}" loading="lazy" style="object-position:${cr.x}% ${cr.y}%;${sc>1?`transform:scale(${sc});transform-origin:${cr.x}% ${cr.y}%`:''}" /><button class="img-crop-btn" onclick="event.stopPropagation();openCropOv(${r.id})" title="${T('cropHint')}">✂️ ${T('cropBtn')}</button></div>`;})():''}
     <div class="rcard-hd" onclick="${isBlank?'openInlineEdit('+r.id+')':'togCard('+r.id+')'}">
       <div class="stripe" style="background:${cc}"></div>
       <div class="rcard-hd-content">
@@ -11252,12 +11277,20 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     <button class="fov-back" onclick="event.stopPropagation();closeCropOv()" title="Zurück">←</button>
     <div class="fov-title" id="cropTitle">✂️ Bildausschnitt anpassen</div>
   </div>
-  <div class="fov-body" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 14px 30px">
-    <div class="crop-prev-wrap" id="cropPrevWrap">
+  <div class="fov-body" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px 14px 30px">
+    <div class="crop-prev-wrap" id="cropPrevWrap" style="max-width:300px">
       <img class="crop-prev-img" id="cropPrevImg" src="" alt="" draggable="false"/>
     </div>
     <div id="cropHint" style="font-size:.72rem;color:var(--br3);text-align:center">✂️ Ausschnitt anpassen</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;max-width:260px">
+    <!-- Zoom-Schieberegler -->
+    <div class="crop-zoom-row">
+      <span>1×</span>
+      <input type="range" id="cropZoomSlider" min="100" max="300" step="5" value="100"
+        oninput="setCropZoom(this.value/100)" style="flex:1;accent-color:var(--teal);cursor:pointer"/>
+      <span id="cropZoomLbl" style="text-align:right">1.0×</span>
+    </div>
+    <!-- Positionierungs-Buttons -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;max-width:300px">
       <div></div>
       <button class="cpbtn" onclick="setCropPos(50,0)" id="cpTop">⬆ Oben</button>
       <div></div>
@@ -11268,11 +11301,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       <button class="cpbtn" onclick="setCropPos(50,100)" id="cpBottom">⬇ Unten</button>
       <div></div>
     </div>
-    <div style="display:flex;gap:8px;width:100%;max-width:260px">
+    <div style="display:flex;gap:8px;width:100%;max-width:300px">
       <button onclick="resetCropOv()" id="cropReset" style="flex:1;padding:10px;border:1.5px solid var(--sand2);background:var(--sand);border-radius:9px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--br2)">↺ Zurücksetzen</button>
       <button onclick="saveCropOv()" id="cropSave" style="flex:2;padding:10px;border:none;background:var(--teal);border-radius:9px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;color:#fff">✓ Speichern</button>
     </div>
-    <button onclick="closeCropOv()" id="cropCancel" style="width:100%;max-width:260px;padding:9px;border:1.5px solid var(--sand2);background:none;border-radius:9px;font-size:.8rem;cursor:pointer;font-family:inherit;color:var(--br3)">Abbrechen</button>
+    <button onclick="closeCropOv()" id="cropCancel" style="width:100%;max-width:300px;padding:9px;border:1.5px solid var(--sand2);background:none;border-radius:9px;font-size:.8rem;cursor:pointer;font-family:inherit;color:var(--br3)">Abbrechen</button>
   </div>
 </div>
 
