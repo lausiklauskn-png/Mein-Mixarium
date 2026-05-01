@@ -1355,7 +1355,27 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 #carousel-ctr{text-align:center;padding:3px 0 1px;font-size:.72rem;color:var(--br3);letter-spacing:.06em}
 /* ── Labor-Shortcut Banner ── */
 #labor-shortcut{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;background:var(--teals);border-top:1px solid rgba(0,0,0,.05);border-bottom:1.5px solid var(--teal);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--teal);user-select:none;-webkit-tap-highlight-color:transparent;letter-spacing:.02em}
-#labor-shortcut:active{background:var(--teal);color:#fff}
+#labor-shortcut{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:10px 16px;
+  margin:8px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.22);
+  background:linear-gradient(135deg,var(--teal),var(--teals));
+  color:#fff;#labor-shortcut button{display:inline-flex;align-items:center;gap:8px;appearance:none;-webkit-appearance:none;border:none;background:transparent;color:#fff;font:inherit;font-weight:700;line-height:1;padding:0;margin:0;cursor:pointer}
+  font-weight:700;
+  box-shadow:0 6px 16px rgba(0,0,0,.18);
+  cursor:pointer;
+}
+#labor-shortcut:active{
+  transform:translateY(1px);#labor-shortcut button{display:inline-flex;align-items:center;gap:8px;appearance:none;-webkit-appearance:none;border:none;background:transparent;color:#fff;font:inherit;font-weight:700;line-height:1;padding:0;margin:0;cursor:pointer}
+  filter:brightness(.95);
+}
+#labor-shortcut button{display:inline-flex;align-items:center;gap:8px;appearance:none;-webkit-appearance:none;border:none;background:transparent;color:#fff;font:inherit;font-weight:700;line-height:1;padding:0;margin:0;cursor:pointer}#labor-shortcut button{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;padding:0;cursor:pointer}
+#labor-shortcut button:focus-visible{outline:2px solid rgba(255,255,255,.85);outline-offset:4px;border-radius:999px}
 
 /* ── Micro-Animations: Button Active ── */
 button{transition:transform 100ms ease,background 150ms ease,background-color 150ms ease}
