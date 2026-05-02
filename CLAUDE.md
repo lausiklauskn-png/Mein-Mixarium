@@ -1,4 +1,4 @@
-# Projektregeln für Claude – Mein Mixarium
+# Projektregeln für Claude – Muttis Rezeptbuch
 
 ---
 
@@ -7,8 +7,8 @@
 Claude muss nach **jeder** Änderung an der QC-Datei folgende Punkte ausgeben und den Benutzer explizit darauf hinweisen:
 
 ```
-✅ 1. QC-Datei geändert:   QC_Mixarium_*.html   ← erledigt
-✅ 2. index.html:          Neu gebaut (cp QC → index.html) ← erledigt (Claude darf bauen)
+✅ 1. QC-Datei geändert:   QC_MeinRezb_*.html       ← erledigt
+✅ 2. index.html:          Neu gebaut via build.py ← erledigt (Claude darf bauen)
 ```
 
 **Claude darf eine Aufgabe NICHT als erledigt melden, ohne diese Checkliste anzuzeigen.**
@@ -17,10 +17,15 @@ Claude muss nach **jeder** Änderung an der QC-Datei folgende Punkte ausgeben un
 
 ## Projektübersicht
 
-### Dieses Repo: `lausiklauskn-png/Mein-Mixarium`
-- **App-Name:** Mein Mixarium
-- **Aktuelle Version:** v1.0
-- **Lokaler Pfad:** `/home/user/Mein-Mixarium/`
+### Dieses Repo: `lausiklauskn-png/Muttis-Rezeptbuch`
+- **App-Name:** Muttis Rezeptbuch (das Original)
+- **Aktuelle Version:** v9.2
+- **Lokaler Pfad:** `/home/user/Muttis-Rezeptbuch/`
+
+### Schwesterprojekt: `lausiklauskn-png/Mein-Rezeptbuch`
+- **App-Name:** Mein Rezeptbuch (öffentlicher Klon)
+- Die beiden Apps sind funktional identisch – Mein Rezeptbuch ist ein Klon
+- Änderungen werden in der Regel **zuerst hier** (Muttis Rezeptbuch) entwickelt, dann in Mein-Rezeptbuch übertragen
 
 ---
 
@@ -28,16 +33,45 @@ Claude muss nach **jeder** Änderung an der QC-Datei folgende Punkte ausgeben un
 
 | Datei | Bedeutung |
 |---|---|
-| `index.html` | **Produktionsdatei** – Kopie der QC-Datei – NICHT direkt bearbeiten |
-| `QC_Mixarium_20_04_26.html` | **Quelldatei (v1.0)** – saubere, lesbare Version – hier werden Änderungen gemacht |
-| `manifest.json` | PWA-Manifest |
+| `index.html` | **Produktionsdatei** – enthält `_CR`-Wasserzeichen – NICHT direkt bearbeiten |
+| `QC_MeinRezb_12_4_26.html` | **Quelldatei (v9.2)** – saubere, lesbare Version ohne Sicherheitsblock – hier werden Änderungen gemacht |
+| `build.py` | **Build-Skript** – baut `index.html` aus QC-Datei + `_cr_block.txt` |
+| `_cr_block.txt` | Gespeicherter _CR-Schutzblock (~111 KB, Einzeiler) |
+| `extract_cr.py` | Einmalig: extrahiert _CR-Block aus bestehender `index.html` |
+| `sw.js` / `app-sw.js` | Service Worker |
+| `manifest.json` / `app-manifest.json` | PWA-Manifeste |
 
 ### Build-Workflow (index.html neu bauen)
-Nach Änderungen an der QC-Datei einfach kopieren:
+Nach Änderungen an der QC-Datei einfach ausführen:
 ```bash
-cp QC_Mixarium_20_04_26.html index.html
+python3 build.py
 ```
-Kein Build-Skript nötig — Mein Mixarium hat keinen _CR-Schutzblock.
+Das Skript findet automatisch die neueste `QC_MeinRezb_*.html` und kombiniert sie mit `_cr_block.txt` → erzeugt `index.html`.
+
+### QC-Datei aus index.html extrahieren (falls nötig)
+Der `_CR`-Block ist **eine einzige Zeile** (~113.000 Zeichen), die mit `const _CR=Object.freeze` beginnt.
+```python
+python3 -c "
+with open('index.html', 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+header_end = 0
+for i, l in enumerate(lines):
+    if '-->' in l and i < 20:
+        header_end = i + 1
+        break
+cr_line = None
+for i, l in enumerate(lines):
+    if l.strip().startswith('const _CR=Object.freeze'):
+        cr_line = i
+        break
+import datetime
+d = datetime.date.today().strftime('%d_%m_%y')
+output = lines[header_end:cr_line] + lines[cr_line+1:]
+filename = f'QC_MeinRezb_{d}.html'
+open(filename, 'w', encoding='utf-8').writelines(output)
+print(f'Gespeichert: {filename}, {len(output)} Zeilen')
+"
+```
 
 ---
 
@@ -45,22 +79,37 @@ Kein Build-Skript nötig — Mein Mixarium hat keinen _CR-Schutzblock.
 - `LANGS`-Objekt im JS (ab ca. Zeile 2324 in index.html)
 - Funktion `T(k)` für alle UI-Texte
 - 8 Sprachen: de, en, ru, zh, es, fr, it, pt
-- Variable `CL` = aktuelle Sprache (aus localStorage `mxlang9m`)
+- Variable `CL` = aktuelle Sprache (aus localStorage `mlang9`)
 
 ---
 
 ## Workflow-Regeln
 
 ### Entwicklung
-1. Änderungen **immer** in der QC-Datei (`QC_Mixarium_*.html`) vornehmen
-2. Nach Änderungen: `cp QC_Mixarium_*.html index.html` ausführen → erzeugt neue `index.html`
+1. Änderungen **immer** in der QC-Datei (`QC_MeinRezb_*.html`) vornehmen
+2. Nach Änderungen: `python3 build.py` ausführen → erzeugt neue `index.html`
 3. Commit-Nachrichten auf **Deutsch**
 
 ### "Hochladen"-Befehl
 Wenn der Benutzer **"Hochladen"** schreibt:
 1. Alle lokalen Änderungen committen
-2. Direkt auf `main` pushen: `git push origin main`
-3. Bestätigung ausgeben – kein PR, kein Merge nötig
+2. Auf aktuellen Feature-Branch pushen: `git push -u origin <branch>`
+3. PR erstellen via `mcp__github__create_pull_request` → nach `main`
+4. PR-URL mitteilen
+
+### Pflicht-Prüfung bei "Hochladen" oder "Mergen"
+**Immer** alle offenen Branches und PRs prüfen – nicht nur den aktuellen Branch:
+
+| Schritt | Primär (MCP) | Fallback (git) |
+|---|---|---|
+| Offene PRs prüfen | `mcp__github__list_pull_requests` (state: open) | entfällt |
+| Alle Branches prüfen | `mcp__github__list_branches` | `git fetch --all` |
+| Branches ahead of main | — | `git log origin/main..origin/<branch> --oneline` für jeden Branch |
+
+**Wenn MCP-Tools nicht verfügbar:**
+- Explizit melden: *"GitHub-PRs können gerade nicht geprüft werden (MCP nicht verfügbar)"*
+- git-Fallback verwenden: alle Remote-Branches auf ungemergede Commits prüfen
+- NIEMALS "nichts offen" sagen ohne zu prüfen, was tatsächlich geprüft wurde
 
 ### Branch-Konvention
 - Feature-Branches werden automatisch angelegt (Format: `claude/<beschreibung>-<id>`)
@@ -79,7 +128,7 @@ with open('alte_referenz.html', 'r') as f:
     alte_b64s = set(re.findall(r'data:image/png;base64,([A-Za-z0-9+/]+=*)', f.read()))
 
 # Prüfen: Kein einziger alter PNG-Block darf noch in der neuen Datei vorkommen
-with open('QC_Mixarium_*.html', 'r') as f:
+with open('QC_MeinRezb_*.html', 'r') as f:
     neue_datei = f.read()
 
 verbleibend = [b for b in alte_b64s if b in neue_datei]
@@ -102,7 +151,7 @@ print("✅ Alle Icons vollständig ersetzt")
 **Wenn eine Datei umbenannt wird, MÜSSEN alle Querverweise in EINEM einzigen Commit aktualisiert werden.**
 
 ### Warum diese Regel existiert
-Zwischen zwei Commits deployt GitHub Pages die Zwischenzustände. Wenn Datei A auf `mixarium-invite-v1.html` verlinkt und diese Datei dann in einem separaten Commit umbenannt wird, entsteht ein Deployment-Fenster mit 404-Fehlern – selbst wenn beide Commits nur Minuten auseinanderliegen.
+Zwischen zwei Commits deployt GitHub Pages die Zwischenzustände. Wenn Datei A auf `mr-invite-v5.html` verlinkt und diese Datei dann in einem separaten Commit zu `MeinRezeptbuch-invite-v5.html` umbenannt wird, entsteht ein Deployment-Fenster mit 404-Fehlern – selbst wenn beide Commits nur Minuten auseinanderliegen.
 
 ### Pflicht-Checkliste bei jeder Umbenennung
 
@@ -130,16 +179,22 @@ grep -rn "alter-dateiname" --include="*.html" --include="*.js" --include="*.json
 
 ---
 
-## ⚠️ REGEL: Übernahme von anderen Projekten – Pflicht-URL-Prüfung
+## ⚠️ REGEL: Übernahme vom Schwesterprojekt – Pflicht-URL-Prüfung
 
-Wenn Code von anderen Projekten übernommen wird, müssen alle fremden Namen und URLs **vollständig** ersetzt werden — sonst entstehen unsichtbare Zeitbomben.
+Wenn Code von **Muttis-Rezeptbuch** nach **Mein-Rezeptbuch** übertragen wird, enthalten alle Dateien Muttis-spezifische Namen und URLs. Diese müssen **vollständig** ersetzt werden – sonst entstehen unsichtbare Zeitbomben die erst später als 404 auffallen.
 
 **Nach jeder Übernahme diesen grep ausführen:**
 ```bash
-grep -rn "rezeptbuch\|Rezeptbuch\|muttis\|Muttis\|mr-gift\|mr-invite" \
+grep -rn "mr-gift\|mr-invite\|muttis\|Muttis-Rezeptbuch\|MuttisRezeptbuch\|muttisrezeptbuch" \
   --include="*.html" --include="*.js" --include="*.json" .
 # Ergebnis muss leer sein!
 ```
+
+**Typische Stellen mit alten Namen:**
+- `window.open('...mr-invite-v4.html'...)` im Einstellungs-Dialog der Haupt-App
+- `location.replace('...mr-gift.html'...)` in den Gift-Seiten
+- `dlBlob(..., 'muttis-rezeptbuch.html')` bei Download-Funktionen
+- Absolute GitHub-Pages-URLs in `href`, `src`, `content`
 
 **Regel:** Nie annehmen, dass "der Code schon passt" – immer mit grep verifizieren.
 
@@ -147,16 +202,23 @@ grep -rn "rezeptbuch\|Rezeptbuch\|muttis\|Muttis\|mr-gift\|mr-invite" \
 
 ## ⚠️ REGEL: Eigenständige Seiten werden DIREKT bearbeitet
 
-Die folgenden Dateien sind **eigenständige HTML-Seiten** – sie werden DIREKT bearbeitet (kein Build-Schritt):
+Die folgenden Dateien sind **eigenständige HTML-Seiten** – sie laufen NICHT durch `build.py`:
 
 | Datei | Typ |
 |-------|-----|
+| `MeinRezeptbuch-gift.html` | direkt bearbeiten + committen |
+| `MeinRezeptbuch-gift2.html` | direkt bearbeiten + committen |
+| `MeinRezeptbuch-invite-v5.html` | direkt bearbeiten + committen |
+| `USP_MeinRezeptbuch.html` | direkt bearbeiten + committen |
+| `USP_Erklaerung zu MeinRezb.html` | direkt bearbeiten + committen |
 | `impressum.html` | direkt bearbeiten + committen |
+
+`build.py` ist **ausschließlich** für `index.html` zuständig.
 
 **Pflicht-Checkliste nach Änderungen an eigenständigen Seiten:**
 ```
-✅ Datei direkt geändert
-✅ Alle internen Links auf Korrektheit geprüft (keine fremden URLs)
+✅ Datei direkt geändert (NICHT via build.py)
+✅ Alle internen Links auf Korrektheit geprüft (keine mr-* oder Muttis-URLs)
 ✅ Icons inline als Base64 (keine externen Dateireferenzen)
 ```
 
@@ -178,7 +240,7 @@ Externe Icon-Referenzen (`href="icons/icon-book-blue.svg"`) in eigenständigen H
 
 **Verifizieren:**
 ```bash
-grep -n 'rel="icon"' impressum.html
+grep -n 'rel="icon"' MeinRezeptbuch-gift.html MeinRezeptbuch-gift2.html MeinRezeptbuch-invite-v5.html
 # Jede Zeile muss "data:" enthalten – kein "href="icons/" erlaubt
 ```
 
@@ -191,7 +253,8 @@ Fehler aus der Praxis: Icon in gift.html geändert → ein Commit → danach Nac
 **Vor dem ersten Icon-Commit** alle betroffenen Stellen inventarisieren:
 ```bash
 grep -rn 'rel="icon"\|rel="apple-touch-icon"\|icons:\[' \
-  impressum.html manifest.json
+  MeinRezeptbuch-gift.html MeinRezeptbuch-gift2.html \
+  MeinRezeptbuch-invite-v5.html app-manifest.json app-sw.js
 ```
 
 **Alle diese Stellen in EINEM Commit** aktualisieren – kein "ich mache die anderen Seiten später".
@@ -201,8 +264,8 @@ grep -rn 'rel="icon"\|rel="apple-touch-icon"\|icons:\[' \
 ## Häufige Aufgaben
 
 ### Neue Funktion hinzufügen
-1. In `QC_Mixarium_*.html` implementieren
-2. `cp QC_Mixarium_*.html index.html` ausführen
+1. In `QC_MeinRezb_*.html` implementieren
+2. `python3 build.py` ausführen
 3. Hochladen
 
 ### Swipe / Touch / Drag & Drop
@@ -258,46 +321,3 @@ Das `#mv`-Overlay (Mein Menü / Wochenplan) soll **optisch identisch** mit dem `
 `.mv-hdr` und `.mv-tabs` haben denselben Regenbogen-Verlauf wie `.fov-hdr`/`.fov-tabs`.
 
 **Regel:** Bei Änderungen an `.fov-hdr`/`.fovtab` immer prüfen ob `.mv-hdr`/`.mvtab` ebenfalls angepasst werden müssen.
-
----
-
-## CSS-Debugging Regeln
-
-### Neue CSS-Einheiten vermeiden
-- Kein `svh`, `dvh`, `svw`, `dvw` — nicht universell unterstützt
-- Stattdessen: `vh`, `vw`, `px`
-- Ungültige CSS-Werte werden still ignoriert (kein Fehler im Browser!)
-
-### CSS greift nicht → Eskalationsreihenfolge
-1. `!important` hinzufügen
-2. Spezifität erhöhen (ID statt Klasse)
-3. JavaScript: `element.style.setProperty('height', wert, 'important')`
-→ Nicht mehrere CSS-Varianten stapeln bevor Benutzer bestätigt hat
-
-### ⚠️ REGEL: Elementhöhe niemals per CSS `calc(vw)` setzen — immer JS
-
-**Problem aus der Praxis:** `height:calc((100vw - 12px) * 4/3) !important` auf `.rcard-img-wrap` hat in Chrome/Android nie gegriffen — das Element blieb bei `height:160px`. Auch `height:0 + padding-top:133%` kollabiert bei `overflow:hidden` auf 0 sichtbare Höhe.
-
-**Regel:** Wenn eine Elementhöhe von der gemessenen Breite abhängt (Seitenverhältnis erzwingen), immer JavaScript verwenden:
-
-```javascript
-// In carouselInit() oder showSc()-Hook:
-const cw = document.getElementById('rcont').offsetWidth;
-if (cw >= 50) {
-  const h = Math.round(cw * 4 / 3);
-  cards.forEach(card => {
-    const wrap = card.querySelector('.rcard-img-wrap');
-    const img  = card.querySelector('.rcard-img');
-    if (wrap) wrap.style.setProperty('height', h + 'px', 'important');
-    if (img)  img.style.setProperty('height',  h + 'px', 'important');
-  });
-}
-```
-
-**Warum `offsetWidth` zuverlässig ist:**
-- `showSc('recipes')` setzt `.on` (display:block) **vor** `render()` → Element ist sichtbar
-- `offsetWidth` gibt echte CSS-Pixel, unabhängig von URL-Leiste oder Viewport-Tricks
-- Inline `!important` via `setProperty` schlägt **jede** Stylesheet-Regel
-
-### Commits: Erst bestätigen lassen
-Eine Variante pushen → auf Feedback warten → nächste. Nicht mehrere Fixes in Folge ohne Rückmeldung.
