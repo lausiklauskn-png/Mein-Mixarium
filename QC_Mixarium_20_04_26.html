@@ -1354,28 +1354,31 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 #rcont .rcard-img{position:static !important;width:100% !important;height:calc((100vw - 12px) * 4 / 3) !important;object-fit:cover !important;display:block !important}
 #carousel-ctr{text-align:center;padding:3px 0 1px;font-size:.72rem;color:var(--br3);letter-spacing:.06em}
 /* ── Labor-Shortcut Banner ── */
-#labor-shortcut{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;background:var(--teals);border-top:1px solid rgba(0,0,0,.05);border-bottom:1.5px solid var(--teal);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--teal);user-select:none;-webkit-tap-highlight-color:transparent;letter-spacing:.02em}
 #labor-shortcut{
   display:flex;
-  align-items:center;
   justify-content:center;
-  gap:8px;
-  padding:10px 16px;
-  margin:8px 10px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.22);
-  background:linear-gradient(135deg,var(--teal),var(--teals));
-  color:#fff;#labor-shortcut button{display:inline-flex;align-items:center;gap:8px;appearance:none;-webkit-appearance:none;border:none;background:transparent;color:#fff;font:inherit;font-weight:700;line-height:1;padding:0;margin:0;cursor:pointer}
+  margin:10px 12px 8px;
+}
+#labor-shortcut button{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:var(--teals);
+  border:1.5px solid var(--teal);
+  border-radius:20px;
+  padding:6px 14px;
+  color:var(--teal);
+  font-size:.74rem;
   font-weight:700;
-  box-shadow:0 6px 16px rgba(0,0,0,.18);
+  line-height:1;
+  letter-spacing:.01em;
   cursor:pointer;
+  box-shadow:0 1px 0 rgba(255,255,255,.6) inset;
+  -webkit-tap-highlight-color:transparent;
 }
-#labor-shortcut:active{
-  transform:translateY(1px);#labor-shortcut button{display:inline-flex;align-items:center;gap:8px;appearance:none;-webkit-appearance:none;border:none;background:transparent;color:#fff;font:inherit;font-weight:700;line-height:1;padding:0;margin:0;cursor:pointer}
-  filter:brightness(.95);
-}
-#labor-shortcut button{display:inline-flex;align-items:center;gap:8px;appearance:none;-webkit-appearance:none;border:none;background:transparent;color:#fff;font:inherit;font-weight:700;line-height:1;padding:0;margin:0;cursor:pointer}#labor-shortcut button{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;padding:0;cursor:pointer}
-#labor-shortcut button:focus-visible{outline:2px solid rgba(255,255,255,.85);outline-offset:4px;border-radius:999px}
+#labor-shortcut button:hover{background:#dff4f3}
+#labor-shortcut button:active{transform:translateY(1px);filter:brightness(.98)}
+#labor-shortcut button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 
 /* ── Micro-Animations: Button Active ── */
 button{transition:transform 100ms ease,background 150ms ease,background-color 150ms ease}
