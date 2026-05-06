@@ -1,31 +1,40 @@
-# Projektregeln für Claude – Muttis Rezeptbuch
+# Projektregeln für Claude – Mein Mixarium
 
 ---
 
-## ⚠️ PFLICHT-CHECKLISTE NACH JEDER ÄNDERUNG
+## ⚠️ PFLICHT-CHECKLISTE NACH JEDER ÄNDERUNG AN DER APP
 
-Claude muss nach **jeder** Änderung an der QC-Datei folgende Punkte ausgeben und den Benutzer explizit darauf hinweisen:
+Mein Mixarium hat **keinen** Build-Schritt. `index.html` und `QC_Mixarium_20_04_26.html` sind **byte-identisch** und müssen synchron gehalten werden.
+
+Nach jeder Änderung am App-Code muss Claude diese Checkliste ausgeben:
 
 ```
-✅ 1. QC-Datei geändert:   QC_MeinRezb_*.html       ← erledigt
-✅ 2. index.html:          Neu gebaut via build.py ← erledigt (Claude darf bauen)
+✅ 1. QC-Datei geändert:   QC_Mixarium_*.html       ← erledigt
+✅ 2. index.html:          1:1 Spiegel-Update        ← erledigt
+✅ 3. md5sum-Vergleich:    QC und index identisch    ← verifiziert
 ```
 
 **Claude darf eine Aufgabe NICHT als erledigt melden, ohne diese Checkliste anzuzeigen.**
+
+Pflicht-Verifikation:
+```bash
+md5sum index.html QC_Mixarium_*.html
+# Beide Hashes MÜSSEN identisch sein.
+```
 
 ---
 
 ## Projektübersicht
 
-### Dieses Repo: `lausiklauskn-png/Muttis-Rezeptbuch`
-- **App-Name:** Muttis Rezeptbuch (das Original)
-- **Aktuelle Version:** v9.2
-- **Lokaler Pfad:** `/home/user/Muttis-Rezeptbuch/`
+### Repo: `lausiklauskn-png/Mein-Mixarium`
+- **App-Name:** Mein Mixarium — persönliches Getränke-Labor (Mocktails, Smoothies, Cocktails, Limonaden, Tees, Sirupe)
+- **Aktuelle Version:** v9.5
+- **Lokaler Pfad:** `/home/user/Mein-Mixarium/`
+- **Domäne:** Getränke (Trinkbares) — *nicht* Essen
+- **Architektur:** Single-File-PWA, offline-first nach Erstinstallation
 
-### Schwesterprojekt: `lausiklauskn-png/Mein-Rezeptbuch`
-- **App-Name:** Mein Rezeptbuch (öffentlicher Klon)
-- Die beiden Apps sind funktional identisch – Mein Rezeptbuch ist ein Klon
-- Änderungen werden in der Regel **zuerst hier** (Muttis Rezeptbuch) entwickelt, dann in Mein-Rezeptbuch übertragen
+### Kein Schwesterprojekt
+Mein Mixarium ist eigenständig. Es gibt **keine** funktional gespiegelte Sister-App. Frühere `mr-*.html`-Dateien im Repo stammen aus Muttis-Rezeptbuch und gehören nicht zur App — siehe „Fremdkörper" weiter unten.
 
 ---
 
@@ -33,268 +42,217 @@ Claude muss nach **jeder** Änderung an der QC-Datei folgende Punkte ausgeben un
 
 | Datei | Bedeutung |
 |---|---|
-| `index.html` | **Produktionsdatei** – enthält `_CR`-Wasserzeichen – NICHT direkt bearbeiten |
-| `QC_MeinRezb_12_4_26.html` | **Quelldatei (v9.2)** – saubere, lesbare Version ohne Sicherheitsblock – hier werden Änderungen gemacht |
-| `build.py` | **Build-Skript** – baut `index.html` aus QC-Datei + `_cr_block.txt` |
-| `_cr_block.txt` | Gespeicherter _CR-Schutzblock (~111 KB, Einzeiler) |
-| `extract_cr.py` | Einmalig: extrahiert _CR-Block aus bestehender `index.html` |
-| `sw.js` / `app-sw.js` | Service Worker |
-| `manifest.json` / `app-manifest.json` | PWA-Manifeste |
+| `QC_Mixarium_20_04_26.html` | **Quell- und Arbeitsdatei** (v9.5) — hier werden Änderungen primär vorgenommen |
+| `index.html` | **Produktionsdatei** — *byte-identisches Spiegelbild* der QC-Datei. Kein `_CR`-Block, kein Build-Schritt. Bei jeder Änderung muss `index.html` synchron gehalten werden. |
+| `manifest.json` | PWA-Manifest |
+| `app-sw.js` | Service Worker (precached: `./`, `index.html`, `manifest.json`, `mixarium_icon.svg`, `mixarium_icon.png`) |
+| `mixarium_icon.svg` / `mixarium_icon.png` | App-Icons |
+| `gift.html`, `gift2.html`, `invite-v5.html` | Eigenständige Mein-Mixarium-Seiten (Geschenk / Einladung) |
+| `impressum.html` | Impressum (eigenständig) |
+| `mr-gift.html`, `mr-gift2.html`, `mr-invite-v5.html` | **Fremdkörper aus Muttis-Rezeptbuch** (Weiterleitung auf fremdes Repo). Aktuell nicht referenziert von der App. Nicht eigenmächtig löschen — Klärung mit User. |
+| `Mein_Mixarium_*.pdf` | Marktanalyse / Kosten-Nutzen-Analyse |
+| `scripts/check_i18n.js` | Übersetzungs-Konsistenz-Prüfung |
+| `README.md`, `CLAUDE.md`, `RELEASE_POINT.txt` | Projekt-Doku |
 
-### Build-Workflow (index.html neu bauen)
-Nach Änderungen an der QC-Datei einfach ausführen:
-```bash
-python3 build.py
-```
-Das Skript findet automatisch die neueste `QC_MeinRezb_*.html` und kombiniert sie mit `_cr_block.txt` → erzeugt `index.html`.
+### Kein Build-Skript
+Es gibt **kein** `build.py`, **kein** `_cr_block.txt`, **kein** `extract_cr.py`. Anders als bei Muttis-Rezeptbuch hat Mein Mixarium keinen Schutz-Block — `index.html` ist 1:1 die QC-Datei.
 
-### QC-Datei aus index.html extrahieren (falls nötig)
-Der `_CR`-Block ist **eine einzige Zeile** (~113.000 Zeichen), die mit `const _CR=Object.freeze` beginnt.
-```python
-python3 -c "
-with open('index.html', 'r', encoding='utf-8') as f:
-    lines = f.readlines()
-header_end = 0
-for i, l in enumerate(lines):
-    if '-->' in l and i < 20:
-        header_end = i + 1
-        break
-cr_line = None
-for i, l in enumerate(lines):
-    if l.strip().startswith('const _CR=Object.freeze'):
-        cr_line = i
-        break
-import datetime
-d = datetime.date.today().strftime('%d_%m_%y')
-output = lines[header_end:cr_line] + lines[cr_line+1:]
-filename = f'QC_MeinRezb_{d}.html'
-open(filename, 'w', encoding='utf-8').writelines(output)
-print(f'Gespeichert: {filename}, {len(output)} Zeilen')
-"
+---
+
+## Externe Datenquellen
+
+### TheCocktailDB (öffentliche REST-API)
 ```
+https://www.thecocktaildb.com/api/json/v1/1/
+```
+- Genutzt im „Bekannte Drinks entdecken"-Panel (Funktion `discoverToggle()` in QC ab Zeile ~4904)
+- Liefert: Stammdaten, Bilder, Zutaten, Anleitungen in 7 Sprachen (DE/ES/FR/IT/ZH/PT/RU)
+- Übernommene Drinks bekommen `dbId: String(d.idDrink)` als Referenz
+- **Internet erforderlich** (nur dann)
+
+### Anthropic API
+- Modell: `claude-haiku-4-5-20251001` (Labor-Generierung, KI-Scan)
+- API-Key in `localStorage` unter `mxkey9m`
+- Direct-Browser-Access: `anthropic-dangerous-direct-browser-access: true`
+- **Internet erforderlich** für KI-Funktionen
+
+### Offline-Verhalten
+Aus dem Manual (Zitat aus Code, `hlpOfflineSub`):
+> *Die App speichert sich beim ersten Öffnen automatisch auf deinem Gerät – danach läuft sie vollständig ohne Internet. Wenn du Browserdaten löschst, wird dieser Speicher ebenfalls gelöscht. Danach einfach einmal online gehen – die App lädt sich neu.*
+
+Die App selbst läuft offline. KI-Features (Scan, Labor, Übersetzung, geplante SBKIM-Funktionen) brauchen Internet — das ist Teil des Designs, kein Konflikt.
+
+---
+
+## LocalStorage-Konvention
+
+| Key | Inhalt |
+|---|---|
+| `mxkey9m` | Anthropic API-Key |
+| `mxlang9m` | Aktuelle Sprache (`CL`) |
+| `mxms9m` | Menüplan-Daten |
+| `mxfd9m` | Ordner-Struktur |
+| `mxtheme9m` | Theme |
+
+**Regel:** Neue Persistenz-Keys folgen dem Schema `mx<thema>9m`.
 
 ---
 
 ## Übersetzungssystem
-- `LANGS`-Objekt im JS (ab ca. Zeile 2324 in index.html)
-- Funktion `T(k)` für alle UI-Texte
-- 8 Sprachen: de, en, ru, zh, es, fr, it, pt
-- Variable `CL` = aktuelle Sprache (aus localStorage `mlang9`)
+- `LANGS`-Objekt im JS (1 Definition, 8 Sprachblöcke)
+- Funktion `T(k)` (in QC bei Zeile ~4145): `function T(k){return(LANGS[CL]||LANGS.de)[k]||k;}`
+- **8 Sprachen:** de, en, ru, zh, es, fr, it, pt
+- Aktuelle Sprache: `CL` (geladen aus `localStorage.mxlang9m`)
+- Konsistenz-Check: `node scripts/check_i18n.js`
 
 ---
 
 ## Workflow-Regeln
 
 ### Entwicklung
-1. Änderungen **immer** in der QC-Datei (`QC_MeinRezb_*.html`) vornehmen
-2. Nach Änderungen: `python3 build.py` ausführen → erzeugt neue `index.html`
-3. Commit-Nachrichten auf **Deutsch**
+1. Änderungen primär in `QC_Mixarium_*.html` vornehmen
+2. Direkt danach `index.html` synchron halten (`cp QC_Mixarium_20_04_26.html index.html` oder identische Bearbeitung)
+3. md5sum vergleichen — beide Dateien MÜSSEN identisch sein
+4. Commit-Nachrichten auf **Deutsch**
 
-### "Hochladen"-Befehl
-Wenn der Benutzer **"Hochladen"** schreibt:
-1. Alle lokalen Änderungen committen
+### „Hochladen"-Befehl
+Wenn der Benutzer **„Hochladen"** schreibt:
+1. Alle lokalen Änderungen committen (deutsche Nachricht)
 2. Auf aktuellen Feature-Branch pushen: `git push -u origin <branch>`
-3. PR erstellen via `mcp__github__create_pull_request` → nach `main`
+3. PR (Draft) erstellen via `mcp__github__create_pull_request` → nach `main`
 4. PR-URL mitteilen
 
-### Pflicht-Prüfung bei "Hochladen" oder "Mergen"
-**Immer** alle offenen Branches und PRs prüfen – nicht nur den aktuellen Branch:
+### Pflicht-Prüfung bei „Hochladen" oder „Mergen"
+**Immer** alle offenen PRs und Branches prüfen:
 
 | Schritt | Primär (MCP) | Fallback (git) |
 |---|---|---|
-| Offene PRs prüfen | `mcp__github__list_pull_requests` (state: open) | entfällt |
+| Offene PRs prüfen | `mcp__github__list_pull_requests` (state: open) | — |
 | Alle Branches prüfen | `mcp__github__list_branches` | `git fetch --all` |
-| Branches ahead of main | — | `git log origin/main..origin/<branch> --oneline` für jeden Branch |
+| Branches ahead of main | — | `git log origin/main..origin/<branch> --oneline` |
 
 **Wenn MCP-Tools nicht verfügbar:**
-- Explizit melden: *"GitHub-PRs können gerade nicht geprüft werden (MCP nicht verfügbar)"*
-- git-Fallback verwenden: alle Remote-Branches auf ungemergede Commits prüfen
-- NIEMALS "nichts offen" sagen ohne zu prüfen, was tatsächlich geprüft wurde
+- Explizit melden: *„GitHub-PRs können gerade nicht geprüft werden (MCP nicht verfügbar)"*
+- git-Fallback verwenden, alle Remote-Branches auf ungemergede Commits prüfen
+- NIEMALS „nichts offen" sagen ohne zu prüfen, was tatsächlich geprüft wurde
 
 ### Branch-Konvention
-- Feature-Branches werden automatisch angelegt (Format: `claude/<beschreibung>-<id>`)
-- Immer auf dem zugewiesenen Branch arbeiten (steht oben in der Session-Konfiguration)
+- Feature-Branches automatisch angelegt: `claude/<beschreibung>-<id>`
+- Immer auf dem zugewiesenen Branch arbeiten (steht in der Session-Konfiguration)
 
 ---
 
-## Icon-Aktualisierungen: Pflicht-Verifikation
+## Eigenständige HTML-Seiten
 
-Nach **jeder** Icon-Änderung vor dem Commit **datenbasiert** prüfen – nicht nur die `<link>`-Tags:
-
-```python
-# Alle alten Base64-PNGs aus der Referenzdatei extrahieren
-import re
-with open('alte_referenz.html', 'r') as f:
-    alte_b64s = set(re.findall(r'data:image/png;base64,([A-Za-z0-9+/]+=*)', f.read()))
-
-# Prüfen: Kein einziger alter PNG-Block darf noch in der neuen Datei vorkommen
-with open('QC_MeinRezb_*.html', 'r') as f:
-    neue_datei = f.read()
-
-verbleibend = [b for b in alte_b64s if b in neue_datei]
-assert not verbleibend, f"Noch {len(verbleibend)} alte Icons!"
-print("✅ Alle Icons vollständig ersetzt")
-```
-
-**Alle 4 Orte** wo Icons stecken können:
-1. `<link rel="icon">` – Tab-Favicon
-2. `<link rel="apple-touch-icon">` – iOS-Icon
-3. `var mj={...icons:[...]}` – **PWA-Install-Dialog** ← wird oft vergessen!
-4. `shortcuts[].icons` im Manifest + `<img src="data:...">` im Seiteninhalt
-
-**Regel:** Erst alle Base64-Blobs inventarisieren, dann ersetzen, dann verifizieren.
-
----
-
-## ⚠️ PFLICHT-REGEL: Dateien umbenennen (atomisch)
-
-**Wenn eine Datei umbenannt wird, MÜSSEN alle Querverweise in EINEM einzigen Commit aktualisiert werden.**
-
-### Warum diese Regel existiert
-Zwischen zwei Commits deployt GitHub Pages die Zwischenzustände. Wenn Datei A auf `mr-invite-v5.html` verlinkt und diese Datei dann in einem separaten Commit zu `MeinRezeptbuch-invite-v5.html` umbenannt wird, entsteht ein Deployment-Fenster mit 404-Fehlern – selbst wenn beide Commits nur Minuten auseinanderliegen.
-
-### Pflicht-Checkliste bei jeder Umbenennung
-
-**Vor dem Umbenennen** – alle Stellen finden, die auf die Datei verweisen:
-```bash
-grep -rn "alter-dateiname" --include="*.html" --include="*.js" --include="*.json" .
-```
-
-**In EINEM einzigen Commit** alles zusammen ändern:
-1. Datei umbenennen (`git mv alter-name.html neuer-name.html`)
-2. Alle `href="alter-name.html"` → `href="neuer-name.html"`
-3. Alle `src="alter-name.html"` → `src="neuer-name.html"`
-4. Alle `location.replace('...alter-name.html'...)` → neuer Name
-5. Alle `window.open('...alter-name.html'...)` → neuer Name
-6. Alle absoluten GitHub-Pages-URLs mit altem Namen → neue URLs
-7. Alle Referenzen in `app-manifest.json`, `sw.js`, `app-sw.js`
-
-**Verifizieren vor dem Commit:**
-```bash
-grep -rn "alter-dateiname" --include="*.html" --include="*.js" --include="*.json" .
-# Ergebnis muss leer sein!
-```
-
-**Regel:** Niemals eine Datei umbenennen und die Referenzaktualisierung auf einen späteren Commit verschieben.
-
----
-
-## ⚠️ REGEL: Übernahme vom Schwesterprojekt – Pflicht-URL-Prüfung
-
-Wenn Code von **Muttis-Rezeptbuch** nach **Mein-Rezeptbuch** übertragen wird, enthalten alle Dateien Muttis-spezifische Namen und URLs. Diese müssen **vollständig** ersetzt werden – sonst entstehen unsichtbare Zeitbomben die erst später als 404 auffallen.
-
-**Nach jeder Übernahme diesen grep ausführen:**
-```bash
-grep -rn "mr-gift\|mr-invite\|muttis\|Muttis-Rezeptbuch\|MuttisRezeptbuch\|muttisrezeptbuch" \
-  --include="*.html" --include="*.js" --include="*.json" .
-# Ergebnis muss leer sein!
-```
-
-**Typische Stellen mit alten Namen:**
-- `window.open('...mr-invite-v4.html'...)` im Einstellungs-Dialog der Haupt-App
-- `location.replace('...mr-gift.html'...)` in den Gift-Seiten
-- `dlBlob(..., 'muttis-rezeptbuch.html')` bei Download-Funktionen
-- Absolute GitHub-Pages-URLs in `href`, `src`, `content`
-
-**Regel:** Nie annehmen, dass "der Code schon passt" – immer mit grep verifizieren.
-
----
-
-## ⚠️ REGEL: Eigenständige Seiten werden DIREKT bearbeitet
-
-Die folgenden Dateien sind **eigenständige HTML-Seiten** – sie laufen NICHT durch `build.py`:
+Die folgenden Dateien sind **eigenständige HTML-Seiten** — direkt bearbeiten + committen:
 
 | Datei | Typ |
-|-------|-----|
-| `MeinRezeptbuch-gift.html` | direkt bearbeiten + committen |
-| `MeinRezeptbuch-gift2.html` | direkt bearbeiten + committen |
-| `MeinRezeptbuch-invite-v5.html` | direkt bearbeiten + committen |
-| `USP_MeinRezeptbuch.html` | direkt bearbeiten + committen |
-| `USP_Erklaerung zu MeinRezb.html` | direkt bearbeiten + committen |
-| `impressum.html` | direkt bearbeiten + committen |
+|---|---|
+| `gift.html` | Geschenk-Landing-Seite |
+| `gift2.html` | Geschenk-Variante |
+| `invite-v5.html` | Einladungs-Seite |
+| `impressum.html` | Impressum |
 
-`build.py` ist **ausschließlich** für `index.html` zuständig.
+**Pflicht-Checkliste nach Änderungen:**
+```
+✅ Datei direkt geändert
+✅ Alle internen Links auf Korrektheit geprüft (keine fremden URLs)
+✅ Icons inline als Base64 (keine externen Datei-Referenzen)
+```
 
-**Pflicht-Checkliste nach Änderungen an eigenständigen Seiten:**
-```
-✅ Datei direkt geändert (NICHT via build.py)
-✅ Alle internen Links auf Korrektheit geprüft (keine mr-* oder Muttis-URLs)
-✅ Icons inline als Base64 (keine externen Dateireferenzen)
-```
+### Fremdkörper im Repo (nicht von Mein Mixarium genutzt)
+Die `mr-*.html`-Dateien (`mr-gift.html`, `mr-gift2.html`, `mr-invite-v5.html`) stammen aus Muttis-Rezeptbuch und enthalten Weiterleitungen auf `lausiklauskn-png.github.io/Muttis-Rezeptbuch/...`. Sie werden von Mein Mixarium nirgends verlinkt.
+
+**Regel:** Nicht eigenmächtig löschen. Bei Bedarf erst mit User klären, dann atomar entfernen.
 
 ---
 
 ## ⚠️ REGEL: Icons in eigenständigen Seiten müssen inline sein
 
-Externe Icon-Referenzen (`href="icons/icon-book-blue.svg"`) in eigenständigen HTML-Seiten sind **verboten**. Wenn die Icon-Datei umbenannt oder verschoben wird, bricht das Icon lautlos.
-
-**Pflicht:** Alle Icons in gift.html, gift2.html, invite-v5.html und USP-Seiten müssen als **inline Base64 data-URI** eingebettet sein:
+Externe Icon-Referenzen (`href="icons/icon-book-blue.svg"`) sind **verboten** — wenn die Icon-Datei umbenannt oder verschoben wird, bricht das Icon lautlos. Pflicht: alle Icons in `gift.html`, `gift2.html`, `invite-v5.html`, `impressum.html` als **inline Base64 data-URI**.
 
 ```html
-<!-- FALSCH – externe Referenz: -->
-<link rel="icon" href="icons/icon-book-blue.svg">
+<!-- FALSCH -->
+<link rel="icon" href="icons/something.svg">
 
-<!-- RICHTIG – inline Base64: -->
+<!-- RICHTIG -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,...">
 ```
 
 **Verifizieren:**
 ```bash
-grep -n 'rel="icon"' MeinRezeptbuch-gift.html MeinRezeptbuch-gift2.html MeinRezeptbuch-invite-v5.html
-# Jede Zeile muss "data:" enthalten – kein "href="icons/" erlaubt
+grep -n 'rel="icon"' gift.html gift2.html invite-v5.html impressum.html
+# Jede Zeile muss "data:" enthalten
 ```
 
 ---
 
 ## ⚠️ REGEL: Icon-Änderungen erfordern einen einzigen vollständigen Durchgang
 
-Fehler aus der Praxis: Icon in gift.html geändert → ein Commit → danach Nachbesserung nötig (`ac02360 Icon-Fix`), weil die anderen Seiten vergessen wurden.
+Erfahrung: Icon in einer Seite geändert → ein Commit → danach Nachbesserung nötig, weil andere Seiten vergessen wurden.
 
-**Vor dem ersten Icon-Commit** alle betroffenen Stellen inventarisieren:
+**Vor dem ersten Icon-Commit** alle Stellen inventarisieren:
 ```bash
 grep -rn 'rel="icon"\|rel="apple-touch-icon"\|icons:\[' \
-  MeinRezeptbuch-gift.html MeinRezeptbuch-gift2.html \
-  MeinRezeptbuch-invite-v5.html app-manifest.json app-sw.js
+  index.html QC_Mixarium_*.html gift.html gift2.html invite-v5.html \
+  impressum.html manifest.json app-sw.js
 ```
 
-**Alle diese Stellen in EINEM Commit** aktualisieren – kein "ich mache die anderen Seiten später".
+**Alle Stellen in EINEM Commit** aktualisieren — kein „andere Seiten später".
+
+**Vier Orte, wo Icons stecken können:**
+1. `<link rel="icon">` — Tab-Favicon
+2. `<link rel="apple-touch-icon">` — iOS-Icon
+3. PWA-Install-Dialog (im JS, suchen nach `icons:[`)
+4. `manifest.json` + `<img src="data:...">` im Seiteninhalt
+
+---
+
+## ⚠️ PFLICHT-REGEL: Dateien umbenennen (atomisch)
+
+Wenn eine Datei umbenannt wird, MÜSSEN alle Querverweise in EINEM Commit aktualisiert werden. Zwischen zwei Commits deployt GitHub Pages Zwischenzustände → 404-Fenster.
+
+**Pflicht-Checkliste:**
+1. Vor dem Umbenennen: `grep -rn "alter-name" --include="*.html" --include="*.js" --include="*.json" .`
+2. In EINEM Commit:
+   - `git mv alter.html neuer.html`
+   - alle `href=`, `src=`, `location.replace(`, `window.open(` aktualisieren
+   - `manifest.json`, `app-sw.js` prüfen
+   - absolute GitHub-Pages-URLs ersetzen
+3. Nach dem Commit: `grep -rn "alter-name" ...` muss leer sein
 
 ---
 
 ## Häufige Aufgaben
 
 ### Neue Funktion hinzufügen
-1. In `QC_MeinRezb_*.html` implementieren
-2. `python3 build.py` ausführen
-3. Hochladen
-
-### Swipe / Touch / Drag & Drop
-- Swipe-Handler: IIFE ab `// ── SWIPE-NAVIGATION ──` (kurz vor `boot()`)
-- Touch-Drag: `setupTouchDrag()` und `setupWkTouchDrag()`
-- Drag-Selektoren: `.drag-hdl`, `.ing-drag-hdl`, `.fld-drag-hdl`, `.wk-drag-hdl`
+1. In `QC_Mixarium_*.html` implementieren
+2. `index.html` synchron halten (siehe Workflow-Regeln)
+3. md5sum verifizieren — beide Dateien identisch
+4. Hochladen
 
 ### Sprache hinzufügen
-- Im `LANGS`-Objekt neuen Sprachblock ergänzen
+- Im `LANGS`-Objekt neuen Sprachblock ergänzen (DE als Master)
 - `CL`-Variable und `T(k)`-Funktion funktionieren automatisch
+- Neue Sprache zum Sprach-Picker im UI hinzufügen
+- `node scripts/check_i18n.js` für Konsistenz-Check
+
+### Swipe / Touch / Drag & Drop
+- Swipe-Handler: IIFE im Bereich `// ── SWIPE-NAVIGATION ──` (vor `boot()`)
+- Touch-Drag: `setupTouchDrag()`, `setupWkTouchDrag()`
+- Drag-Selektoren: `.drag-hdl`, `.ing-drag-hdl`, `.fld-drag-hdl`, `.wk-drag-hdl`
 
 ---
 
-## Menüleiste (Bottom Nav) – Aktuelle Implementierung
+## Menüleiste (Bottom Nav)
 
-### Schriftgrößen (Stand nach PR #3)
-| Element | CSS-Klasse | Wert |
-|---|---|---|
-| Nav-Icon | `.bn-ico` | `font-size:1.15rem` |
-| Nav-Label (Basis) | `.bn-lbl` | `font-size:.65rem` |
-| Nav-Label (Typografie-Override) | `.bn-lbl` (Ende `<style>`) | `font-size:var(--text-sm)` = 13px |
-
-### navTo() – Schritt-zurück-Verhalten
+### navTo() — Schritt-zurück-Verhalten
 **Alle Nav-Buttons** rufen `navTo(n)` statt `showSc(n)` auf.
 
-`navTo(n)` schließt zuerst offene fov-Overlays (Import, Export, API-Key, Sprache, Hilfe, Manual), **bevor** zum Ziel-Tab navigiert wird. Ist ein Overlay offen → wird nur geschlossen (ein Schritt zurück). Ist keins offen → normaler `showSc(n)`-Aufruf.
+`navTo(n)` schließt zuerst offene `fov`-Overlays (Import, Export, API-Key, Sprache, Hilfe, Manual), **bevor** zum Ziel-Tab navigiert wird. Ist ein Overlay offen → wird nur geschlossen (ein Schritt zurück). Ist keins offen → normaler `showSc(n)`-Aufruf.
 
 ```javascript
-// navTo() steht direkt nach showSc() in der QC-Datei
+// QC-Datei: showSc() ist bei Zeile ~4667, navTo() direkt danach (~4686)
 function navTo(n){ ... }
 ```
 
@@ -302,22 +260,54 @@ function navTo(n){ ... }
 
 ---
 
-## Mein-Menü-Overlay (`.mv-*`) – Design-Parität mit Import-Overlay (`.fov-*`)
+## Mein-Menü-Overlay (`.mv-*`) — Design-Parität mit Import-Overlay (`.fov-*`)
 
-Das `#mv`-Overlay (Mein Menü / Wochenplan) soll **optisch identisch** mit dem `#importOv`-Overlay sein.
+Das `#mv`-Overlay (Mein Menü / Wochenplan) soll **optisch identisch** mit dem `#importOv`-Overlay sein. CSS-Klassen `.mv-*` spiegeln `.fov-*` (Header, Tabs, Spektral-Verlauf).
 
-### Aktuelle CSS-Werte (Stand nach PR #3)
-| Element | `.mv-*` | entspricht `.fov-*` |
-|---|---|---|
-| Header | `.mv-hdr` | `.fov-hdr` – `cursor:pointer`, klickbar zum Schließen |
-| Zurück-Pfeil | `.mv-back` | `color:rgba(255,255,255,.56)` |
-| Titel | `.mv-title` | `font-size:.98rem; color:#fff` |
-| Druck-Button | `.mv-print-btn` | Icon-Stil: `font-size:1.15rem; color:rgba(255,255,255,.72)` |
-| Tab-Leiste | `.mv-tabs` | `.fov-tabs` |
-| Tab-Schrift | `.mvtab` | `font-size:.72rem; padding:9px 4px; color:rgba(255,255,255,.80)` |
-| Tab aktiv | `.mvtab.on` | `color:#fff; border-bottom-color:var(--gold)` |
+**Regel:** Bei Änderungen an `.fov-hdr` / `.fovtab` immer prüfen, ob `.mv-hdr` / `.mvtab` ebenfalls anzupassen ist.
 
-### Spektral-Theme
-`.mv-hdr` und `.mv-tabs` haben denselben Regenbogen-Verlauf wie `.fov-hdr`/`.fov-tabs`.
+---
 
-**Regel:** Bei Änderungen an `.fov-hdr`/`.fovtab` immer prüfen ob `.mv-hdr`/`.mvtab` ebenfalls angepasst werden müssen.
+## Labor-Funktion
+
+### Lab-Generierung (`labGenerate()`)
+- Eingabe: Kategorie (`LAB_CAT`), Geschmacks-Tags (`LAB_TASTES`), optionale Zutaten
+- Modell: `claude-haiku-4-5-20251001`
+- Antwort-Schema: JSON mit `titel/beschreibung/zutaten/schritte/tags/glastyp/alkohol/portionen/zubereitungszeit_min/schwierigkeit`
+- Speicherung: `R[]`-Array mit `labGen: true`, `labStatus: 'experimentell'`
+- Bewertung: 4 Dimensionen (taste/practicality/originality/description), gewichtet nach `LAB_WEIGHTS`
+
+### Lab-Pool-Workflow
+- `experimentell` → User-Bewertung → `accepted` (ins Buch) oder `removed`
+- Schon nach 1 Bewertung kann der Status wechseln
+
+---
+
+## SBKIM — Geplante Erweiterung (Stand: Mai 2026)
+
+**SBKIM** (Semantisches Bidirektionales KI-Matching) wird als MVP-Erweiterung in Mein Mixarium aufgebaut. Mein Mixarium ist die **Demo-Plattform** für das offene SBKIM-Protokoll.
+
+### Architektur (geplant, 6 Agenten)
+- **Korpus / Partei B (passiv):** TheCocktailDB-Discover (existiert bereits)
+- **A1 Curator:** Stammdaten + öffentliches Wissen via Claude (LLM als Komprimierer externer Quellen)
+- **A2 Auditor:** Trust-Werte aus `confidence`-Feldern der LLM-Antworten
+- **A3 Devil's Advocate:** Negativ-Signale (Kritikpunkte, Einschränkungen)
+- **B1 Interviewer:** Lückenfüllung auf User-Seite (Partei A) durch max. 3 Rückfragen
+- **B2 Matcher:** Cosine-Similarity + α/β/γ-Score
+- **B3 Critic:** Kennenlern-Karten (synergien, lücken, brücke)
+
+### Spezifikations-Artefakte (geplant unter `docs/sbkim/`)
+- `RULES.md` — Regeln zur Quellen-Aggregation, Trust-Vergabe, Capability/Need-Synthese
+- `PROMPT_TEMPLATES.md` — LLM-Prompts für A1, B1, B3 (mit Beispielen)
+- `DEMO_CASES.md` — vorbereitete Demo-Suchanfragen mit dokumentierten Erwartungen
+
+### Konzept-Quellen
+- `SBKIM_Paper_Mein_Mixarium.pdf` — Konzeptpapier (Mai 2026)
+- Allgemeines SBKIM-Protokoll-Paper (offene Spezifikation, gemeinfrei, Mai 2026)
+- Multi-Agent-Erweiterungs-Dokument `SBKIM_AGENTS.md` (extern verfasst, Inhalte zur Übernahme)
+
+### Wichtige SBKIM-Regeln
+- **LLM-Wissen** über bekannte Drinks ist legitime externe Quelle (Claude komprimiert öffentlich publiziertes Wissen aus Bartender-Foren, Mixology-Quellen, Wikipedia etc.)
+- **Synthetische Reviews** werden NICHT als „echte Bewertungen" verkleidet — Quelle ist immer transparent (LLM-Wissen vs. User-eigene Bewertung)
+- **Trust-Werte** stammen aus `confidence`-Antworten der LLM, nicht aus willkürlichen Konstanten
+- **Differential Privacy & Gossip** sind nicht Teil des MVP — erst spätere Phase, wenn Single-Device-Stabilität nachgewiesen ist
