@@ -40,39 +40,42 @@
 /* Google Fonts removed for offline capability - using system fonts */
 :root{
   /* ═══════════════════════════════════════════════════════════════════
-     MEIN MIXARIUM — STUFE 1 DESIGN-TOKENS (v9.5)
-     Warme Getränke-Palette: Bernstein · Mojito-Grün · Limone · Kaffee-Braun
+     MEIN MIXARIUM — SUNSET TROPICAL DESIGN-SYSTEM (v9.5)
+     Sommer-Strand-Sonnenuntergang: Coral · Türkis-Mint · Sun-Gold · Twilight-Lila
      ═══════════════════════════════════════════════════════════════════ */
 
-  /* Surface / Hintergrund — warmes Pergament */
-  --sand:#f7f0e0;--sand2:#e8d8b8;--parch:#fdf8ec;
-  --ink:#2a1a08;
+  /* Surface / Hintergrund — heller, leicht peach-getönt */
+  --sand:#fff5e6;--sand2:#ffd9c2;--parch:#fffaf3;
+  --ink:#1a3a52;            /* Twilight-Blue als Text-Farbe (modernes Pendant zu Schwarz) */
+  --ink2:#3a5a7a;
+  --ink3:#7896b0;
 
-  /* Bernstein (Amber) — Primärfarbe */
-  --br:#b8741a;--br2:#d89030;--br3:#f0b870;
+  /* Coral — Primärfarbe (statt Bernstein) */
+  --br:#ff5a5f;--br2:#ff8a8f;--br3:#ffb5b8;
 
-  /* Kaffee-Braun (deep coffee) — Tiefenkontrast */
-  --rust:#6e3a14;--rusts:#f5e4d0;
+  /* Twilight-Blue — Tiefenkontrast (statt Kaffee) */
+  --rust:#1a3a52;--rusts:#dee9f0;
 
-  /* Mojito-Grün (lebendig krautig) */
-  --grn:#5cb85c;--grns:#d8eed4;
+  /* Türkis-Mint (Sekundär-Aktion) */
+  --grn:#2dd4bf;--grns:#d4f7f1;
+  --teal:#2dd4bf;--teals:#d4f7f1;
 
-  /* Mojito-Teal (tiefere Variante für Akzente) */
-  --teal:#2d8a52;--teals:#d0eedc;
+  /* Sun-Gold (Highlight) */
+  --gold:#ffd166;--golds:#fff3cf;
 
-  /* Limone (sonniger Akzent) */
-  --gold:#d4a020;--golds:#fdf5d0;
+  /* Twilight-Purple (Premium / KI-Branding) */
+  --lab:#8b5cf6;--labs:#ede6ff;
 
-  /* Lab-Lila (KI-Labor-Branding bleibt erhalten) */
-  --lab:#7c3aa8;--labs:#f3e8fc;
+  /* Sunset-Peach (Übergangs-Akzent) */
+  --peach:#ff9866;--peach-l:#ffc2a0;
 
-  /* Schatten — warm getönt */
-  --sh:rgba(110,58,20,.10);
-  --sh-2:rgba(110,58,20,.16);
-  --sh-3:rgba(110,58,20,.24);
+  /* Schatten — Coral-getönt */
+  --sh:rgba(255,90,95,.08);
+  --sh-2:rgba(26,58,82,.10);
+  --sh-3:rgba(26,58,82,.16);
 
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,14px);
-  --hh:50px;--bnh:52px;--r:12px;
+  --hh:50px;--bnh:52px;--r:14px;
 
   /* ── Spacing System (8px grid) ── */
   --space-1:4px;--space-2:8px;--space-3:16px;--space-4:24px;--space-5:32px;--space-6:48px;
@@ -82,42 +85,73 @@
   --weight-normal:400;--weight-medium:500;--weight-bold:700;
   --leading-tight:1.2;--leading-normal:1.5;--leading-loose:1.8;
 
-  /* ── Font-Stacks (Inter Display als Premium-Variable-Font) ── */
+  /* ── Font-Stacks ── */
   --font-display:'Inter Tight','Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --font-body:'Inter','Inter Tight',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'JetBrains Mono','SF Mono','Cascadia Code',Menlo,monospace;
 
-  /* ── 3D-Farbverläufe (mehrlagig für Räumlichkeit) ── */
-  --grad-amber-3d:linear-gradient(135deg,#f0b870 0%,#d89030 35%,#b8741a 70%,#8a4a08 100%);
-  --grad-amber-soft:linear-gradient(160deg,#fdf2da 0%,#f5d8a0 50%,#e8b870 100%);
-  --grad-mojito-3d:linear-gradient(135deg,#98e0a0 0%,#5cb85c 40%,#2d8a52 75%,#1c5c34 100%);
-  --grad-mojito-soft:linear-gradient(160deg,#e8f5e0 0%,#b8d8b0 50%,#8cba80 100%);
-  --grad-coffee-3d:linear-gradient(135deg,#a86838 0%,#6e3a14 50%,#3a1e08 100%);
-  --grad-coffee-soft:linear-gradient(160deg,#f5e4d0 0%,#d8b890 50%,#a87858 100%);
-  --grad-lime-3d:linear-gradient(135deg,#f8e878 0%,#e8c828 50%,#b89010 100%);
-  --grad-lime-soft:linear-gradient(160deg,#fdf8d0 0%,#f5e890 50%,#d8c050 100%);
+  /* ── 3D-Verläufe — Mehrlagig, Liquid-Charakter ── */
+  --grad-coral-3d:linear-gradient(135deg,#ffb5b8 0%,#ff8a8f 35%,#ff5a5f 70%,#cc4a4f 100%);
+  --grad-coral-soft:linear-gradient(160deg,#fff0f1 0%,#ffd9db 50%,#ffb5b8 100%);
+  --grad-turquoise-3d:linear-gradient(135deg,#5eead4 0%,#2dd4bf 40%,#1a8a78 75%,#0d5c52 100%);
+  --grad-turquoise-soft:linear-gradient(160deg,#e6fffb 0%,#b8f0e8 50%,#8fdfd2 100%);
+  --grad-sun-3d:linear-gradient(135deg,#ffe49a 0%,#ffd166 35%,#cc9b3a 75%,#8a6818 100%);
+  --grad-sun-soft:linear-gradient(160deg,#fffaeb 0%,#ffe49a 50%,#ffd166 100%);
+  --grad-twilight-3d:linear-gradient(135deg,#c4b0fe 0%,#8b5cf6 40%,#5c3aa8 80%,#2c1e5e 100%);
+  --grad-twilight-soft:linear-gradient(160deg,#f3eeff 0%,#d8c8fb 50%,#a78bfa 100%);
+  --grad-peach-3d:linear-gradient(135deg,#ffc2a0 0%,#ff9866 50%,#cc6b3a 100%);
 
-  /* App-Hintergrund — sanfter radialer Verlauf */
-  --grad-app-bg:radial-gradient(ellipse at top,#fdf8ec 0%,#f7e8c8 60%,#e8c890 100%);
+  /* Sunset-Verlauf (vertikal, der „echte" Sonnenuntergang) */
+  --grad-sunset:linear-gradient(180deg,#ffd166 0%,#ff9866 28%,#ff5a5f 55%,#8b5cf6 80%,#1a3a52 100%);
 
-  /* ── Depth-Schatten (5-stufig, premium layering) ── */
-  --shadow-1:0 1px 2px rgba(110,58,20,.08),0 1px 1px rgba(110,58,20,.06);
-  --shadow-2:0 2px 6px rgba(110,58,20,.10),0 1px 3px rgba(110,58,20,.06);
-  --shadow-3:0 4px 12px rgba(110,58,20,.12),0 2px 6px rgba(110,58,20,.08);
-  --shadow-4:0 8px 24px rgba(110,58,20,.14),0 4px 10px rgba(110,58,20,.08);
-  --shadow-5:0 16px 40px rgba(110,58,20,.18),0 8px 16px rgba(110,58,20,.10);
+  /* App-Hintergrund — heller mit Peach-Twilight-Hauch */
+  --grad-app-bg:radial-gradient(ellipse 80% 60% at 30% 0%,rgba(255,217,194,.55) 0%,transparent 65%),
+                radial-gradient(ellipse 70% 50% at 80% 100%,rgba(212,247,241,.45) 0%,transparent 60%),
+                linear-gradient(180deg,#fffaf3 0%,#fff5e6 60%,#ffeed4 100%);
+
+  /* Iridescent (für Holo-Buttons) — animiert via @property --rot */
+  --grad-iridescent:conic-gradient(from var(--rot,0deg) at 50% 50%,
+    #ffd6e0 0%,#ffefb5 16%,#d8ffec 32%,#cce8ff 48%,#e6d4ff 64%,#ffd6e0 80%,#ffefb5 100%);
+
+  /* ── Depth-Schatten (5-stufig, twilight-getönt) ── */
+  --shadow-1:0 1px 2px rgba(26,58,82,.06),0 1px 1px rgba(255,90,95,.04);
+  --shadow-2:0 2px 6px rgba(26,58,82,.08),0 1px 3px rgba(255,90,95,.05);
+  --shadow-3:0 4px 14px rgba(26,58,82,.10),0 2px 6px rgba(255,90,95,.06);
+  --shadow-4:0 10px 30px rgba(26,58,82,.12),0 4px 10px rgba(255,90,95,.08);
+  --shadow-5:0 20px 50px rgba(26,58,82,.16),0 8px 18px rgba(255,90,95,.10);
+
+  /* Glow-Schatten — coral, türkis, twilight für leuchtende Akzente */
+  --glow-coral:0 0 24px rgba(255,90,95,.35),0 0 48px rgba(255,90,95,.18);
+  --glow-turquoise:0 0 24px rgba(45,212,191,.35),0 0 48px rgba(45,212,191,.18);
+  --glow-twilight:0 0 24px rgba(139,92,246,.35),0 0 48px rgba(139,92,246,.18);
 
   /* 3D-Inset (Glanz oben, Tiefe unten) für Buttons */
-  --shadow-inset-3d:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -2px 0 rgba(0,0,0,.10);
+  --shadow-inset-3d:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.10);
+  --shadow-glass-inset:inset 0 1px 1px rgba(255,255,255,.50),inset 0 -1px 1px rgba(0,0,0,.06);
 
-  /* ── Easing-Funktionen + Übergangszeiten ── */
+  /* ── Easing-Funktionen (Liquid-Feel) ── */
   --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
   --ease-smooth:cubic-bezier(0.16,1,0.3,1);
   --ease-snappy:cubic-bezier(0.5,0,0.5,1);
   --ease-out-cubic:cubic-bezier(0.33,1,0.68,1);
-  --t-fast:120ms;--t-base:200ms;--t-slow:320ms;--t-slower:500ms;
+  --ease-liquid:cubic-bezier(0.4,0,0.2,1);
+  --ease-bounce-soft:cubic-bezier(0.68,-0.30,0.32,1.30);
+  --t-fast:120ms;--t-base:200ms;--t-slow:320ms;--t-slower:500ms;--t-luxury:800ms;
 
   /* ── Color Semantic Aliases ── */
-  --color-primary:var(--br);--color-surface:var(--parch);
+  --color-primary:var(--br);
+  --color-secondary:var(--teal);
+  --color-accent:var(--gold);
+  --color-premium:var(--lab);
+  --color-surface:var(--parch);
+  --color-text:var(--ink);
+}
+
+/* @property erlaubt smooth animation des conic-gradient angle (Hologram-Effekt) */
+@property --rot {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
 }
 [data-theme=spring]{--sand:#f4f9f0;--sand2:#d4e8c8;--parch:#f8fdf4;--ink:#162810;--br:#437230;--br2:#5e9448;--br3:#90bc70;--rust:#c05858;--rusts:#fae8e8;--grn:#347028;--grns:#d8f0d0;--teal:#287858;--teals:#d0eee0;--gold:#708020;--golds:#eaf2cc}
 [data-theme=night]{--sand:#181410;--sand2:#2a2018;--parch:#201810;--ink:#ecdcc8;--br:#c8a480;--br2:#a88060;--br3:#b09060;--rust:#e07050;--rusts:#381808;--grn:#68a848;--grns:#182808;--teal:#50a89a;--teals:#0c2420;--gold:#d4a030;--golds:#281e04}
@@ -274,8 +308,10 @@ body.nav-collapsed{padding-bottom:calc(16px + var(--sb))}
   overflow:hidden;margin-bottom:9px;border:1px solid var(--sand2);
   scroll-margin-top:calc(var(--hh)+var(--st)+80px)}
 .rcard.blank{border:1.5px dashed var(--sand2);box-shadow:none;background:var(--parch)}
-.rcard-img-wrap{width:100%;height:160px;overflow:hidden;position:relative;border-bottom:1px solid var(--sand2)}
-.rcard-img{width:100%;height:160px;object-fit:cover;display:block}
+.rcard-img-wrap{width:100%;aspect-ratio:3/4;overflow:hidden;position:relative;border-bottom:1px solid var(--sand2);background:var(--sand)}
+.rcard-img{width:100%;height:100%;object-fit:cover;display:block}
+/* Leere Drink-Karten (.blank) sind versteckt — User sieht nur echte Drinks */
+.rcard.blank{display:none!important}
 .rcard-hd{padding:10px 10px 7px 14px;position:relative;cursor:pointer;background:var(--parch);display:flex;align-items:flex-start;gap:6px}
 .rcard-hd-content{flex:1;min-width:0}
 .rcard-hd-right{display:flex;flex-direction:column;align-items:center;justify-content:space-between;flex-shrink:0;align-self:stretch;padding:2px 0 4px}
@@ -1417,34 +1453,6 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 #rcont .rcard-img-wrap{height:calc((100vw - 12px) * 4 / 3) !important;padding-top:0 !important;overflow:hidden !important}
 #rcont .rcard-img{position:static !important;width:100% !important;height:calc((100vw - 12px) * 4 / 3) !important;object-fit:cover !important;display:block !important}
 #carousel-ctr{text-align:center;padding:3px 0 1px;font-size:.72rem;color:var(--br3);letter-spacing:.06em}
-/* ── Labor-Shortcut Banner ── */
-#labor-shortcut{
-  display:flex;
-  justify-content:center;
-  margin:10px 12px 8px;
-}
-#labor-shortcut button{
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  background:var(--teals);
-  border:1.5px solid var(--teal);
-  border-radius:20px;
-  padding:4px 12px;
-  cursor:pointer;
-  color:var(--teal);
-  font-size:.72rem;
-  font-weight:700;
-  margin-bottom:14px;
-  -webkit-appearance:none;
-  appearance:none;
-  box-shadow:none;
-  transition:transform .12s ease,filter .15s ease;
-}
-#labor-shortcut button:hover{filter:brightness(1.02)}
-#labor-shortcut button:active{transform:translateY(1px);filter:brightness(.98)}
-#labor-shortcut button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
-
 /* ── Micro-Animations: Button Active ── */
 button{transition:transform 100ms ease,background 150ms ease,background-color 150ms ease}
 button:active{transform:scale(0.97)}
@@ -1681,23 +1689,6 @@ body{background:var(--grad-app-bg);background-attachment:fixed;color:var(--ink)}
   box-shadow:var(--shadow-2),
              0 0 0 3px rgba(216,144,48,.20),
              0 0 16px rgba(184,116,26,.18);
-}
-
-/* ── Labor-Shortcut: dezenter Glanz-Sweep + Hover-Lift ── */
-#labor-shortcut button{
-  position:relative;overflow:hidden;
-  transition:transform var(--t-base) var(--ease-spring),
-             box-shadow var(--t-base) var(--ease-smooth),
-             filter var(--t-fast) var(--ease-out-cubic);
-}
-#labor-shortcut button::before{
-  content:'';position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.32) 50%,transparent 65%);
-  background-size:240% 100%;background-position:-200% 0;
-  animation:mx-shimmer-sweep 6s var(--ease-smooth) infinite;
-}
-@media(hover:hover){
-  #labor-shortcut button:hover{transform:translateY(-2px) scale(1.01);box-shadow:var(--shadow-3)}
 }
 
 /* ── Drink-Karten: Hover-Lift + Image-Parallax ── */
@@ -1946,7 +1937,6 @@ body{background:var(--grad-app-bg);background-attachment:fixed;color:var(--ink)}
       </div>
     </div>
   </div>
-  <div id="labor-shortcut"><button type="button" onclick="navTo('labor')" title="Zum Mix-Labor" aria-label="Zum Mix-Labor">🔬 Zum Labor <span aria-hidden="true">→</span></button></div>
   <div id="carousel-ctr"></div>
   <div id="rcont"></div>
 </div>
@@ -4494,6 +4484,7 @@ const CATS=[
   {id:'limo',  ico:'🍋',de:'Limonaden',           en:'Lemonades',     ru:'Лимонады',   zh:'柠檬水', es:'Limonadas',fr:'Limonades', it:'Limoniate',pt:'Limonadas',col:'#c8a020'},
   {id:'tee',   ico:'☕',de:'Tees & Kaffees',    en:'Teas & Coffees', ru:'Чаи & Кофе',  zh:'茶 & 咖啡', es:'Tés & Cafés',  fr:'Thés & Cafés',  it:'Tè & Caffè', pt:'Chás & Cafés', col:'#6b4a2a'},
   {id:'ckt',   ico:'🍸',de:'Cocktails',           en:'Cocktails',     ru:'Коктейли',   zh:'鸡尾酒', es:'Cócteles',fr:'Cocktails', it:'Cocktail',pt:'Coquetéis',col:'#c04030',alcohol:true},
+  {id:'bowle', ico:'🍶',de:'Bowlen',               en:'Punches',       ru:'Пунши',      zh:'宾治',  es:'Ponches',   fr:'Punchs',    it:'Punch',   pt:'Ponches', col:'#ff5a5f'},
   {id:'sirup', ico:'🫙',de:'Sirup & Basis',       en:'Syrups & Base', ru:'Сиропы',     zh:'糖浆',  es:'Siropes',   fr:'Sirops',    it:'Sciroppi',pt:'Xaropes', col:'#5a8a3a'},
 ];
 // Glastypen für Getränke (ersetzt COURSES)
