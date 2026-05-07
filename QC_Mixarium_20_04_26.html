@@ -5681,6 +5681,168 @@ const _DB_LANG_FIELD={
   it:'strInstructionsIT',zh:'strInstructionsZH-HANS',pt:'strInstructionsPT',ru:'strInstructionsRU'
 };
 
+// Wörterbuch für Discover-Import: Standard-Cocktail-Zutaten (~80) in 7 Sprachen.
+// Lookup ist case-insensitive über exakten Match. Was hier fehlt, kommt entweder
+// englisch ins Buch ODER wird via _disTrAIBackground per Claude nachübersetzt.
+const _DISC_INGRX={
+  'vodka':{de:'Wodka',ru:'Водка',zh:'伏特加',es:'Vodka',fr:'Vodka',it:'Vodka',pt:'Vodka'},
+  'gin':{de:'Gin',ru:'Джин',zh:'金酒',es:'Ginebra',fr:'Gin',it:'Gin',pt:'Gim'},
+  'rum':{de:'Rum',ru:'Ром',zh:'朗姆酒',es:'Ron',fr:'Rhum',it:'Rum',pt:'Rum'},
+  'white rum':{de:'Weißer Rum',ru:'Белый ром',zh:'白朗姆酒',es:'Ron blanco',fr:'Rhum blanc',it:'Rum bianco',pt:'Rum branco'},
+  'dark rum':{de:'Dunkler Rum',ru:'Тёмный ром',zh:'深色朗姆酒',es:'Ron oscuro',fr:'Rhum brun',it:'Rum scuro',pt:'Rum escuro'},
+  'light rum':{de:'Heller Rum',ru:'Светлый ром',zh:'浅色朗姆酒',es:'Ron ligero',fr:'Rhum léger',it:'Rum leggero',pt:'Rum claro'},
+  'gold rum':{de:'Gold-Rum',ru:'Золотой ром',zh:'金朗姆酒',es:'Ron dorado',fr:'Rhum doré',it:'Rum dorato',pt:'Rum dourado'},
+  'spiced rum':{de:'Spiced Rum',ru:'Пряный ром',zh:'香料朗姆酒',es:'Ron especiado',fr:'Rhum épicé',it:'Rum speziato',pt:'Rum especiado'},
+  'tequila':{de:'Tequila',ru:'Текила',zh:'龙舌兰',es:'Tequila',fr:'Tequila',it:'Tequila',pt:'Tequila'},
+  'mezcal':{de:'Mezcal',ru:'Мескаль',zh:'梅斯卡尔',es:'Mezcal',fr:'Mezcal',it:'Mezcal',pt:'Mezcal'},
+  'whiskey':{de:'Whiskey',ru:'Виски',zh:'威士忌',es:'Whiskey',fr:'Whisky',it:'Whiskey',pt:'Uísque'},
+  'whisky':{de:'Whisky',ru:'Виски',zh:'威士忌',es:'Whisky',fr:'Whisky',it:'Whisky',pt:'Uísque'},
+  'bourbon':{de:'Bourbon',ru:'Бурбон',zh:'波本威士忌',es:'Bourbon',fr:'Bourbon',it:'Bourbon',pt:'Bourbon'},
+  'scotch':{de:'Scotch',ru:'Скотч',zh:'苏格兰威士忌',es:'Scotch',fr:'Scotch',it:'Scotch',pt:'Scotch'},
+  'rye whiskey':{de:'Rye-Whiskey',ru:'Ржаной виски',zh:'黑麦威士忌',es:'Whisky de centeno',fr:'Whisky de seigle',it:'Whiskey di segale',pt:'Whisky de centeio'},
+  'irish whiskey':{de:'Irischer Whiskey',ru:'Ирландский виски',zh:'爱尔兰威士忌',es:'Whiskey irlandés',fr:'Whisky irlandais',it:'Whiskey irlandese',pt:'Whiskey irlandês'},
+  'brandy':{de:'Brandy',ru:'Бренди',zh:'白兰地',es:'Brandy',fr:'Brandy',it:'Brandy',pt:'Brandy'},
+  'cognac':{de:'Cognac',ru:'Коньяк',zh:'干邑',es:'Coñac',fr:'Cognac',it:'Cognac',pt:'Conhaque'},
+  'champagne':{de:'Champagner',ru:'Шампанское',zh:'香槟',es:'Champán',fr:'Champagne',it:'Champagne',pt:'Champanhe'},
+  'prosecco':{de:'Prosecco',ru:'Просекко',zh:'普罗赛克',es:'Prosecco',fr:'Prosecco',it:'Prosecco',pt:'Prosecco'},
+  'sparkling wine':{de:'Schaumwein',ru:'Игристое вино',zh:'起泡酒',es:'Vino espumoso',fr:'Vin pétillant',it:'Vino frizzante',pt:'Vinho espumante'},
+  'red wine':{de:'Rotwein',ru:'Красное вино',zh:'红酒',es:'Vino tinto',fr:'Vin rouge',it:'Vino rosso',pt:'Vinho tinto'},
+  'white wine':{de:'Weißwein',ru:'Белое вино',zh:'白葡萄酒',es:'Vino blanco',fr:'Vin blanc',it:'Vino bianco',pt:'Vinho branco'},
+  'vermouth':{de:'Wermut',ru:'Вермут',zh:'味美思',es:'Vermut',fr:'Vermouth',it:'Vermouth',pt:'Vermute'},
+  'dry vermouth':{de:'Trockener Wermut',ru:'Сухой вермут',zh:'干味美思',es:'Vermut seco',fr:'Vermouth sec',it:'Vermouth secco',pt:'Vermute seco'},
+  'sweet vermouth':{de:'Süßer Wermut',ru:'Сладкий вермут',zh:'甜味美思',es:'Vermut dulce',fr:'Vermouth doux',it:'Vermouth dolce',pt:'Vermute doce'},
+  'beer':{de:'Bier',ru:'Пиво',zh:'啤酒',es:'Cerveza',fr:'Bière',it:'Birra',pt:'Cerveja'},
+  'absinthe':{de:'Absinth',ru:'Абсент',zh:'苦艾酒',es:'Absenta',fr:'Absinthe',it:'Assenzio',pt:'Absinto'},
+  'triple sec':{de:'Triple Sec',ru:'Трипл-сек',zh:'橙皮酒',es:'Triple seco',fr:'Triple sec',it:'Triple sec',pt:'Triple sec'},
+  'cointreau':{de:'Cointreau',ru:'Куантро',zh:'君度',es:'Cointreau',fr:'Cointreau',it:'Cointreau',pt:'Cointreau'},
+  'curacao':{de:'Curaçao',ru:'Кюрасао',zh:'库拉索',es:'Curasao',fr:'Curaçao',it:'Curaçao',pt:'Curaçao'},
+  'blue curacao':{de:'Blue Curaçao',ru:'Голубой кюрасао',zh:'蓝橙利口酒',es:'Curasao azul',fr:'Curaçao bleu',it:'Curaçao blu',pt:'Curaçao azul'},
+  'amaretto':{de:'Amaretto',ru:'Амаретто',zh:'阿玛雷托',es:'Amaretto',fr:'Amaretto',it:'Amaretto',pt:'Amaretto'},
+  'kahlua':{de:'Kahlúa',ru:'Калуа',zh:'卡鲁瓦',es:'Kahlúa',fr:'Kahlúa',it:'Kahlúa',pt:'Kahlúa'},
+  'baileys irish cream':{de:'Baileys Irish Cream',ru:'Бейлис ирландский крем',zh:'百利爱尔兰甜奶酒',es:'Baileys Irish Cream',fr:'Baileys Irish Cream',it:'Baileys Irish Cream',pt:'Baileys Irish Cream'},
+  'angostura bitters':{de:'Angostura-Bitter',ru:'Биттер Ангостура',zh:'安高斯图拉苦精',es:'Amargo de Angostura',fr:'Amer Angostura',it:'Bitter Angostura',pt:'Bitter Angostura'},
+  'orange bitters':{de:'Orangenbitter',ru:'Апельсиновый биттер',zh:'橙苦精',es:'Amargo de naranja',fr:"Bitter à l'orange",it:"Bitter all'arancia",pt:'Bitter de laranja'},
+  'bitters':{de:'Bitter',ru:'Биттер',zh:'苦精',es:'Amargo',fr:'Bitter',it:'Bitter',pt:'Bitter'},
+  'lime juice':{de:'Limettensaft',ru:'Сок лайма',zh:'青柠汁',es:'Zumo de lima',fr:'Jus de citron vert',it:'Succo di lime',pt:'Sumo de lima'},
+  'lemon juice':{de:'Zitronensaft',ru:'Лимонный сок',zh:'柠檬汁',es:'Zumo de limón',fr:'Jus de citron',it:'Succo di limone',pt:'Sumo de limão'},
+  'orange juice':{de:'Orangensaft',ru:'Апельсиновый сок',zh:'橙汁',es:'Zumo de naranja',fr:"Jus d'orange",it:"Succo d'arancia",pt:'Sumo de laranja'},
+  'pineapple juice':{de:'Ananassaft',ru:'Ананасовый сок',zh:'菠萝汁',es:'Zumo de piña',fr:"Jus d'ananas",it:'Succo di ananas',pt:'Sumo de ananás'},
+  'cranberry juice':{de:'Cranberrysaft',ru:'Клюквенный сок',zh:'蔓越莓汁',es:'Zumo de arándano',fr:'Jus de canneberge',it:'Succo di mirtillo',pt:'Sumo de oxicoco'},
+  'grapefruit juice':{de:'Grapefruitsaft',ru:'Грейпфрутовый сок',zh:'葡萄柚汁',es:'Zumo de pomelo',fr:'Jus de pamplemousse',it:'Succo di pompelmo',pt:'Sumo de toranja'},
+  'tomato juice':{de:'Tomatensaft',ru:'Томатный сок',zh:'番茄汁',es:'Zumo de tomate',fr:'Jus de tomate',it:'Succo di pomodoro',pt:'Sumo de tomate'},
+  'apple juice':{de:'Apfelsaft',ru:'Яблочный сок',zh:'苹果汁',es:'Zumo de manzana',fr:'Jus de pomme',it:'Succo di mela',pt:'Sumo de maçã'},
+  'simple syrup':{de:'Einfachsirup',ru:'Сахарный сироп',zh:'糖浆',es:'Jarabe simple',fr:'Sirop simple',it:'Sciroppo semplice',pt:'Xarope simples'},
+  'sugar syrup':{de:'Zuckersirup',ru:'Сахарный сироп',zh:'糖浆',es:'Jarabe de azúcar',fr:'Sirop de sucre',it:'Sciroppo di zucchero',pt:'Xarope de açúcar'},
+  'grenadine':{de:'Grenadine',ru:'Гренадин',zh:'红石榴糖浆',es:'Granadina',fr:'Grenadine',it:'Granatina',pt:'Grenadine'},
+  'orgeat syrup':{de:'Orgeat-Sirup',ru:'Сироп оршад',zh:'杏仁糖浆',es:'Orgeat',fr:'Sirop orgeat',it:'Sciroppo di orzata',pt:'Xarope de orchata'},
+  'tonic water':{de:'Tonic Water',ru:'Тоник',zh:'汤力水',es:'Agua tónica',fr:'Tonic',it:'Acqua tonica',pt:'Água tónica'},
+  'club soda':{de:'Sodawasser',ru:'Содовая',zh:'苏打水',es:'Soda',fr:'Eau gazeuse',it:'Acqua frizzante',pt:'Água com gás'},
+  'soda water':{de:'Sodawasser',ru:'Содовая',zh:'苏打水',es:'Soda',fr:'Eau gazeuse',it:'Acqua frizzante',pt:'Água com gás'},
+  'sparkling water':{de:'Mineralwasser',ru:'Газированная вода',zh:'气泡水',es:'Agua con gas',fr:'Eau pétillante',it:'Acqua frizzante',pt:'Água com gás'},
+  'ginger beer':{de:'Ingwerbier',ru:'Имбирное пиво',zh:'姜啤',es:'Cerveza de jengibre',fr:'Bière au gingembre',it:'Ginger beer',pt:'Ginger beer'},
+  'ginger ale':{de:'Ginger Ale',ru:'Имбирный эль',zh:'姜汁汽水',es:'Ginger ale',fr:'Ginger ale',it:'Ginger ale',pt:'Ginger ale'},
+  'cola':{de:'Cola',ru:'Кола',zh:'可乐',es:'Cola',fr:'Cola',it:'Cola',pt:'Cola'},
+  'coca-cola':{de:'Coca-Cola',ru:'Кока-кола',zh:'可口可乐',es:'Coca-Cola',fr:'Coca-Cola',it:'Coca-Cola',pt:'Coca-Cola'},
+  'lemonade':{de:'Limonade',ru:'Лимонад',zh:'柠檬水',es:'Limonada',fr:'Limonade',it:'Limonata',pt:'Limonada'},
+  'sprite':{de:'Sprite',ru:'Спрайт',zh:'雪碧',es:'Sprite',fr:'Sprite',it:'Sprite',pt:'Sprite'},
+  'water':{de:'Wasser',ru:'Вода',zh:'水',es:'Agua',fr:'Eau',it:'Acqua',pt:'Água'},
+  'hot water':{de:'Heißes Wasser',ru:'Горячая вода',zh:'热水',es:'Agua caliente',fr:'Eau chaude',it:'Acqua calda',pt:'Água quente'},
+  'ice':{de:'Eis',ru:'Лёд',zh:'冰',es:'Hielo',fr:'Glace',it:'Ghiaccio',pt:'Gelo'},
+  'ice cubes':{de:'Eiswürfel',ru:'Кубики льда',zh:'冰块',es:'Cubitos de hielo',fr:'Glaçons',it:'Cubetti di ghiaccio',pt:'Cubos de gelo'},
+  'crushed ice':{de:'Crushed Ice',ru:'Колотый лёд',zh:'碎冰',es:'Hielo picado',fr:'Glace pilée',it:'Ghiaccio tritato',pt:'Gelo picado'},
+  'mint':{de:'Minze',ru:'Мята',zh:'薄荷',es:'Menta',fr:'Menthe',it:'Menta',pt:'Hortelã'},
+  'mint leaves':{de:'Minzblätter',ru:'Листья мяты',zh:'薄荷叶',es:'Hojas de menta',fr:'Feuilles de menthe',it:'Foglie di menta',pt:'Folhas de hortelã'},
+  'fresh mint':{de:'Frische Minze',ru:'Свежая мята',zh:'新鲜薄荷',es:'Menta fresca',fr:'Menthe fraîche',it:'Menta fresca',pt:'Hortelã fresca'},
+  'lime':{de:'Limette',ru:'Лайм',zh:'青柠',es:'Lima',fr:'Citron vert',it:'Lime',pt:'Lima'},
+  'lemon':{de:'Zitrone',ru:'Лимон',zh:'柠檬',es:'Limón',fr:'Citron',it:'Limone',pt:'Limão'},
+  'orange':{de:'Orange',ru:'Апельсин',zh:'橙子',es:'Naranja',fr:'Orange',it:'Arancia',pt:'Laranja'},
+  'cherry':{de:'Kirsche',ru:'Вишня',zh:'樱桃',es:'Cereza',fr:'Cerise',it:'Ciliegia',pt:'Cereja'},
+  'maraschino cherry':{de:'Cocktailkirsche',ru:'Коктейльная вишня',zh:'糖渍樱桃',es:'Cereza marrasquino',fr:'Cerise marasquin',it:'Ciliegia marasca',pt:'Cereja marasquino'},
+  'olive':{de:'Olive',ru:'Оливка',zh:'橄榄',es:'Aceituna',fr:'Olive',it:'Oliva',pt:'Azeitona'},
+  'salt':{de:'Salz',ru:'Соль',zh:'盐',es:'Sal',fr:'Sel',it:'Sale',pt:'Sal'},
+  'sugar':{de:'Zucker',ru:'Сахар',zh:'糖',es:'Azúcar',fr:'Sucre',it:'Zucchero',pt:'Açúcar'},
+  'brown sugar':{de:'Brauner Zucker',ru:'Коричневый сахар',zh:'红糖',es:'Azúcar moreno',fr:'Sucre roux',it:'Zucchero di canna',pt:'Açúcar mascavado'},
+  'cinnamon':{de:'Zimt',ru:'Корица',zh:'肉桂',es:'Canela',fr:'Cannelle',it:'Cannella',pt:'Canela'},
+  'nutmeg':{de:'Muskatnuss',ru:'Мускатный орех',zh:'肉豆蔻',es:'Nuez moscada',fr:'Muscade',it:'Noce moscata',pt:'Noz-moscada'},
+  'cream':{de:'Sahne',ru:'Сливки',zh:'奶油',es:'Nata',fr:'Crème',it:'Panna',pt:'Creme'},
+  'milk':{de:'Milch',ru:'Молоко',zh:'牛奶',es:'Leche',fr:'Lait',it:'Latte',pt:'Leite'},
+  'coconut cream':{de:'Kokoscreme',ru:'Кокосовый крем',zh:'椰奶油',es:'Crema de coco',fr:'Crème de coco',it:'Crema di cocco',pt:'Creme de coco'},
+  'coconut milk':{de:'Kokosmilch',ru:'Кокосовое молоко',zh:'椰奶',es:'Leche de coco',fr:'Lait de coco',it:'Latte di cocco',pt:'Leite de coco'},
+  'egg':{de:'Ei',ru:'Яйцо',zh:'鸡蛋',es:'Huevo',fr:'Œuf',it:'Uovo',pt:'Ovo'},
+  'egg white':{de:'Eiweiß',ru:'Яичный белок',zh:'蛋清',es:'Clara de huevo',fr:"Blanc d'œuf",it:'Albume',pt:'Clara de ovo'},
+  'egg yolk':{de:'Eigelb',ru:'Яичный желток',zh:'蛋黄',es:'Yema de huevo',fr:"Jaune d'œuf",it:'Tuorlo',pt:'Gema de ovo'},
+  'coffee':{de:'Kaffee',ru:'Кофе',zh:'咖啡',es:'Café',fr:'Café',it:'Caffè',pt:'Café'},
+  'espresso':{de:'Espresso',ru:'Эспрессо',zh:'浓缩咖啡',es:'Espresso',fr:'Espresso',it:'Espresso',pt:'Expresso'},
+  'tea':{de:'Tee',ru:'Чай',zh:'茶',es:'Té',fr:'Thé',it:'Tè',pt:'Chá'},
+  'honey':{de:'Honig',ru:'Мёд',zh:'蜂蜜',es:'Miel',fr:'Miel',it:'Miele',pt:'Mel'},
+  'vanilla':{de:'Vanille',ru:'Ваниль',zh:'香草',es:'Vainilla',fr:'Vanille',it:'Vaniglia',pt:'Baunilha'},
+  'chocolate':{de:'Schokolade',ru:'Шоколад',zh:'巧克力',es:'Chocolate',fr:'Chocolat',it:'Cioccolato',pt:'Chocolate'}
+};
+
+// Einheiten-Wörterbuch für Mengenangaben (oz, ml, dash, splash, ...).
+// Reihenfolge: längere/spezifischere Begriffe zuerst, sonst matched z.B. "oz" auch in "ounces".
+const _DISC_UNITX=[
+  ['fl oz',     {de:'fl oz',ru:'жидк. унц.',zh:'液量盎司',es:'oz líq.',fr:'oz liq.',it:'oz fl',pt:'fl oz'}],
+  ['ounces',    {de:'Unzen',ru:'унций',zh:'盎司',es:'onzas',fr:'onces',it:'once',pt:'onças'}],
+  ['ounce',     {de:'Unze',ru:'унция',zh:'盎司',es:'onza',fr:'once',it:'oncia',pt:'onça'}],
+  ['oz',        {de:'oz',ru:'унц.',zh:'盎司',es:'oz',fr:'oz',it:'oz',pt:'oz'}],
+  ['ml',        {de:'ml',ru:'мл',zh:'毫升',es:'ml',fr:'ml',it:'ml',pt:'ml'}],
+  ['cl',        {de:'cl',ru:'сл',zh:'厘升',es:'cl',fr:'cl',it:'cl',pt:'cl'}],
+  ['liters',    {de:'Liter',ru:'литров',zh:'升',es:'litros',fr:'litres',it:'litri',pt:'litros'}],
+  ['liter',     {de:'Liter',ru:'литр',zh:'升',es:'litro',fr:'litre',it:'litro',pt:'litro'}],
+  ['litres',    {de:'Liter',ru:'литров',zh:'升',es:'litros',fr:'litres',it:'litri',pt:'litros'}],
+  ['litre',     {de:'Liter',ru:'литр',zh:'升',es:'litro',fr:'litre',it:'litro',pt:'litro'}],
+  ['dashes',    {de:'Spritzer',ru:'капель',zh:'数滴',es:'chorritos',fr:'traits',it:'gocce',pt:'pingos'}],
+  ['dash',      {de:'Spritzer',ru:'капля',zh:'一滴',es:'chorrito',fr:'trait',it:'goccia',pt:'pingo'}],
+  ['splashes',  {de:'Schuss',ru:'всплеска',zh:'少量',es:'chorros',fr:'giclées',it:'spruzzate',pt:'salpicos'}],
+  ['splash',    {de:'Schuss',ru:'всплеск',zh:'少量',es:'chorro',fr:'giclée',it:'spruzzata',pt:'salpico'}],
+  ['drops',     {de:'Tropfen',ru:'капель',zh:'滴',es:'gotas',fr:'gouttes',it:'gocce',pt:'gotas'}],
+  ['drop',      {de:'Tropfen',ru:'капля',zh:'滴',es:'gota',fr:'goutte',it:'goccia',pt:'gota'}],
+  ['shots',     {de:'Shots',ru:'стопок',zh:'杯',es:'chupitos',fr:'shots',it:'shot',pt:'doses'}],
+  ['shot',      {de:'Shot',ru:'стопка',zh:'一杯',es:'chupito',fr:'shot',it:'shot',pt:'dose'}],
+  ['jiggers',   {de:'Jigger',ru:'джиггеров',zh:'量酒器',es:'jiggers',fr:'jiggers',it:'jigger',pt:'medidores'}],
+  ['jigger',    {de:'Jigger',ru:'джиггер',zh:'量酒器',es:'jigger',fr:'jigger',it:'jigger',pt:'medidor'}],
+  ['parts',     {de:'Teile',ru:'частей',zh:'份',es:'partes',fr:'parts',it:'parti',pt:'partes'}],
+  ['part',      {de:'Teil',ru:'часть',zh:'份',es:'parte',fr:'part',it:'parte',pt:'parte'}],
+  ['cups',      {de:'Tassen',ru:'чашек',zh:'杯',es:'tazas',fr:'tasses',it:'tazze',pt:'chávenas'}],
+  ['cup',       {de:'Tasse',ru:'чашка',zh:'杯',es:'taza',fr:'tasse',it:'tazza',pt:'chávena'}],
+  ['tablespoons',{de:'Esslöffel',ru:'столовых ложек',zh:'汤匙',es:'cucharadas',fr:'cuillères à soupe',it:'cucchiai',pt:'colheres de sopa'}],
+  ['tablespoon',{de:'Esslöffel',ru:'столовая ложка',zh:'汤匙',es:'cucharada',fr:'cuillère à soupe',it:'cucchiaio',pt:'colher de sopa'}],
+  ['tbsp',      {de:'EL',ru:'ст. л.',zh:'汤匙',es:'cda.',fr:'c. à s.',it:'cucch.',pt:'c. sopa'}],
+  ['teaspoons', {de:'Teelöffel',ru:'чайных ложек',zh:'茶匙',es:'cucharaditas',fr:'cuillères à café',it:'cucchiaini',pt:'colheres de chá'}],
+  ['teaspoon',  {de:'Teelöffel',ru:'чайная ложка',zh:'茶匙',es:'cucharadita',fr:'cuillère à café',it:'cucchiaino',pt:'colher de chá'}],
+  ['tsp',       {de:'TL',ru:'ч. л.',zh:'茶匙',es:'cdta.',fr:'c. à c.',it:'cucch.',pt:'c. chá'}],
+  ['bottles',   {de:'Flaschen',ru:'бутылок',zh:'瓶',es:'botellas',fr:'bouteilles',it:'bottiglie',pt:'garrafas'}],
+  ['bottle',    {de:'Flasche',ru:'бутылка',zh:'瓶',es:'botella',fr:'bouteille',it:'bottiglia',pt:'garrafa'}],
+  ['cans',      {de:'Dosen',ru:'банок',zh:'罐',es:'latas',fr:'canettes',it:'lattine',pt:'latas'}],
+  ['can',       {de:'Dose',ru:'банка',zh:'罐',es:'lata',fr:'canette',it:'lattina',pt:'lata'}],
+  ['glasses',   {de:'Gläser',ru:'стаканов',zh:'杯',es:'vasos',fr:'verres',it:'bicchieri',pt:'copos'}],
+  ['glass',     {de:'Glas',ru:'стакан',zh:'杯',es:'vaso',fr:'verre',it:'bicchiere',pt:'copo'}],
+  ['pinches',   {de:'Prisen',ru:'щепоток',zh:'撮',es:'pizcas',fr:'pincées',it:'pizzichi',pt:'pitadas'}],
+  ['pinch',     {de:'Prise',ru:'щепотка',zh:'一撮',es:'pizca',fr:'pincée',it:'pizzico',pt:'pitada'}],
+  ['to taste',  {de:'nach Geschmack',ru:'по вкусу',zh:'适量',es:'al gusto',fr:'au goût',it:'q.b.',pt:'a gosto'}]
+];
+
+function _disTrIngredient(name,lang){
+  if(!name||lang==='en')return null;
+  const k=String(name).toLowerCase().trim();
+  const m=_DISC_INGRX[k];
+  return (m&&m[lang])||null;
+}
+function _disTrUnit(amt,lang){
+  if(!amt||lang==='en')return amt;
+  let result=String(amt);
+  for(const [en,tr] of _DISC_UNITX){
+    if(!tr[lang])continue;
+    const re=new RegExp('(^|[^a-zA-ZäöüÄÖÜß])'+en.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=[^a-zA-ZäöüÄÖÜß]|$)','i');
+    if(re.test(result)){
+      result=result.replace(re,(_,pre)=>pre+tr[lang]);
+      break;
+    }
+  }
+  return result;
+}
+
 async function discoverPreview(id){
   const mc=document.getElementById('discoverModalContent');
   const modal=document.getElementById('discoverModal');
@@ -5713,13 +5875,10 @@ async function discoverPreview(id){
             ${c.ico} ${c.de}</button>`).join('')}
         </div>
 
-        ${needsTransl?`<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:14px;padding:10px;background:var(--teals);border-radius:10px;border:1.5px solid var(--teal)">
-          <input type="checkbox" id="discoverTranslChk" ${hasNativeTransl?'checked':''} style="margin-top:2px;accent-color:var(--teal);width:16px;height:16px;flex-shrink:0">
-          <div>
-            <div style="font-size:.76rem;font-weight:700;color:var(--teal)">Schritte ins ${h(langName)} übersetzen</div>
-            <div style="font-size:.70rem;color:var(--br3);margin-top:2px">${hasNativeTransl?'✅ Direkt verfügbar (kein API-Key nötig)':'⚠️ Benötigt API-Key (Einstellungen)'}</div>
-          </div>
-        </label>`:''}
+        ${needsTransl?`<div style="margin-bottom:14px;padding:10px;background:var(--teals);border-radius:10px;border:1.5px solid var(--teal)">
+          <div style="font-size:.76rem;font-weight:700;color:var(--teal)">🌐 Wird automatisch ins ${h(langName)} übersetzt</div>
+          <div style="font-size:.70rem;color:var(--br3);margin-top:3px;line-height:1.5">Zutaten &amp; Einheiten: Wörterbuch (offline). Anleitung: ${hasNativeTransl?'direkt aus Datenbank.':'Originaltext (EN).'}${localStorage.getItem('mxkey9m')?' Unbekanntes wird mit KI nachübersetzt.':' Für KI-Vervollständigung: API-Key in Einstellungen hinterlegen.'}</div>
+        </div>`:''}
 
         <button onclick="discoverConfirmImport()" class="bigbtn teal" style="width:100%;font-size:.86rem;padding:12px">✅ Ins Buch übernehmen</button>
         <button onclick="discoverModalClose()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1.5px solid var(--sand2);background:transparent;font-size:.78rem;cursor:pointer;color:var(--br3)">Abbrechen</button>
@@ -5738,24 +5897,34 @@ async function discoverConfirmImport(){
   if(!d){discoverModalClose();return;}
   const catBtn=document.querySelector('.dpc[style*="var(--teal)"]');
   const cat=catBtn?catBtn.dataset.cat:(_discoverCat||_discoverCatFor(d));
-  const withTransl=CL!=='en'&&document.getElementById('discoverTranslChk')?.checked;
   discoverModalClose();
   try{
+    // 1. Zutaten: Wörterbuch-Übersetzung sofort anwenden, Reste sammeln für KI
     const ings=[];
+    const aiPending=[]; // Indizes der Zutaten die das Wörterbuch nicht kannte
     for(let i=1;i<=15;i++){
       const name=(d[`strIngredient${i}`]||'').trim();
       const amt=(d[`strMeasure${i}`]||'').trim();
       if(!name)break;
-      ings.push({id:i,amt,unit:'',name,ck:false,note:''});
+      let trName=name, trAmt=amt;
+      if(CL!=='en'){
+        const dictName=_disTrIngredient(name,CL);
+        if(dictName)trName=dictName; else aiPending.push(ings.length);
+        trAmt=_disTrUnit(amt,CL);
+      }
+      ings.push({id:i,amt:trAmt,unit:'',name:trName,ck:false,note:''});
     }
-    // Steps: use native DB translation if available and requested, else English
+    // 2. Anleitung: native DB-Übersetzung nutzen wenn vorhanden, sonst Original (EN), KI als Fallback
     let stepsRaw=d.strInstructions||'';
-    if(withTransl){
+    let stepsNeedAI=false;
+    if(CL!=='en'){
       const dbField=_DB_LANG_FIELD[CL];
       if(dbField&&(d[dbField]||'').trim())stepsRaw=d[dbField];
+      else stepsNeedAI=true;
     }
     const rawSteps=stepsRaw.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>3);
     const steps=rawSteps.length?rawSteps.map((s,i)=>({id:i+1,txt:s.trim()})):[{id:1,txt:stepsRaw.trim()}];
+    // 3. Drink-Name: bleibt wie geliefert (Eigenname, Cocktails behalten meist Original)
     const now=Date.now();
     const nr={
       id:now,name:d.strDrink||'Drink',cat,alcohol:d.strAlcoholic==='Alcoholic',
@@ -5765,15 +5934,66 @@ async function discoverConfirmImport(){
       rating:{stars:0,comment:'',imps:[]},blank:false,folder:'',
       created:now,modified:now,dbSource:'thecocktaildb',dbId:String(d.idDrink)
     };
-    // If translation requested but no native DB translation → trigger AI translation
-    if(withTransl&&!(_DB_LANG_FIELD[CL]&&(d[_DB_LANG_FIELD[CL]]||'').trim())){
-      const key=localStorage.getItem('mxkey9m')||'';
-      if(key){R.unshift(nr);sv();render();toast('✅ '+h(nr.name)+' übernommen – Übersetzung läuft …');doTranslate(nr,[CL],null);if(window._discoverLastDrinks)_discoverShow(window._discoverLastDrinks,window._discoverLastFullData);return;}
-    }
     R.unshift(nr);sv();render();
-    toast('✅ '+h(nr.name)+' ins Buch übernommen!'+(withTransl?' ('+CL.toUpperCase()+'*)':''));
+    // 4. KI-Fallback im Hintergrund wenn Reste übrig UND API-Key vorhanden
+    const key=localStorage.getItem('mxkey9m')||'';
+    const needsAI=CL!=='en'&&(aiPending.length>0||stepsNeedAI);
+    if(needsAI&&key){
+      toast('✅ '+h(nr.name)+' übernommen – KI-Übersetzung läuft…');
+      _disTrAIBackground(nr,aiPending,stepsNeedAI,key);
+    }else{
+      const note=CL!=='en'?(needsAI?' (teilweise EN – kein KI-Key)':''):'';
+      toast('✅ '+h(nr.name)+' ins Buch übernommen!'+note);
+    }
     if(window._discoverLastDrinks)_discoverShow(window._discoverLastDrinks,window._discoverLastFullData);
-  }catch(e){toast('Fehler beim Importieren');}
+  }catch(e){console.error(e);toast('Fehler beim Importieren');}
+}
+
+// Hintergrund-KI-Übersetzung für unbekannte Zutaten und/oder Schritte.
+// Aktualisiert das gespeicherte Rezept in-place sobald die Antwort da ist.
+async function _disTrAIBackground(rec,ingIdx,stepsNeedAI,key){
+  try{
+    const langName={de:'German',ru:'Russian',zh:'Simplified Chinese',es:'Spanish',fr:'French',it:'Italian',pt:'Portuguese'}[CL]||CL;
+    const payload={};
+    if(ingIdx.length){
+      payload.ingredients=ingIdx.map(i=>({i,name:rec.ings[i].name,amt:rec.ings[i].amt}));
+    }
+    if(stepsNeedAI){
+      payload.steps=rec.steps.map(s=>({id:s.id,txt:s.txt}));
+    }
+    const prompt='You translate cocktail recipe data to '+langName+'. Reply with STRICT JSON only, no prose, no code fences.\n\nInput:\n'+JSON.stringify(payload,null,2)+'\n\nReturn the same JSON shape with translated values. For "amt": keep numbers/fractions unchanged, translate only the unit word (oz, ml, dash, splash, …). For "name": idiomatic '+langName+' equivalent. For step "txt": natural '+langName+' translation.';
+    const resp=await fetch(_claudeApiUrl(),{
+      method:'POST',
+      headers:_claudeHeaders(key),
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2048,messages:[{role:'user',content:prompt}]})
+    });
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    let txt=(data.content?.[0]?.text||'').trim();
+    txt=txt.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+    const result=JSON.parse(txt);
+    const live=R.find(r=>r.id===rec.id);
+    if(!live)return;
+    if(Array.isArray(result.ingredients)){
+      for(const it of result.ingredients){
+        if(typeof it.i==='number'&&live.ings[it.i]){
+          if(it.name)live.ings[it.i].name=it.name;
+          if(it.amt)live.ings[it.i].amt=it.amt;
+        }
+      }
+    }
+    if(Array.isArray(result.steps)){
+      for(const st of result.steps){
+        const idx=live.steps.findIndex(s=>s.id===st.id);
+        if(idx>=0&&st.txt)live.steps[idx].txt=st.txt;
+      }
+    }
+    sv();render();
+    toast('🌐 '+h(live.name)+' übersetzt');
+  }catch(e){
+    console.warn('[Mixarium] KI-Übersetzung fehlgeschlagen:',e);
+    toast('⚠️ KI-Übersetzung fehlgeschlagen – Wörterbuch-Teil ist gespeichert');
+  }
 }
 
 // ── Transparenz-Log ──
