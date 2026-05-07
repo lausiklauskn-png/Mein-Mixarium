@@ -5067,10 +5067,18 @@ async function boot(){
       R.forEach(r=>{if(imgMap[r.id])r.img=imgMap[r.id];});
     }
   }catch(e){}
-  // Migration: alte Essens-Blank-Karten entfernen
+  // Migration: alte Essens-Karten entfernen (auch echte Rezepte aus der
+  // Vorgänger-App-Version, z.B. „Muttis Gullasch" mit cat:'fleisch'). Mein
+  // Mixarium ist Drinks-only — Essens-Kategorien existieren nicht mehr und
+  // führen sonst zu Geister-Einträgen im Alle-Zähler.
   {
     const OLD_FOOD=['vorsp','suppe','fleisch','fisch','vegi','kuchen','dessert'];
-    R=R.filter(r=>!(r.blank&&OLD_FOOD.includes(r.cat)));
+    const removed=R.filter(r=>OLD_FOOD.includes(r.cat));
+    if(removed.length){
+      try{console.warn('[Mixarium] Migration: alte Essens-Einträge entfernt',
+        removed.map(r=>({id:r.id,name:r.name||'(blank)',cat:r.cat})));}catch(e){}
+    }
+    R=R.filter(r=>!OLD_FOOD.includes(r.cat));
   }
   // Seed blank slots on first run (nur echte Rezepte zählen)
   if(!R.some(r=>!r.blank)){
