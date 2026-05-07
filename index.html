@@ -1982,15 +1982,18 @@ body{background:var(--grad-app-bg);background-attachment:fixed;color:var(--ink)}
    Jedes Theme überschreibt die Token + bekommt eigenen Header-Verlauf
    ═══════════════════════════════════════════════════════════════════ */
 
-/* COCKTAIL — Direction A: Drink-Spectrum Farben */
+/* COCKTAIL — Direction A: Drink-Spectrum Farben (Aperol-Sunset Primary) */
 [data-theme=cocktail]{
-  --sand:#ffffff;--sand2:#fef0e0;--parch:#ffffff;--ink:#1a1a2e;
-  --br:#ff5a5f;--br2:#ff7a8f;--br3:#ffb5b8;
+  --sand:#fff8f0;--sand2:#ffe0c2;--parch:#ffffff;--ink:#1a1a2e;
+  --br:#f57c00;--br2:#ff9933;--br3:#ffb866;
   --rust:#3e2723;--rusts:#efe2dc;
   --grn:#43a047;--grns:#d8eed4;
   --teal:#283593;--teals:#d4d8f0;
   --gold:#ffd166;--golds:#fff3cf;
   --lab:#c0392b;--labs:#f4d4cf;
+  --grad-app-bg:radial-gradient(ellipse 80% 60% at 30% 0%,rgba(255,152,51,.35) 0%,transparent 65%),
+                radial-gradient(ellipse 70% 50% at 80% 100%,rgba(67,160,71,.30) 0%,transparent 60%),
+                linear-gradient(180deg,#fff8f0 0%,#ffe9d6 50%,#ffd9b8 100%);
 }
 [data-theme=cocktail] .top-hdr{
   background:linear-gradient(90deg,#ff5a5f,#43a047,#ffd166,#283593,#ff5a5f) !important;
@@ -2006,6 +2009,9 @@ body{background:var(--grad-app-bg);background-attachment:fixed;color:var(--ink)}
   --teal:#bf9b30;--teals:#f7eed1;
   --gold:#d4a017;--golds:#faecc4;
   --lab:#6a4c93;--labs:#e6dcf2;
+  --grad-app-bg:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(191,155,48,.20) 0%,transparent 60%),
+                radial-gradient(ellipse 60% 45% at 30% 100%,rgba(27,94,32,.18) 0%,transparent 60%),
+                linear-gradient(180deg,#faf8f0 0%,#f0ecd8 50%,#e8e0c4 100%);
 }
 [data-theme=brass] .top-hdr{
   background:conic-gradient(from var(--rot,0deg) at 50% 50%,
@@ -2022,21 +2028,28 @@ body{background:var(--grad-app-bg);background-attachment:fixed;color:var(--ink)}
   --teal:#fb7185;--teals:#fce0e6;
   --gold:#fcd34d;--golds:#fff5d4;
   --lab:#f0abfc;--labs:#fdebff;
+  --grad-app-bg:radial-gradient(ellipse 70% 50% at 25% 5%,rgba(167,139,250,.22) 0%,transparent 60%),
+                radial-gradient(ellipse 65% 50% at 80% 30%,rgba(94,234,212,.20) 0%,transparent 60%),
+                radial-gradient(ellipse 60% 50% at 50% 100%,rgba(251,113,133,.20) 0%,transparent 60%),
+                linear-gradient(180deg,#ffffff 0%,#faf3ff 50%,#f0e6f7 100%);
 }
 [data-theme=iridescent] .top-hdr{
   background:var(--grad-iridescent) !important;
   animation:mx-iridescent-rotate 24s linear infinite !important;
 }
 
-/* WARM NEON — Direction D: Cream + gesättigte Neons */
+/* WARM NEON — Direction D: Cream + gesättigte Neon-Magenta */
 [data-theme=warm-neon]{
   --sand:#fff8ed;--sand2:#ffe9c2;--parch:#fffdf6;--ink:#1a1a2e;
-  --br:#ff5a5f;--br2:#ff8a8f;--br3:#ffb5b8;
+  --br:#ec4899;--br2:#f472b6;--br3:#fbcfe8;
   --rust:#1a1a2e;--rusts:#d8d8e6;
   --grn:#3ddc97;--grns:#d4f7e8;
   --teal:#3ddc97;--teals:#d4f7e8;
   --gold:#ffd166;--golds:#fff3cf;
   --lab:#7e3ff2;--labs:#e2d4fc;
+  --grad-app-bg:radial-gradient(ellipse 75% 55% at 70% 5%,rgba(236,72,153,.22) 0%,transparent 65%),
+                radial-gradient(ellipse 65% 50% at 20% 100%,rgba(126,63,242,.18) 0%,transparent 60%),
+                linear-gradient(180deg,#fffdf6 0%,#fff8ed 60%,#ffe9c2 100%);
 }
 [data-theme=warm-neon] .top-hdr{
   background:linear-gradient(90deg,#ff5a5f 0%,#7e3ff2 50%,#3ddc97 100%) !important;
@@ -2044,22 +2057,27 @@ body{background:var(--grad-app-bg);background-attachment:fixed;color:var(--ink)}
   box-shadow:0 0 20px rgba(255,90,95,.45),0 4px 16px rgba(126,63,242,.25) !important;
 }
 
-/* MIXARIUM ATELIER — Hybrid Cocktail + Iridescent */
+/* MIXARIUM ATELIER — Hybrid Cocktail + Iridescent (Twilight-Primary) */
 [data-theme=mixarium-atelier]{
-  --sand:#fffaf3;--sand2:#ffe5d6;--parch:#ffffff;--ink:#1a3a52;
-  --br:#ff5a5f;--br2:#ff8a8f;--br3:#ffb5b8;
-  --rust:#1a3a52;--rusts:#dee9f0;
+  --sand:#f5f0fb;--sand2:#e0d4f0;--parch:#fafaff;--ink:#1a1a3a;
+  --br:#8b5cf6;--br2:#a78bfa;--br3:#c4b5fd;
+  --rust:#1a1a3a;--rusts:#e0deea;
   --grn:#2dd4bf;--grns:#d4f7f1;
   --teal:#2dd4bf;--teals:#d4f7f1;
   --gold:#ffd166;--golds:#fff3cf;
-  --lab:#8b5cf6;--labs:#ede6ff;
+  --lab:#ec4899;--labs:#fce0ee;
+  --grad-app-bg:radial-gradient(ellipse 75% 55% at 25% 0%,rgba(139,92,246,.25) 0%,transparent 60%),
+                radial-gradient(ellipse 70% 50% at 80% 50%,rgba(45,212,191,.20) 0%,transparent 55%),
+                radial-gradient(ellipse 60% 45% at 50% 100%,rgba(255,90,95,.18) 0%,transparent 60%),
+                linear-gradient(180deg,#fafaff 0%,#f0eafa 50%,#e8def8 100%);
 }
 [data-theme=mixarium-atelier] .top-hdr{
   background:linear-gradient(90deg,
-    rgba(255,90,95,.85) 0%,
-    rgba(139,92,246,.78) 50%,
-    rgba(45,212,191,.85) 100%) !important;
-  background-size:200% 100% !important;
+    rgba(139,92,246,.92) 0%,
+    rgba(236,72,153,.85) 35%,
+    rgba(45,212,191,.85) 70%,
+    rgba(255,209,102,.85) 100%) !important;
+  background-size:240% 100% !important;
   animation:mx-sunset-drift 14s var(--ease-smooth) infinite !important;
 }
 
@@ -4783,11 +4801,11 @@ const COURSES=GLASS_TYPES;
 const THEMES=[
   {id:'spektral',de:'Spektral',en:'Spectral',ru:'Спектр',zh:'光谱',es:'Espectral',fr:'Spectral',it:'Spettrale',pt:'Espectral',strips:['#FF0000','#FFE500','#00CC00','#8800FF']},
   {id:'default',de:'Mixarium',en:'Mixarium',ru:'Миксариум',zh:'调酒',es:'Mixarium',fr:'Mixarium',it:'Mixarium',pt:'Mixarium',strips:['#fffaf3','#ff5a5f','#2dd4bf','#ffd166']},
-  {id:'cocktail',de:'Cocktail',en:'Cocktail',ru:'Коктейль',zh:'鸡尾酒',es:'Cóctel',fr:'Cocktail',it:'Cocktail',pt:'Coquetel',strips:['#ff5a5f','#43a047','#ffd166','#283593']},
+  {id:'cocktail',de:'Cocktail',en:'Cocktail',ru:'Коктейль',zh:'鸡尾酒',es:'Cóctel',fr:'Cocktail',it:'Cocktail',pt:'Coquetel',strips:['#f57c00','#43a047','#283593','#ffd166']},
   {id:'brass',de:'Brass',en:'Brass',ru:'Латунь',zh:'黄铜',es:'Latón',fr:'Laiton',it:'Ottone',pt:'Latão',strips:['#1b5e20','#bf9b30','#aed581','#5d4037']},
   {id:'iridescent',de:'Holografisch',en:'Iridescent',ru:'Радужный',zh:'虹彩',es:'Iridiscente',fr:'Iridescent',it:'Iridescente',pt:'Iridescente',strips:['#a78bfa','#5eead4','#fcd34d','#fb7185']},
-  {id:'warm-neon',de:'Neon Warm',en:'Warm Neon',ru:'Тёплый неон',zh:'暖霓虹',es:'Neón cálido',fr:'Néon chaud',it:'Neon caldo',pt:'Néon quente',strips:['#ff5a5f','#3ddc97','#ffd166','#7e3ff2']},
-  {id:'mixarium-atelier',de:'Atelier',en:'Atelier',ru:'Ателье',zh:'工坊',es:'Atelier',fr:'Atelier',it:'Atelier',pt:'Atelier',strips:['#ff5a5f','#8b5cf6','#2dd4bf','#ffd166']},
+  {id:'warm-neon',de:'Neon Warm',en:'Warm Neon',ru:'Тёплый неон',zh:'暖霓虹',es:'Neón cálido',fr:'Néon chaud',it:'Neon caldo',pt:'Néon quente',strips:['#ec4899','#3ddc97','#7e3ff2','#ffd166']},
+  {id:'mixarium-atelier',de:'Atelier',en:'Atelier',ru:'Ателье',zh:'工坊',es:'Atelier',fr:'Atelier',it:'Atelier',pt:'Atelier',strips:['#8b5cf6','#2dd4bf','#ec4899','#ffd166']},
   {id:'spring',de:'Frühling',en:'Spring',ru:'Весна',zh:'春天',es:'Primavera',fr:'Printemps',it:'Primavera',pt:'Primavera',strips:['#f4f9f0','#437230','#c05858','#287858']},
   {id:'night',de:'Nacht',en:'Night',ru:'Ночь',zh:'夜晚',es:'Noche',fr:'Nuit',it:'Notte',pt:'Noite',strips:['#181410','#c8a480','#e07050','#68a848']},
   {id:'modern',de:'Modern',en:'Modern',ru:'Модерн',zh:'现代',es:'Moderno',fr:'Moderne',it:'Moderno',pt:'Moderno',strips:['#f3f5fa','#284880','#c83858','#228048']},
