@@ -2205,8 +2205,8 @@ body:not([data-theme]) #bnav{
       <input id="srchIn" oninput="doSearch(this.value)"/>
       <button class="srch-x" id="srchX" onclick="clearSearch()" title="Suche löschen" style="display:none">✕</button>
       <div class="srch-acts">
-        <button class="srch-act-btn" onclick="openImport()" title="Importieren">📥</button>
-        <button class="srch-act-btn" onclick="openExport()" title="Exportieren">📤</button>
+        <button class="mx-btn mx-btn-icon" onclick="openImport()" title="Importieren">📥</button>
+        <button class="mx-btn mx-btn-icon" onclick="openExport()" title="Exportieren">📤</button>
         <button class="srch-act-btn add" onclick="toggleNewPanel()">+ <span id="hAddLbl">Getränk</span></button>
       </div>
     </div>
@@ -2410,8 +2410,8 @@ body:not([data-theme]) #bnav{
     <div class="menu-top-hdr">
       <div class="menutitle" id="menuTitle">🍽️ Menüplaner</div>
       <div style="display:flex;gap:5px">
-        <button class="sc-act-btn" onclick="openImport()" title="Importieren">📥</button>
-        <button class="sc-act-btn" onclick="openExport()" title="Exportieren">📤</button>
+        <button class="mx-btn mx-btn-icon" onclick="openImport()" title="Importieren">📥</button>
+        <button class="mx-btn mx-btn-icon" onclick="openExport()" title="Exportieren">📤</button>
         <button class="sc-act-btn add" onclick="openNewPanel()">+ Rezept</button>
       </div>
     </div>
@@ -2533,8 +2533,8 @@ body:not([data-theme]) #bnav{
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
       <div class="fld-top-title" id="fldTitle" style="margin-bottom:0">📂 Meine Ordner</div>
       <div style="display:flex;gap:5px">
-        <button class="sc-act-btn" onclick="openImport()" title="Importieren">📥</button>
-        <button class="sc-act-btn" onclick="openExport()" title="Exportieren">📤</button>
+        <button class="mx-btn mx-btn-icon" onclick="openImport()" title="Importieren">📥</button>
+        <button class="mx-btn mx-btn-icon" onclick="openExport()" title="Exportieren">📤</button>
         <button class="sc-act-btn add" onclick="showSc('recipes');openNewPanel()">+ Rezept</button>
       </div>
     </div>
@@ -2555,8 +2555,8 @@ body:not([data-theme]) #bnav{
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="fld-top-title" style="margin-bottom:0">🗄️ <span id="sBvScreenTitle">Backup-Tresor</span></div>
       <div style="display:flex;gap:5px">
-        <button class="sc-act-btn" onclick="openImport()" title="Importieren">📥</button>
-        <button class="sc-act-btn" onclick="openExport()" title="Exportieren">📤</button>
+        <button class="mx-btn mx-btn-icon" onclick="openImport()" title="Importieren">📥</button>
+        <button class="mx-btn mx-btn-icon" onclick="openExport()" title="Exportieren">📤</button>
         <button class="sc-act-btn add" onclick="showSc('recipes');openNewPanel()">+ Rezept</button>
       </div>
     </div>
@@ -11629,7 +11629,7 @@ async function _renderVault(){
   // ── JSON aus Downloads laden ──────────────────────────────────────────────
   html+=`<div class="bvault-json">
     <div class="bvault-json-lbl">📂 <strong>${T('bvJsonT')}</strong><br>${T('bvJsonD')}</div>
-    <label class="bvault-json-btn">
+    <label class="mx-btn mx-btn-glass mx-btn-block">
       <input type="file" accept=".json,application/json" onchange="importJsonFromVault(this)">
       ${T('bvJsonBtn')}
     </label>
@@ -11652,7 +11652,7 @@ async function _renderVault(){
   // Neues manuelles Backup
   html+=`<div class="bvault-new">
     <input id="bvNewName" placeholder="${T('bvNamePH')}" maxlength="40"/>
-    <button class="bvault-new-btn" onclick="saveManualBackup()">${T('bvSaveBtn')}</button>
+    <button class="mx-btn mx-btn-spirit mx-btn-block" onclick="saveManualBackup()">${T('bvSaveBtn')}</button>
   </div>`;
 
   // Vault-Map für Export-Zugriff per ID
@@ -11673,9 +11673,9 @@ async function _renderVault(){
         <div class="bvault-meta">${dt} · ${recLbl}</div>
       </div>
       <div class="bvault-acts">
-        <button class="bvault-btn load" onclick="loadFromVault('${eid}')" title="${T('bvBtnLoad')}">🔄</button>
-        <button class="bvault-btn exp" onclick="exportFromVault(window._bvMap['${eid}'])" title="${T('bvBtnExp')}">📤</button>
-        <button class="bvault-btn del" onclick="deleteFromVault('${eid}')" title="${T('bvBtnDel')}">🗑</button>
+        <button class="mx-btn mx-btn-icon" onclick="loadFromVault('${eid}')" title="${T('bvBtnLoad')}">🔄</button>
+        <button class="mx-btn mx-btn-icon" onclick="exportFromVault(window._bvMap['${eid}'])" title="${T('bvBtnExp')}">📤</button>
+        <button class="mx-btn mx-btn-icon" onclick="deleteFromVault('${eid}')" title="${T('bvBtnDel')}">🗑</button>
       </div>
     </div>`;
   }
