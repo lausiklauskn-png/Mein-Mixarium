@@ -1,4 +1,7 @@
-const SW_VERSION = 'mixarium-sw-v2';
+// WICHTIG: Bei jeder App-Änderung (CSS, JS, HTML) SW_VERSION erhöhen — sonst
+// behalten installierte PWAs ihre alte Version im Cache. Beim Hochzählen wird
+// in 'activate' der alte Cache automatisch gelöscht.
+const SW_VERSION = 'mixarium-sw-v3';
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
