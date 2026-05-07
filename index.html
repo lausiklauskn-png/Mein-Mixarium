@@ -5264,7 +5264,6 @@ function setTheme(id){
     const bgCol=hs?hs.backgroundColor:'?';
     const m1=body.matches('[data-theme='+id+']');
     const m2=body.matches('[data-theme="'+id+'"]');
-    // Injizierter Test-Selektor: wenn er greift, ist die CSS-Engine ok
     const oldTest=document.getElementById('theme-debug-test');
     if(oldTest)oldTest.remove();
     const test=document.createElement('style');test.id='theme-debug-test';
