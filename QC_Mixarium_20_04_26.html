@@ -4777,6 +4777,8 @@ const CATS=[
   {id:'ckt',   ico:'🍸',de:'Cocktails',           en:'Cocktails',     ru:'Коктейли',   zh:'鸡尾酒', es:'Cócteles',fr:'Cocktails', it:'Cocktail',pt:'Coquetéis',col:'#c04030',alcohol:true},
   {id:'bowle', ico:'🍶',de:'Bowlen',               en:'Punches',       ru:'Пунши',      zh:'宾治',  es:'Ponches',   fr:'Punchs',    it:'Punch',   pt:'Ponches', col:'#ff5a5f'},
   {id:'sirup', ico:'🫙',de:'Sirup & Basis',       en:'Syrups & Base', ru:'Сиропы',     zh:'糖浆',  es:'Siropes',   fr:'Sirops',    it:'Sciroppi',pt:'Xaropes', col:'#5a8a3a'},
+  {id:'knab',  ico:'🥨',de:'Knabbereien',          en:'Snacks',        ru:'Снэки',      zh:'小吃',  es:'Aperitivos',fr:'Grignotages',it:'Stuzzichini',pt:'Petiscos',col:'#b8852a'},
+  {id:'finger',ico:'🍢',de:'Fingerfood',           en:'Finger food',   ru:'Закуски',    zh:'指食',  es:'Tapas',     fr:'Amuse-bouches',it:'Finger food',pt:'Petiscos',col:'#a04a3a'},
 ];
 // Glastypen für Getränke (ersetzt COURSES)
 const GLASS_TYPES=[
@@ -5067,10 +5069,24 @@ async function boot(){
       R.forEach(r=>{if(imgMap[r.id])r.img=imgMap[r.id];});
     }
   }catch(e){}
-  // Migration: alte Essens-Blank-Karten entfernen
+  // Migration: alte Essens-Kats remappen. Echte Rezepte aus der Vorgänger-App
+  // (z.B. „Muttis Gullasch" mit cat:'fleisch') landen in der neuen Kategorie
+  // 'knab' (Knabbereien) — passt thematisch als Snack zum Drink, statt sie
+  // komplett zu verwerfen. Blank-Karten werden weiterhin entfernt.
   {
     const OLD_FOOD=['vorsp','suppe','fleisch','fisch','vegi','kuchen','dessert'];
-    R=R.filter(r=>!(r.blank&&OLD_FOOD.includes(r.cat)));
+    const remapped=[];
+    R=R.filter(r=>{
+      if(!OLD_FOOD.includes(r.cat))return true;
+      if(r.blank)return false;
+      remapped.push({id:r.id,name:r.name||'(?)',from:r.cat});
+      r.cat='knab';
+      return true;
+    });
+    if(remapped.length){
+      try{console.info('[Mixarium] Migration: '+remapped.length+
+        ' Essens-Rezept(e) → Knabbereien remapt',remapped);}catch(e){}
+    }
   }
   // Seed blank slots on first run (nur echte Rezepte zählen)
   if(!R.some(r=>!r.blank)){
