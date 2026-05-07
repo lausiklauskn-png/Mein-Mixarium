@@ -2210,7 +2210,7 @@ body{background:var(--grad-app-bg);background-attachment:fixed;color:var(--ink)}
       </div>
     </div>
   </div>
-  <div id="carousel-ctr"></div>
+  <div id="carousel-ctr" style="display:none"></div>
   <div id="rcont"></div>
 </div>
 
@@ -7567,9 +7567,24 @@ h1 em{color:#c9a882}
 // ═══════════════════════════════════════════════════════
 function renderCatNav(){
   const el=document.getElementById('catNav');if(!el)return;
+  // Per-Kategorie-Counts (exakt die Drinks, die render() anzeigt)
+  const _catCounts={};
+  CATS.filter(c=>c.id!=='all').forEach(c=>{
+    _catCounts[c.id]=R.filter(r=>r.cat===c.id&&!r.blank&&r.name&&alcAllowed(r)).length;
+  });
+  const _fldCount=FD?FD.reduce((s,f)=>s+R.filter(r=>r.cat==='fld_'+f.id&&!r.blank&&r.name&&alcAllowed(r)).length,0):0;
+  const _allCount=Object.values(_catCounts).reduce((s,n)=>s+n,0)+_fldCount;
+  // Diagnose: Orphan-Drinks (haben Namen, aber unbekannte Kategorie — werden nicht angezeigt)
+  const _orphans=R.filter(r=>!r.blank&&r.name&&alcAllowed(r)).filter(r=>{
+    if(!r.cat)return true;
+    if(CATS.some(c=>c.id!=='all'&&c.id===r.cat))return false;
+    if(r.cat.startsWith('fld_')&&FD&&FD.some(f=>'fld_'+f.id===r.cat))return false;
+    return true;
+  });
+  if(_orphans.length){console.warn(`[Mixarium] ${_orphans.length} Orphan-Drink(s) — haben Namen aber keine bekannte Kategorie:`,_orphans.map(r=>({id:r.id,name:r.name,cat:r.cat})));}
   // Kategorien
   let pills=CATS.map(c=>{
-    const cnt=c.id==='all'?R.filter(r=>!r.blank&&r.name&&alcAllowed(r)).length:R.filter(r=>r.cat===c.id&&!r.blank&&r.name&&alcAllowed(r)).length;
+    const cnt=c.id==='all'?_allCount:(_catCounts[c.id]||0);
     return`<div class="cpill ${CAT===c.id?'on':''}" onclick="setCAT('${c.id}')">${c.ico} ${c[CL]||c.de} <span style="opacity:.65;font-size:.6rem">${cnt}</span></div>`;
   }).join('');
   if(FD&&FD.length){pills+=FD.map(f=>{const fid='fld_'+f.id;const cnt=R.filter(r=>r.folder===String(f.id)&&r.name).length;return`<div class="cpill ${CAT===fid?'on':''}" onclick="setCAT('${fid}')">${f.ico} ${f.name} <span style="opacity:.65;font-size:.6rem">${cnt}</span></div>`;}).join('');}
