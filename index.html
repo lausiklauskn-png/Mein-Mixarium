@@ -4518,7 +4518,7 @@ const TEMPS=[
 const COURSES=GLASS_TYPES;
 const THEMES=[
   {id:'spektral',de:'Spektral',en:'Spectral',ru:'Спектр',zh:'光谱',es:'Espectral',fr:'Spectral',it:'Spettrale',pt:'Espectral',strips:['#FF0000','#FFE500','#00CC00','#8800FF']},
-  {id:'default',de:'Mixarium',en:'Mixarium',ru:'Миксариум',zh:'调酒',es:'Mixarium',fr:'Mixarium',it:'Mixarium',pt:'Mixarium',strips:['#f0f8f7','#0d5c5a','#2ea87c','#7c3aa8']},
+  {id:'default',de:'Mixarium',en:'Mixarium',ru:'Миксариум',zh:'调酒',es:'Mixarium',fr:'Mixarium',it:'Mixarium',pt:'Mixarium',strips:['#fdf8ec','#b8741a','#5cb85c','#d4a020']},
   {id:'spring',de:'Frühling',en:'Spring',ru:'Весна',zh:'春天',es:'Primavera',fr:'Printemps',it:'Primavera',pt:'Primavera',strips:['#f4f9f0','#437230','#c05858','#287858']},
   {id:'night',de:'Nacht',en:'Night',ru:'Ночь',zh:'夜晚',es:'Noche',fr:'Nuit',it:'Notte',pt:'Noite',strips:['#181410','#c8a480','#e07050','#68a848']},
   {id:'modern',de:'Modern',en:'Modern',ru:'Модерн',zh:'现代',es:'Moderno',fr:'Moderne',it:'Moderno',pt:'Moderno',strips:['#f3f5fa','#284880','#c83858','#228048']},
@@ -4813,7 +4813,7 @@ async function boot(){
   if(!MS.length){MS=[{id:Date.now(),lbl:courseName('main'),ico:'🍲',rid:0}];svM();}
   _bootProg(65,'Sprache & Thema…');
   // Apply theme
-  const th=localStorage.getItem('mxtheme9m')||'spektral';
+  const th=localStorage.getItem('mxtheme9m')||'default';
   if(th!=='default')document.body.setAttribute('data-theme',th);
   // Apply API key
   const key=localStorage.getItem('mxkey9m');
