@@ -1810,14 +1810,17 @@ body{background:var(--grad-app-bg);background-attachment:fixed;color:var(--ink)}
 }
 
 /* ── TOP-HEADER REDESIGN (default = Sunset gradient living) ──
-   Überlagert die ursprüngliche solid var(--br) Definition für default theme */
-.top-hdr{
+   Visuelle Properties (Header-Verlauf, Animation, Schatten) sind auf
+   `body:not([data-theme])` eingegrenzt, damit jedes ausgewählte Thema
+   (alt + neu) den Header eigenständig stylen kann ohne !important-Krieg.
+   `position:sticky` bleibt für alle Themen. */
+.top-hdr{position:sticky}
+body:not([data-theme]) .top-hdr{
   background:linear-gradient(90deg,
     #ff9866 0%,#ff5a5f 28%,#8b5cf6 62%,#2dd4bf 100%) !important;
   background-size:220% 100%;
   animation:mx-sunset-drift 16s var(--ease-smooth) infinite;
   box-shadow:0 2px 20px rgba(26,58,82,.18) !important;
-  position:sticky;
 }
 .top-hdr::after{
   content:'';position:absolute;
@@ -1828,14 +1831,18 @@ body{background:var(--grad-app-bg);background-attachment:fixed;color:var(--ink)}
 .logo{color:#fff !important;text-shadow:0 1px 4px rgba(26,58,82,.4),0 0 16px rgba(255,255,255,.2)}
 .logo em{color:rgba(255,255,255,.85) !important;font-style:italic}
 
-/* ── BOTTOM-NAV REDESIGN (Glas-Vitrine + Sunset-Linie + Coral-Glow auf aktivem Tab) ── */
+/* ── BOTTOM-NAV REDESIGN (Glas-Vitrine + Sunset-Linie + Coral-Glow auf aktivem Tab) ──
+   Hintergrund/Schatten skopiert auf `body:not([data-theme])` — gleicher
+   Grund wie beim Header: Themen sollen das Bnav frei stylen können. */
 #bnav{
-  background:linear-gradient(180deg,rgba(255,250,243,.92) 0%,rgba(255,245,230,.96) 100%) !important;
   backdrop-filter:blur(20px) saturate(1.4);
   -webkit-backdrop-filter:blur(20px) saturate(1.4);
+  position:fixed;
+}
+body:not([data-theme]) #bnav{
+  background:linear-gradient(180deg,rgba(255,250,243,.92) 0%,rgba(255,245,230,.96) 100%) !important;
   border-top:1px solid rgba(255,90,95,.15) !important;
   box-shadow:0 -2px 16px rgba(26,58,82,.08),inset 0 1px 0 rgba(255,255,255,.6) !important;
-  position:fixed;
 }
 #bnav::before{
   content:'';position:absolute;
