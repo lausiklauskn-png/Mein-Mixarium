@@ -5249,10 +5249,33 @@ function selectLang(code){applyLang(code);render();closeLang();toast(LANGS[code]
 // THEME
 // ═══════════════════════════════════════════════════════
 function setTheme(id){
-  localStorage.setItem('mxtheme9m',id);
-  if(id==='default')document.body.removeAttribute('data-theme');
-  else document.body.setAttribute('data-theme',id);
-  renderThemeGrid();
+  // ── TEMP DEBUG: zeigt sichtbar was passiert. Entfernen sobald Theme-Bug gefunden. ──
+  try{
+    localStorage.setItem('mxtheme9m',id);
+    if(id==='default')document.body.removeAttribute('data-theme');
+    else document.body.setAttribute('data-theme',id);
+    const bodyAttr=document.body.getAttribute('data-theme')||'(none)';
+    const ls=localStorage.getItem('mxtheme9m')||'(none)';
+    const hdr=document.querySelector('.top-hdr');
+    const hdrBg=hdr?(getComputedStyle(hdr).backgroundImage||'').slice(0,140):'no .top-hdr';
+    const matches=hdr?hdr.matches('[data-theme=\"'+id+'\"] .top-hdr')||document.body.matches('[data-theme=\"'+id+'\"]'):'?';
+    console.log('[Mixarium setTheme]',id,'| body[data-theme]=',bodyAttr,'| ls=',ls,'| body matches=',matches,'| .top-hdr bg=',hdrBg);
+    let dbg=document.getElementById('theme-debug-toast');
+    if(!dbg){
+      dbg=document.createElement('div');dbg.id='theme-debug-toast';
+      dbg.style.cssText='position:fixed;top:60px;right:8px;z-index:99999;background:rgba(0,0,0,.88);color:#fff;padding:10px 12px;font:11px/1.45 ui-monospace,Menlo,monospace;border-radius:8px;max-width:340px;word-break:break-all;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:opacity .4s';
+      document.body.appendChild(dbg);
+    }
+    dbg.innerHTML='<b>setTheme:</b> '+id+'<br><b>body[data-theme]:</b> '+bodyAttr+
+      '<br><b>localStorage:</b> '+ls+'<br><b>body matches selector:</b> '+matches+
+      '<br><b>computed .top-hdr bg:</b><br>'+hdrBg.replace(/</g,'&lt;');
+    dbg.style.opacity='1';clearTimeout(dbg._t);
+    dbg._t=setTimeout(function(){dbg.style.opacity='0';},10000);
+    renderThemeGrid();
+  }catch(e){
+    console.error('[Mixarium setTheme] ERROR:',e);
+    alert('setTheme error: '+e.message+'\n\n'+e.stack);
+  }
 }
 function renderThemeGrid(){
   const g=document.getElementById('themeGrid');if(!g)return;
