@@ -1985,9 +1985,12 @@ body:not([data-theme]) #bnav{
 .mx-btn-pipette:active{transform:translateY(1px) rotate(0)}
 
 /* ═══════════════════════════════════════════════════════════════════
-   V0c2 — Erstöffnungs-Animation (Choreografierte Bar-Sequenz)
-   Trigger: erstes Öffnen ODER neue APP_VERSION ODER Replay-Knopf
-   Phasen (~5 s gesamt, skippable, prefers-reduced-motion → Fade)
+   V0c2 — Erstöffnungs-Animation (Bar-Sequenz, ~5.5s)
+   Plot: Glas steht. Zutaten fliegen in hohen Bögen ins Glas.
+         Funkel-Mix-Moment. Glas kippt, Getränk wird ausgeschüttet.
+         Brauner Hintergrund verschwindet von unten nach oben →
+         App erscheint dahinter (clip-path-Reveal).
+   Trigger: Erstöffnung, neue APP_VERSION, Replay-Knopf.
    ═══════════════════════════════════════════════════════════════════ */
 #mxAniOv{
   position:fixed;inset:0;z-index:99999;
@@ -1996,76 +1999,99 @@ body:not([data-theme]) #bnav{
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;opacity:0;pointer-events:none;
   transition:opacity .45s ease-out;
+  clip-path:inset(0 0 0 0);
 }
-#mxAniOv.show{opacity:1;pointer-events:auto;animation:mxAniDone 5s forwards}
-@keyframes mxAniDone{0%,90%{opacity:1}100%{opacity:0;pointer-events:none;visibility:hidden}}
+#mxAniOv.show{opacity:1;pointer-events:auto;animation:mxAppReveal 5.5s forwards}
+@keyframes mxAppReveal{
+  0%,55%{clip-path:inset(0 0 0 0)}
+  92%   {clip-path:inset(0 0 100% 0)}
+  100%  {clip-path:inset(0 0 100% 0);visibility:hidden;pointer-events:none}
+}
 
 .mx-ani-stage{position:relative;width:280px;height:280px;perspective:1200px;transform-style:preserve-3d}
 
+/* GLAS — steht von Anfang an, wackelt beim Mix, kippt zum Ausschütten */
 .mx-ani-glass{
   position:absolute;left:50%;top:50%;
   font-size:130px;line-height:1;
-  transform:translate(-50%,-50%) scale(0);
+  transform:translate(-50%,-50%) scale(.85);
+  transform-origin:50% 80%;
   filter:drop-shadow(0 14px 32px rgba(255,140,40,.5));
   opacity:0;
 }
 #mxAniOv.show .mx-ani-glass{
-  animation:mxGlassIn .85s cubic-bezier(.34,1.56,.64,1) 1.7s forwards,
-            mxGlassTilt 1.2s ease-in-out 3.1s;
+  animation:mxGlassEntry .5s ease-out 0s forwards,
+            mxGlassMix   .55s ease-in-out 2.3s,
+            mxGlassPour  1.2s cubic-bezier(.45,.05,.55,.95) 2.85s forwards;
 }
-@keyframes mxGlassIn{
-  0%  {opacity:0;transform:translate(-50%,-50%) translateZ(-380px) rotateY(-540deg) scale(.2)}
-  60% {opacity:1;transform:translate(-50%,-50%) translateZ(60px)  rotateY(20deg)   scale(1.18)}
-  100%{opacity:1;transform:translate(-50%,-50%) translateZ(0)     rotateY(0)       scale(1)}
+@keyframes mxGlassEntry{
+  from{opacity:0;transform:translate(-50%,-50%) scale(.85)}
+  to  {opacity:1;transform:translate(-50%,-50%) scale(1)}
 }
-@keyframes mxGlassTilt{
-  0%,100%{transform:translate(-50%,-50%) scale(1) rotateY(0)    rotateX(0)}
-  35%    {transform:translate(-50%,-50%) scale(1) rotateY(-22deg) rotateX(6deg)}
-  65%    {transform:translate(-50%,-50%) scale(1) rotateY(22deg)  rotateX(-6deg)}
+@keyframes mxGlassMix{
+  0%,100%{transform:translate(-50%,-50%) scale(1)    rotate(0)}
+  25%   {transform:translate(-50%,-50%) scale(1.04) rotate(-7deg)}
+  75%   {transform:translate(-50%,-50%) scale(1.04) rotate(7deg)}
+}
+@keyframes mxGlassPour{
+  0%  {opacity:1;transform:translate(-50%,-50%) scale(1)  rotate(0)}
+  40% {opacity:1;transform:translate(-50%,-50%) scale(1)  rotate(-55deg)}
+  70% {opacity:.9;transform:translate(-50%,-50%) scale(.95) rotate(-50deg)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(.7)  rotate(-30deg)}
 }
 
+/* ZUTATEN — fliegen aus verschiedenen Richtungen in hohem Bogen ins Glas */
 .mx-ani-ing{
-  position:absolute;font-size:38px;line-height:1;opacity:0;
+  position:absolute;left:50%;top:50%;
+  font-size:36px;line-height:1;opacity:0;
   filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));
   pointer-events:none;
+  transform:translate(-50%,-50%);
 }
-.mx-ani-ing-1{top:0;left:0}
-.mx-ani-ing-2{top:0;right:0}
-.mx-ani-ing-3{bottom:0;left:0}
-.mx-ani-ing-4{bottom:0;right:0}
-.mx-ani-ing-5{top:50%;left:0}
-#mxAniOv.show .mx-ani-ing-1{animation:mxIng1 1.7s ease-in .25s forwards}
-#mxAniOv.show .mx-ani-ing-2{animation:mxIng2 1.7s ease-in .45s forwards}
-#mxAniOv.show .mx-ani-ing-3{animation:mxIng3 1.7s ease-in .65s forwards}
-#mxAniOv.show .mx-ani-ing-4{animation:mxIng4 1.7s ease-in .85s forwards}
-#mxAniOv.show .mx-ani-ing-5{animation:mxIng5 1.7s ease-in 1.05s forwards}
+#mxAniOv.show .mx-ani-ing-1{animation:mxArc1 1.5s cubic-bezier(.36,.07,.45,1) .25s forwards}
+#mxAniOv.show .mx-ani-ing-2{animation:mxArc2 1.5s cubic-bezier(.36,.07,.45,1) .45s forwards}
+#mxAniOv.show .mx-ani-ing-3{animation:mxArc3 1.5s cubic-bezier(.36,.07,.45,1) .65s forwards}
+#mxAniOv.show .mx-ani-ing-4{animation:mxArc4 1.5s cubic-bezier(.36,.07,.45,1) .85s forwards}
+#mxAniOv.show .mx-ani-ing-5{animation:mxArc5 1.5s cubic-bezier(.36,.07,.45,1) 1.05s forwards}
 
-@keyframes mxIng1{
-  0%  {opacity:0;transform:translate3d(-110px,-110px,-260px) rotate3d(1,1,0,-540deg) scale(.45)}
-  55% {opacity:1;transform:translate3d(115px,115px,40px)     rotate3d(1,1,0,0)       scale(1.05)}
-  100%{opacity:0;transform:translate3d(140px,140px,-180px)   rotate3d(1,0,1,420deg)  scale(.15)}
+/* Alle Bögen enden bei translate(0,-25px) — im Glas — und schrumpfen auf 0 */
+@keyframes mxArc1{
+  0%  {opacity:0;transform:translate(-50%,-50%) translate(-460px,-80px)  rotate(-20deg)  scale(.6)}
+  20% {opacity:1;transform:translate(-50%,-50%) translate(-340px,-220px) rotate(80deg)   scale(1)}
+  60% {opacity:1;transform:translate(-50%,-50%) translate(-90px,-300px)  rotate(280deg)  scale(1.08)}
+  90% {opacity:1;transform:translate(-50%,-50%) translate(0,-40px)       rotate(440deg)  scale(.85)}
+  100%{opacity:0;transform:translate(-50%,-50%) translate(0,-25px)       rotate(480deg)  scale(.25)}
 }
-@keyframes mxIng2{
-  0%  {opacity:0;transform:translate3d(110px,-110px,-260px) rotate3d(-1,1,0,540deg) scale(.45)}
-  55% {opacity:1;transform:translate3d(-115px,115px,40px)   rotate3d(-1,1,0,0)      scale(1.05)}
-  100%{opacity:0;transform:translate3d(-140px,140px,-180px) rotate3d(-1,0,1,-420deg) scale(.15)}
+@keyframes mxArc2{
+  0%  {opacity:0;transform:translate(-50%,-50%) translate(460px,-80px)   rotate(20deg)   scale(.6)}
+  20% {opacity:1;transform:translate(-50%,-50%) translate(340px,-220px)  rotate(-80deg)  scale(1)}
+  60% {opacity:1;transform:translate(-50%,-50%) translate(90px,-300px)   rotate(-280deg) scale(1.08)}
+  90% {opacity:1;transform:translate(-50%,-50%) translate(0,-40px)       rotate(-440deg) scale(.85)}
+  100%{opacity:0;transform:translate(-50%,-50%) translate(0,-25px)       rotate(-480deg) scale(.25)}
 }
-@keyframes mxIng3{
-  0%  {opacity:0;transform:translate3d(-110px,110px,-260px) rotate3d(1,-1,0,540deg) scale(.45)}
-  55% {opacity:1;transform:translate3d(115px,-115px,40px)   rotate3d(1,-1,0,0)      scale(1.05)}
-  100%{opacity:0;transform:translate3d(140px,-140px,-180px) rotate3d(1,0,-1,-420deg) scale(.15)}
+@keyframes mxArc3{
+  0%  {opacity:0;transform:translate(-50%,-50%) translate(-380px,200px)  rotate(45deg)   scale(.6)}
+  20% {opacity:1;transform:translate(-50%,-50%) translate(-260px,-100px) rotate(160deg)  scale(1)}
+  60% {opacity:1;transform:translate(-50%,-50%) translate(-60px,-320px)  rotate(380deg)  scale(1.08)}
+  90% {opacity:1;transform:translate(-50%,-50%) translate(0,-40px)       rotate(540deg)  scale(.85)}
+  100%{opacity:0;transform:translate(-50%,-50%) translate(0,-25px)       rotate(580deg)  scale(.25)}
 }
-@keyframes mxIng4{
-  0%  {opacity:0;transform:translate3d(110px,110px,-260px)   rotate3d(-1,-1,0,-540deg) scale(.45)}
-  55% {opacity:1;transform:translate3d(-115px,-115px,40px)   rotate3d(-1,-1,0,0)       scale(1.05)}
-  100%{opacity:0;transform:translate3d(-140px,-140px,-180px) rotate3d(-1,0,-1,420deg)  scale(.15)}
+@keyframes mxArc4{
+  0%  {opacity:0;transform:translate(-50%,-50%) translate(380px,200px)   rotate(-45deg)  scale(.6)}
+  20% {opacity:1;transform:translate(-50%,-50%) translate(260px,-100px)  rotate(-160deg) scale(1)}
+  60% {opacity:1;transform:translate(-50%,-50%) translate(60px,-320px)   rotate(-380deg) scale(1.08)}
+  90% {opacity:1;transform:translate(-50%,-50%) translate(0,-40px)       rotate(-540deg) scale(.85)}
+  100%{opacity:0;transform:translate(-50%,-50%) translate(0,-25px)       rotate(-580deg) scale(.25)}
 }
-@keyframes mxIng5{
-  0%  {opacity:0;transform:translate3d(-150px,-50%,-260px) rotate3d(0,1,0,-540deg) scale(.45)}
-  55% {opacity:1;transform:translate3d(115px,-50%,40px)    rotate3d(0,1,0,0)       scale(1.05)}
-  100%{opacity:0;transform:translate3d(140px,-50%,-180px)  rotate3d(0,1,1,360deg)  scale(.15)}
+@keyframes mxArc5{
+  0%  {opacity:0;transform:translate(-50%,-50%) translate(0,-400px)      rotate(0)       scale(.6)}
+  25% {opacity:1;transform:translate(-50%,-50%) translate(-30px,-330px)  rotate(120deg)  scale(1)}
+  60% {opacity:1;transform:translate(-50%,-50%) translate(20px,-280px)   rotate(280deg)  scale(1.08)}
+  90% {opacity:1;transform:translate(-50%,-50%) translate(0,-40px)       rotate(420deg)  scale(.85)}
+  100%{opacity:0;transform:translate(-50%,-50%) translate(0,-25px)       rotate(460deg)  scale(.25)}
 }
 
+/* STERN — Funkel beim Mix-Moment */
 .mx-ani-star{
   position:absolute;left:50%;top:50%;
   font-size:60px;line-height:1;
@@ -2074,14 +2100,15 @@ body:not([data-theme]) #bnav{
   filter:drop-shadow(0 0 22px rgba(255,210,80,.95));
 }
 #mxAniOv.show .mx-ani-star{
-  animation:mxStarIn .9s ease-out 2.5s forwards;
+  animation:mxStarIn 1.0s ease-out 2.0s forwards;
 }
 @keyframes mxStarIn{
-  0%  {opacity:0;transform:translate(-50%,-180%) translateZ(-160px) scale(0)   rotateY(0)}
-  55% {opacity:1;transform:translate(-50%,-180%) translateZ(80px)   scale(1.5) rotateY(540deg)}
-  100%{opacity:1;transform:translate(-50%,-180%) translateZ(0)      scale(1)   rotateY(360deg)}
+  0%  {opacity:0;transform:translate(-50%,-180%) scale(0)   rotateY(0)}
+  55% {opacity:1;transform:translate(-50%,-180%) scale(1.5) rotateY(540deg)}
+  100%{opacity:0;transform:translate(-50%,-200%) scale(.6)  rotateY(720deg)}
 }
 
+/* RING — pulst horizontal beim Mix-Moment */
 .mx-ani-ring{
   position:absolute;left:50%;top:50%;
   width:200px;height:200px;border-radius:50%;
@@ -2090,7 +2117,7 @@ body:not([data-theme]) #bnav{
   opacity:0;pointer-events:none;
 }
 #mxAniOv.show .mx-ani-ring{
-  animation:mxRingPulse 1.5s ease-out 2.7s;
+  animation:mxRingPulse 1.2s ease-out 2.2s;
 }
 @keyframes mxRingPulse{
   0%  {opacity:0; transform:translate(-50%,-50%) rotateX(65deg) scale(0)    rotateZ(0)}
@@ -2098,8 +2125,9 @@ body:not([data-theme]) #bnav{
   100%{opacity:0; transform:translate(-50%,-50%) rotateX(65deg) scale(2.1)  rotateZ(360deg)}
 }
 
+/* TITEL — über dem Glas, erscheint kurz vor dem Mix-Moment */
 .mx-ani-title{
-  position:absolute;left:50%;bottom:-44px;
+  position:absolute;left:50%;top:-56px;
   transform:translateX(-50%);
   font-family:var(--font-display);font-size:24px;font-weight:600;
   color:#ffd99a;letter-spacing:.04em;white-space:nowrap;
@@ -2107,13 +2135,14 @@ body:not([data-theme]) #bnav{
   opacity:0;
 }
 #mxAniOv.show .mx-ani-title{
-  animation:mxTitleIn .55s ease-out 4.0s forwards;
+  animation:mxTitleIn .55s ease-out 1.7s forwards;
 }
 @keyframes mxTitleIn{
-  from{opacity:0;transform:translateX(-50%) translateZ(-220px) translateY(20px) rotateX(35deg)}
-  to  {opacity:1;transform:translateX(-50%) translateZ(0)     translateY(0)    rotateX(0)}
+  from{opacity:0;transform:translateX(-50%) translateY(-15px)}
+  to  {opacity:1;transform:translateX(-50%) translateY(0)}
 }
 
+/* SKIP-BUTTON */
 .mx-ani-skip{
   position:absolute;bottom:24px;right:24px;
   background:rgba(255,255,255,.1);
@@ -2124,6 +2153,7 @@ body:not([data-theme]) #bnav{
   cursor:pointer;
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   opacity:0;
+  z-index:1;
 }
 #mxAniOv.show .mx-ani-skip{
   animation:mx-fade-in .4s ease-out .8s forwards;
@@ -2131,7 +2161,7 @@ body:not([data-theme]) #bnav{
 .mx-ani-skip:hover{background:rgba(255,255,255,.2);color:#fff}
 
 @media (prefers-reduced-motion:reduce){
-  #mxAniOv.show{animation:none;opacity:1;transition:opacity .35s ease-out}
+  #mxAniOv.show{animation:none;opacity:1;transition:opacity .35s ease-out;clip-path:inset(0 0 0 0)}
   .mx-ani-glass,.mx-ani-ing,.mx-ani-star,.mx-ani-ring,.mx-ani-title{
     animation:none !important;opacity:0 !important
   }
@@ -5382,10 +5412,10 @@ async function boot(){
   try{maybeShowOpeningAnimation();}catch(e){}
 }
 
-// ── V0c2 — Erstöffnungs-Animation ──────────────────────────────────────────
+// ── V0c3 — Erstöffnungs-Animation ──────────────────────────────────────────
 // Trigger: bei erstem Öffnen ODER bei Wechsel von APP_VERSION
 // Replay: Settings-Knopf ruft playOpeningAnimation() direkt auf
-const APP_VERSION = 'v0c2';
+const APP_VERSION = 'v0c3';
 let _mxAniTimer = 0;
 function playOpeningAnimation(){
   const ov = document.getElementById('mxAniOv');
@@ -5402,7 +5432,7 @@ function playOpeningAnimation(){
   _mxAniTimer = setTimeout(()=>{
     ov.classList.remove('show');
     ov.setAttribute('aria-hidden','true');
-  }, 5050);
+  }, 5550);
 }
 function mxAniSkip(){
   const ov = document.getElementById('mxAniOv');
