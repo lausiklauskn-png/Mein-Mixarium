@@ -1985,6 +1985,146 @@ body:not([data-theme]) #bnav{
 .mx-btn-pipette:active{transform:translateY(1px) rotate(0)}
 
 /* ═══════════════════════════════════════════════════════════════════
+   V0c2 — Erstöffnungs-Animation (Choreografierte Bar-Sequenz)
+   Trigger: erstes Öffnen ODER neue APP_VERSION ODER Replay-Knopf
+   Phasen (~5 s gesamt, skippable, prefers-reduced-motion → Fade)
+   ═══════════════════════════════════════════════════════════════════ */
+#mxAniOv{
+  position:fixed;inset:0;z-index:99999;
+  background:radial-gradient(ellipse at center,rgba(40,18,8,.94) 0%,rgba(15,6,2,.985) 70%);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;opacity:0;pointer-events:none;
+  transition:opacity .45s ease-out;
+}
+#mxAniOv.show{opacity:1;pointer-events:auto;animation:mxAniDone 5s forwards}
+@keyframes mxAniDone{0%,90%{opacity:1}100%{opacity:0;pointer-events:none;visibility:hidden}}
+
+.mx-ani-stage{position:relative;width:280px;height:280px}
+
+.mx-ani-glass{
+  position:absolute;left:50%;top:50%;
+  font-size:130px;line-height:1;
+  transform:translate(-50%,-50%) scale(0);
+  filter:drop-shadow(0 14px 32px rgba(255,140,40,.5));
+  opacity:0;
+  animation:mxGlassIn .85s cubic-bezier(.34,1.56,.64,1) 1.7s forwards,
+            mxGlassTilt 1.2s ease-in-out 3.1s;
+}
+@keyframes mxGlassIn{
+  0%  {opacity:0;transform:translate(-50%,-50%) scale(0)   rotate(-15deg)}
+  60% {opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(0)}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(1)   rotate(0)}
+}
+@keyframes mxGlassTilt{
+  0%,100%{transform:translate(-50%,-50%) scale(1) rotate(0)}
+  35%    {transform:translate(-50%,-50%) scale(1) rotate(-9deg)}
+  65%    {transform:translate(-50%,-50%) scale(1) rotate(8deg)}
+}
+
+.mx-ani-ing{
+  position:absolute;font-size:38px;line-height:1;opacity:0;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));
+  pointer-events:none;
+}
+.mx-ani-ing-1{top:0;left:0;animation:mxIng1 1.7s ease-in .25s forwards}
+.mx-ani-ing-2{top:0;right:0;animation:mxIng2 1.7s ease-in .45s forwards}
+.mx-ani-ing-3{bottom:0;left:0;animation:mxIng3 1.7s ease-in .65s forwards}
+.mx-ani-ing-4{bottom:0;right:0;animation:mxIng4 1.7s ease-in .85s forwards}
+.mx-ani-ing-5{top:50%;left:0;animation:mxIng5 1.7s ease-in 1.05s forwards}
+
+@keyframes mxIng1{
+  0%  {opacity:0;transform:translate(-110px,-110px) rotate(-200deg) scale(.45)}
+  55% {opacity:1;transform:translate(115px,115px)   rotate(0)       scale(1.05)}
+  100%{opacity:0;transform:translate(140px,140px)   rotate(60deg)   scale(.15)}
+}
+@keyframes mxIng2{
+  0%  {opacity:0;transform:translate(110px,-110px) rotate(200deg) scale(.45)}
+  55% {opacity:1;transform:translate(-115px,115px) rotate(0)      scale(1.05)}
+  100%{opacity:0;transform:translate(-140px,140px) rotate(-60deg) scale(.15)}
+}
+@keyframes mxIng3{
+  0%  {opacity:0;transform:translate(-110px,110px) rotate(180deg)  scale(.45)}
+  55% {opacity:1;transform:translate(115px,-115px) rotate(0)       scale(1.05)}
+  100%{opacity:0;transform:translate(140px,-140px) rotate(-60deg)  scale(.15)}
+}
+@keyframes mxIng4{
+  0%  {opacity:0;transform:translate(110px,110px)   rotate(-180deg) scale(.45)}
+  55% {opacity:1;transform:translate(-115px,-115px) rotate(0)       scale(1.05)}
+  100%{opacity:0;transform:translate(-140px,-140px) rotate(60deg)   scale(.15)}
+}
+@keyframes mxIng5{
+  0%  {opacity:0;transform:translate(-150px,-50%) rotate(-90deg) scale(.45)}
+  55% {opacity:1;transform:translate(115px,-50%)  rotate(0)      scale(1.05)}
+  100%{opacity:0;transform:translate(140px,-50%)  rotate(20deg)  scale(.15)}
+}
+
+.mx-ani-star{
+  position:absolute;left:50%;top:50%;
+  font-size:60px;line-height:1;
+  transform:translate(-50%,-180%) scale(0);
+  opacity:0;
+  filter:drop-shadow(0 0 22px rgba(255,210,80,.95));
+  animation:mxStarIn .9s ease-out 2.5s forwards;
+}
+@keyframes mxStarIn{
+  0%  {opacity:0;transform:translate(-50%,-180%) scale(0)   rotate(0)}
+  55% {opacity:1;transform:translate(-50%,-180%) scale(1.5) rotate(180deg)}
+  100%{opacity:1;transform:translate(-50%,-180%) scale(1)   rotate(360deg)}
+}
+
+.mx-ani-ring{
+  position:absolute;left:50%;top:50%;
+  width:200px;height:200px;border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  background:conic-gradient(from 0deg,rgba(255,210,80,0),rgba(255,90,95,.55),rgba(139,92,246,.55),rgba(255,210,80,0));
+  opacity:0;pointer-events:none;
+  animation:mxRingPulse 1.5s ease-out 2.7s;
+}
+@keyframes mxRingPulse{
+  0%  {opacity:0; transform:translate(-50%,-50%) scale(0)   rotate(0)}
+  40% {opacity:.85;transform:translate(-50%,-50%) scale(1.15) rotate(180deg)}
+  100%{opacity:0; transform:translate(-50%,-50%) scale(2.1) rotate(360deg)}
+}
+
+.mx-ani-title{
+  position:absolute;left:50%;bottom:-44px;
+  transform:translateX(-50%);
+  font-family:var(--font-display);font-size:24px;font-weight:600;
+  color:#ffd99a;letter-spacing:.04em;white-space:nowrap;
+  text-shadow:0 2px 10px rgba(0,0,0,.65);
+  opacity:0;
+  animation:mxTitleIn .55s ease-out 4.0s forwards;
+}
+@keyframes mxTitleIn{
+  from{opacity:0;transform:translateX(-50%) translateY(10px)}
+  to  {opacity:1;transform:translateX(-50%) translateY(0)}
+}
+
+.mx-ani-skip{
+  position:absolute;bottom:24px;right:24px;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.25);
+  color:rgba(255,255,255,.85);
+  padding:8px 14px;border-radius:10px;
+  font-family:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  opacity:0;
+  animation:mx-fade-in .4s ease-out .8s forwards;
+}
+.mx-ani-skip:hover{background:rgba(255,255,255,.2);color:#fff}
+
+@media (prefers-reduced-motion:reduce){
+  #mxAniOv.show{animation:none;opacity:1;transition:opacity .35s ease-out}
+  .mx-ani-glass,.mx-ani-ing,.mx-ani-star,.mx-ani-ring,.mx-ani-title{
+    animation:none !important;opacity:0 !important
+  }
+  #mxAniOv.show .mx-ani-glass,#mxAniOv.show .mx-ani-title{opacity:1 !important;transform:translate(-50%,-50%) scale(1) !important}
+  #mxAniOv.show .mx-ani-title{transform:translateX(-50%) !important}
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    FÜNF NEUE THEMES — additiv zu den bestehenden Theme-Slots
    Jedes Theme überschreibt die Token + bekommt eigenen Header-Verlauf
    ═══════════════════════════════════════════════════════════════════ */
@@ -2097,6 +2237,22 @@ body:not([data-theme]) #bnav{
 </head>
 <body>
 <script>(function(){var t=localStorage.getItem('mxtheme9m');if(t&&t!=='default')document.body.setAttribute('data-theme',t);})();</script>
+
+<!-- V0c2: Erstöffnungs-Animation Overlay (versteckt bis Trigger) -->
+<div id="mxAniOv" aria-hidden="true" role="dialog" aria-label="Begrüßung">
+  <div class="mx-ani-stage">
+    <div class="mx-ani-ring"></div>
+    <span class="mx-ani-ing mx-ani-ing-1">🍋</span>
+    <span class="mx-ani-ing mx-ani-ing-2">🍃</span>
+    <span class="mx-ani-ing mx-ani-ing-3">🍓</span>
+    <span class="mx-ani-ing mx-ani-ing-4">🧊</span>
+    <span class="mx-ani-ing mx-ani-ing-5">🥥</span>
+    <span class="mx-ani-glass">🍹</span>
+    <span class="mx-ani-star">✨</span>
+    <div class="mx-ani-title" id="mxAniTitle">Mein Mixarium</div>
+  </div>
+  <button class="mx-ani-skip" id="mxAniSkipBtn" onclick="mxAniSkip()" type="button">Überspringen ›</button>
+</div>
 
 <div id="boot-splash">
   <div class="bs-ico">📖</div>
@@ -2688,6 +2844,12 @@ body:not([data-theme]) #bnav{
         <div class="sett-ico">🔄</div>
         <div class="sett-body"><div class="sett-lbl" id="sUpdLbl">Auf Updates prüfen</div>
           <div class="sett-sub" id="updateStatus">Version: 1.0</div></div>
+        <div class="sett-arr">›</div>
+      </div>
+      <div class="sett-row" onclick="playOpeningAnimation()">
+        <div class="sett-ico">🎬</div>
+        <div class="sett-body"><div class="sett-lbl" id="sAniLbl">Begrüßungs-Animation</div>
+          <div class="sett-sub" id="sAniSub">Sequenz erneut abspielen</div></div>
         <div class="sett-arr">›</div>
       </div>
       <div class="sett-row" onclick="toggleDonate()" id="sDonateRow">
@@ -3564,6 +3726,10 @@ const LANGS={
     ,sManualSub:'Alle Funktionen erklärt · PDF-Download'
     ,manOvTitle:'📚 Handbuch'
     ,manPdfLbl:'PDF'
+    ,aniTitle:'Mein Mixarium'
+    ,aniSkip:'Überspringen'
+    ,sAniLbl:'Begrüßungs-Animation'
+    ,sAniSub:'Sequenz erneut abspielen'
   },
   en:{code:'en',flag:'🇬🇧',name:'English',native:'English',
     appTitle:"Mein Mixarium",catAll:'All',addRec:'+ Drink',
@@ -3689,6 +3855,10 @@ const LANGS={
     ,sManualSub:'All features explained · PDF download'
     ,manOvTitle:'📚 Manual'
     ,manPdfLbl:'PDF'
+    ,aniTitle:'Mein Mixarium'
+    ,aniSkip:'Skip'
+    ,sAniLbl:'Welcome animation'
+    ,sAniSub:'Replay sequence'
   },
   ru:{code:'ru',flag:'🇷🇺',name:'Русский',native:'Русский',
     appTitle:'Книга рецептов Мутти',catAll:'Все',addRec:'+ Рецепт',
@@ -3814,6 +3984,10 @@ const LANGS={
     ,sManualSub:'Все функции объяснены · Скачать PDF'
     ,manOvTitle:'📚 Руководство'
     ,manPdfLbl:'PDF'
+    ,aniTitle:'Mein Mixarium'
+    ,aniSkip:'Пропустить'
+    ,sAniLbl:'Анимация приветствия'
+    ,sAniSub:'Воспроизвести снова'
   },
   zh:{code:'zh',flag:'🇨🇳',name:'中文',native:'中文',
     appTitle:'妈妈食谱书',catAll:'全部',addRec:'+ 食谱',
@@ -3939,6 +4113,10 @@ const LANGS={
     ,sManualSub:'所有功能说明 · PDF下载'
     ,manOvTitle:'📚 手册'
     ,manPdfLbl:'PDF'
+    ,aniTitle:'Mein Mixarium'
+    ,aniSkip:'跳过'
+    ,sAniLbl:'欢迎动画'
+    ,sAniSub:'重新播放序列'
   },
   es:{code:'es',flag:'🇪🇸',name:'Español',native:'Español',
     appTitle:'Recetario de Mamá',catAll:'Todos',addRec:'+ Receta',
@@ -4062,6 +4240,10 @@ const LANGS={
     ,sManualSub:'Todas las funciones explicadas · Descargar PDF'
     ,manOvTitle:'📚 Manual'
     ,manPdfLbl:'PDF'
+    ,aniTitle:'Mein Mixarium'
+    ,aniSkip:'Saltar'
+    ,sAniLbl:'Animación de bienvenida'
+    ,sAniSub:'Reproducir de nuevo'
   },
   fr:{
     code:'fr',
@@ -4296,6 +4478,10 @@ const LANGS={
     ,sManualSub:'Toutes les fonctions expliquées · Télécharger PDF'
     ,manOvTitle:'📚 Manuel'
     ,manPdfLbl:'PDF'
+    ,aniTitle:'Mein Mixarium'
+    ,aniSkip:'Passer'
+    ,sAniLbl:'Animation de bienvenue'
+    ,sAniSub:'Rejouer la séquence'
   },
   it:{
     code:'it',
@@ -4530,6 +4716,10 @@ const LANGS={
     ,sManualSub:'Tutte le funzioni spiegate · Scarica PDF'
     ,manOvTitle:'📚 Manuale'
     ,manPdfLbl:'PDF'
+    ,aniTitle:'Mein Mixarium'
+    ,aniSkip:'Salta'
+    ,sAniLbl:'Animazione di benvenuto'
+    ,sAniSub:'Riproduci di nuovo'
   },
   pt:{
     code:'pt',
@@ -4759,6 +4949,10 @@ const LANGS={
     ,sManualSub:'Todas as funções explicadas · Baixar PDF'
     ,manOvTitle:'📚 Manual'
     ,manPdfLbl:'PDF'
+    ,aniTitle:'Mein Mixarium'
+    ,aniSkip:'Pular'
+    ,sAniLbl:'Animação de boas-vindas'
+    ,sAniSub:'Reproduzir novamente'
   }
 };
 let CL=localStorage.getItem('mxlang9m')||'de';
@@ -5169,6 +5363,47 @@ async function boot(){
   // Globale Tooltips für alle icon-only Buttons
   _initTooltips();
   _bootDone();
+  // V0c2: Begrüßungs-Animation (Erstöffnung oder neue APP_VERSION)
+  try{maybeShowOpeningAnimation();}catch(e){}
+}
+
+// ── V0c2 — Erstöffnungs-Animation ──────────────────────────────────────────
+// Trigger: bei erstem Öffnen ODER bei Wechsel von APP_VERSION
+// Replay: Settings-Knopf ruft playOpeningAnimation() direkt auf
+const APP_VERSION = 'v0c2';
+let _mxAniTimer = 0;
+function playOpeningAnimation(){
+  const ov = document.getElementById('mxAniOv');
+  if(!ov) return;
+  const t = document.getElementById('mxAniTitle');
+  if(t) t.textContent = (LANGS[CL]||LANGS.de).aniTitle || 'Mein Mixarium';
+  const sb = document.getElementById('mxAniSkipBtn');
+  if(sb) sb.textContent = ((LANGS[CL]||LANGS.de).aniSkip || 'Überspringen') + ' ›';
+  ov.classList.remove('show');
+  void ov.offsetWidth;
+  ov.classList.add('show');
+  ov.setAttribute('aria-hidden','false');
+  clearTimeout(_mxAniTimer);
+  _mxAniTimer = setTimeout(()=>{
+    ov.classList.remove('show');
+    ov.setAttribute('aria-hidden','true');
+  }, 5050);
+}
+function mxAniSkip(){
+  const ov = document.getElementById('mxAniOv');
+  if(!ov) return;
+  clearTimeout(_mxAniTimer);
+  ov.classList.remove('show');
+  ov.setAttribute('aria-hidden','true');
+}
+function maybeShowOpeningAnimation(){
+  try{
+    const last = localStorage.getItem('mxAppVer9m');
+    if(last !== APP_VERSION){
+      setTimeout(playOpeningAnimation, 280);
+      localStorage.setItem('mxAppVer9m', APP_VERSION);
+    }
+  }catch(e){}
 }
 
 // ═══════════════════════════════════════════════════════
@@ -5200,7 +5435,7 @@ function applyLang(code){
     'sInfo','sStore','sClear','sClearSub',
     'sManualHead','sManualLbl','sManualSub','manOvTitle','manPdfLbl',
     'fldTitle','fldSearch','fldNew','fldShTitle','fldNameLbl','fldIconLbl','fldCancel','fldSave',
-    'cshTitle','csCancel','csConfirm','pwaText','pwaBtn','updText','updBtn','sUpdLbl','sDonateTitle','sDonateSub','sDonateText','sDonateBtn','sDonateNote','sImprintLbl','sImprintSub','sImprintFooter',
+    'cshTitle','csCancel','csConfirm','pwaText','pwaBtn','updText','updBtn','sUpdLbl','sAniLbl','sAniSub','sDonateTitle','sDonateSub','sDonateText','sDonateBtn','sDonateNote','sImprintLbl','sImprintSub','sImprintFooter',
     'hAddLbl',
     'hlpTitle','hlpOffline','hlpOfflineSub','hlpShare','hlpShareSub','hlpExport','hlpExportSub',
     'hlpImport','hlpImportSub','hlpCache','hlpCacheSub',
