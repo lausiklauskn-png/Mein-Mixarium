@@ -2000,7 +2000,7 @@ body:not([data-theme]) #bnav{
 #mxAniOv.show{opacity:1;pointer-events:auto;animation:mxAniDone 5s forwards}
 @keyframes mxAniDone{0%,90%{opacity:1}100%{opacity:0;pointer-events:none;visibility:hidden}}
 
-.mx-ani-stage{position:relative;width:280px;height:280px}
+.mx-ani-stage{position:relative;width:280px;height:280px;perspective:1200px;transform-style:preserve-3d}
 
 .mx-ani-glass{
   position:absolute;left:50%;top:50%;
@@ -2014,14 +2014,14 @@ body:not([data-theme]) #bnav{
             mxGlassTilt 1.2s ease-in-out 3.1s;
 }
 @keyframes mxGlassIn{
-  0%  {opacity:0;transform:translate(-50%,-50%) scale(0)   rotate(-15deg)}
-  60% {opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(0)}
-  100%{opacity:1;transform:translate(-50%,-50%) scale(1)   rotate(0)}
+  0%  {opacity:0;transform:translate(-50%,-50%) translateZ(-380px) rotateY(-540deg) scale(.2)}
+  60% {opacity:1;transform:translate(-50%,-50%) translateZ(60px)  rotateY(20deg)   scale(1.18)}
+  100%{opacity:1;transform:translate(-50%,-50%) translateZ(0)     rotateY(0)       scale(1)}
 }
 @keyframes mxGlassTilt{
-  0%,100%{transform:translate(-50%,-50%) scale(1) rotate(0)}
-  35%    {transform:translate(-50%,-50%) scale(1) rotate(-9deg)}
-  65%    {transform:translate(-50%,-50%) scale(1) rotate(8deg)}
+  0%,100%{transform:translate(-50%,-50%) scale(1) rotateY(0)    rotateX(0)}
+  35%    {transform:translate(-50%,-50%) scale(1) rotateY(-22deg) rotateX(6deg)}
+  65%    {transform:translate(-50%,-50%) scale(1) rotateY(22deg)  rotateX(-6deg)}
 }
 
 .mx-ani-ing{
@@ -2041,29 +2041,29 @@ body:not([data-theme]) #bnav{
 #mxAniOv.show .mx-ani-ing-5{animation:mxIng5 1.7s ease-in 1.05s forwards}
 
 @keyframes mxIng1{
-  0%  {opacity:0;transform:translate(-110px,-110px) rotate(-200deg) scale(.45)}
-  55% {opacity:1;transform:translate(115px,115px)   rotate(0)       scale(1.05)}
-  100%{opacity:0;transform:translate(140px,140px)   rotate(60deg)   scale(.15)}
+  0%  {opacity:0;transform:translate3d(-110px,-110px,-260px) rotate3d(1,1,0,-540deg) scale(.45)}
+  55% {opacity:1;transform:translate3d(115px,115px,40px)     rotate3d(1,1,0,0)       scale(1.05)}
+  100%{opacity:0;transform:translate3d(140px,140px,-180px)   rotate3d(1,0,1,420deg)  scale(.15)}
 }
 @keyframes mxIng2{
-  0%  {opacity:0;transform:translate(110px,-110px) rotate(200deg) scale(.45)}
-  55% {opacity:1;transform:translate(-115px,115px) rotate(0)      scale(1.05)}
-  100%{opacity:0;transform:translate(-140px,140px) rotate(-60deg) scale(.15)}
+  0%  {opacity:0;transform:translate3d(110px,-110px,-260px) rotate3d(-1,1,0,540deg) scale(.45)}
+  55% {opacity:1;transform:translate3d(-115px,115px,40px)   rotate3d(-1,1,0,0)      scale(1.05)}
+  100%{opacity:0;transform:translate3d(-140px,140px,-180px) rotate3d(-1,0,1,-420deg) scale(.15)}
 }
 @keyframes mxIng3{
-  0%  {opacity:0;transform:translate(-110px,110px) rotate(180deg)  scale(.45)}
-  55% {opacity:1;transform:translate(115px,-115px) rotate(0)       scale(1.05)}
-  100%{opacity:0;transform:translate(140px,-140px) rotate(-60deg)  scale(.15)}
+  0%  {opacity:0;transform:translate3d(-110px,110px,-260px) rotate3d(1,-1,0,540deg) scale(.45)}
+  55% {opacity:1;transform:translate3d(115px,-115px,40px)   rotate3d(1,-1,0,0)      scale(1.05)}
+  100%{opacity:0;transform:translate3d(140px,-140px,-180px) rotate3d(1,0,-1,-420deg) scale(.15)}
 }
 @keyframes mxIng4{
-  0%  {opacity:0;transform:translate(110px,110px)   rotate(-180deg) scale(.45)}
-  55% {opacity:1;transform:translate(-115px,-115px) rotate(0)       scale(1.05)}
-  100%{opacity:0;transform:translate(-140px,-140px) rotate(60deg)   scale(.15)}
+  0%  {opacity:0;transform:translate3d(110px,110px,-260px)   rotate3d(-1,-1,0,-540deg) scale(.45)}
+  55% {opacity:1;transform:translate3d(-115px,-115px,40px)   rotate3d(-1,-1,0,0)       scale(1.05)}
+  100%{opacity:0;transform:translate3d(-140px,-140px,-180px) rotate3d(-1,0,-1,420deg)  scale(.15)}
 }
 @keyframes mxIng5{
-  0%  {opacity:0;transform:translate(-150px,-50%) rotate(-90deg) scale(.45)}
-  55% {opacity:1;transform:translate(115px,-50%)  rotate(0)      scale(1.05)}
-  100%{opacity:0;transform:translate(140px,-50%)  rotate(20deg)  scale(.15)}
+  0%  {opacity:0;transform:translate3d(-150px,-50%,-260px) rotate3d(0,1,0,-540deg) scale(.45)}
+  55% {opacity:1;transform:translate3d(115px,-50%,40px)    rotate3d(0,1,0,0)       scale(1.05)}
+  100%{opacity:0;transform:translate3d(140px,-50%,-180px)  rotate3d(0,1,1,360deg)  scale(.15)}
 }
 
 .mx-ani-star{
@@ -2077,15 +2077,15 @@ body:not([data-theme]) #bnav{
   animation:mxStarIn .9s ease-out 2.5s forwards;
 }
 @keyframes mxStarIn{
-  0%  {opacity:0;transform:translate(-50%,-180%) scale(0)   rotate(0)}
-  55% {opacity:1;transform:translate(-50%,-180%) scale(1.5) rotate(180deg)}
-  100%{opacity:1;transform:translate(-50%,-180%) scale(1)   rotate(360deg)}
+  0%  {opacity:0;transform:translate(-50%,-180%) translateZ(-160px) scale(0)   rotateY(0)}
+  55% {opacity:1;transform:translate(-50%,-180%) translateZ(80px)   scale(1.5) rotateY(540deg)}
+  100%{opacity:1;transform:translate(-50%,-180%) translateZ(0)      scale(1)   rotateY(360deg)}
 }
 
 .mx-ani-ring{
   position:absolute;left:50%;top:50%;
   width:200px;height:200px;border-radius:50%;
-  transform:translate(-50%,-50%) scale(0);
+  transform:translate(-50%,-50%) rotateX(65deg) scale(0);
   background:conic-gradient(from 0deg,rgba(255,210,80,0),rgba(255,90,95,.55),rgba(139,92,246,.55),rgba(255,210,80,0));
   opacity:0;pointer-events:none;
 }
@@ -2093,9 +2093,9 @@ body:not([data-theme]) #bnav{
   animation:mxRingPulse 1.5s ease-out 2.7s;
 }
 @keyframes mxRingPulse{
-  0%  {opacity:0; transform:translate(-50%,-50%) scale(0)   rotate(0)}
-  40% {opacity:.85;transform:translate(-50%,-50%) scale(1.15) rotate(180deg)}
-  100%{opacity:0; transform:translate(-50%,-50%) scale(2.1) rotate(360deg)}
+  0%  {opacity:0; transform:translate(-50%,-50%) rotateX(65deg) scale(0)    rotateZ(0)}
+  40% {opacity:.85;transform:translate(-50%,-50%) rotateX(65deg) scale(1.15) rotateZ(180deg)}
+  100%{opacity:0; transform:translate(-50%,-50%) rotateX(65deg) scale(2.1)  rotateZ(360deg)}
 }
 
 .mx-ani-title{
@@ -2110,8 +2110,8 @@ body:not([data-theme]) #bnav{
   animation:mxTitleIn .55s ease-out 4.0s forwards;
 }
 @keyframes mxTitleIn{
-  from{opacity:0;transform:translateX(-50%) translateY(10px)}
-  to  {opacity:1;transform:translateX(-50%) translateY(0)}
+  from{opacity:0;transform:translateX(-50%) translateZ(-220px) translateY(20px) rotateX(35deg)}
+  to  {opacity:1;transform:translateX(-50%) translateZ(0)     translateY(0)    rotateX(0)}
 }
 
 .mx-ani-skip{
