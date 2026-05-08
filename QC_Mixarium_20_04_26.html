@@ -2142,6 +2142,79 @@ body:not([data-theme]) #bnav{
   to  {opacity:1;transform:translateX(-50%) translateY(0)}
 }
 
+/* FLÜSSIGKEIT IM GLAS — wächst während Zutaten landen, kippt mit Glas, fliesst aus */
+.mx-ani-liquid{
+  position:absolute;left:50%;top:50%;
+  width:62px;height:48px;border-radius:50% 50% 48% 48% / 55% 55% 45% 45%;
+  background:radial-gradient(ellipse at 35% 30%,rgba(255,225,140,.95) 0%,rgba(255,160,55,.92) 45%,rgba(220,80,40,.85) 100%);
+  filter:blur(.6px) drop-shadow(0 0 14px rgba(255,170,50,.55));
+  transform:translate(-50%,calc(-50% + 18px)) scale(.05);
+  transform-origin:50% 95%;
+  opacity:0;
+  pointer-events:none;
+  z-index:1;
+}
+#mxAniOv.show .mx-ani-liquid{
+  animation:mxLiquidFill 1.8s ease-out 1.0s forwards,
+            mxLiquidPour 1.2s cubic-bezier(.45,.05,.55,.95) 2.85s forwards;
+}
+@keyframes mxLiquidFill{
+  0%   {opacity:0; transform:translate(-50%,calc(-50% + 22px)) scale(.05,.05)}
+  20%  {opacity:.8; transform:translate(-50%,calc(-50% + 18px)) scale(.55,.35)}
+  55%  {opacity:.95;transform:translate(-50%,calc(-50% + 14px)) scale(.85,.7)}
+  100% {opacity:1;  transform:translate(-50%,calc(-50% + 10px)) scale(1,1)}
+}
+@keyframes mxLiquidPour{
+  0%   {opacity:1;  transform:translate(-50%,calc(-50% + 10px)) scale(1) rotate(0)}
+  35%  {opacity:1;  transform:translate(calc(-50% - 18px),calc(-50% + 8px)) scale(.95,.95) rotate(-50deg)}
+  70%  {opacity:.6; transform:translate(calc(-50% - 38px),calc(-50% + 4px)) scale(.55,.45) rotate(-55deg)}
+  100% {opacity:0;  transform:translate(calc(-50% - 60px),calc(-50% - 4px)) scale(.15,.12) rotate(-55deg)}
+}
+
+/* AUSGUSS-STRAHL — fliesst aus dem Glas wenn es kippt */
+.mx-ani-pour{
+  position:absolute;left:50%;top:50%;
+  width:14px;height:0;
+  background:linear-gradient(to bottom,rgba(255,200,90,.95) 0%,rgba(255,150,50,.9) 35%,rgba(220,80,40,.85) 70%,rgba(180,40,30,.7) 100%);
+  border-radius:60% 60% 40% 40% / 30% 30% 70% 70%;
+  transform-origin:50% 0;
+  transform:translate(-50%,-12%) rotate(-30deg);
+  filter:blur(.6px) drop-shadow(0 0 8px rgba(255,160,50,.55));
+  opacity:0;
+  pointer-events:none;
+  z-index:3;
+}
+#mxAniOv.show .mx-ani-pour{
+  animation:mxPourStream 1.4s cubic-bezier(.45,.05,.55,.95) 3.05s forwards;
+}
+@keyframes mxPourStream{
+  0%   {opacity:0; height:0;    transform:translate(-50%,-12%) rotate(-30deg)}
+  18%  {opacity:1; height:60px;  transform:translate(-58%,-10%) rotate(-50deg)}
+  50%  {opacity:1; height:200px; transform:translate(-72%,-6%)  rotate(-58deg)}
+  85%  {opacity:.85;height:300px; transform:translate(-78%,-2%)  rotate(-58deg)}
+  100% {opacity:0; height:340px; transform:translate(-82%, 2%)  rotate(-58deg)}
+}
+
+/* BODEN-PFÜTZE — sammelt sich unten als der Strahl auftrifft */
+.mx-ani-splash{
+  position:absolute;left:50%;top:50%;
+  width:120px;height:24px;border-radius:50%;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,170,55,.7) 0%,rgba(220,80,40,.5) 60%,rgba(180,40,30,0) 100%);
+  filter:blur(2px);
+  transform:translate(calc(-50% - 90px),calc(-50% + 240px)) scaleX(.2);
+  opacity:0;
+  pointer-events:none;
+  z-index:2;
+}
+#mxAniOv.show .mx-ani-splash{
+  animation:mxSplashSpread 1.5s ease-out 3.45s forwards;
+}
+@keyframes mxSplashSpread{
+  0%   {opacity:0; transform:translate(calc(-50% - 90px),calc(-50% + 240px)) scaleX(.2)}
+  30%  {opacity:.85;transform:translate(calc(-50% - 90px),calc(-50% + 240px)) scaleX(1)}
+  100% {opacity:0; transform:translate(calc(-50% - 90px),calc(-50% + 240px)) scaleX(1.6)}
+}
+
 /* SKIP-BUTTON */
 .mx-ani-skip{
   position:absolute;bottom:24px;right:24px;
@@ -2162,7 +2235,7 @@ body:not([data-theme]) #bnav{
 
 @media (prefers-reduced-motion:reduce){
   #mxAniOv.show{animation:none;opacity:1;transition:opacity .35s ease-out;clip-path:inset(0 0 0 0)}
-  .mx-ani-glass,.mx-ani-ing,.mx-ani-star,.mx-ani-ring,.mx-ani-title{
+  .mx-ani-glass,.mx-ani-ing,.mx-ani-star,.mx-ani-ring,.mx-ani-title,.mx-ani-liquid,.mx-ani-pour,.mx-ani-splash{
     animation:none !important;opacity:0 !important
   }
   #mxAniOv.show .mx-ani-glass,#mxAniOv.show .mx-ani-title{opacity:1 !important;transform:translate(-50%,-50%) scale(1) !important}
@@ -2292,7 +2365,10 @@ body:not([data-theme]) #bnav{
     <span class="mx-ani-ing mx-ani-ing-3">🍓</span>
     <span class="mx-ani-ing mx-ani-ing-4">🧊</span>
     <span class="mx-ani-ing mx-ani-ing-5">🥥</span>
+    <div class="mx-ani-liquid"></div>
     <span class="mx-ani-glass">🍹</span>
+    <div class="mx-ani-pour"></div>
+    <div class="mx-ani-splash"></div>
     <span class="mx-ani-star">✨</span>
     <div class="mx-ani-title" id="mxAniTitle">Mein Mixarium</div>
   </div>
@@ -5412,10 +5488,10 @@ async function boot(){
   try{maybeShowOpeningAnimation();}catch(e){}
 }
 
-// ── V0c3 — Erstöffnungs-Animation ──────────────────────────────────────────
+// ── V0c4 — Erstöffnungs-Animation ──────────────────────────────────────────
 // Trigger: bei erstem Öffnen ODER bei Wechsel von APP_VERSION
 // Replay: Settings-Knopf ruft playOpeningAnimation() direkt auf
-const APP_VERSION = 'v0c3';
+const APP_VERSION = 'v0c4';
 let _mxAniTimer = 0;
 function playOpeningAnimation(){
   const ov = document.getElementById('mxAniOv');
