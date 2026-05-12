@@ -5083,6 +5083,121 @@ function T(k){return(LANGS[CL]||LANGS.de)[k]||k;}
 function rTr(r){return(r&&r.translations&&CL&&CL!=='de'&&r.translations[CL])||null;}
 // Returns recipe name in current language (translated if available)
 function rName(r){const t=rTr(r);return(t&&t.name)||r.name||'';}
+// Returns translated amount/unit for ingredient at idx, or original
+function rAmt(r,idx){const t=rTr(r);return(t&&t.amounts&&t.amounts[idx]!=null)?t.amounts[idx]:(r.ings&&r.ings[idx]?r.ings[idx].amt:'');}
+function rUnit(r,idx){const t=rTr(r);return(t&&t.units&&t.units[idx]!=null)?t.units[idx]:(r.ings&&r.ings[idx]?r.ings[idx].unit:'');}
+
+// ─── Unit locale system ───────────────────────────────
+// Maps app language → preferred unit system. 'metric' = ml/g/cl; 'imperial' = oz/fl oz/cup/tbsp/tsp.
+const LANG_UNIT_SYSTEM={de:'metric',ru:'metric',zh:'metric',es:'metric',fr:'metric',it:'metric',en:'imperial',pt:'imperial'};
+// Imperial unit tokens (lowercase, no punctuation)
+const _IMP_UNITS=new Set(['oz','fl oz','floz','cup','cups','tbsp','tablespoon','tablespoons','tsp','teaspoon','teaspoons','lb','lbs','pound','pounds','quart','quarts','pint','pints','gallon','gallons']);
+const _MET_UNITS=new Set(['ml','cl','l','g','kg','mg','dl','el','tl']);
+// Normalize a unit string for matching (lowercase, trim, strip dot)
+function _normUnit(u){return String(u||'').toLowerCase().replace(/\./g,'').trim();}
+// Detect whether a unit is metric/imperial/other (Stück, pieces, dash etc. = other)
+function _unitKind(u){const n=_normUnit(u);if(!n)return 'none';if(_IMP_UNITS.has(n))return 'imperial';if(_MET_UNITS.has(n))return 'metric';return 'other';}
+// Return true if a drink's units already match the given target system (or contain only neutral units)
+function unitsMatchSystem(r,sys){if(!r||!r.ings||!r.ings.length)return true;for(const i of r.ings){const k=_unitKind(i.unit);if(k!=='none'&&k!=='other'&&k!==sys)return false;}return true;}
+// Local table-based deterministic conversion. Returns {amt, unit} or null if not handled.
+// Only converts simple numeric amounts; ranges (4-5), fractions (1/2), text (~) → null.
+function convertAmtUnitLocal(amt,unit,toSys){
+  const u=_normUnit(unit);if(!u)return null;
+  const kind=_IMP_UNITS.has(u)?'imperial':_MET_UNITS.has(u)?'metric':'other';
+  if(kind===toSys||kind==='other')return null;
+  const n=Number(String(amt).replace(',','.'));if(!isFinite(n)||n<=0)return null;
+  // ─── imperial → metric ──────────────────────────────
+  if(kind==='imperial'&&toSys==='metric'){
+    if(u==='oz'||u==='fl oz'||u==='floz'){const ml=Math.round(n*29.5735);return{amt:String(ml),unit:'ml'};}
+    if(u==='cup'||u==='cups'){const ml=Math.round(n*236.588);return{amt:String(ml),unit:'ml'};}
+    if(u==='tbsp'||u==='tablespoon'||u==='tablespoons'){return{amt:String(n),unit:'EL'};}
+    if(u==='tsp'||u==='teaspoon'||u==='teaspoons'){return{amt:String(n),unit:'TL'};}
+    if(u==='lb'||u==='lbs'||u==='pound'||u==='pounds'){const g=Math.round(n*453.592);return{amt:String(g),unit:'g'};}
+    if(u==='pint'||u==='pints'){const ml=Math.round(n*473.176);return{amt:String(ml),unit:'ml'};}
+    if(u==='quart'||u==='quarts'){const ml=Math.round(n*946.353);return{amt:String(ml),unit:'ml'};}
+    if(u==='gallon'||u==='gallons'){const l=Math.round(n*3.785*10)/10;return{amt:String(l),unit:'l'};}
+  }
+  // ─── metric → imperial ──────────────────────────────
+  if(kind==='metric'&&toSys==='imperial'){
+    if(u==='ml'){if(n>=200){const cups=Math.round(n/236.588*4)/4;return{amt:String(cups),unit:'cup'};}const oz=Math.round(n/29.5735*4)/4;return{amt:String(oz),unit:'oz'};}
+    if(u==='cl'){const oz=Math.round(n*10/29.5735*4)/4;return{amt:String(oz),unit:'oz'};}
+    if(u==='l'){const cups=Math.round(n*1000/236.588*4)/4;return{amt:String(cups),unit:'cup'};}
+    if(u==='g'){if(n>=100){const lbs=Math.round(n/453.592*4)/4;return{amt:String(lbs),unit:'lb'};}const oz=Math.round(n/28.3495*4)/4;return{amt:String(oz),unit:'oz'};}
+    if(u==='kg'){const lbs=Math.round(n*1000/453.592*4)/4;return{amt:String(lbs),unit:'lb'};}
+    if(u==='el'){return{amt:String(n),unit:'tbsp'};}
+    if(u==='tl'){return{amt:String(n),unit:'tsp'};}
+  }
+  return null;
+}
+// Returns the target unit system for the current UI language.
+function currentUnitSystem(){return LANG_UNIT_SYSTEM[CL]||'metric';}
+
+// ─── Translation/unit consistency check ───────────────
+// Counts named drinks that lack a translation entry (with amounts/units) for `lang`.
+function _countDrinksMissingTransl(lang){
+  if(!R||!R.length||lang==='de')return 0;
+  return R.filter(r=>r&&!r.blank&&r.name&&(r.ings||[]).length>0&&(!r.translations||!r.translations[lang]||!r.translations[lang].amounts||!r.translations[lang].amounts.length)).length;
+}
+// Bulk translate (calls AI for each drink sequentially with throttle). Saves r.translations[lang].
+async function bulkTranslateForLang(lang){
+  const key=getKey();
+  if(!key){toast&&toast('⚠️ API-Key fehlt — Einstellungen');return;}
+  const list=(R||[]).filter(r=>r&&!r.blank&&r.name&&(r.ings||[]).length>0&&(!r.translations||!r.translations[lang]||!r.translations[lang].amounts||!r.translations[lang].amounts.length));
+  if(!list.length){toast&&toast('Nichts zu übersetzen');return;}
+  toast&&toast(`🌐 Übersetze ${list.length} Drinks…`);
+  let done=0,failed=0;
+  const sysName=LANG_UNIT_SYSTEM[lang]||'metric';
+  const langName=(TRANSL_LANGS&&TRANSL_LANGS.find(x=>x.code===lang)?.name)||lang;
+  for(const r of list){
+    try{
+      const ings=(r.ings||[]).map((i,idx)=>`#${idx} | amt="${i.amt||''}" | unit="${i.unit||''}" | name="${i.name||''}"`).join('\n');
+      const steps=(r.steps||[]).map((s,n)=>((n+1)+'. '+(s.txt||s))).join('\n');
+      const ingCount=(r.ings||[]).length;
+      const tpl=`{"name":"...","ingredients":[…${ingCount}],"amounts":[…${ingCount}],"units":[…${ingCount}],"steps":["..."]}`;
+      const prompt=`Translate this drink recipe into ${langName} (unit system: ${sysName}). Convert amounts and units to the locale's system: metric → ml/cl/l/g/kg/EL/TL (spirit volumes in cl); imperial → oz/fl oz/cup/tbsp/tsp/lb (spirits in oz). Keep neutral units (Stück, pieces, Prise, pinch, Dash, dash, Spritzer) unchanged. Each array must have exactly ${ingCount} entries in input order. Ingredient names array contains translated names only — no amounts/units in names. Respond ONLY with JSON, no markdown:
+${tpl}
+
+Name: ${r.name}
+Ingredients:
+${ings}
+Steps:
+${steps}`;
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,
+          system:'You are a professional drinks translator. Respond ONLY with valid JSON. Use single quotes inside strings, never double quotes.',
+          messages:[{role:'user',content:prompt}]})
+      });
+      if(!resp.ok){
+        const e=await resp.json().catch(()=>({}));
+        if(e.error?.type==='authentication_error'){localStorage.removeItem('mxkey9m');toast&&toast('⚠️ Ungültiger API-Key');return;}
+        throw new Error('HTTP '+resp.status);
+      }
+      const data=await resp.json();
+      const raw=data.content?.[0]?.text||'{}';
+      let parsed;try{parsed=JSON.parse(cleanJSON(raw));}catch(e1){parsed=JSON.parse(repairJSON(cleanJSON(raw)));}
+      if(!r.translations)r.translations={};
+      r.translations[lang]=parsed;
+      done++;
+    }catch(e){failed++;}
+  }
+  sv();render();
+  toast&&toast(`✅ ${done} übersetzt${failed?' · ⚠️ '+failed+' fehlgeschlagen':''}`);
+}
+// Show consent dialog & start bulk translate for current UI language.
+function offerBulkTranslate(){
+  const missing=_countDrinksMissingTransl(CL);
+  if(!missing)return;
+  const langName=(LANGS[CL]&&LANGS[CL].native)||CL.toUpperCase();
+  const sysName=LANG_UNIT_SYSTEM[CL]==='imperial'?'oz/cup/lb':'ml/g/cl';
+  const declinedKey='mxlangck9m_'+CL;
+  if(localStorage.getItem(declinedKey)==='1')return;
+  if(confirm(`🌐 ${missing} Drinks ohne Übersetzung in ${langName}.\n\nMengenangaben werden automatisch ins Zielsystem (${sysName}) umgerechnet.\n\nJetzt per KI übersetzen?`)){
+    bulkTranslateForLang(CL);
+  }else{
+    localStorage.setItem(declinedKey,'1');
+  }
+}
 
 // ═══════════════════════════════════════════════════════
 // STATIC DATA
@@ -5486,6 +5601,8 @@ async function boot(){
   _bootDone();
   // V0c2: Begrüßungs-Animation (Erstöffnung oder neue APP_VERSION)
   try{maybeShowOpeningAnimation();}catch(e){}
+  // Sprache und Mengeneinheiten konsistent halten — verzögert, damit andere Dialoge zuerst durch sind
+  setTimeout(()=>{try{offerBulkTranslate();}catch(e){}},1800);
 }
 
 // ── V0c4 — Erstöffnungs-Animation ──────────────────────────────────────────
@@ -5599,7 +5716,13 @@ function renderLangGrid(){
       <div class="lang-name">${L.name}</div>
     </div>`).join('');
 }
-function selectLang(code){applyLang(code);render();closeLang();toast(LANGS[code].flag+' '+LANGS[code].native);}
+function selectLang(code){
+  applyLang(code);render();closeLang();toast(LANGS[code].flag+' '+LANGS[code].native);
+  // Sprache und Mengeneinheiten konsistent halten — User wird bei Bedarf gefragt
+  // Reset previous decline for this language so the dialog can re-appear after explicit lang change
+  localStorage.removeItem('mxlangck9m_'+code);
+  setTimeout(()=>{try{offerBulkTranslate();}catch(e){}},400);
+}
 
 // ═══════════════════════════════════════════════════════
 // THEME
@@ -9376,13 +9499,15 @@ function rndCard(r){
   const ings=(r.ings||[]).map((i,idx)=>{
     const nk=`i-${r.id}-${i.id}`,ed=EN[nk];
     const ek=`ie-${r.id}-${i.id}`,ied=EI[ek];
-    const sc=scaleAmt(i.amt,factor);
-    const amtHtml=sc.changed
-      ?`<span class="ing-amt-scaled">${h(sc.scaled)}</span><span class="ing-amt-base">${h(sc.original)}</span>`
-      :`<span class="ing-amt">${h(i.amt)}</span>`;
-    // Show translated ingredient name if available
+    // Show translated ingredient name/amt/unit if available (matches UI language)
     const tr=rTr(r);
     const trIngs=tr&&tr.ingredients;
+    const dispAmt=(tr&&tr.amounts&&tr.amounts[idx]!=null)?tr.amounts[idx]:i.amt;
+    const dispUnit=(tr&&tr.units&&tr.units[idx]!=null)?tr.units[idx]:i.unit;
+    const sc=scaleAmt(dispAmt,factor);
+    const amtHtml=sc.changed
+      ?`<span class="ing-amt-scaled">${h(sc.scaled)}</span><span class="ing-amt-base">${h(sc.original)}</span>`
+      :`<span class="ing-amt">${h(dispAmt)}</span>`;
     const ingName=trIngs&&trIngs[idx]?trIngs[idx]:i.name;
     const nEl=ed
       ?`<div class="neditor"><textarea class="nta" id="nte-${nk}" rows="2" placeholder="${T('addNote').replace('✎ ','')}">${h(i.note||'')}</textarea><div class="nbtns"><button class="nsave" onclick="saveNote('${nk}',${r.id},'i',${i.id})" title="${T('ttlNoteSave')}">✓</button><button class="ncancel" onclick="cancelNote('${nk}')" title="${T('btnCancel')}">✕</button></div></div>`
@@ -9400,7 +9525,7 @@ function rndCard(r){
       :`<div class="ing-row">
           <span class="ing-drag-hdl" data-hdl="ing" data-tip="${T('dragTip')}" onclick="event.stopPropagation()"><svg width="11" height="14" viewBox="0 0 11 14" fill="currentColor" style="display:block"><path d="M5.5 0L2 4h7z"/><rect x="1.5" y="5.5" width="8" height="1.3" rx=".65"/><rect x="1.5" y="7.2" width="8" height="1.3" rx=".65"/><path d="M5.5 14L2 10h7z"/></svg></span>
           <div class="chkbox" onclick="togIng(${r.id},${i.id})" role="checkbox" aria-checked="${i.ck}"></div>
-          <span class="ing-lbl">${amtHtml}${i.unit?` <span class="ing-unit">${h(i.unit)}</span>`:''} ${h(ingName)}${trIngs&&trIngs[idx]&&ingName!==i.name?`<span style="font-size:.6rem;color:var(--br3);margin-left:3px">(${h(i.name)})</span>`:''}</span>
+          <span class="ing-lbl">${amtHtml}${dispUnit?` <span class="ing-unit">${h(dispUnit)}</span>`:''} ${h(ingName)}${trIngs&&trIngs[idx]&&ingName!==i.name?`<span style="font-size:.6rem;color:var(--br3);margin-left:3px">(${h(i.name)})</span>`:''}</span>
           <button class="ebtn" onclick="openIngEdit(${r.id},${i.id})" title="Bearbeiten">✏️</button>
           <button class="xbtn" onclick="delIng(${r.id},${i.id})" title="Zutat löschen">✕</button>
         </div>`;
@@ -11457,20 +11582,28 @@ async function runTransl(rid){
   if(!resultEl)return;
   resultEl.innerHTML='<div class="transl-prog"><div class="transl-spinner"></div> Übersetze…</div>';
 
-  const ings=(r.ings||[]).map(i=>((i.amt||'')+' '+(i.unit||'')+' '+(i.name||'')).trim()).join('\n');
+  const ings=(r.ings||[]).map((i,idx)=>`#${idx} | amt="${i.amt||''}" | unit="${i.unit||''}" | name="${i.name||''}"`).join('\n');
   const steps=(r.steps||[]).map((s,n)=>((n+1)+'. '+(s.txt||s))).join('\n');
   const langNames=sel.map(c=>TRANSL_LANGS.find(l=>l.code===c)?.name||c).join(' and ');
+  const sysDescr=sel.map(c=>`${c}=${LANG_UNIT_SYSTEM[c]||'metric'}`).join(', ');
+  const ingCount=(r.ings||[]).length;
+  const tplIng=`"ingredients":[${ingCount?'"name1",…':''}],"amounts":[${ingCount?'"40","240",…':''}],"units":[${ingCount?'"ml","ml",…':''}]`;
+  const blockTpl=code=>`"${code}":{"name":"...",${tplIng},"steps":["..."]}`;
+  const fullTpl=`{${sel.map(blockTpl).join(',')}}`;
 
-  const singleTpl=`{"${sel[0]}":{"name":"...","ingredients":["translated name only",...],"steps":["..."]}}`;
-  const doubleTpl=`{"${sel[0]}":{"name":"...","ingredients":["translated name only",...],"steps":["..."]},"${sel[1]}":{"name":"...","ingredients":["translated name only",...],"steps":["..."]}}`;
-
-  const prompt=`Translate this recipe into ${langNames}. ${sel.length===2?'Provide BOTH translations separately.':''}
-Ingredient names only — no amounts or units. No mixed languages. One language per top-level key.
-${sel.length===2?doubleTpl:singleTpl}
+  const prompt=`Translate this drink recipe into ${langNames}. ${sel.length===2?'Provide BOTH translations separately.':''}
+For each target language, convert amounts AND units to the locale's unit system: ${sysDescr}.
+- metric → ml, cl, l, g, kg, EL (tbsp), TL (tsp). Cocktails: small spirit volumes in cl (e.g. "4" "cl"), other liquids in ml.
+- imperial → oz, fl oz, cup, tbsp, tsp, lb. Cocktails: spirits in oz.
+Keep neutral units unchanged (Stück, pieces, Prise, pinch, Dash, dash, Spritzer). Round metric amounts to whole numbers, imperial to nearest quarter.
+Each output array MUST have exactly ${ingCount} entries — one per input ingredient (in the same order).
+Ingredient name array: translated ingredient names only — no amounts or units in the name.
+Respond with ONLY valid JSON, no markdown:
+${fullTpl}
 
 Recipe:
 Name: ${r.name}
-Ingredients:
+Ingredients (numeric index | amt | unit | name):
 ${ings}
 Steps:
 ${steps}`;
@@ -11520,7 +11653,10 @@ function renderTranslResult(rid,translated,sel){
       const orig=r.ings[idx];
       // Strip leading "amt unit " from translated text (legacy translations included amounts)
       const cleanTxt=txt.replace(/^[\d.,½¼¾⅓⅔]+\s*(?:g|kg|ml|l|tsp|tbsp|cup|TL|EL|Stück|pcs?|oz|lb|cl|dl)\.?\s+/i,'').trim();
-      const amtPart=orig&&orig.amt?`<span class="ing-amt">${h(orig.amt)}</span>${orig.unit?` <span class="ing-unit">${h(orig.unit)}</span> `:'  '}`:'';
+      // Prefer translated amount/unit if provided
+      const dAmt=(t.amounts&&t.amounts[idx]!=null)?t.amounts[idx]:(orig&&orig.amt)||'';
+      const dUnit=(t.units&&t.units[idx]!=null)?t.units[idx]:(orig&&orig.unit)||'';
+      const amtPart=dAmt?`<span class="ing-amt">${h(dAmt)}</span>${dUnit?` <span class="ing-unit">${h(dUnit)}</span> `:'  '}`:'';
       const isCk=orig&&orig.ck;
       const ckOnclick=orig?`onclick="togIngLocal(this,${ridN},${orig.id})"`:'' ;
       return`<li class="ing-li ${isCk?'ck':''}"><div class="ing-row">
@@ -11658,17 +11794,22 @@ async function runScanTransl(){
   if(!SCAN_TR_SEL.length)return;
   const resultEl=document.getElementById('scanTrResult');
   resultEl.innerHTML='<div class="transl-prog"><div class="transl-spinner"></div> Übersetze…</div>';
-  const ings=(rec.ingredients||[]).map(i=>((i.amt||'')+' '+(i.unit||'')+' '+(i.name||'')).trim()).join('\n');
+  const ings=(rec.ingredients||[]).map((i,idx)=>`#${idx} | amt="${i.amt||''}" | unit="${i.unit||''}" | name="${i.name||''}"`).join('\n');
   const steps=(rec.steps||[]).map((s,n)=>((n+1)+'. '+s)).join('\n');
   const langNames=SCAN_TR_SEL.map(c=>TRANSL_LANGS.find(l=>l.code===c)?.name||c).join(' and ');
   const codes=SCAN_TR_SEL;
-  const tpl=codes.length===2
-    ?`{"${codes[0]}":{"name":"...","ingredients":["..."],"steps":["..."]},"${codes[1]}":{"name":"...","ingredients":["..."],"steps":["..."]}}`
-    :`{"${codes[0]}":{"name":"...","ingredients":["..."],"steps":["..."]}}`;
-  const prompt=`Translate this recipe into ${langNames}. Keep amounts unchanged. Return ONLY JSON:
+  const sysDescr=codes.map(c=>`${c}=${LANG_UNIT_SYSTEM[c]||'metric'}`).join(', ');
+  const ingCount=(rec.ingredients||[]).length;
+  const blockTpl=code=>`"${code}":{"name":"...","ingredients":["..."],"amounts":["..."],"units":["..."],"steps":["..."]}`;
+  const tpl=`{${codes.map(blockTpl).join(',')}}`;
+  const prompt=`Translate this drink recipe into ${langNames}. Convert amounts and units to the target locale's unit system: ${sysDescr}.
+- metric → ml, cl, l, g, kg, EL, TL. Cocktail spirits in cl (e.g. "4" "cl").
+- imperial → oz, fl oz, cup, tbsp, tsp, lb. Cocktail spirits in oz.
+Keep neutral units unchanged (Stück, pieces, Prise, pinch, Dash, dash, Spritzer). Each array must have exactly ${ingCount} entries in input order.
+Return ONLY JSON, no markdown:
 ${tpl}
 Name: ${rec.name}
-Ingredients:
+Ingredients (idx | amt | unit | name):
 ${ings}
 Steps:
 ${steps}`;
