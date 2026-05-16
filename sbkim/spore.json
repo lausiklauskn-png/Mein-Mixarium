@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-05-16T15:34:22.829Z",
+  "createdAt": "2026-05-16T17:41:48.302Z",
   "domain": "lausiklauskn-png.github.io",
   "domainDescription": "Klaus Mixarium - Cocktails, Mocktails, Smoothies und mehr; Knabbereien als Begleit-Plus.",
   "domainKeywords": [
@@ -403,7 +403,7 @@
     "Knabbereien",
     "Fingerfood"
   ],
-  "id": "yWyRk1b8cqY-x8_wRlHJOo_r-IqtZWIaouTvp_6NLao",
+  "id": "MRjKmTvOPHz9mtcWRSF-HXdpLfv_-FrMFTK5-gBh8S8",
   "nodeName": "Mixarium Klaus",
   "nodeType": "hybrid",
   "protocolVersion": "0.1",
@@ -415,9 +415,9 @@
       "verify"
     ],
     "kty": "OKP",
-    "x": "rWGQWsKAkgUbACyMwoh5fRV8rfwbhbNl4jPnHRWXAmI"
+    "x": "c_26IvXRWCZdIlqJXaMU8o_gGi60SsBgCu8qv-3pkE0"
   },
-  "signature": "yTILa1S59ANZjoVXpVoE9KnujtGlY9yb7vJ1A1GHu3PcY7ZeGVG4gHvl9f1lujJQL-EQLIt8BxrOIQRdQ04WBA",
+  "signature": "rfoedDZ-0-Y2kRbVMQUZvV82ceFUU_M_5wUHwKHlb-H4uPHJUZkYNa55eSfmWgJLgVWCXYsZF2hWs5uioNbEAA",
   "stammCategories": [
     "Cocktails",
     "Mocktails",
