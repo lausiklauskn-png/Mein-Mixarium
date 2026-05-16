@@ -9447,7 +9447,7 @@ function render(){
         html+=grp.map(r=>rndCard(r)).join('');
       });
     }
-    if(!html)html=`<div class="empty-state"><div class="empty-state__icon">🍳</div><h3 class="empty-state__title">${T('noRecipes')}</h3><p class="empty-state__desc">${T('emptyStateDesc')||'Füge dein erstes Rezept hinzu — per Foto, Weblink oder manuell.'}</p><button class="empty-state__btn" onclick="openNewPanel()">+ ${T('hAddLbl')||'Rezept'} ${T('emptyStateAdd')||'hinzufügen'}</button></div>`;
+    if(!html)html=`<div class="empty-state"><div class="empty-state__icon">🍹</div><h3 class="empty-state__title">${T('noRecipes')}</h3><p class="empty-state__desc">${T('emptyStateDesc')||'Füge dein erstes Rezept hinzu — per Foto, Weblink oder manuell.'}</p><button class="empty-state__btn" onclick="openNewPanel()">+ Getränk ${T('emptyStateAdd')||'hinzufügen'}</button></div>`;
   }else if(CAT.startsWith('fld_')){
     // Ordner-Filter
     const fid=CAT.slice(4);
