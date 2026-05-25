@@ -1,5 +1,5 @@
 self.SBKIM_SW_STANDALONE = false;
-importScripts("./sbkim-sw-v24.js");
+importScripts("./sbkim-sw-v25.js");
 console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 // WICHTIG: Bei jeder App-Änderung (CSS, JS, HTML) SW_VERSION erhöhen — sonst
 // behalten installierte PWAs ihre alte Version im Cache. Beim Hochzählen wird
@@ -7,7 +7,7 @@ console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 //
 // Ab v5: Navigation und Pre-Cache umgehen den Browser-HTTP-Cache aktiv
 // (cache:'reload'), damit App-Änderungen ohne manuelles Cache-Löschen ankommen.
-const SW_VERSION = 'mixarium-sw-v24';
+const SW_VERSION = 'mixarium-sw-v25';
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
