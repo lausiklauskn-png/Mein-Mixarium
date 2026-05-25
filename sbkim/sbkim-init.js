@@ -1,14 +1,40 @@
 // sbkim-init.js — Mixarium Klaus
-// Auto-Init Schritt 4 + 9a aus Karte 09.
+// Auto-Init Karte 09 § Schritt 4 + 9 + 10 + 11.
 // Spore-Generierung manuell via window.__sbkimErzeugeSpore() in DevTools-Konsole.
 
 (async function () {
   try {
-  await SbkimStorage.init({ dbSuffix: "mixarium" });
+    await SbkimStorage.init({ dbSuffix: "mixarium" });
     await SbkimAnastomose.init();
     console.info("SBKIM-Init grün — Storage, Spore, Match bereit.");
+
     await SbkimApoptose.init();
     console.info("SBKIM-Apoptose grün — Vermächtnis-Empfang aktiv.");
+
+    if (window.SbkimHeterokaryose) {
+      await SbkimHeterokaryose.init();
+      console.info("SBKIM-Heterokaryose grün — Heterokaryose-Empfang aktiv.");
+    }
+
+    if (window.SbkimUiDemo) {
+      await SbkimUiDemo.init();
+      console.info("SBKIM-UiDemo grün — Outbox-API bereit.");
+    }
+
+    if (window.SbkimMembrane) {
+      await SbkimMembrane.init({
+        lampSelector: "#lamp-fremd",
+        allowedOrigins: ["https://lausiklauskn-png.github.io"],
+      });
+    }
+
+    if (window.SbkimSiegel) {
+      await SbkimSiegel.init({
+        badgeSelector: ".lamps",
+        repoUrl: "https://github.com/lausiklauskn-png/Mein-Mixarium",
+      });
+    }
+
     console.info("SBKIM-Andock bereit. Spore erzeugen mit __sbkimErzeugeSpore() in der DevTools-Konsole.");
   } catch (e) {
     console.error("SBKIM-Init-Fehler:", e);
