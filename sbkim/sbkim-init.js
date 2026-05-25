@@ -21,19 +21,9 @@
       console.info("SBKIM-UiDemo grün — Outbox-API bereit.");
     }
 
-    if (window.SbkimMembrane) {
-      await SbkimMembrane.init({
-        lampSelector: "#lamp-fremd",
-        allowedOrigins: ["https://lausiklauskn-png.github.io"],
-      });
-    }
-
-    if (window.SbkimSiegel) {
-      await SbkimSiegel.init({
-        badgeSelector: ".lamps",
-        repoUrl: "https://github.com/lausiklauskn-png/Mein-Mixarium",
-      });
-    }
+    // Modul 15 (Membran) + Modul 16 (Siegel) ausgebaut 2026-05-25
+    // (Rückbau-Sitzung, docs/sessions/archiv/). Re-Migration kommt erst nach
+    // Sage-Protokol-Spec-Sitzung 17 + Bau-Sitzung 17 als Widget-Architektur.
 
     console.info("SBKIM-Andock bereit. Spore erzeugen mit __sbkimErzeugeSpore() in der DevTools-Konsole.");
   } catch (e) {
