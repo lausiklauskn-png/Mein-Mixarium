@@ -1,5 +1,5 @@
 self.SBKIM_SW_STANDALONE = false;
-importScripts("./sbkim-sw-v26.js");
+importScripts("./sbkim-sw-v27.js");
 console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 // WICHTIG: Bei jeder App-Änderung (CSS, JS, HTML) SW_VERSION erhöhen — sonst
 // behalten installierte PWAs ihre alte Version im Cache. Beim Hochzählen wird
