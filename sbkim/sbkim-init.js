@@ -5,6 +5,22 @@
 (async function () {
   try {
     await SbkimStorage.init({ dbSuffix: "mixarium" });
+
+    // Modul 17 Floating-Widget — Endknoten-Standard-Render-Schicht
+    // (Karte 09 § Schritt 12). Nach Storage (01) und VOR Spore (02), damit
+    // die Proxy-Spans #lamp-fremd + #sbkim-siegel-badge im DOM sind, falls
+    // Modul 15/16 später re-migriert werden. Sage-Protokol-Quelle:
+    // Commit b2cf42ca0708a2f3cc12d0f344a16d28539a765d (2026-05-25).
+    // Modul 15 + 16 bleiben aktuell ausgebaut (Rückbau 2026-05-25) — das
+    // Widget läuft trotzdem als Vier-Slot-Live-Status-Dashboard.
+    if (window.SbkimWidget) {
+      await SbkimWidget.init({
+        allowedOrigins: ["https://lausiklauskn-png.github.io"],
+        repoUrl:        "https://github.com/lausiklauskn-png/Mein-Mixarium",
+      });
+      console.info("SBKIM-Widget grün — Floating-Pille bottom-right aktiv.");
+    }
+
     await SbkimAnastomose.init();
     console.info("SBKIM-Init grün — Storage, Spore, Match bereit.");
 
@@ -22,8 +38,9 @@
     }
 
     // Modul 15 (Membran) + Modul 16 (Siegel) ausgebaut 2026-05-25
-    // (Rückbau-Sitzung, docs/sessions/archiv/). Re-Migration kommt erst nach
-    // Sage-Protokol-Spec-Sitzung 17 + Bau-Sitzung 17 als Widget-Architektur.
+    // (Rückbau-Sitzung, docs/sessions/archiv/). Re-Migration via Widget
+    // (Modul 17) ist 2026-05-26 für die Render-Schicht angedockt; die
+    // Backends 15+16 folgen in einer separaten Sitzung.
 
     console.info("SBKIM-Andock bereit. Spore erzeugen mit __sbkimErzeugeSpore() in der DevTools-Konsole.");
   } catch (e) {
