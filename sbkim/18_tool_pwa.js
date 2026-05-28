@@ -962,38 +962,94 @@
     var foreignCap = textBlob(foreignKw, foreignStamm);
     var foreignNeeds = textBlob(foreignKw, foreignGuest);
 
-    setStep3Status("loading", "Match wird berechnet …");
-    Promise.resolve()
-      .then(function () { return matchMod.matchDimensions(ownCap, ownNeeds, foreignCap, foreignNeeds); })
-      .then(function (result) {
-        matchResultCache = result;
-        renderMatchBars(result);
-        var overall = (result && typeof result.overall === "number") ? result.overall : 0;
-        if (overall >= matchThreshold) {
-          setStep3Status("ok", "Match: " + (overall * 100).toFixed(0) + " % — über Schwelle. Bereit für Handshake.");
-          var next = modalRoot && modalRoot.querySelector("[data-tool-pwa-step3-next]");
-          if (next) next.disabled = false;
-        } else {
-          setStep3Status("warn", "Match: " + (overall * 100).toFixed(0) + " % — unter Schwelle " +
-                         (matchThreshold * 100).toFixed(0) + " %. „Trotzdem andocken" + "\"" +
-                         " ist möglich, aber Risiko-bewusst.");
-          var anyway = modalRoot && modalRoot.querySelector("[data-tool-pwa-step3-anyway]");
-          if (anyway) anyway.style.display = "";
+    // Pflege 2026-05-28 (Wurzel-Fix): matchDimensions erwartet vier
+    // Float32Array(384) (Modul 04 § assertVector), nicht die textBlob-
+    // Strings. Schritt 3 MUSS daher die vier Textblobs zuerst über
+    // Modul 03 `embedQueryBatch` zu Vektoren machen, BEVOR es
+    // matchDimensions aufruft. Davor warf der Aufruf
+    // InvalidVectorError („queryVec muss Float32Array sein, war: String").
+    var embedding = global.SbkimEmbedding;
+    if (!embedding || typeof embedding.embedQueryBatch !== "function") {
+      setStep3Status("error",
+        "Modul 03 (Embedding) ist nicht verfügbar — " +
+        "SbkimEmbedding.embedQueryBatch fehlt.");
+      return;
+    }
+
+    // Score-Auswertung des MatchDimensionsResult — wird aus beiden
+    // Pfaden (null-safe + voll besetzt) heraus aufgerufen.
+    function handleMatchResult(result) {
+      matchResultCache = result;
+      renderMatchBars(result);
+      var overall = (result && typeof result.overall === "number") ? result.overall : 0;
+      if (overall >= matchThreshold) {
+        setStep3Status("ok", "Match: " + (overall * 100).toFixed(0) + " % — über Schwelle. Bereit für Handshake.");
+        var next = modalRoot && modalRoot.querySelector("[data-tool-pwa-step3-next]");
+        if (next) next.disabled = false;
+      } else {
+        setStep3Status("warn", "Match: " + (overall * 100).toFixed(0) + " % — unter Schwelle " +
+                       (matchThreshold * 100).toFixed(0) + " %. „Trotzdem andocken" + "\"" +
+                       " ist möglich, aber Risiko-bewusst.");
+        var anyway = modalRoot && modalRoot.querySelector("[data-tool-pwa-step3-anyway]");
+        if (anyway) anyway.style.display = "";
+      }
+    }
+
+    function handleMatchError(err) {
+      var name = err && err.name;
+      if (name === "DimensionsAllNullError") {
+        setStep3Status("error",
+          "Match konnte nicht berechnet werden — Domain-Stichworte fehlen " +
+          "auf einer Seite. Eigene oder Geschwister-Spore prüfen.");
+      } else {
+        setStep3Status("error",
+          "Match-Berechnung warf: " + (err && err.message || "unbekannt"));
+      }
+      var retry = modalRoot && modalRoot.querySelector("[data-tool-pwa-step3-retry]");
+      if (retry) retry.style.display = "";
+    }
+
+    // Null-Safe-Mapping: textBlob liefert null, wenn eine Seite keine
+    // Stichworte hat. null darf NICHT in den Embedding-Batch — wir
+    // embedden nur die nicht-null Strings und setzen die Vektoren
+    // anschließend an ihre ursprüngliche Position zurück. matchDimensions
+    // verträgt null pro Spalte (Nur-Anbieter-Modus), aber kein null im
+    // embedQueryBatch-Input.
+    var inputs = [ownCap, ownNeeds, foreignCap, foreignNeeds];
+    var nonNullIdx = [];
+    var nonNullTexts = [];
+    for (var i = 0; i < 4; i++) {
+      if (inputs[i] !== null) {
+        nonNullIdx.push(i);
+        nonNullTexts.push(inputs[i]);
+      }
+    }
+    if (nonNullTexts.length === 0) {
+      // Alle vier null → matchDimensions würde DimensionsAllNullError
+      // werfen; das fangen wir hier vorab mit klarer Meldung ab.
+      setStep3Status("error",
+        "Match nicht möglich — keine Domain-Stichworte auf beiden Seiten.");
+      return;
+    }
+
+    // KEIN künstlicher Timeout (kein Promise.race mit setTimeout): das
+    // Embedding-Modell (~30 MB) lädt so lange wie das Netz braucht; der
+    // Wizard hat ein Schließen-X, falls Klaus abbrechen will.
+    setStep3Status("loading",
+      "Embedding-Modell wird geladen (ca. 30 MB beim ersten " +
+      "Aufruf, kann auf langsamer Verbindung mehrere Minuten " +
+      "dauern). Bitte nicht abbrechen.");
+    embedding.embedQueryBatch(nonNullTexts)
+      .then(function (vectors) {
+        setStep3Status("loading", "Embedding fertig — Match wird berechnet …");
+        var out = [null, null, null, null];
+        for (var j = 0; j < nonNullIdx.length; j++) {
+          out[nonNullIdx[j]] = vectors[j];
         }
+        var result = matchMod.matchDimensions(out[0], out[1], out[2], out[3]);
+        handleMatchResult(result);
       })
-      .catch(function (err) {
-        var name = err && err.name;
-        if (name === "DimensionsAllNullError") {
-          setStep3Status("error",
-            "Match konnte nicht berechnet werden — Domain-Stichworte fehlen " +
-            "auf einer Seite. Eigene oder Geschwister-Spore prüfen.");
-        } else {
-          setStep3Status("error",
-            "Match-Berechnung warf: " + (err && err.message || "unbekannt"));
-        }
-        var retry = modalRoot && modalRoot.querySelector("[data-tool-pwa-step3-retry]");
-        if (retry) retry.style.display = "";
-      });
+      .catch(handleMatchError);
   }
 
   function textBlob(keywords, categories) {
