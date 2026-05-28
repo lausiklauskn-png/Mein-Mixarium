@@ -680,6 +680,24 @@
     var opSlot = activeSlotKey || await spore.getActiveIdentityKey();
     await ensureSlotStores(opSlot);
 
+    // Pflege 2026-05-28: ownDomainVector ist optional. Wird er weggelassen
+    // (undefined/null), löst Modul 05 ihn kanonisch aus der eigenen Spore
+    // auf (loadOwnDomainVector → ownSpore.domainVector). Das ist dieselbe
+    // Quelle, die unten als senderSpore mitgesendet wird — single source
+    // of truth, vermeidet einen request.domainVector, der nicht zur
+    // senderSpore passt. Aufrufer (Modul 18 etc.) müssen den Vektor also
+    // nicht mehr selbst korrekt ableiten. Explizit übergebener Vektor
+    // wird weiter honoriert (Tests / Spezialpfade).
+    if (ownDomainVector === undefined || ownDomainVector === null) {
+      ownDomainVector = await loadOwnDomainVector(opSlot);
+      if (ownDomainVector === null) {
+        throw makeError(
+          "AnastomoseDependenciesError",
+          "Eigene Spore noch nicht erzeugt oder ohne domainVector (slot=" + opSlot + ") — " +
+            "SbkimSpore.generateOwnSpore(meta) zuerst.",
+        );
+      }
+    }
     if (!(ownDomainVector instanceof Float32Array) || ownDomainVector.length !== EMBEDDING_DIM) {
       throw makeError(
         "AnastomoseDependenciesError",
