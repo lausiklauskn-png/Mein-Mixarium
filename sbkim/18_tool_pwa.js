@@ -1180,6 +1180,12 @@
       setStep4Status("error", "Foreign-Spore nicht geladen.");
       return;
     }
+    // Pflege 2026-05-28: handshake(targetSpore) ohne 2. Argument —
+    // Modul 05 löst den eigenen Domain-Vektor kanonisch aus der eigenen
+    // Spore auf (deren signierter domainVector ist dieselbe Quelle, die
+    // als senderSpore mitgesendet wird → keine Inkonsistenz). Modul 18
+    // berechnet KEINEN eigenen Vektor mehr (das ergab einen anderen
+    // Vektor als die Spore — siehe Pflege 05+18 Handshake-Eigenvektor).
     setStep4Status("loading", "Handshake läuft …");
     Promise.resolve()
       .then(function () { return anaMod.handshake(foreignSporeCache); })
