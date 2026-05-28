@@ -28,6 +28,21 @@
       repoUrl: "https://github.com/lausiklauskn-png/Mein-Mixarium",
     });
 
+    // Modul 18 Tool-PWA Sub (a) Vorab — Andock-Wizard, getriggert durch
+    // Bronze-SIEGEL-Klick (Modul 16 Sub e Hook). Nur geladen + bereit,
+    // kein automatischer Andock-Trigger. Werte aus sbkim/spore.json.
+    if (window.SbkimToolPwa) {
+      await SbkimToolPwa.init({
+        endpoint:        "https://lausiklauskn-png.github.io/Mein-Mixarium/",
+        domain:          "mixarium",
+        domainKeywords:  ["Cocktail", "Drink", "Mocktail", "Limonade", "Smoothie", "Aperitif", "Sake"],
+        stammCategories: ["Cocktails", "Mocktails", "Alkfr. Cocktails", "Smoothies & Shakes", "Limonaden", "Tees & Kaffees", "Bowlen", "Sirup & Basis"],
+        guestCategories: ["Knabbereien", "Fingerfood"],
+        repoUrl:         "https://github.com/lausiklauskn-png/Mein-Mixarium",
+      });
+      console.info("SBKIM-ToolPwa grün — Modul 18 Andock-Wizard bereit.");
+    }
+
     await SbkimAnastomose.init();
     console.info("SBKIM-Init grün — Storage, Spore, Match bereit.");
 
