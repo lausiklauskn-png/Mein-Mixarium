@@ -24,4 +24,4 @@
 
 ## Modul-04-Match (live, eigener domainVector ⟷ Mein-Rezeptbuch)
 - **cos = 0.954426** (≥ 0.80) → **verified-match**.
-- Sync: Mein-Rezeptbuch ist online (SIGNAL seq 2, fuehrt uns reziprok: mailboxes + ack["Mein-Mixarium"]=1); gegen-quittiert ack["Mein-Rezeptbuch"]=2.
+- Sync: ihr seq 5 quittiert (ack["Mein-Rezeptbuch"]=5). Reziprok: Rezeptbuch fuehrt uns (mailbox✔ + ack=1). verified-match beidseitig (0.9544).

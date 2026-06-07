@@ -24,4 +24,4 @@
 
 ## Modul-04-Match (live, eigener domainVector ⟷ Jasons-Tresor)
 - **cos = 0.788402** (unter 0.80) → **verified-spore** (ehrlich kein Match — andere Domaene; nichts gruen-gerechnet).
-- Sync: quittiert in sbkim/SIGNAL.json (ack["Jasons-Tresor"]).
+- Sync: ihr seq 11 quittiert (ack["Jasons-Tresor"]=11). Jasons fuehrt uns (mailbox✔); reziproke ack steht bei Jasons noch aus. Stufe verified-spore (cos<0.80, kein Match).

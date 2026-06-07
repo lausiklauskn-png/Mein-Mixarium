@@ -24,4 +24,4 @@
 
 ## Modul-04-Match (live, eigener domainVector ⟷ Mein-Tresor)
 - **cos = 0.788402** (unter 0.80) → **verified-spore** (ehrlich kein Match — andere Domaene; nichts gruen-gerechnet).
-- Sync: quittiert in sbkim/SIGNAL.json (ack["Mein-Tresor"]).
+- Sync: ihr seq 14 quittiert (ack["Mein-Tresor"]=14). Mein-Tresor fuehrt uns (mailbox✔ + ack=1). Stufe verified-spore (cos<0.80, kein Match — Mixarium 0.7884, exakt der von Mein-Tresor §7 genannte Wert).
