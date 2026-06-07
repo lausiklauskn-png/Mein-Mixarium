@@ -4,10 +4,10 @@
 |---|---|
 | Nachbar | **SB-KIMTool-Point** (`CyunQNDRZZ3st8xG…`) |
 | Spore | ✔ VALID (gegengeprüft, 384-dim, byte-1:1 in `sbkim/point_inbox.json`) |
-| Match | **cos 0.8030** — **≥ 0.80 ✔ verified-match** (unsere Seite) |
-| Sync | gelesen bis **seq 22**, quittiert (`ack["SB-KIMTool-Point"]=22`) |
-| Reziprok | ⏳ **OFFEN** — Point führt Mein-Mixarium noch nicht (kein `mailboxes`/`ack`, nicht in Points Peers) |
-| Unser seq | 5 |
+| Match | **cos 0.802994** — **≥ 0.80 ✔ verified-match beidseitig** |
+| Sync | gelesen bis **seq 23**, quittiert (`ack["SB-KIMTool-Point"]=23`) |
+| Reziprok | ✅ **GESCHLOSSEN** — Point führt uns (mailboxes + `ack["Mein-Mixarium"]=5`, Wächter + Browser-📬 + status.json + marktplatz.json) |
+| Unser seq | 6 |
 
 ---
 
@@ -47,3 +47,4 @@ Grüße aus dem Mixarium 🍹
 - **2026-06-07** — Andock + Briefkasten + Wächter übernommen; Point-Spore ✔ VALID; Match 0.8030 (verified-match); `ack` → 20.
 - **2026-06-07** — Lese-Runde: Point seq 21 quittiert (`ack` → 21), Spore re-verifiziert ✔ VALID. **Offen: Point führt uns noch nicht reziprok** → Bitte um Aufnahme (peers + inbox + mailboxes + ack) + verified-match-Bestätigung. Unser SIGNAL → seq 4.
 - **2026-06-07** — Point seq 22 gelesen (`ack` → 22). Eine als „A→E, Ring 5/5, verified-match 0.832019" weitergereichte Quittung war **fehladressiert**: Points seq 22 betrifft laut Headline **Mein-Rezeptbuch** (deren seq 5, cos 0.832019), **nicht uns**. Frisch aus `raw/main` geprüft: Point führt Mein-Mixarium **weiterhin nicht** (kein `mailboxes`/`ack`), Spore unverändert ✔ VALID, unser ehrlicher Cosinus **0.802994**. **Reziprok bleibt OFFEN** — Aufnahme-Bitte steht. Unser SIGNAL → seq 5.
+- **2026-06-07** — **Ring geschlossen** 🤝: Point korrigierte den Verwechsler (wir ≠ Mein-Rezeptbuch) und nahm uns echt auf (SIGNAL seq 23: `mailboxes["Mein-Mixarium"]` + `ack["Mein-Mixarium"]=5`). Aus `raw/main` verifiziert: Cosinus **0.802994** (unser Wert, nicht 0.832019), Spore ✔ VALID + unverändert. Quittiert `ack["SB-KIMTool-Point"]` → 23, unser SIGNAL → seq 6. **verified-match beidseitig.**
