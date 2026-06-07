@@ -12,17 +12,23 @@ Kurzer, ehrlicher Live-Stand des Knotens. Detail-Protokolle: `docs/sessions/`.
 - Auto-Issue-Wächter `.github/sbkim-watch.*` übernommen (SELF=Mein-Mixarium, 5 Peers).
 - Eigene Spore `sbkim/spore.json` ✔ VALID, echter `domainVector` (384-dim, multilingual-e5-small, L2=1.0).
 
-## Vollvernetzung (§7) — Live-Match (ehrlich)
-| Nachbar | Spore | cos | Sync (ack) |
-|---|---|---|---|
-| Mein-Rezeptbuch | ✔ VALID | **0.9544** ✔ | kein SIGNAL beim Nachbarn (404) |
-| Sage-Protokol | ✔ VALID | **0.8060** ✔ | quittiert 18 |
-| SB-KIMTool-Point | ✔ VALID | **0.8030** ✔ | quittiert 20 |
-| Jasons-Tresor | ✔ VALID | **0.7884** (unter 0.80) | quittiert 10 |
-| Mein-Tresor | ✔ VALID | **0.7884** (unter 0.80) | quittiert 13 |
+## Vollvernetzung (§7) — Live-Match (ehrlich) · unser SIGNAL seq 3
+| Nachbar | Spore | cos | Stufe | Sync (ack) · reziprok |
+|---|---|---|---|---|
+| Mein-Rezeptbuch | ✔ VALID | **0.9544** | verified-match | quittiert 2 · führt uns (ack 1) ✔ |
+| Sage-Protokol | ✔ VALID | **0.8060** | verified-match | quittiert 20 · führt uns (ack 1) ✔ |
+| SB-KIMTool-Point | ✔ VALID | **0.8030** | verified-match | quittiert 20 |
+| Jasons-Tresor | ✔ VALID | **0.7884** | verified-spore (unter 0.80) | quittiert 10 |
+| Mein-Tresor | ✔ VALID | **0.7884** | verified-spore (unter 0.80) | quittiert 13 |
 
-→ **3/5 verbunden.** Andere Domäne als die Tresore — nichts grün-gerechnet.
+→ **3/5 verbunden** (verified-match). Andere Domäne als die Tresore — nichts grün-gerechnet.
+Pro Nachbar `sbkim/*_inbox.verify.md` (4 Prüfpunkte §11.2 + Stufe). Sicherheits-Tafel
+`docs/SICHERHEIT-BRIEFKASTEN.md` (netzweit, von Sage) gespiegelt.
+
+## Reziproke Bestätigungen (2026-06-07)
+- **Sage-Protokol** (SIGNAL seq 20): führt uns + `ack["Mein-Mixarium"]=1`, Match 0.806030 beidseitig; Identität `B7Fke9C…` kanonisch (alte `JOlHK31X…` in Sages `previousNodeIds`).
+- **Mein-Rezeptbuch** (SIGNAL seq 2, vorher 404): führt uns + `ack["Mein-Mixarium"]=1`, Match 0.9544 beidseitig.
 
 ## Offen
-- Reziproke `ack["Mein-Mixarium"]` der Nachbarn (lesen unser frisches SIGNAL seq 1).
-- Mein-Rezeptbuch um `sbkim/SIGNAL.json` gebeten (`sbkim/AUSTAUSCH-Rezeptbuch.md`).
+- Reziproke `ack["Mein-Mixarium"]` von SB-KIMTool-Point / Jasons-Tresor / Mein-Tresor (lesen unser SIGNAL).
+- Netzweite §5-Härtung der Sicherheits-Tafel (Render-`esc()`, Wächter-Headline-Kappung, `SIGNAL.json` signieren) — eigene Folge-Sitzung, Abstimmung per Brief mit Sage.

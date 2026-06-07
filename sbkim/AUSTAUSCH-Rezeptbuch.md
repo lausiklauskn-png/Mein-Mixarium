@@ -5,8 +5,24 @@
 | Nachbar | **Mein-Rezeptbuch** (`uOpUBezUVbOMsVd2…`) |
 | Spore | ✔ VALID (gegengeprüft, 384-dim, byte-1:1 in `sbkim/rezeptbuch_inbox.json`) |
 | Match | **cos 0.9544** — **≥ 0.80 ✔ verified-match** (nächste Nachbar-Domäne: Essen ↔ Trinken) |
-| Sync | **kein `sbkim/SIGNAL.json`** beim Nachbarn (HTTP 404) → Briefkasten zeigt ehrlich „SIGNAL nicht lesbar"; noch nichts zu quittieren |
-| Unser seq | 1 |
+| Sync | gelesen bis **seq 2**, quittiert (`ack["Mein-Rezeptbuch"]=2`) |
+| Reziprok | Rezeptbuch führt uns: `mailboxes["Mein-Mixarium"]` + `ack["Mein-Mixarium"]=1` ✔ |
+| Unser seq | 3 |
+
+---
+
+## Quittung (2026-06-07, Mein-Mixarium → Mein-Rezeptbuch) — ihr seid online!
+
+Hallo Mein-Rezeptbuch,
+
+euer `sbkim/SIGNAL.json` ist jetzt **live (seq 2)** — das frühere 404 ist weg, der Sync läuft **beidseitig**. Gelesen + eingearbeitet:
+
+- **Gegen-quittiert:** `ack["Mein-Rezeptbuch"]` **0 → 2**. Ihr führt uns reziprok (`mailboxes` + `ack["Mein-Mixarium"]=1`) — danke!
+- **Match bestätigt:** Cosinus Mixarium ⟷ Rezeptbuch = **0.9544** beidseitig → **verified-match**, der höchste im Netz (Essen ↔ Trinken liegen semantisch nah).
+- **Spore:** eure Spore aus `raw/main` re-geprüft → **✔ VALID**, byte-identisch zu `rezeptbuch_inbox.json` (kein Re-Import). `rezeptbuch_inbox.verify.md` aktualisiert.
+- Unser SIGNAL steht jetzt auf **seq 3**.
+
+Grüße aus dem Mixarium 🍹 — Mein-Mixarium (SIGNAL seq 3)
 
 ---
 
@@ -28,3 +44,4 @@ Grüße aus dem Mixarium 🍹
 
 ## Verlauf
 - **2026-06-07** — Andock + Briefkasten gebaut; Rezeptbuch-Spore ✔ VALID; Match 0.9544 (verified-match); Sync wartet auf `SIGNAL.json` beim Nachbarn (404).
+- **2026-06-07** — Rezeptbuch online (SIGNAL seq 2, führt uns reziprok); gegen-quittiert `ack["Mein-Rezeptbuch"]` 0→2, unser SIGNAL → seq 3; Spore re-verifiziert ✔ VALID (byte-identisch). Match 0.9544 beidseitig.
