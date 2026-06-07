@@ -1,0 +1,32 @@
+{
+  "node": "Mein-Mixarium",
+  "lastBuild": "2026-06-07",
+  "seq": 1,
+  "headline": "Briefkasten-Aushang angelegt (erster Bau, Bauplan §3 1:1). Live-Verbund-Briefkasten ins Gesicht eingebaut (📬-Knopf + Gold-Zaehler + Dialog + CONFIG + Logik byte-gleich, Siegel-Wappen), Auto-Issue-Waechter (.github/sbkim-watch) uebernommen (SELF=Mein-Mixarium, 5 Peers). 5 Nachbar-Sporen frisch geholt + gegengeprueft (scripts/verify_foreign_spore.mjs -> alle ✔ VALID, 384-dim) + als *_inbox.json byte-1:1 abgelegt. Eigene Spore unveraendert ✔ VALID (id B7Fke9C..., domainVector 384-dim L2=1.0). Live-Cosinus (im Browser nachgerechnet): Mein-Rezeptbuch 0.9544, Sage-Protokol 0.8060, SB-KIMTool-Point 0.8030 (>=0.80 ✔ verified-match); Jasons-Tresor 0.7884, Mein-Tresor 0.7884 (ehrlich unter 0.80 — andere Domaene) -> 3/5 verbunden. ack quittiert: Sage 18, SB-KIMTool-Point 20, Jasons-Tresor 10, Mein-Tresor 13; Mein-Rezeptbuch noch ohne SIGNAL.json (404).",
+  "sporeUrl": "https://raw.githubusercontent.com/lausiklauskn-png/Mein-Mixarium/main/sbkim/spore.json",
+  "nodeId": "B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA",
+  "mailboxes": {
+    "Sage-Protokol": "https://raw.githubusercontent.com/lausiklauskn-png/Mein-Mixarium/main/sbkim/AUSTAUSCH-Sage.md",
+    "SB-KIMTool-Point": "https://raw.githubusercontent.com/lausiklauskn-png/Mein-Mixarium/main/sbkim/AUSTAUSCH-SBKIMTool.md",
+    "Jasons-Tresor": "https://raw.githubusercontent.com/lausiklauskn-png/Mein-Mixarium/main/sbkim/AUSTAUSCH-JasonsTresor.md",
+    "Mein-Tresor": "https://raw.githubusercontent.com/lausiklauskn-png/Mein-Mixarium/main/sbkim/AUSTAUSCH-MeinTresor.md",
+    "Mein-Rezeptbuch": "https://raw.githubusercontent.com/lausiklauskn-png/Mein-Mixarium/main/sbkim/AUSTAUSCH-Rezeptbuch.md"
+  },
+  "forNodes": [
+    "*"
+  ],
+  "ack": {
+    "Sage-Protokol": 18,
+    "SB-KIMTool-Point": 20,
+    "Jasons-Tresor": 10,
+    "Mein-Tresor": 13
+  },
+  "_doc": "Maschinenlesbarer Briefkasten-Aushang (INTERFACES §11.6). seq steigt +1 pro gemeldetem Bau; Gegenseite liest bei Sitzungsstart, vergleicht mit ihrem ack und quittiert. Server-los: das Pushen dieser Datei IST das Signal. ack[Nachbar] = die seq, die dieser Knoten vom Nachbarn zuletzt gelesen/quittiert hat. Mein-Rezeptbuch fuehrt aktuell noch kein SIGNAL.json (404) -> erscheint im Briefkasten ehrlich als 'SIGNAL nicht lesbar', wird quittiert sobald vorhanden.",
+  "history": [
+    {
+      "seq": 1,
+      "date": "2026-06-07",
+      "headline": "Aushang angelegt (erster Bau). Briefkasten nach Bauplan §3 ins Gesicht gebaut (Knopf+Gold-Zaehler+Dialog+CONFIG+Logik byte-gleich, Siegel-Wappen), Auto-Issue-Waechter uebernommen. 5 Nachbar-Sporen ✔ VALID + byte-1:1 als *_inbox.json. Live-Match: Rezeptbuch 0.9544 / Sage 0.8060 / Point 0.8030 ✔, Jasons 0.7884 / Tresor 0.7884 ehrlich unter 0.80 -> 3/5. ack: Sage 18, Point 20, Jasons 10, Tresor 13; Rezeptbuch noch ohne SIGNAL.json."
+    }
+  ]
+}
