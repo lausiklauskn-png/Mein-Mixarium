@@ -2,7 +2,45 @@
 <html lang="de">
 <head>
   <script src="https://cdn.jsdelivr.net/npm/eruda@3"></script>
-  <script>eruda.init();</script>
+  <script>
+  (function(){
+    eruda.init();
+    // Eruda-Einstiegs-Button verstecken — saubere App-Oberfläche. Eruda bleibt
+    // geladen + funktionsfähig; der Button liegt in Erudas Shadow-DOM.
+    function erudaBtn(){
+      var host = document.getElementById('eruda');
+      var root = host && host.shadowRoot;
+      return root ? root.querySelector('.eruda-entry-btn') : null;
+    }
+    function setBtn(disp){
+      var tries = 0;
+      (function attempt(){
+        var btn = erudaBtn();
+        if (btn){ btn.style.display = disp; return; }
+        if (tries++ < 20) setTimeout(attempt, 100);
+      })();
+    }
+    // Per Konsolen-Befehl wieder ein-/ausblenden.
+    window.showEruda = function(){ setBtn(''); try{ eruda.show(); }catch(_e){} };
+    window.hideEruda = function(){ setBtn('none'); try{ eruda.hide(); }catch(_e){} };
+    // Standard: Button verstecken.
+    setBtn('none');
+    // Diskrete Re-Show-Geste: 5 schnelle Tipper in der oberen rechten Ecke (48px).
+    var taps = [], CORNER = 48;
+    function cornerTap(x, y){
+      if (x < window.innerWidth - CORNER || y > CORNER) { taps = []; return; }
+      var now = Date.now();
+      taps = taps.filter(function(t){ return now - t < 800; });
+      taps.push(now);
+      if (taps.length >= 5){ taps = []; window.showEruda(); }
+    }
+    document.addEventListener('touchend', function(e){
+      var t = e.changedTouches && e.changedTouches[0];
+      if (t) cornerTap(t.clientX, t.clientY);
+    }, { passive: true });
+    document.addEventListener('click', function(e){ cornerTap(e.clientX, e.clientY); }, true);
+  })();
+  </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
