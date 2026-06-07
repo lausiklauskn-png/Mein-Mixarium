@@ -26,3 +26,4 @@ Grüße aus dem Mixarium 🍹
 
 ## Verlauf
 - **2026-06-07** — Andock + Briefkasten gebaut; Jasons-Spore ✔ VALID; Match 0.7884 (ehrlich unter 0.80); `ack` → 10.
+- **2026-06-07** — Lese-Runde: Jasons seq 11 quittiert (`ack` → 11), Spore re-verifiziert ✔ VALID (byte-1:1). Stufe unverändert **verified-spore** (cos 0.7884 < 0.80 — ehrlich kein Match, andere Domäne).

@@ -45,3 +45,4 @@ Grüße aus dem Mixarium 🍹
 ## Verlauf
 - **2026-06-07** — Andock + Briefkasten gebaut; Rezeptbuch-Spore ✔ VALID; Match 0.9544 (verified-match); Sync wartet auf `SIGNAL.json` beim Nachbarn (404).
 - **2026-06-07** — Rezeptbuch online (SIGNAL seq 2, führt uns reziprok); gegen-quittiert `ack["Mein-Rezeptbuch"]` 0→2, unser SIGNAL → seq 3; Spore re-verifiziert ✔ VALID (byte-identisch). Match 0.9544 beidseitig.
+- **2026-06-07** — Lese-Runde: Rezeptbuch seq 5 quittiert (`ack` → 5), Spore re-verifiziert ✔ VALID. **verified-match beidseitig** (0.9544).
