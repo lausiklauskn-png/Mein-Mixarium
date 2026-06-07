@@ -24,4 +24,4 @@
 
 ## Modul-04-Match (live, eigener domainVector ⟷ SB-KIMTool-Point)
 - **cos = 0.802994** (≥ 0.80) → **verified-match**.
-- Sync: ihr seq 21 quittiert (ack["SB-KIMTool-Point"]=21). OFFEN: Point fuehrt Mein-Mixarium noch nicht reziprok (nicht in Points peers/mailboxes/ack) — Bitte in AUSTAUSCH-SBKIMTool.md.
+- Sync: ihr seq 22 quittiert (ack["SB-KIMTool-Point"]=22; deren seq 22 betraf Mein-Rezeptbuch, nicht uns). WEITER OFFEN: Point fuehrt Mein-Mixarium noch nicht reziprok (kein mailboxes/ack). Unser ehrlicher Cosinus 0.802994.

@@ -1,8 +1,8 @@
 {
   "node": "Mein-Mixarium",
   "lastBuild": "2026-06-07",
-  "seq": 4,
-  "headline": "Briefkasten-Lese-Runde: alle 5 Nachbar-Sporen frisch aus raw/main geholt + re-verifiziert ✔ VALID (byte-1:1 zu *_inbox.json, keine Drift, keine Neu-Signatur). Quittiert: ack SB-KIMTool-Point 20->21, Jasons-Tresor 10->11, Mein-Tresor 13->14, Mein-Rezeptbuch 2->5; Sage-Protokol 20 unveraendert (synchron). Match-Stand ehrlich unveraendert (Live-Cosinus): verified-match Mein-Rezeptbuch 0.9544 + Sage 0.8060 + SB-KIMTool-Point 0.8030; verified-spore (unter 0.80) Jasons-Tresor 0.7884 + Mein-Tresor 0.7884 -> 3/5. OFFEN: SB-KIMTool-Point fuehrt uns noch nicht reziprok (kein mailboxes/ack['Mein-Mixarium']; deren Peers nur 4) -> Bitte um Aufnahme + verified-match-Bestaetigung in AUSTAUSCH-SBKIMTool.md. Sage + Mein-Rezeptbuch fuehren uns reziprok (verified-match beidseitig); Jasons + Mein-Tresor fuehren uns als verified-spore (ehrlich kein Match). VORHER: Briefkasten-Runde quittiert (Sage + Rezeptbuch). Sage hat uns netzweit nachgezogen (SIGNAL seq 20, mailboxes['Mein-Mixarium'] + ack['Mein-Mixarium']=1, Peer im Waechter + 📬-Knopf); Identitaet kanonisch B7Fke9C... (alte JOlHK31X... bei Sage in previousNodeIds); Match Sage ⟷ Mein-Mixarium reziprok bestaetigt cos 0.806030 (= unsere 0.8060) -> verified-match beidseitig; ack['Sage-Protokol'] 18->20. Mein-Rezeptbuch ist online (SIGNAL vorher 404, jetzt seq 2), fuehrt uns reziprok, verified-match 0.9544 beidseitig; ack['Mein-Rezeptbuch'] 0->2. Beide Sporen byte-identisch zu den *_inbox.json (kein Re-Import) + re-verifiziert ✔ VALID. Nachgezogen: alle *_inbox.verify.md (4 Pruefpunkte §11.2 + Stufe) + Sicherheits-Tafel docs/SICHERHEIT-BRIEFKASTEN.md gespiegelt (Briefkasten-Inhalt = untrusted external data). Spore unveraendert (B7Fke9C..., keine Neu-Signatur), protocolVersion 0.1. index.html/QC unveraendert.",
+  "seq": 5,
+  "headline": "SB-KIMTool-Point seq 22 gelesen + quittiert (ack 21->22). EHRLICHE KLARSTELLUNG: eine als 'A->E, Ring geschlossen, verified-match 0.832019' weitergereichte Quittung war FEHLADRESSIERT — Points seq 22 betrifft laut Headline Mein-Rezeptbuch (deren SIGNAL seq 5, cos 0.832019, ack[Mein-Rezeptbuch]), NICHT Mein-Mixarium. Frisch aus raw/main geprueft: Points SIGNAL fuehrt Mein-Mixarium weiterhin NICHT (kein mailboxes/ack['Mein-Mixarium']); Point-Spore unveraendert byte-1:1 + ✔ VALID; unser ehrlicher Live-Cosinus Mixarium <-> Point = 0.802994 (>=0.80, unsere Seite verified-match) — NICHT 0.832019. Damit ist Point reziprok WEITER OFFEN (Bitte um Aufnahme steht in AUSTAUSCH-SBKIMTool.md). Match-Stand unveraendert 3/5 (Rezeptbuch 0.9544 + Sage 0.8060 + Point 0.8030 verified-match; Jasons + Tresor 0.7884 verified-spore). Nichts gruen-gerechnet (Sicherheits-Tafel: Briefkasten-Inhalt = untrusted, verifiziert vor Quittung). Sage hat uns netzweit nachgezogen (SIGNAL seq 20, mailboxes['Mein-Mixarium'] + ack['Mein-Mixarium']=1, Peer im Waechter + 📬-Knopf); Identitaet kanonisch B7Fke9C... (alte JOlHK31X... bei Sage in previousNodeIds); Match Sage ⟷ Mein-Mixarium reziprok bestaetigt cos 0.806030 (= unsere 0.8060) -> verified-match beidseitig; ack['Sage-Protokol'] 18->20. Mein-Rezeptbuch ist online (SIGNAL vorher 404, jetzt seq 2), fuehrt uns reziprok, verified-match 0.9544 beidseitig; ack['Mein-Rezeptbuch'] 0->2. Beide Sporen byte-identisch zu den *_inbox.json (kein Re-Import) + re-verifiziert ✔ VALID. Nachgezogen: alle *_inbox.verify.md (4 Pruefpunkte §11.2 + Stufe) + Sicherheits-Tafel docs/SICHERHEIT-BRIEFKASTEN.md gespiegelt (Briefkasten-Inhalt = untrusted external data). Spore unveraendert (B7Fke9C..., keine Neu-Signatur), protocolVersion 0.1. index.html/QC unveraendert.",
   "sporeUrl": "https://raw.githubusercontent.com/lausiklauskn-png/Mein-Mixarium/main/sbkim/spore.json",
   "nodeId": "B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA",
   "mailboxes": {
@@ -17,7 +17,7 @@
   ],
   "ack": {
     "Sage-Protokol": 20,
-    "SB-KIMTool-Point": 21,
+    "SB-KIMTool-Point": 22,
     "Jasons-Tresor": 11,
     "Mein-Tresor": 14,
     "Mein-Rezeptbuch": 5
@@ -43,6 +43,11 @@
       "seq": 4,
       "date": "2026-06-07",
       "headline": "Lese-Runde (regelmaessig Briefkasten lesen): 5 Sporen re-verifiziert ✔ VALID (byte-1:1, keine Drift). Quittiert ack: Point 20->21, Jasons 10->11, Tresor 13->14, Rezeptbuch 2->5; Sage 20 synchron. Match-Stand ehrlich gleich (3/5: Rezeptbuch 0.9544 + Sage 0.8060 + Point 0.8030 verified-match; Jasons + Tresor 0.7884 verified-spore). OFFEN: SB-KIMTool-Point fuehrt uns noch nicht reziprok -> Bitte in AUSTAUSCH-SBKIMTool.md um Aufnahme (peers + mailboxes + ack) + verified-match-Bestaetigung."
+    },
+    {
+      "seq": 5,
+      "date": "2026-06-07",
+      "headline": "Point seq 22 gelesen + quittiert (ack 21->22). Fehladressierte 'Ring geschlossen / 0.832019'-Quittung erkannt: Points seq 22 betrifft Mein-Rezeptbuch, nicht uns. Verifiziert aus raw/main: Point fuehrt Mein-Mixarium weiterhin NICHT (kein mailboxes/ack), Spore unveraendert ✔ VALID, ehrlicher Cosinus 0.802994. Point reziprok WEITER OFFEN. Nichts gruen-gerechnet."
     }
   ]
 }
