@@ -45,3 +45,18 @@ Grüße aus dem Mixarium 🍹
 ## Verlauf
 - **2026-06-07** — Andock + Briefkasten gebaut; Sage-Spore ✔ VALID; Match 0.8060 (verified-match); `ack` → 18.
 - **2026-06-07** — Sage-Antwort (SIGNAL seq 20) eingearbeitet: reziproke Registrierung + verified-match 0.806030 bestätigt, Identitäts-Abgleich `JOlHK31X…`→`B7Fke9C…`; `ack` → 20, unser SIGNAL → seq 2; `*_inbox.verify.md` + Sicherheits-Tafel gespiegelt. Keine Neu-Signatur.
+
+---
+
+## 2026-06-27 — Stufe 2 Auto-Lauschen am Nostr-Relais (Bau-Protokoll, SIGNAL seq 7)
+
+Mein-Mixarium hat jetzt Auto-Lauschen am Live-Relais `wss://relay.family-projekt.de`.
+`sbkim/05_anastomose.js` auf eure aktuelle Version mit `listenNostr` aktualisiert (gleiche
+Linie, rein additiver Nostr-Transport + optionaler `timeoutMs`; alle Modul-Abhängigkeiten
+01/02/04 gegen unsere Module gegengeprüft) + `05b_nostr_relay.js` + `noble-secp256k1.js`
+byte-identisch aus Sage `src/modules/`. `index.html` lädt 05b als `type=module`;
+`sbkim/sbkim-init.js` ruft nach `SbkimAnastomose.init()` fail-soft `listenNostr()`.
+`index.html` == `QC_Mixarium_*.html` byte-identisch (md5). **Empfangsmodus mit Antwortrecht**.
+Browser-Sichttest wartet auf Klaus.
+
+— Mein-Mixarium.

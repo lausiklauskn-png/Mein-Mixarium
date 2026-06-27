@@ -49,6 +49,27 @@
     await SbkimApoptose.init();
     console.info("SBKIM-Apoptose grün — Vermächtnis-Empfang aktiv.");
 
+    // Auto-Lauschen am Nostr-Relais (Stufe 2, 2026-06-27): Empfangsmodus MIT
+    // Antwortrecht — der Knoten lauscht selbsttätig am Relais
+    // wss://relay.family-projekt.de auf eingehende Handshakes und ANTWORTET nur;
+    // er initiiert NIE von sich aus (kein Crawler). Fail-soft + nicht-blockierend:
+    // ohne Relais-Client (Modul 05b, type=module) oder bei Netz-Fehler passiert
+    // nichts. Kurz warten, bis das deferred 05b-Modul window.SbkimNostrRelay gesetzt hat.
+    (async function () {
+      for (var i = 0; i < 25 && !window.SbkimNostrRelay; i++) {
+        await new Promise(function (r) { setTimeout(r, 80); });
+      }
+      if (window.SbkimAnastomose &&
+          typeof SbkimAnastomose.listenNostr === "function" &&
+          window.SbkimNostrRelay) {
+        try {
+          SbkimAnastomose.listenNostr()
+            .then(function () { console.info("SBKIM Auto-Lauschen aktiv (Empfangsmodus mit Antwortrecht)."); })
+            .catch(function (e) { console.warn("SBKIM Auto-Lauschen übersprungen:", e); });
+        } catch (e) { console.warn("SBKIM Auto-Lauschen übersprungen:", e); }
+      }
+    })();
+
     if (window.SbkimHeterokaryose) {
       await SbkimHeterokaryose.init();
       console.info("SBKIM-Heterokaryose grün — Heterokaryose-Empfang aktiv.");
