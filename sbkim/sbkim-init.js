@@ -64,7 +64,11 @@
           window.SbkimNostrRelay) {
         try {
           SbkimAnastomose.listenNostr()
-            .then(function () { console.info("SBKIM Auto-Lauschen aktiv (Empfangsmodus mit Antwortrecht)."); })
+            .then(function () {
+              console.info("SBKIM Auto-Lauschen aktiv (Empfangsmodus mit Antwortrecht).");
+              // Sichtbar im Floating-Widget (Modul 17): VERKEHR-Lampe ruhig grün.
+              try { window.dispatchEvent(new CustomEvent("sbkim:nostr-listening", { detail: { active: true } })); } catch (e) {}
+            })
             .catch(function (e) { console.warn("SBKIM Auto-Lauschen übersprungen:", e); });
         } catch (e) { console.warn("SBKIM Auto-Lauschen übersprungen:", e); }
       }
