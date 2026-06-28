@@ -43,6 +43,49 @@
       console.info("SBKIM-ToolPwa grün — Modul 18 Andock-Wizard bereit.");
     }
 
+    // Query-über-Relais (Bau 2026-06-28): Korpus-Quelle für SbkimMatch.queryLocal,
+    // damit Mixarium auf eine eingehende Frage übers Relais mit bedeutungs-
+    // sortierten Treffern aus seinem AKTUELLEN Inhalt antwortet (die echten
+    // Drinks aus window.R). Lazy: erst beim ersten queryLocal wird embeddet
+    // (Modul 03, ~30 MB einmalig). Fail-soft: ohne Drinks/Embedding → leere
+    // Liste (kein Throw). KEIN PII — nur Drink-Namen/Zutaten (öffentlicher Inhalt).
+    if (window.SbkimMatch && typeof SbkimMatch.setLocalCorpus === "function") {
+      SbkimMatch.setLocalCorpus(async function buildMixariumQueryCorpus() {
+        try {
+          if (!window.SbkimEmbedding) return [];
+          await SbkimEmbedding.init();
+          var R = Array.isArray(window.R) ? window.R : [];
+          var drinks = R.filter(function (r) {
+            return r && !r.blank && r.name && String(r.name).trim().length > 0;
+          });
+          if (drinks.length > 80) drinks = drinks.slice(0, 80); // Deckel gegen Embedding-Kosten
+          var corpus = [];
+          for (var i = 0; i < drinks.length; i++) {
+            var r = drinks[i];
+            var ingNames = Array.isArray(r.ings)
+              ? r.ings.map(function (x) { return (x && (x.name || x.origName)) ? (x.name || x.origName) : ""; }).filter(Boolean)
+              : [];
+            var flavors = Array.isArray(r.flavors) ? r.flavors : [];
+            var parts = [String(r.name)].concat(flavors).concat(ingNames);
+            if (r.glass) parts.push(String(r.glass));
+            var passage = parts.filter(Boolean).join(", ");
+            var raw = await SbkimEmbedding.embedPassage(passage);
+            var vec = (raw instanceof Float32Array) ? raw : new Float32Array(raw);
+            corpus.push({
+              label: String(r.name),
+              passageVec: vec,
+              anchorId: "https://lausiklauskn-png.github.io/Mein-Mixarium/",
+            });
+          }
+          console.info("[MX-SBKIM] queryLocal-Korpus aus " + corpus.length + " Drinks gebaut (Frage→Antwort übers Relais).");
+          return corpus;
+        } catch (e) {
+          console.warn("[MX-SBKIM] queryLocal-Korpus-Bau übersprungen (fail-soft):", e);
+          return [];
+        }
+      });
+    }
+
     await SbkimAnastomose.init();
     console.info("SBKIM-Init grün — Storage, Spore, Match bereit.");
 
