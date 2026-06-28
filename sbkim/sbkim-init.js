@@ -133,6 +133,31 @@
   }
 })();
 
+// ── Modul 23 Rendezvous — öffentlicher Floating-Knopf „🌐 Mit dem Netz
+// verbinden" (Klaus' Festlegung 2026-06-28: sofort öffentlich, eigener kleiner
+// Floating-Knopf). BEWUSST UNABHÄNGIG von der Andock-Init-Kette gemountet — der
+// Knopf soll IMMER sichtbar sein, auch wenn die Kette oben (Storage/Spore/
+// Anastomose) mal stolpert. Das geteilte UI-Modul (SbkimRendezvousUI, byte-1:1
+// aus Sage) mountet den Knopf; die Mechanik liegt in Modul 23 (SbkimRendezvous),
+// das Relais/Anastomose/Spore erst zur Klick-Zeit lazy auflöst. nodeName =
+// "Mein Mixarium"; createIdentity reicht den bestehenden Identitäts-Erzeuger
+// durch (erzeugt die lebende Spore, falls im aktuellen Browser noch keine da
+// ist). Verfassungstreu: nutzer-ausgelöst, init mountet nur den Knopf.
+(function () {
+  function mountRendezvousUI() {
+    if (!window.SbkimRendezvousUI) return;
+    try {
+      window.SbkimRendezvousUI.init({
+        nodeName: "Mein Mixarium",
+        createIdentity: function () { return window.__sbkimErzeugeSpore(); },
+      });
+      console.info("SBKIM-Rendezvous-UI grün — öffentlicher 🌐-Knopf gemountet.");
+    } catch (e) { console.warn("SBKIM-Rendezvous-UI übersprungen:", e); }
+  }
+  if (document.readyState !== "loading") mountRendezvousUI();
+  else document.addEventListener("DOMContentLoaded", mountRendezvousUI);
+})();
+
 window.__sbkimErzeugeSpore = async function () {
   console.info("Lade Embedding-Modell (~30 MB einmalig, dann gecacht)...");
   await SbkimEmbedding.init();
