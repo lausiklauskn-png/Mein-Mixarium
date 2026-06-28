@@ -51,13 +51,18 @@
  *   discover(opts?) -> Promise<{ ok, cards, reason? }>
  *       Liest den Raum (Sammelfenster listenMs), dedupt nach nodeId
  *       (frischeste Karte gewinnt), filtert die eigene(n) nodeId(s) raus.
- *       cards = [{ nodeId, nodeName, spore, ts, ageSec }] (ts-absteigend).
+ *       cards = [{ nodeId, nodeName, spore, ts, ageSec, relatedness, isRelated }]
+ *       (ts-absteigend). relatedness/isRelated = zentrierter Verwandtschafts-
+ *       Score zur eigenen Domäne (REINE ANZEIGE; null ohne Modul 04/Vektor).
+ *   relatednessForCards(cards, ownSpore) -> cards'   (pure; reine Anzeige)
+ *       Hängt je Karte relatedness (zentrierter Cosinus, Modul 04) + isRelated
+ *       an. Gatet NICHTS, mutiert die Eingabe nicht, fail-soft.
  *   handshakeCard(card, opts?) -> Promise<{ outcome, score?, reason?, raw? }>
  *       Handshake an die LEBENDE ID der Karte (Modul 05, transport:"nostr").
  *       Fail-soft normalisiert: outcome ∈ {established, rejected,
  *       rejected-local, timeout, error}.
  *   _meta -> { version, tag, presenceKind, freshSec, listenMs, nodeName,
- *              hasRelay, hasAnastomose, hasSpore }
+ *              hasRelay, hasAnastomose, hasSpore, hasMatch }
  *
  * Self-check: emits a console.info line on script load. Siehe
  * docs/components/23_rendezvous.md + INTERFACES.md §1 Modul 23.
@@ -81,6 +86,7 @@
     relayClient: null,   // null → global.SbkimNostrRelay
     anastomose: null,    // null → global.SbkimAnastomose
     spore: null,         // null → global.SbkimSpore
+    match: null,         // null → global.SbkimMatch (optional, nur Anzeige-Score)
     freshSec: RDV_FRESH_SEC_DEFAULT,
     listenMs: RDV_LISTEN_MS_DEFAULT,
   };
@@ -101,8 +107,61 @@
     var s = cfg.spore || global.SbkimSpore;
     return (s && typeof s.getOwnSpore === "function") ? s : null;
   }
+  // Modul 04 (Match) ist eine OPTIONALE Anzeige-Abhängigkeit — nur für den
+  // zentrierten Verwandtschafts-Score der Raum-Karten. Fehlt es, bleibt der
+  // Raum voll funktionsfähig (Karten ohne Verwandtschafts-Badge).
+  function resolveMatch() {
+    var m = cfg.match || global.SbkimMatch;
+    return (m && typeof m.relatedness === "function") ? m : null;
+  }
 
   function nowSec() { return Math.floor(Date.now() / 1000); }
+
+  // Domänen-Vektor (number[] aus der Spore, oder Float32Array) → Float32Array.
+  // null bei fehlender/ungültiger Eingabe (relatedness() validiert den Rest).
+  function toVec(arr) {
+    if (arr instanceof Float32Array) return arr;
+    if (Array.isArray(arr)) { try { return new Float32Array(arr); } catch (_e) { return null; } }
+    return null;
+  }
+
+  // ---- Verwandtschafts-Anreicherung der Raum-Karten (REINE ANZEIGE) ----
+  // Folge zu Bau 04.E / „Wählen"-UI (2026-06-28): hängt je Karte einen
+  // ZENTRIERTEN Verwandtschafts-Score (Modul 04 relatedness(), whitened-light)
+  // an — ausschliesslich für die Anzeige im Rendezvous-Raum (z.B. Badge
+  // „🧬 verwandt 0.72" vs nur „verbunden"). Der 0.80-Andock-Riegel (Modul 05
+  // handshake / PROVIDER_MIN_MATCH) bleibt UNBERÜHRT — dieser Score gatet
+  // NICHTS, er sortiert/filtert nur die Darstellung. Pure Funktion (DOM-frei,
+  // headless testbar): nimmt die Karten + die eigene Spore, gibt eine NEUE Liste
+  // zurück (Eingabe NICHT mutiert). Fail-soft: ohne Modul 04 / ohne eigenen
+  // domainVector / ohne Karten-domainVector → relatedness null, isRelated false;
+  // relatedness() wirft bei falscher Eingabe (InvalidVectorError/ShapeMismatch)
+  // → pro Karte abgefangen, nie Bruch der ganzen Liste.
+  function relatednessForCards(cards, ownSpore) {
+    var list = Array.isArray(cards) ? cards : [];
+    var match = resolveMatch();
+    var ownVec = (ownSpore && typeof ownSpore === "object") ? toVec(ownSpore.domainVector) : null;
+    return list.map(function (c) {
+      var copy = {};
+      for (var k in c) { if (Object.prototype.hasOwnProperty.call(c, k)) copy[k] = c[k]; }
+      var rel = null, isRel = false;
+      if (match && ownVec && c && c.spore) {
+        var cv = toVec(c.spore.domainVector);
+        if (cv) {
+          try {
+            var s = match.relatedness(ownVec, cv);
+            if (typeof s === "number" && isFinite(s)) {
+              rel = s;
+              isRel = (typeof match.isRelated === "function") ? match.isRelated(s) : (s >= 0.30);
+            }
+          } catch (_e) { rel = null; isRel = false; } // fail-soft, Karte bleibt
+        }
+      }
+      copy.relatedness = rel;
+      copy.isRelated = isRel;
+      return copy;
+    });
+  }
 
   // VERKEHR-Lampe (Modul 17 / Status-Widget) ehrlich setzen: aktiv, solange
   // wir lauschen. Fail-soft — Render-Schicht ist optionaler Konsument.
@@ -133,6 +192,7 @@
     if (opts.relayClient !== undefined) cfg.relayClient = opts.relayClient;
     if (opts.anastomose !== undefined) cfg.anastomose = opts.anastomose;
     if (opts.spore !== undefined) cfg.spore = opts.spore;
+    if (opts.match !== undefined) cfg.match = opts.match;
     if (typeof opts.freshSec === "number" && isFinite(opts.freshSec) && opts.freshSec > 0) {
       cfg.freshSec = Math.floor(opts.freshSec);
     }
@@ -282,7 +342,9 @@
             };
           })
           .sort(function (a, b) { return b.ts - a.ts; });
-        resolve({ ok: true, cards: cards });
+        // Reine Anzeige-Anreicherung: zentrierter Verwandtschafts-Score je Karte
+        // (gatet nichts; Handshake bleibt 0.80-Riegel). Fail-soft ohne Modul 04.
+        resolve({ ok: true, cards: relatednessForCards(cards, own) });
       }, listenMs);
     });
   }
@@ -326,6 +388,7 @@
     connectAndAnnounce: connectAndAnnounce,
     discover: discover,
     handshakeCard: handshakeCard,
+    relatednessForCards: relatednessForCards, // pure (cards, ownSpore) → angereicherte Liste; reine Anzeige
     get _meta() {
       return {
         version: VERSION,
@@ -337,6 +400,7 @@
         hasRelay: resolveRelay() !== null,
         hasAnastomose: resolveAnastomose() !== null,
         hasSpore: resolveSpore() !== null,
+        hasMatch: resolveMatch() !== null,
       };
     },
   };
@@ -346,7 +410,7 @@
   if (typeof console !== "undefined" && console.info) {
     console.info(
       "MODUL 23 RENDEZVOUS bereit (gemeinsamer Raum, Empfangsmodus/nutzer-ausgelöst), " +
-        "Funktionen: init/configure/announce/connectAndAnnounce/discover/handshakeCard",
+        "Funktionen: init/configure/announce/connectAndAnnounce/discover/handshakeCard/relatednessForCards",
     );
   }
 })(typeof window !== "undefined" ? window : globalThis);
