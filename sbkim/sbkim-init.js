@@ -167,8 +167,42 @@ window.__sbkimErzeugeSpore = async function () {
   var domainKeywords = ["Cocktail", "Drink", "Mocktail", "Limonade", "Smoothie", "Aperitif", "Sake"];
   var allText = stammCategories.concat(guestCategories).concat(domainKeywords).join(", ");
 
-  var vec = await SbkimEmbedding.embedPassage(allText);
-  console.info("Domain-Vektor erzeugt: " + vec.length + " Floats");
+  // Inhalts-treuer domainVector (2026-06-28): wenn echte Drinks vorhanden sind,
+  // entscheidet der INHALT (Drink-Name + Kategorie) statt der Selbstbeschreibung.
+  // sampleContent liefert NUR unkritische Labels (Getränke-Namen/Kategorien) —
+  // kein PII. Fail-soft: kein Inhalt / Fehler → Beschreibungs-Vektor.
+  function sampleContent() {
+    var out = [];
+    try {
+      var arr = (typeof window !== "undefined" && Array.isArray(window.R)) ? window.R : [];
+      for (var i = 0; i < arr.length && out.length < 32; i++) {
+        var r = arr[i];
+        if (!r || r.blank) continue;
+        var name = (typeof r.name === "string") ? r.name.trim() : "";
+        var cat = (typeof r.cat === "string") ? r.cat.trim() : "";
+        var t = (cat + " " + name).trim();
+        if (t.length) out.push(t);
+      }
+    } catch (e) { /* fail-soft */ }
+    return out;
+  }
+
+  var vec = null;
+  var source = "description";
+  var samples = sampleContent();
+  if (samples.length && typeof SbkimEmbedding.embedContentVector === "function") {
+    try {
+      var res = await SbkimEmbedding.embedContentVector(samples);
+      if (res && res.vector) { vec = res.vector; source = "content"; }
+      console.info("Inhalts-Vektor aus " + samples.length + " Drinks erzeugt.");
+    } catch (e) { console.warn("embedContentVector — Fallback auf Beschreibung:", e); }
+  }
+  if (!vec) {
+    vec = await SbkimEmbedding.embedPassage(allText);
+    source = "description";
+    console.info("Beschreibungs-Vektor erzeugt (kein/leerer Inhalt).");
+  }
+  console.info("Domain-Vektor erzeugt: " + vec.length + " Floats, Quelle: " + source);
 
   var spore = await SbkimSpore.generateOwnSpore({
     domain: "lausiklauskn-png.github.io",
@@ -178,6 +212,8 @@ window.__sbkimErzeugeSpore = async function () {
     domainDescription: "Klaus Mixarium - Cocktails, Mocktails, Smoothies und mehr; Knabbereien als Begleit-Plus.",
     domainKeywords: domainKeywords,
     domainVector: Array.from(vec),
+    embeddingSource: source,
+    embeddingVersion: 1,
     stammCategories: stammCategories,
     guestCategories: guestCategories,
   });
