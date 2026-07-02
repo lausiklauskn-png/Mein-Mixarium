@@ -64,6 +64,50 @@
   var VALID_KINDS = { "membrane-read": 1, "membrane-postmessage": 1, "endpoint-probe": 1 };
   var VALID_DECISIONS = { "accepted": 1, "ignored": 1, "rejected-allowlist": 1 };
 
+  // ---- A1 (Hybrid) + A4 (Query-Expansion) im Cross-Knoten-Antwort-Pfad ------
+  //
+  // App-Integration 2026-07-02 (Rollout aus Sage Modul 22): der op:"query"-
+  // Empfänger beantwortet eingehende Bedeutungs-Fragen aus dem Mycel jetzt
+  // über den REINEN INKLUSIONS-Pfad — A1 hebt den Vorfilter auf BM25+Vektor
+  // (cross-phrased Fragen treffen Drinks unter dem 0.80-Cosinus-Boden), A4
+  // fächert die Frage vorher über eine kleine, getränke-eigene Synonym-Karte
+  // auf (RRF-Fusion via queryLocalMulti). Rein additiv, konsequent fail-soft:
+  // fehlt eine Funktion oder wirft ein Pfad, fällt es Stufe für Stufe auf den
+  // einfachen Cosinus-queryLocal zurück. KEIN geänderter Riegel (PROVIDER_MIN_
+  // MATCH 0.80 bleibt Vektor-Boden UND Andock-Schwelle), kein Netz, kein LLM.
+  var MX_QUERY_SYNONYMS = {
+    "cocktail": ["drink"], "drink": ["cocktail", "getränk"],
+    "getränk": ["drink", "getraenk"], "getraenk": ["getränk"],
+    "limo": ["limonade"], "limonade": ["limo"],
+    "smoothie": ["shake"], "shake": ["smoothie"],
+    "alkoholfrei": ["mocktail"], "mocktail": ["alkoholfrei"],
+    "tee": ["tea"], "sirup": ["sirop"],
+  };
+
+  // queryWithInclusion(match, text, k) -> Promise<Array>
+  //   A4 → A1 → einfacher Cosinus, jede Stufe fail-soft. Wirft NICHT (der
+  //   äußere try/catch im Empfänger sendet sonst die fail-soft-Fehlerantwort).
+  async function queryWithInclusion(match, text, k) {
+    // A4 + A1: Varianten auffächern, dann Hybrid-Multi-Suche mit RRF-Fusion.
+    if (typeof match.queryLocalMulti === "function" &&
+        typeof match.expandQuerySimple === "function") {
+      try {
+        var variants = match.expandQuerySimple(text, { synonyms: MX_QUERY_SYNONYMS });
+        return await match.queryLocalMulti(variants, k, { hybrid: true });
+      } catch (e1) {
+        warn("A4/A1-Multi-Pfad fehlgeschlagen — Fallback auf Hybrid-queryLocal.", e1);
+      }
+    }
+    // A1 allein: Hybrid-queryLocal (BM25+Vektor) ohne Varianten-Auffächerung.
+    try {
+      return await match.queryLocal(text, k, { hybrid: true });
+    } catch (e2) {
+      warn("A1-Hybrid-Pfad fehlgeschlagen — Fallback auf einfachen Cosinus.", e2);
+    }
+    // Letzter Boden: der bewährte reine Cosinus-Pfad (Bau 04.C).
+    return await match.queryLocal(text, k);
+  }
+
   // ---- Modul-Zustand (Closure) ----
 
   var ready = false;
@@ -492,7 +536,7 @@
       var match = global.SbkimMatch;
       if (match && typeof match.queryLocal === "function") {
         try {
-          var results = await match.queryLocal(payload.text, k);
+          var results = await queryWithInclusion(match, payload.text, k);
           sendQueryResultReply(event, nonce, Array.isArray(results) ? results : [], null);
           recordPostMessageEntry(event, op, nonce, "accepted");
         } catch (err) {
