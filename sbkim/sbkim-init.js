@@ -74,6 +74,10 @@
             corpus.push({
               label: String(r.name),
               passageVec: vec,
+              // A1 (2026-07-02): roher Passage-Text für den BM25-Pfad im
+              // Hybrid-queryLocal — so treffen eingehende Cross-Knoten-Fragen
+              // auch Zutaten/Geschmack, nicht nur den Drink-Namen. Additiv.
+              text: passage,
               anchorId: "https://lausiklauskn-png.github.io/Mein-Mixarium/",
             });
           }
