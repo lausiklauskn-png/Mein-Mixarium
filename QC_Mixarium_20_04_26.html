@@ -23,8 +23,10 @@
     // Per Konsolen-Befehl wieder ein-/ausblenden.
     window.showEruda = function(){ setBtn(''); try{ eruda.show(); }catch(_e){} };
     window.hideEruda = function(){ setBtn('none'); try{ eruda.hide(); }catch(_e){} };
-    // Standard: Button verstecken.
-    setBtn('none');
+    // Sichttest 2026-07-02: Eruda-Blase standardmäßig SICHTBAR (Klaus braucht
+    // sie für den window.R-/queryLocal-Browsertest ohne Ecken-Geste). Die
+    // 5×-Ecken-Geste oben rechts bleibt als Ein-/Ausblenden erhalten.
+    setBtn('');
     // Diskrete Re-Show-Geste: 5 schnelle Tipper in der oberen rechten Ecke (48px).
     var taps = [], CORNER = 48;
     function cornerTap(x, y){
