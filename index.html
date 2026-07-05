@@ -23,10 +23,11 @@
     // Per Konsolen-Befehl wieder ein-/ausblenden.
     window.showEruda = function(){ setBtn(''); try{ eruda.show(); }catch(_e){} };
     window.hideEruda = function(){ setBtn('none'); try{ eruda.hide(); }catch(_e){} };
-    // Sichttest 2026-07-02: Eruda-Blase standardmäßig SICHTBAR (Klaus braucht
-    // sie für den window.R-/queryLocal-Browsertest ohne Ecken-Geste). Die
-    // 5×-Ecken-Geste oben rechts bleibt als Ein-/Ausblenden erhalten.
-    setBtn('');
+    // 2026-07-05 (Klaus): Eruda-Blase standardmäßig VERBORGEN — saubere
+    // App-Oberfläche. Eruda bleibt geladen + funktionsfähig; per 5×-Ecken-
+    // Geste oben rechts (oder window.showEruda() in der Konsole) wieder
+    // einblendbar.
+    setBtn('none');
     // Diskrete Re-Show-Geste: 5 schnelle Tipper in der oberen rechten Ecke (48px).
     var taps = [], CORNER = 48;
     function cornerTap(x, y){
