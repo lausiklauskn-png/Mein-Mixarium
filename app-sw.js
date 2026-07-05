@@ -7,7 +7,7 @@ console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 //
 // Ab v5: Navigation und Pre-Cache umgehen den Browser-HTTP-Cache aktiv
 // (cache:'reload'), damit App-Änderungen ohne manuelles Cache-Löschen ankommen.
-const SW_VERSION = 'mixarium-sw-v42';
+const SW_VERSION = 'mixarium-sw-v43';
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
@@ -16,10 +16,12 @@ const PRECACHE_URLS = [
   './index.html',
   './manifest.json',
   './mixarium_icon.svg',
-  './mixarium_icon.png'
+  './mixarium_icon.png',
+  './mixarium_intro.mp4',
+  './mixarium_intro.webm'
 ];
 
-const STATIC_PATH_RE = /\.(?:css|js|mjs|png|jpg|jpeg|gif|svg|webp|ico|json|woff2?)$/i;
+const STATIC_PATH_RE = /\.(?:css|js|mjs|png|jpg|jpeg|gif|svg|webp|ico|json|woff2?|mp4|webm)$/i;
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
