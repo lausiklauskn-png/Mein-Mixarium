@@ -1468,14 +1468,19 @@ h4.man-sub{font-family:Georgia,serif;font-size:.81rem;font-weight:700;color:var(
 /* === ONBOARDING END === */
 
 /* ── Boot-Ladebildschirm ── */
-#boot-splash{position:fixed;inset:0;z-index:99999;background:var(--sand,#f5efe8);
+#boot-splash{position:fixed;inset:0;z-index:99999;background:#070a12;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   transition:opacity .45s ease}
 #boot-splash.bs-done{opacity:0;pointer-events:none}
-#boot-splash .bs-ico{font-size:2.6rem}
-#boot-splash .bs-lbl{font-size:.72rem;color:var(--br3,#a08060);min-height:1em}
-#bs-wrap{width:190px;height:5px;background:var(--sand2,#e8dccf);border-radius:3px;overflow:hidden}
-#bs-bar{height:100%;width:5%;background:var(--br,#6a4c36);border-radius:3px;transition:width .35s ease}
+#bs-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#070a12}
+#bs-skip{position:absolute;bottom:74px;left:50%;transform:translateX(-50%);
+  font-size:.72rem;color:rgba(147,167,200,.75);letter-spacing:.4px;
+  padding:6px 14px;border:1px solid rgba(124,212,255,.25);border-radius:999px;pointer-events:none}
+#bs-load{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:7px}
+#boot-splash .bs-lbl{font-size:.72rem;color:#93a7c8;min-height:1em}
+#bs-wrap{width:190px;height:5px;background:rgba(147,167,200,.22);border-radius:3px;overflow:hidden}
+#bs-bar{height:100%;width:5%;background:linear-gradient(90deg,#7cd4ff,#9a7bff);border-radius:3px;transition:width .35s ease}
 
 /* ═══════════════════════════════════════════════════
    UI/UX REFACTOR v9.5 — Micro-Animations & States
@@ -2421,9 +2426,15 @@ body:not([data-theme]) #bnav{
 </div>
 
 <div id="boot-splash">
-  <div class="bs-ico">📖</div>
-  <div id="bs-wrap"><div id="bs-bar"></div></div>
-  <div class="bs-lbl" id="bs-lbl">Wird geladen…</div>
+  <video id="bs-video" muted playsinline autoplay preload="auto">
+    <source src="mixarium_intro.webm" type="video/webm">
+    <source src="mixarium_intro.mp4" type="video/mp4">
+  </video>
+  <div id="bs-skip">Tippen zum Überspringen</div>
+  <div id="bs-load">
+    <div id="bs-wrap"><div id="bs-bar"></div></div>
+    <div class="bs-lbl" id="bs-lbl">Wird geladen…</div>
+  </div>
 </div>
 
 <div class="top-hdr">
@@ -5545,10 +5556,34 @@ function _bootProg(p,t){
   if(b)b.style.width=p+'%';
   if(l&&t)l.textContent=t;
 }
+// ── Intro-Video-Gate: Splash schließt erst, wenn App bereit UND Intro fertig/übersprungen ──
+let _introEnded=false,_bootReady=false;
+function _splashClose(){
+  const s=document.getElementById('boot-splash');if(!s)return;
+  const v=document.getElementById('bs-video');try{v&&v.pause();}catch(e){}
+  s.classList.add('bs-done');setTimeout(()=>s.remove(),500);
+}
+function _tryFinishSplash(){ if(_introEnded&&_bootReady)setTimeout(_splashClose,150); }
+(function _introInit(){
+  const s=document.getElementById('boot-splash'),v=document.getElementById('bs-video');
+  const done=()=>{ if(_introEnded)return; _introEnded=true; _tryFinishSplash(); };
+  if(!s||!v){_introEnded=true;return;}
+  // Barrierefreiheit: reduzierte Bewegung -> Intro überspringen
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){done();return;}
+  v.addEventListener('ended',done);
+  v.addEventListener('error',done);
+  s.addEventListener('click',done);           // Tippen = Überspringen
+  s.addEventListener('touchstart',done,{passive:true});
+  // Fail-soft: startet das Video nicht binnen 2.5s -> weiter; hartes Limit 8s
+  const t1=setTimeout(()=>{ if(v.readyState<2)done(); },2500);
+  setTimeout(done,8000);
+  const p=v.play&&v.play(); if(p&&p.catch)p.catch(done);
+  v.addEventListener('playing',()=>clearTimeout(t1),{once:true});
+})();
 function _bootDone(){
   const s=document.getElementById('boot-splash');if(!s)return;
-  _bootProg(100);
-  setTimeout(()=>{s.classList.add('bs-done');setTimeout(()=>s.remove(),500);},200);
+  _bootProg(100,'Fertig ✓');
+  _bootReady=true;_tryFinishSplash();
 }
 
 // ═══════════════════════════════════════════════════════
