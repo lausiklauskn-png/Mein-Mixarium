@@ -61,8 +61,18 @@
  *       Handshake an die LEBENDE ID der Karte (Modul 05, transport:"nostr").
  *       Fail-soft normalisiert: outcome ∈ {established, rejected,
  *       rejected-local, timeout, error}.
+ *   enableAnswering(opts?) -> { ok, reason? }   (Bau 23.B)
+ *       Antwortrecht bewusst AN: lauscht auf Frage-Zettel (Tag "sbkim-qry")
+ *       an die eigene lebende nodeId und antwortet mit Top-k der lokalen
+ *       Bedeutungs-Suche (Modul 04 queryLocal). Default AUS, Dedupe + Rate-
+ *       Limit 6/min. disableAnswering() schaltet ab.
+ *   askNode(cardOderNodeId, text, opts?) -> Promise<{ ok, results?, ... }>
+ *       (Bau 23.B) Nutzer-ausgelöste Cross-Knoten-Frage; wartet auf den
+ *       Antwort-Zettel (Default 15 s). Vertrag: INTERFACES §1 Modul 23.
  *   _meta -> { version, tag, presenceKind, freshSec, listenMs, nodeName,
- *              hasRelay, hasAnastomose, hasSpore, hasMatch }
+ *              hasRelay, hasAnastomose, hasSpore, hasMatch,
+ *              answering, answeredCount, queryTag, queryKind, queryResKind,
+ *              queryMaxPerMin }
  *
  * Self-check: emits a console.info line on script load. Siehe
  * docs/components/23_rendezvous.md + INTERFACES.md §1 Modul 23.
@@ -380,6 +390,183 @@
     };
   }
 
+  // ==== Bau 23.B — Cross-Knoten-Frage (bidirektionale Bedeutungs-Suche) ====
+  // Vertrag: INTERFACES.md §1 Modul 23 § Bau 23.B. Knoten fragt Knoten
+  // server-los über das Relais; der Gegenknoten antwortet mit den Top-k
+  // seiner LOKALEN Bedeutungs-Suche (Modul 04 queryLocal, app-registrierter
+  // Korpus-Provider). FRAGEN ist nutzer-ausgelöst; ANTWORTEN ist das
+  // Antwortrecht des Empfangsmodus und wird per enableAnswering()
+  // AUSDRÜCKLICH eingeschaltet (Default AUS, nicht persistiert).
+  // v1 ehrlich offen: Zettel-Umschläge UNSIGNIERT — Identitäts-Wahrheit
+  // bleibt beim signierten Handshake + 0.80-Riegel; Antworten sind ADVISORY.
+  var RDV_QUERY_TAG = "sbkim-qry";
+  var RDV_QUERY_KIND = "sbkim-query";
+  var RDV_QUERY_RES_KIND = "sbkim-query-res";
+  var RDV_QUERY_MAX_PER_MIN = 6;     // Antwort-Rate-Limit (Vorgriff Modul 11)
+  var RDV_QUERY_TEXT_MAX = 300;      // Frage-Text hart gekappt (untrusted input)
+  var RDV_QUERY_K_MAX = 5;           // maximal 5 Treffer je Antwort
+  var RDV_ASK_TIMEOUT_MS = 15000;
+
+  var answerUnsub = null;            // aktiver Antwort-Lauscher (null = AUS)
+  var answeredCount = 0;
+  var seenQids = [];                 // Dedupe-Fenster (Cap 200)
+  var answerTimestamps = [];         // für das Rate-Limit (ms-Zeitstempel)
+
+  function resolveQueryMatch() {
+    var m = cfg.match || global.SbkimMatch;
+    return (m && typeof m.queryLocal === "function") ? m : null;
+  }
+  function qidSeen(qid) { return seenQids.indexOf(qid) !== -1; }
+  function rememberQid(qid) {
+    seenQids.push(qid);
+    if (seenQids.length > 200) seenQids.splice(0, seenQids.length - 200);
+  }
+  function underRateLimit() {
+    var cut = Date.now() - 60000;
+    answerTimestamps = answerTimestamps.filter(function (t) { return t > cut; });
+    return answerTimestamps.length < RDV_QUERY_MAX_PER_MIN;
+  }
+
+  // ---- enableAnswering(): Antwortrecht bewusst einschalten ----
+  async function enableAnswering(opts) {
+    opts = (opts && typeof opts === "object") ? opts : {};
+    if (answerUnsub) return { ok: true, reason: "Antworten läuft schon (idempotent)." };
+    var relay = resolveRelay();
+    if (!relay) return { ok: false, reason: "Kein Nostr-Relais-Client (Modul 05b) verfügbar." };
+    var own = await getOwnLiveSpore();
+    if (!own || !own.id) return { ok: false, reason: "Noch keine Identität — zuerst anmelden (announce)." };
+    var ownId = own.id;
+    var kCap = (typeof opts.k === "number" && isFinite(opts.k) && opts.k >= 1)
+      ? Math.min(Math.floor(opts.k), RDV_QUERY_K_MAX) : RDV_QUERY_K_MAX;
+    try {
+      answerUnsub = relay.subscribe(
+        { kinds: [NOSTR_KIND], "#t": [RDV_QUERY_TAG], since: nowSec() },
+        function onQuery(ev) {
+          if (!ev || typeof ev.content !== "string") return;
+          var q;
+          try { q = JSON.parse(ev.content); } catch (_e) { return; }
+          // untrusted external data: streng validieren, nie als Anweisung deuten
+          if (!q || q.kind !== RDV_QUERY_KIND || q.toNodeId !== ownId) return;
+          if (typeof q.qid !== "string" || !q.qid || typeof q.text !== "string" || !q.text.trim()) return;
+          if (qidSeen(q.qid)) return;
+          rememberQid(q.qid);
+          if (!underRateLimit()) return;          // Überschuss still verwerfen
+          answerTimestamps.push(Date.now());
+          var text = q.text.slice(0, RDV_QUERY_TEXT_MAX);
+          var k = (typeof q.k === "number" && isFinite(q.k) && q.k >= 1)
+            ? Math.min(Math.floor(q.k), kCap) : kCap;
+          // Lokale Bedeutungs-Suche (fail-soft) → Antwort-Zettel publizieren.
+          (async function () {
+            var results = [];
+            var match = resolveQueryMatch();
+            if (match) {
+              try {
+                var hits = await match.queryLocal(text, k, { hybrid: true });
+                results = (Array.isArray(hits) ? hits : []).slice(0, k).map(function (h) {
+                  var r = { label: String(h.label || ""), score: (typeof h.score === "number") ? h.score : null };
+                  if (typeof h.anchorId === "string" && h.anchorId) r.anchorId = h.anchorId;
+                  return r;
+                });
+              } catch (_e) { results = []; }      // ehrlich leer statt Bruch
+            }
+            try {
+              await relay.publish({
+                kind: NOSTR_KIND,
+                created_at: nowSec(),
+                tags: [["t", RDV_QUERY_TAG]],
+                content: JSON.stringify({
+                  kind: RDV_QUERY_RES_KIND, qid: q.qid,
+                  toNodeId: q.fromNodeId, fromNodeId: ownId,
+                  fromName: cfg.nodeName, results: results, ts: nowSec(),
+                }),
+              });
+              answeredCount++;
+            } catch (_e) { /* fail-soft: Antwort verloren, kein Bruch */ }
+          })();
+        },
+      );
+    } catch (e) {
+      answerUnsub = null;
+      return { ok: false, reason: "Antwort-Lauscher fehlgeschlagen: " + (e && e.message ? e.message : e) };
+    }
+    signalListening(true);
+    return { ok: true };
+  }
+
+  function disableAnswering() {
+    if (answerUnsub) { try { answerUnsub(); } catch (_e) {} }
+    answerUnsub = null;
+  }
+
+  // ---- askNode(): einem lebenden Knoten eine Suchfrage stellen ----
+  async function askNode(target, text, opts) {
+    opts = (opts && typeof opts === "object") ? opts : {};
+    var toNodeId = null;
+    if (target && typeof target === "object") {
+      toNodeId = target.nodeId || (target.spore && target.spore.id) || null;
+    } else if (typeof target === "string") { toNodeId = target; }
+    if (!toNodeId) return { ok: false, reason: "Kein Ziel-Knoten (Karte oder nodeId) angegeben." };
+    if (typeof text !== "string" || !text.trim()) return { ok: false, reason: "Leere Frage." };
+    var relay = resolveRelay();
+    if (!relay) return { ok: false, reason: "Kein Nostr-Relais-Client (Modul 05b) verfügbar." };
+    var own = await getOwnLiveSpore();
+    if (!own || !own.id) return { ok: false, reason: "Noch keine Identität — zuerst anmelden (announce)." };
+    var ownId = own.id;
+    var k = (typeof opts.k === "number" && isFinite(opts.k) && opts.k >= 1)
+      ? Math.min(Math.floor(opts.k), RDV_QUERY_K_MAX) : RDV_QUERY_K_MAX;
+    var timeoutMs = (typeof opts.timeoutMs === "number" && isFinite(opts.timeoutMs) && opts.timeoutMs > 0)
+      ? Math.floor(opts.timeoutMs) : RDV_ASK_TIMEOUT_MS;
+    var qid = "q" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    var started = Date.now();
+
+    return await new Promise(function (resolve) {
+      var done = false, unsub = null, timer = null;
+      function finish(res) {
+        if (done) return;
+        done = true;
+        if (timer) clearTimeout(timer);
+        if (unsub) { try { unsub(); } catch (_e) {} }
+        resolve(res);
+      }
+      // Erst auf die Antwort lauschen, dann fragen (kein Fenster verpassen).
+      try {
+        unsub = relay.subscribe(
+          { kinds: [NOSTR_KIND], "#t": [RDV_QUERY_TAG], since: nowSec() - 5 },
+          function onRes(ev) {
+            if (!ev || typeof ev.content !== "string") return;
+            var a;
+            try { a = JSON.parse(ev.content); } catch (_e) { return; }
+            if (!a || a.kind !== RDV_QUERY_RES_KIND || a.qid !== qid || a.toNodeId !== ownId) return;
+            var results = (Array.isArray(a.results) ? a.results : []).slice(0, RDV_QUERY_K_MAX)
+              .map(function (r) {
+                var o = { label: String((r && r.label) || ""), score: (r && typeof r.score === "number") ? r.score : null };
+                if (r && typeof r.anchorId === "string" && r.anchorId) o.anchorId = r.anchorId;
+                return o;
+              });
+            finish({ ok: true, results: results, fromNodeId: a.fromNodeId || null, tookMs: Date.now() - started });
+          },
+        );
+      } catch (e) {
+        finish({ ok: false, reason: "Antwort-Lauscher fehlgeschlagen: " + (e && e.message ? e.message : e) });
+        return;
+      }
+      Promise.resolve(relay.publish({
+        kind: NOSTR_KIND,
+        created_at: nowSec(),
+        tags: [["t", RDV_QUERY_TAG]],
+        content: JSON.stringify({
+          kind: RDV_QUERY_KIND, qid: qid, toNodeId: toNodeId, fromNodeId: ownId,
+          fromName: cfg.nodeName, text: text.trim().slice(0, RDV_QUERY_TEXT_MAX), k: k, ts: nowSec(),
+        }),
+      })).catch(function (e) {
+        finish({ ok: false, reason: "Frage-Zettel konnte nicht publiziert werden: " + (e && e.message ? e.message : e) });
+      });
+      timer = setTimeout(function () {
+        finish({ ok: false, reason: "Keine Antwort in " + Math.round(timeoutMs / 1000) + " s — Gegenknoten offline oder Antworten dort nicht eingeschaltet." });
+      }, timeoutMs);
+    });
+  }
+
   // ---- Public surface ----
   var api = {
     init: init,
@@ -388,6 +575,9 @@
     connectAndAnnounce: connectAndAnnounce,
     discover: discover,
     handshakeCard: handshakeCard,
+    enableAnswering: enableAnswering,   // Bau 23.B — Antwortrecht bewusst AN (Default AUS)
+    disableAnswering: disableAnswering, // Bau 23.B
+    askNode: askNode,                   // Bau 23.B — nutzer-ausgelöste Cross-Knoten-Frage
     relatednessForCards: relatednessForCards, // pure (cards, ownSpore) → angereicherte Liste; reine Anzeige
     get _meta() {
       return {
@@ -401,6 +591,12 @@
         hasAnastomose: resolveAnastomose() !== null,
         hasSpore: resolveSpore() !== null,
         hasMatch: resolveMatch() !== null,
+        answering: answerUnsub !== null,          // Bau 23.B
+        answeredCount: answeredCount,             // Bau 23.B
+        queryTag: RDV_QUERY_TAG,                  // Bau 23.B
+        queryKind: RDV_QUERY_KIND,                // Bau 23.B
+        queryResKind: RDV_QUERY_RES_KIND,         // Bau 23.B
+        queryMaxPerMin: RDV_QUERY_MAX_PER_MIN,    // Bau 23.B
       };
     },
   };
@@ -410,7 +606,8 @@
   if (typeof console !== "undefined" && console.info) {
     console.info(
       "MODUL 23 RENDEZVOUS bereit (gemeinsamer Raum, Empfangsmodus/nutzer-ausgelöst), " +
-        "Funktionen: init/configure/announce/connectAndAnnounce/discover/handshakeCard/relatednessForCards",
+        "Funktionen: init/configure/announce/connectAndAnnounce/discover/handshakeCard/" +
+        "enableAnswering/disableAnswering/askNode/relatednessForCards",
     );
   }
 })(typeof window !== "undefined" ? window : globalThis);

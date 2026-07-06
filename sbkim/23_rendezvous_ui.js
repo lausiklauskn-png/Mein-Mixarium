@@ -46,6 +46,7 @@
   var cfg = { nodeName: "SBKIM-Knoten", createIdentity: null, corner: "bl", accent: null };
   var mounted = false;
   var btnEl = null, panelEl = null, outEl = null, cardsEl = null, relOnlyBtn = null;
+  var askInputEl = null, answerBtn = null;   // Bau 23.B — Frage-Feld + Antwortrecht-Schalter
   var relatedOnly = false;   // „nur verwandte zeigen" (reine Anzeige, Default aus)
   var lastCards = [];        // letzte gelesene Karten (für Re-Render beim Umschalten)
 
@@ -128,6 +129,22 @@
     filterRow.appendChild(relOnlyBtn);
     panelEl.appendChild(filterRow);
 
+    // Bau 23.B — Cross-Knoten-Frage: EIN Frage-Feld + „Antworten"-Schalter.
+    // Fragen ist nutzer-ausgelöst (❓-Knopf je Karte nutzt dieses Feld);
+    // Antworten ist das Antwortrecht (Default AUS, bewusster Schalter).
+    var askRow = el("div", "margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center");
+    askInputEl = el("input", "flex:1;min-width:150px;padding:6px 9px;border-radius:8px;border:1px solid rgba(154,167,182,.35);" +
+      "background:rgba(10,16,24,.6);color:#e8eef6;font-size:.78rem");
+    askInputEl.id = "sbkim-rdv-q";
+    askInputEl.type = "text";
+    askInputEl.placeholder = "Frage nach Bedeutung, z.B. kuchen …";
+    answerBtn = el("button", bsGhost + ";font-size:.74rem;padding:5px 10px", "💬 Antworten: aus");
+    answerBtn.type = "button";
+    answerBtn.title = "Antwortrecht: eingeschaltet beantwortet dein Knoten Fragen anderer Knoten mit den Top-Treffern seiner eigenen Bedeutungs-Suche (nur Titel, keine Inhalte). Gilt nur, solange dieser Tab offen ist.";
+    askRow.appendChild(askInputEl);
+    askRow.appendChild(answerBtn);
+    panelEl.appendChild(askRow);
+
     cardsEl = el("div", "margin-top:10px");
     cardsEl.id = "sbkim-rdv-cards";
     panelEl.appendChild(cardsEl);
@@ -153,6 +170,7 @@
       relOnlyBtn.textContent = "🧬 nur verwandte: " + (relatedOnly ? "an" : "aus");
       renderCards(lastCards); // ohne Neu-Lesen umsortieren/filtern
     });
+    answerBtn.addEventListener("click", function () { onToggleAnswering(); });
 
     mounted = true;
   }
@@ -250,8 +268,59 @@
       var b = el("button", bs, "🤝 Andocken"); b.type = "button";
       b.addEventListener("click", function () { onHandshake(c); });
       rowEl.appendChild(b);
+      var qb = el("button", bs + ";margin-left:6px;opacity:.85", "❓ Fragen"); qb.type = "button";
+      qb.title = "Stellt diesem Knoten die Frage aus dem Feld oben — er antwortet mit den Top-Treffern seiner eigenen Bedeutungs-Suche.";
+      qb.addEventListener("click", function () { onAsk(c); });
+      rowEl.appendChild(qb);
       cardsEl.appendChild(rowEl);
     });
+  }
+
+  // Bau 23.B — Cross-Knoten-Frage per Knopf (nutzt das Frage-Feld oben).
+  function onAsk(card) {
+    var r = rdv();
+    if (!r || typeof r.askNode !== "function") { setOut("Modul 23 mit Bau 23.B (askNode) nicht geladen."); return; }
+    var text = askInputEl ? String(askInputEl.value || "").trim() : "";
+    if (!text) { if (outEl) outEl.textContent = "❓ Zuerst oben eine Frage eintippen (z.B. kuchen), dann ❓ Fragen antippen."; return; }
+    if (outEl) outEl.textContent = "❓ Frage <" + text + "> an " + (card.nodeName || "Knoten") + " — warte auf Antwort (max ~15 s) …";
+    r.askNode(card, text).then(function (res) {
+      if (!outEl) return;
+      if (res && res.ok) {
+        var lines = ["✓ Antwort von " + (card.nodeName || "Knoten") + " (" + Math.round((res.tookMs || 0) / 100) / 10 + " s):"];
+        if (res.results && res.results.length) {
+          res.results.forEach(function (h, i) {
+            lines.push("  " + (i + 1) + ". " + h.label + (typeof h.score === "number" ? "  (" + h.score.toFixed(2) + ")" : ""));
+          });
+          lines.push("— Das ist die bidirektionale Bedeutungs-Suche: sein Knoten hat in SEINEM Buch nach deinem Sinn gesucht.");
+        } else {
+          lines.push("  (keine Treffer in seinem Buch — ehrlich leer)");
+        }
+        outEl.textContent = lines.join("\n");
+      } else {
+        outEl.textContent = "✗ " + (res && res.reason ? res.reason : "Keine Antwort.") +
+          "\nTipp: der Gegenknoten muss <💬 Antworten: an> geschaltet haben und den Tab offen halten.";
+      }
+    }).catch(function (e) { if (outEl) outEl.textContent = "✗ Fehler: " + (e && e.message ? e.message : e); });
+  }
+
+  // Bau 23.B — Antwortrecht bewusst an/aus (Default aus, nicht persistiert).
+  function onToggleAnswering() {
+    var r = rdv();
+    if (!r || typeof r.enableAnswering !== "function") { setOut("Modul 23 mit Bau 23.B (enableAnswering) nicht geladen."); return; }
+    if (r._meta && r._meta.answering) {
+      try { r.disableAnswering(); } catch (_e) {}
+      if (answerBtn) answerBtn.textContent = "💬 Antworten: aus";
+      if (outEl) outEl.textContent = "💬 Antworten ausgeschaltet.";
+      return;
+    }
+    r.enableAnswering().then(function (res) {
+      if (res && res.ok) {
+        if (answerBtn) answerBtn.textContent = "💬 Antworten: an";
+        if (outEl) outEl.textContent = "💬 Antworten AN — dein Knoten beantwortet jetzt Fragen anderer Knoten mit den Top-Treffern seiner Bedeutungs-Suche (nur Titel). Tab offen lassen.";
+      } else {
+        if (outEl) outEl.textContent = "✗ " + (res && res.reason ? res.reason : "Antworten konnte nicht eingeschaltet werden.");
+      }
+    }).catch(function (e) { if (outEl) outEl.textContent = "✗ Fehler: " + (e && e.message ? e.message : e); });
   }
 
   function onHandshake(card) {
