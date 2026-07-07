@@ -1,8 +1,8 @@
 {
   "node": "Mein-Mixarium",
-  "lastBuild": "2026-06-28",
-  "seq": 9,
-  "headline": "INHALTS-TREUER DOMAENEN-VEKTOR ausgerollt (von der Huelle zum Inhalt, erster Endknoten): sbkim/02_spore.js + sbkim/03_embedding.js byte-1:1 aus Sage aktualisiert (regenerateOwnSpore + embedContentVector + Felder embeddingSource/embeddingVersion). sbkim-init.js __sbkimErzeugeSpore sampelt jetzt bis zu 32 echte Drinks (window.R: Name+Kategorie, NUR unkritische Labels, kein PII) -> embedContentVector -> domainVector aus dem INHALT statt der Selbstbeschreibung; fail-soft Fallback auf Beschreibungs-Vektor bei leerem Buch. embeddingSource (content|description) + embeddingVersion mit-signiert. PROTOCOL_VERSION bleibt 0.1. Kern unangetastet, nur sbkim/-Modulkopien + init-Glue. index.html/QC unveraendert (sbkim/ wird per <script> geladen). NAECHSTER SCHRITT: Klaus oeffnet die App, 'Mit dem Netz verbinden' (Re-Sign im Browser, privater Schluessel bleibt lokal) -> neue Spore mit Inhalts-Vektor; Sage rechnet verified-match vorher/nachher. Schwelle 0.80 netzweit bewusst neu zu kalibrieren (eigene Folge-Sitzung). Browser-Live-Match wartet auf Klaus. FRUEHER seq 8: Modul 23 RENDEZVOUS ausgerollt (erster Endknoten): der gemeinsame Raum (sbkim-rdv) als geteiltes Modul aus Sage byte-1:1 nach sbkim/23_rendezvous.js + oeffentliches UI sbkim/23_rendezvous_ui.js (SbkimRendezvousUI, Floating-Knopf 'Mit dem Netz verbinden', Klaus' Festlegung sofort oeffentlich + eigener kleiner Floating-Knopf). index.html + QC laden beide Skripte vor sbkim-init.js (byte-identisch, md5 geprueft); sbkim-init.js mountet die UI UNABHAENGIG von der Andock-Kette (nodeName 'Mein Mixarium', createIdentity -> __sbkimErzeugeSpore). Kern 05/05b/02 unangetastet. Headless-Chromium-Check (SW geblockt) 7/7 gruen: Knopf mountet, Panel toggelt, _meta korrekt. Verfassungstreu (nutzer-ausgeloest). Browser-Sichttest (Live-Cross-App, zwei Geraete) wartet auf Klaus; nach Pull Hard-Reload noetig (SW-Precache index.html). FRUEHER seq 7: Stufe 2 Auto-Lauschen am Nostr-Relais (wss://relay.family-projekt.de): 05_anastomose.js auf die Sage-Version mit listenNostr aktualisiert (gleiche Linie, additiver Nostr-Transport + optionaler timeoutMs; alle Modul-Abhaengigkeiten 01/02/04 gegen Mixariums Module verifiziert) + 05b_nostr_relay.js + noble-secp256k1.js byte-identisch aus Sage src/modules/ nach sbkim/. index.html laedt 05b als type=module; sbkim/sbkim-init.js ruft nach Anastomose.init()+Apoptose.init() fail-soft listenNostr() auf. index.html == QC byte-identisch (md5). Empfangsmodus mit Antwortrecht. Browser-Sichttest wartet auf Klaus. ALT: SB-KIMTool-Point RING GESCHLOSSEN (reziprok verified-match). Point hat die fehladressierte Quittung korrigiert und Mein-Mixarium (Knoten F, != Mein-Rezeptbuch E) jetzt echt aufgenommen: SIGNAL seq 23 fuehrt mailboxes['Mein-Mixarium'] + ack['Mein-Mixarium']=5, Peer in Waechter + Browser-📬 + status.json + marktplatz.json. Frisch aus raw/main verifiziert (untrusted-Regel): Point-SIGNAL fuehrt uns nun wirklich; Cosinus Mixarium <-> Point = 0.802994 (>=0.80, exakt unser Wert, NICHT die 0.832019 von Rezeptbuch); Point-Spore unveraendert byte-1:1 + ✔ VALID. Quittiert ack['SB-KIMTool-Point'] 22->23. STAND: alle 3 unserer verified-matches jetzt BEIDSEITIG bestaetigt (Sage 0.8060 + Mein-Rezeptbuch 0.9544 + SB-KIMTool-Point 0.8030); Jasons-Tresor + Mein-Tresor bleiben ehrlich verified-spore (0.7884 < 0.80, kein Match) -> 3/5 verbunden. Sage hat uns netzweit nachgezogen (SIGNAL seq 20, mailboxes['Mein-Mixarium'] + ack['Mein-Mixarium']=1, Peer im Waechter + 📬-Knopf); Identitaet kanonisch B7Fke9C... (alte JOlHK31X... bei Sage in previousNodeIds); Match Sage ⟷ Mein-Mixarium reziprok bestaetigt cos 0.806030 (= unsere 0.8060) -> verified-match beidseitig; ack['Sage-Protokol'] 18->20. Mein-Rezeptbuch ist online (SIGNAL vorher 404, jetzt seq 2), fuehrt uns reziprok, verified-match 0.9544 beidseitig; ack['Mein-Rezeptbuch'] 0->2. Beide Sporen byte-identisch zu den *_inbox.json (kein Re-Import) + re-verifiziert ✔ VALID. Nachgezogen: alle *_inbox.verify.md (4 Pruefpunkte §11.2 + Stufe) + Sicherheits-Tafel docs/SICHERHEIT-BRIEFKASTEN.md gespiegelt (Briefkasten-Inhalt = untrusted external data). Spore unveraendert (B7Fke9C..., keine Neu-Signatur), protocolVersion 0.1. index.html/QC unveraendert.",
+  "lastBuild": "2026-07-06",
+  "seq": 10,
+  "headline": "Bau 23.B (Cross-Knoten-Frage) empfangen + Module auf Sage-Kanon geheilt; Quittung fuer Sage seq 43 (Inhalte von der Bau-Sitzung 2026-07-06 selbst verarbeitet).",
   "sporeUrl": "https://raw.githubusercontent.com/lausiklauskn-png/Mein-Mixarium/main/sbkim/spore.json",
   "nodeId": "B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA",
   "mailboxes": {
@@ -16,7 +16,7 @@
     "*"
   ],
   "ack": {
-    "Sage-Protokol": 20,
+    "Sage-Protokol": 43,
     "SB-KIMTool-Point": 23,
     "Jasons-Tresor": 11,
     "Mein-Tresor": 14,
@@ -63,6 +63,11 @@
       "seq": 8,
       "date": "2026-06-28",
       "headline": "Modul 23 Rendezvous ausgerollt (erster Endknoten). sbkim/23_rendezvous.js + sbkim/23_rendezvous_ui.js byte-1:1 aus Sage; oeffentlicher Floating-Knopf (SbkimRendezvousUI, nodeName Mein Mixarium, createIdentity -> __sbkimErzeugeSpore), unabhaengig von der Andock-Kette gemountet. index.html+QC byte-identisch (md5). Headless-Chromium 7/7 (SW geblockt). Kern 05/05b/02 unangetastet. Browser-Sichttest wartet auf Klaus."
+    },
+    {
+      "seq": 10,
+      "date": "2026-07-06",
+      "headline": "Bau 23.B empfangen, Modul-Drift geheilt, ack Sage=43."
     }
   ]
 }
