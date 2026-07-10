@@ -66,8 +66,19 @@
               ? r.ings.map(function (x) { return (x && (x.name || x.origName)) ? (x.name || x.origName) : ""; }).filter(Boolean)
               : [];
             var flavors = Array.isArray(r.flavors) ? r.flavors : [];
+            // A4 Baustein 1 (2026-07-10): auch den ZUBEREITUNGS-Text mit
+            // hineinnehmen. Sonst sind Zutaten, die nur im Schritt-Text stehen
+            // (nicht in der Zutatenliste), für die Cross-Knoten-Suche unsichtbar
+            // — genau so rutschte „Himbeer-Wodka" (Raspberry Cooler) als
+            // „alkoholfrei" durch (Klaus' A2-Befund). Additiv, fail-soft.
+            var stepsText = Array.isArray(r.steps)
+              ? r.steps.map(function (s) {
+                  return (s && (s.txt || s.t)) ? (s.txt || s.t) : (typeof s === "string" ? s : "");
+                }).filter(Boolean).join(" ")
+              : "";
             var parts = [String(r.name)].concat(flavors).concat(ingNames);
             if (r.glass) parts.push(String(r.glass));
+            if (stepsText) parts.push(stepsText);
             var passage = parts.filter(Boolean).join(", ");
             var raw = await SbkimEmbedding.embedPassage(passage);
             var vec = (raw instanceof Float32Array) ? raw : new Float32Array(raw);
