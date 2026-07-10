@@ -636,7 +636,11 @@
             var match = resolveQueryMatch();
             if (match) {
               try {
-                var hits = await match.queryLocal(text, k, { hybrid: true });
+                // exclude:true — die Frage eines fremden Knotens kann eine
+                // Verneinung tragen („alkoholfrei", „ohne Erdbeeren"). Modul 04
+                // parst sie und filtert VOR dem Ranking (Bau 04.I). Ohne
+                // Verneinung byte-gleich; Andock-Riegel unberührt.
+                var hits = await match.queryLocal(text, k, { hybrid: true, exclude: true });
                 results = (Array.isArray(hits) ? hits : []).slice(0, k).map(function (h) {
                   var r = { label: String(h.label || ""), score: (typeof h.score === "number") ? h.score : null };
                   if (typeof h.anchorId === "string" && h.anchorId) r.anchorId = h.anchorId;
