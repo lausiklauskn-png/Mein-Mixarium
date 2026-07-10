@@ -149,13 +149,29 @@
 // ist). Verfassungstreu: nutzer-ausgelöst, init mountet nur den Knopf.
 (function () {
   function mountRendezvousUI() {
+    // Modus A (Identitäts-Hygiene, Skill „saubere-netz-anmeldung"): eigene
+    // Schublade `sbkim_mixarium` + stabile Identität sanft/idempotent/lokal
+    // sicherstellen (KEIN Auto-Anmelden, Empfangsmodus). dbSuffix ins Modul 23,
+    // damit auch Modus B (🧹 Aufräumen) NUR den geteilten Alt-Topf `sbkim`
+    // löscht und die eigene Schublade behält.
+    if (window.SbkimRendezvous && typeof window.SbkimRendezvous.init === "function") {
+      try {
+        window.SbkimRendezvous.init({
+          nodeName: "Mein Mixarium",
+          dbSuffix: "mixarium",
+          createIdentity: function () { return window.__sbkimErzeugeSpore(); },
+          ensureIdentity: true,
+        });
+      } catch (e) { console.warn("SBKIM-Rendezvous (Modus A) übersprungen:", e); }
+    }
     if (!window.SbkimRendezvousUI) return;
     try {
       window.SbkimRendezvousUI.init({
         nodeName: "Mein Mixarium",
+        dbSuffix: "mixarium",
         createIdentity: function () { return window.__sbkimErzeugeSpore(); },
       });
-      console.info("SBKIM-Rendezvous-UI grün — öffentlicher 🌐-Knopf gemountet.");
+      console.info("SBKIM-Rendezvous-UI grün — öffentlicher 🌐-Knopf gemountet (Modus A aktiv).");
     } catch (e) { console.warn("SBKIM-Rendezvous-UI übersprungen:", e); }
   }
   if (document.readyState !== "loading") mountRendezvousUI();
