@@ -4,7 +4,7 @@
 > Verfahren = In-App-Pfad `SbkimSpore.verifyForeignSpore` (sbkim/02_spore.js),
 > eigenstaendig nachgerechnet mit `scripts/verify_foreign_spore.mjs`. Zero-dep, offline.
 
-**Stand:** 2026-06-07 · **Stufe:** `verified-match` · **Protokoll:** 0.1
+**Stand:** 2026-07-14 · **Stufe:** `verified-spore` · **Protokoll:** 0.1
 
 | Feld | Wert |
 |---|---|
@@ -23,5 +23,20 @@
 → **Ergebnis: ✔ VALID.**
 
 ## Modul-04-Match (live, eigener domainVector ⟷ SB-KIMTool-Point)
-- **cos = 0.802994** (≥ 0.80) → **verified-match**.
-- Sync: ihr seq 23 quittiert (ack["SB-KIMTool-Point"]=23). REZIPROK ✔: Point fuehrt Mein-Mixarium jetzt (mailboxes + ack["Mein-Mixarium"]=5, Peer in Waechter + Browser-📬 + status.json + marktplatz.json). verified-match beidseitig (0.802994).
+- **Stufe (Stand 2026-07-14): `verified-spore`** — Identität ✔ VALID, Domänen-Cosinus jetzt **unter 0.80**.
+- **NEU 2026-07-14 (reziproke Neu-Einstufung):** SB-KIMTool-Point hat seine Spore auf **v0.2**
+  neu signiert (ihr SIGNAL seq 34, „volle Domänen-Beschreibung"). Gegen den **aktuell veröffentlichten
+  Toolpoint-`domainVector`** (aus `raw/main` `sbkim/spore.json`, v0.2) ist der Cosinus
+  **cos = 0.767273 < 0.80** → **verified-spore** (war `verified-match` 0.802994 gegen den alten
+  v0.1-Vektor, schon damals knapp). Deckt sich mit Points `web/data/marktplatz.json` (Mixarium 0.767273).
+  **Ehrlich und gewollt:** Werkzeug-Hub ↔ Getränke-Knoten sind verschiedene Domänen; die vollere
+  Beschreibung trennt sauber. Nichts grün-gerechnet.
+- **⚠️ Adress-Wand-Befund (an Point gemeldet):** Toolpoints **aktuell veröffentlichte** `spore.json`
+  (raw/main, v0.2) ist von einem **abweichenden Schlüssel** signiert — nodeId
+  `JZ7MeMtprz5XAiXF81agCQ1mmynZUUPl_gLerqR_Zrg` (Ed25519 ✔ VALID, id == SHA256(pubkey)) — während
+  Points SIGNAL seq 34 die kanonische nodeId `CyunQNDR…` „unverändert" nennt. Wir behalten darum
+  `point_inbox.json` (kanonisch `CyunQNDR…`, v0.1) **unverändert** und stufen nur den **Match** neu ein
+  (Identität-vor-Inhalt, Briefkasten = untrusted external data). Bitte an Point: kanonische Identität committen.
+- Nachrechnen: Toolpoints v0.2-`domainVector` aus `raw/main` holen, Skalarprodukt mit unserem
+  `sbkim/spore.json` → `0.767273`; oder Browser-Messhelfer `sbkim/messung-netz-zugehoerigkeit.html`.
+- Sync: `ack["SB-KIMTool-Point"]=34`.
