@@ -353,9 +353,11 @@ window.__sbkimErzeugeSpore = async function () {
       }
     });
 
-    // (C) Vertrauens-/Schutz-Block + (B) Semantik-Beschreibungs-Textfeld.
+    // (C) Vertrauens-/Schutz-Block + (B) Semantik-Beschreibungs-Textfeld +
+    // (E) Identitäts-Wechsler (Baustein 5 aus dem Siegel-Kanon).
     var schutz = buildSchutzInfoBlock();
     var semantik = buildSemantikBlock();
+    var switcher = buildIdentitySwitcherBlock();
 
     // Direkt unter den Bronze-Hinweis / die Datums-Zeile einhängen.
     var anchor = panel.querySelector("[data-siegel-bronze-hinweis]") || panel.querySelector("[data-siegel-date]");
@@ -363,10 +365,109 @@ window.__sbkimErzeugeSpore = async function () {
       anchor.parentNode.insertBefore(link, anchor.nextSibling);
       anchor.parentNode.insertBefore(schutz, link.nextSibling);
       anchor.parentNode.insertBefore(semantik, schutz.nextSibling);
+      anchor.parentNode.insertBefore(switcher, semantik.nextSibling);
     } else {
       panel.appendChild(link);
       panel.appendChild(schutz);
       panel.appendChild(semantik);
+      panel.appendChild(switcher);
+    }
+  }
+
+  // ---- (E) Identitäts-Wechsler (Baustein 5 aus dem Siegel-Kanon) -----------
+  // Mirror der Sage-Vorlage index.html (refreshAndockIdentities /
+  // andockSwitchIdentity): zeigt ALLE Identitäten in der eigenen Schublade
+  // (sbkim_mixarium) und lässt die aktive wählen. Verhindert die „Mehrfach-
+  // Sporen aus alten Containern"-Falle — Klaus sieht Alt-Identitäten und
+  // wählt die kanonische, statt versehentlich eine neue zu signieren. Rein
+  // über die öffentliche Modul-02-API (listIdentities / getActiveIdentityKey /
+  // setActiveIdentity), fail-soft, idempotent (data-mx-identity-switcher).
+  function buildIdentitySwitcherBlock() {
+    var wrap = document.createElement("div");
+    wrap.setAttribute("data-mx-identity-switcher", "");
+    wrap.style.cssText = "margin:0 0 1rem;padding:0.7rem 0.9rem;background:rgba(120,180,255,0.07);border:1px solid rgba(120,180,255,0.32);border-radius:8px;";
+
+    var head = document.createElement("div");
+    head.textContent = "🪪 Identitäts-Wechsler — welche Identität ist aktiv?";
+    head.style.cssText = "font-weight:600;font-size:0.84rem;margin:0 0 0.35rem;color:#9cc2ff;";
+
+    var hint = document.createElement("p");
+    hint.textContent = "Normalerweise gibt es genau eine Identität. Tauchen hier mehrere auf (z. B. aus einem alten Browser-Zustand), wähle die richtige — die neu signierte Spore nutzt dann genau diese nodeId. Es wird nichts gelöscht.";
+    hint.style.cssText = "margin:0 0 0.5rem;font-size:0.8rem;line-height:1.5;color:rgba(245,245,255,0.78);";
+
+    var row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;";
+    var label = document.createElement("label");
+    label.textContent = "Aktive Identität:";
+    label.style.cssText = "font-size:0.8rem;color:rgba(245,245,255,0.82);";
+    var sel = document.createElement("select");
+    sel.setAttribute("data-mx-identity-select", "");
+    sel.style.cssText = "flex:1 1 auto;min-width:180px;font:inherit;font-size:0.82rem;color:#F5F5FF;background:rgba(0,0,0,0.35);border:1px solid rgba(120,180,255,0.4);border-radius:6px;padding:0.4rem 0.5rem;";
+    var placeholder = document.createElement("option");
+    placeholder.value = ""; placeholder.textContent = "— wird geladen … —";
+    sel.appendChild(placeholder);
+    sel.addEventListener("change", function () { mxSwitchIdentity(sel.value); });
+
+    var out = document.createElement("div");
+    out.setAttribute("data-mx-identity-switcher-out", "");
+    out.style.cssText = "margin-top:0.4rem;font-size:0.78rem;color:rgba(245,245,255,0.7);min-height:1em;";
+
+    row.appendChild(label);
+    row.appendChild(sel);
+    wrap.appendChild(head);
+    wrap.appendChild(hint);
+    wrap.appendChild(row);
+    wrap.appendChild(out);
+
+    refreshMxIdentities(sel, out);
+    return wrap;
+  }
+
+  async function refreshMxIdentities(sel, out) {
+    if (!sel || !window.SbkimSpore || typeof window.SbkimSpore.listIdentities !== "function") {
+      if (out) out.textContent = "Identitäts-Liste nicht verfügbar (Modul 02 zu alt).";
+      return;
+    }
+    try {
+      var ids = await window.SbkimSpore.listIdentities();
+      var active = null;
+      if (typeof window.SbkimSpore.getActiveIdentityKey === "function") {
+        try { active = await window.SbkimSpore.getActiveIdentityKey(); } catch (_e) { /* nb */ }
+      }
+      sel.innerHTML = "";
+      if (!ids || !ids.length) {
+        var opt0 = document.createElement("option");
+        opt0.value = ""; opt0.textContent = "— keine geladen —";
+        sel.appendChild(opt0);
+        if (out) out.textContent = "Noch keine Identität — erzeuge oben mit 🔑 eine (getOrCreate = eine, keine Doppel).";
+        return;
+      }
+      ids.forEach(function (k) {
+        var opt = document.createElement("option");
+        opt.value = k;
+        opt.textContent = k + (k === active ? "  (aktiv)" : "");
+        if (k === active) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      if (out) out.textContent = ids.length === 1
+        ? "Genau eine Identität — sauber."
+        : (ids.length + " Identitäten gefunden — wähle die kanonische (aktiv markiert).");
+    } catch (e) {
+      if (out) out.textContent = "Fehler beim Lesen der Identitäten: " + (e && e.message ? e.message : e);
+    }
+  }
+
+  async function mxSwitchIdentity(key) {
+    if (!key || !window.SbkimSpore || typeof window.SbkimSpore.setActiveIdentity !== "function") return;
+    var sel = document.querySelector("[data-mx-identity-select]");
+    var out = document.querySelector("[data-mx-identity-switcher-out]");
+    try {
+      await window.SbkimSpore.setActiveIdentity(key);
+      if (out) out.textContent = "✔ Aktive Identität gewechselt zu " + key + ". Die nächste Spore-Signatur nutzt diese nodeId.";
+      refreshMxIdentities(sel, out);
+    } catch (err) {
+      if (out) out.textContent = "Wechsel fehlgeschlagen: " + (err && err.message ? err.message : err);
+      console.warn("[SBKIM] setActiveIdentity:", err);
     }
   }
 
