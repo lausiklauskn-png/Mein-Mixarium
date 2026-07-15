@@ -1,8 +1,32 @@
 # PULS — Mein-Mixarium (SBKIM-Endknoten)
 
-**Stand:** 2026-07-14 · **App-Version:** v9.5 · **nodeId:** `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA`
+**Stand:** 2026-07-15 · **App-Version:** v9.5 · **nodeId:** `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA`
 
 Kurzer, ehrlicher Live-Stand des Knotens. Detail-Protokolle: `docs/sessions/`.
+
+## 2026-07-15 (Folge) — Identitäts-Wechsler (Baustein 5) nachgerüstet (gegen Mehrfach-Sporen)
+- **Auslöser (Klaus):** vor der v0.2-Neu-Signatur die zwei Sage-Bauanleitungen (Siegel + „mit dem
+  Knotennetz verbinden") geprüft, weil die alte Falle „Spuren-/Mehrfach-Sporen aus alten Containern"
+  wieder droht. Ist-Prüfung: Mixarium hat schon **E1 eigene Schublade** `sbkim_mixarium`, **Modus A**
+  idempotent (`getOrCreateIdentity` — kein Doppel-Anlegen), **Modus B** „🧹 Aufräumen & neu anmelden"
+  (Modul 23), „🌐 Mit dem Netz verbinden"/„👥 Wer ist im Raum?", und den **✍ Neu-Signatur-Pfad**
+  (gleiche nodeId + Ladebalken). **Die eine Lücke:** der **Identitäts-Wechsler (Baustein 5)** fehlte —
+  genau der Baustein, der bei SB-KIMTool-Point zu Doppel-Identitäten führte.
+- **Gebaut (host-seitig in `sbkim/sbkim-init.js`, Kanon-Mirror aus `Sage-Protokol/index.html`
+  `refreshAndockIdentities`/`andockSwitchIdentity`):** ein „🪪 Identitäts-Wechsler"-Block im Siegel-Modal
+  (`buildIdentitySwitcherBlock` + `refreshMxIdentities` + `mxSwitchIdentity`), rein über die öffentliche
+  Modul-02-API (`listIdentities`/`getActiveIdentityKey`/`setActiveIdentity`), fail-soft, idempotent
+  (`data-mx-identity-switcher`). Zeigt **alle** Identitäten der eigenen Schublade + die aktive, lässt die
+  kanonische wählen; **löscht nichts**. So sieht Klaus vor dem v0.2-Signieren, ob Alt-Identitäten
+  herumliegen, und wählt die richtige nodeId.
+- **Kern-Module unangetastet** (02/16/18 nicht editiert — nur host-seitige Injektion, wie schon beim
+  ✍-Block). `index.html`/QC **unberührt** (SBKIM liegt in `sbkim/*.js`) → md5-Drift-Guard grün.
+  `app-sw.js` SW-Version **v65 → v66** (Cache-Bust, damit die neue `sbkim-init.js` nach Hard-Reload ankommt).
+- **Verifikation:** `node --check` grün (sbkim-init.js + app-sw.js), Smoke 7/7 + 14/14 + 8/8 grün,
+  md5-Drift-Guard grün. **Browser-Sichttest des Wechslers wartet auf Klaus** (DOM-only, headless nicht prüfbar).
+- **Rand-Befund (Folge-Pflege, nicht in dieser Sitzung):** `sbkim/02_spore.js` zeigt Byte-Drift gegen den
+  Sage-Kanon `src/modules/02_spore.js` — die genutzte API-Fläche ist vorhanden; eine byte-1:1-Re-Sync
+  gegen Sage sollte separat geprüft werden.
 
 ## 2026-07-15 — Netz-Form geklärt (ehrlicher Themen-Cosinus + Zugehörigkeit in die Spore) + Sage-v0.2 gemergt
 - **NETZ-FORM (Klaus 2026-07-15, `AskUserQuestion`):** Das **Prinzip** bleibt **ehrlicher Themen-Cosinus**

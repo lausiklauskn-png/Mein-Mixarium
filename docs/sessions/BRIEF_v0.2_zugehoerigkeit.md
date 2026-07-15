@@ -21,6 +21,11 @@
   Jasons/Tresor 0.7884). 5/5 Sporen headless ✔ VALID, md5-Drift-Guard grün.
 
 ## 2. Ziel dieser Folge-Sitzung (Klaus-Browser)
+**(0) NEU — Identität prüfen vor dem Signieren:** im Siegel-Modal gibt es jetzt den „🪪 Identitäts-
+Wechsler". Kurz aufmachen: steht dort **genau eine** Identität? Dann passt alles. Stehen **mehrere**
+(Alt-Container), die kanonische wählen (`B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA`) — die v0.2-
+Signatur nutzt dann diese nodeId. Notfalls „🧹 Aufräumen & neu anmelden" im Netz-Knopf.
+
 **(A) Kontroll-Versuch messen** — `sbkim/messung-netz-zugehoerigkeit.html` öffnen → „Messen".
 Zeigt OHNE ↔ MIT dem Satz „… Teil des SBKIM-Knotennetzes …" den Cosinus zu Sage + Point.
 Der Satz liegt bereits als `NETZ_SUFFIX` hinterlegt. Ergebnis → sagt, ob er die Hubs ehrlich über 0.80 hebt.
