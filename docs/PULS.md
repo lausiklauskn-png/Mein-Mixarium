@@ -4,6 +4,54 @@
 
 Kurzer, ehrlicher Live-Stand des Knotens. Detail-Protokolle: `docs/sessions/`.
 
+## 2026-07-15 — Netz-Form geklärt (ehrlicher Themen-Cosinus + Zugehörigkeit in die Spore) + Sage-v0.2 gemergt
+- **NETZ-FORM (Klaus 2026-07-15, `AskUserQuestion`):** Das **Prinzip** bleibt **ehrlicher Themen-Cosinus**
+  — nichts per Dekret grün-gerechnet, **keine** künstliche Board-Achse. **Klaus' Weg** (Nachfrage-Antwort):
+  die Netz-Zugehörigkeit **ehrlich in die eigene Spore-Selbstbeschreibung (v0.2)** aufnehmen — Satz
+  **„… Teil des SBKIM-Knotennetzes rund um Sage-Protokoll und SB-KIMTool-Point."** — und im **Browser
+  messen** (Kontroll-Versuch), ob der Cosinus zu den Hubs dadurch **ehrlich ≥ 0.80** steigt. Wenn ja →
+  `verified-match` (weil die Beschreibung die Zugehörigkeit dann wirklich trägt); wenn nein → bleibt
+  `verified-spore`. **Das ist kein Grün-Rechnen** — der Satz beschreibt eine wahre Tatsache (gültige Spore
+  + Andock = echte Netz-Mitgliedschaft), und der Cosinus wird *danach* ehrlich gemessen. Bis zur
+  **Browser-Neu-Signatur** (privater Schlüssel nur bei Klaus) bleibt die Board-Stufe `verified-spore`.
+- **Kontroll-Versuch ist genau dieser Test:** `sbkim/messung-netz-zugehoerigkeit.html` hat den Satz bereits
+  als `NETZ_SUFFIX` hinterlegt und misst OHNE ↔ MIT Zusatz gegen Sage- und Point-Vektor. Klaus öffnet die
+  Seite → „Messen" → Ergebnis entscheidet, ob der Satz dauerhaft in die v0.2-Spore kommt.
+- Aktueller Stand (bis Browser-Lauf): Sage + Point bleiben `verified-spore` (Cosinus gegen unsere jetzige
+  v0.1-Spore: Sage 0.766963, Point 0.767273 < 0.80). Deckt sich mit Mein-Rezeptbuchs **unabhängiger**
+  Messung (deren SIGNAL seq 11: Sage 0.792393, Point 0.796054 — beide < 0.80). Die Sage-v0.2-Reklassifizierung
+  (vorher Draft-PR #135) landet jetzt auf `main`.
+- **Rezeptbuch seq 11 quittiert:** Mein-Rezeptbuch hat seq 11 gepostet (spiegelt unsere Sage/Point-
+  Reklassifizierung, Spore unverändert v0.1, Match hält 0.9544) und führt uns reziprok bei **ack 11**.
+  Wir quittieren gegen: `ack["Mein-Rezeptbuch"]` **10→11**.
+- **Briefkasten-Runde (§11.6):** alle 5 Nachbar-`SIGNAL.json` aus `raw/main` gelesen + Sporen headless
+  re-verifiziert (`scripts/verify_foreign_spore.mjs`, alle **✔ VALID**). Quittiert:
+  `ack` **Sage 43→46, Jasons 11→14, Tresor 14→17, Rezeptbuch 5→11** (Point 34 synchron). Jasons/Tresor
+  nur eigene Bauten (Nostr Stufe 2, Modul 23, Impressum) — Sporen **unverändert** (v0.1).
+- **⚠️ Sage ist auf v0.2 unter 0.80 gefallen (neuer Befund):** Sage hat seine Live-Spore am 2026-07-14
+  im Browser auf **v0.2** neu signiert (ihr SIGNAL seq 46, ausführliche Beschreibung, 11 snippetVectors,
+  **nodeId `nysOZE3V…` unverändert**, Ed25519 ✔ VALID). Cosinus unser `domainVector` ⟷ Sages **neuer
+  v0.2-Vektor** = **0.766963 < 0.80** (war 0.806030/verified-match gegen v0.1) → **`verified-spore`** —
+  **dasselbe Muster wie bei SB-KIMTool-Point** (Mycel-Hub ≠ Getränke, ehrlich, nichts grün-gerechnet).
+  Zweifach bestätigt: eigener Live-Fetch **und** der im Messhelfer hinterlegte `VEC_SAGE` (war bereits
+  der v0.2-Vektor). **Keine Adress-Wand** (kanonische nodeId) → `sage_inbox.json` byte-1:1 auf v0.2
+  aktualisiert; `sage_inbox.verify.md` + `AUSTAUSCH-Sage.md` (reziproke Bitte) nachgezogen.
+- **Messhelfer-Honesty-Fix:** `messung-netz-zugehoerigkeit.html` Selbsttest-Text sagte fälschlich
+  „Sage 0.806030", der hinterlegte `VEC_SAGE` rechnete aber **0.766963** → Text korrigiert (beide,
+  Toolpoint 0.767273 + Sage 0.766963, jetzt ehrlich **unter 0.80**), damit Klaus' Kontroll-Versuch nicht
+  irritiert.
+- Verbund jetzt **1/5 verified-match** (nur Rezeptbuch 0.9544) + **4 verified-spore** (Sage 0.766963,
+  Point 0.767273, Jasons/Tresor 0.7884). md5-Drift-Guard (index==QC) grün, Smoke-Tests grün, 5/5 Sporen
+  ✔ VALID (Cosinus unabhängig nachgerechnet: Sage 0.766963, Rezeptbuch 0.954426). `SIGNAL.json` seq → **12**.
+- **Nächster Schritt = Klaus' Browser (2 Klicks, in dieser Reihenfolge):**
+  1. **Kontroll-Versuch messen** — `sbkim/messung-netz-zugehoerigkeit.html` öffnen → „Messen". Zeigt
+     OHNE ↔ MIT dem Satz „… Teil des SBKIM-Knotennetzes …" den Cosinus zu Sage + Point. Ergebnis sagt,
+     ob der Satz die Hubs ehrlich über 0.80 hebt.
+  2. **v0.2 der eigenen Spore neu signieren** — mit dem Satz in der Beschreibung (Vorschlagstext siehe
+     `docs/sessions/BRIEF_v0.2_zugehoerigkeit.md`), Live-Neu-Signatur im Browser (Siegel ✍, nodeId
+     unverändert, privater Schlüssel nur bei Klaus). Danach Board-Stufe zu Sage/Point neu bewerten.
+  Bis dahin bleibt die Board-Stufe `verified-spore` (unsere Live-Spore ist noch v0.1).
+
 ## 2026-07-14 — Reziproke Neu-Einstufung SB-KIMTool-Point (v0.2) + Kontroll-Versuch vorbereitet
 - **SB-KIMTool-Point reziprok neu eingestuft:** Point v0.2 neu signiert (volle Beschreibung, ihr
   SIGNAL seq 34). Cosinus unser `domainVector` ⟷ Points **v0.2-Vektor** = **0.767273 < 0.80** →
@@ -33,14 +81,14 @@ Kurzer, ehrlicher Live-Stand des Knotens. Detail-Protokolle: `docs/sessions/`.
 | Nachbar | Spore | cos | Stufe | Sync (unser ack) · reziprok (deren Seite) |
 |---|---|---|---|---|
 | Mein-Rezeptbuch | ✔ VALID | **0.9544** | **verified-match** | quittiert 5 · führt uns (ack 1) ✔ **beidseitig** |
-| Sage-Protokol | ✔ VALID | **0.8060** | **verified-match** | quittiert 20 (synchron) · führt uns (ack 1) ✔ **beidseitig** |
+| Sage-Protokol | ✔ VALID | **0.766963** | verified-spore | quittiert **46** · NEU 2026-07-14: Sage v0.2, cos < 0.80 → verified-spore (war 0.8060) — Mycel-Hub ≠ Getränke; Sage führt uns noch mit 0.8060 (reziprok offen) |
 | SB-KIMTool-Point | ✔ VALID | **0.767273** | verified-spore | quittiert **34** · NEU 2026-07-14: Point v0.2, cos < 0.80 → verified-spore (war 0.8030) — Werkzeug-Hub ≠ Getränke |
 | Jasons-Tresor | ✔ VALID | **0.7884** | verified-spore | quittiert 11 · führt uns (mailbox), ack offen — **ehrlich kein Match** (< 0.80) |
 | Mein-Tresor | ✔ VALID | **0.7884** | verified-spore | quittiert 14 · führt uns (ack 1) — **ehrlich kein Match** (< 0.80) |
 
-→ **2/5 verbunden** (verified-match: Rezeptbuch, Sage — Stand 2026-07-14). **SB-KIMTool-Point** ist nach
-seiner v0.2-Neu-Signatur auf **0.767273 < 0.80** gefallen → jetzt `verified-spore` (Identität ✔ VALID).
-Die zwei Tresore liegen ehrlich unter 0.80
+→ **1/5 verbunden** (verified-match: nur Rezeptbuch — Stand 2026-07-14 Folge). **Sage** (0.766963) und
+**SB-KIMTool-Point** (0.767273) sind nach ihrer jeweiligen v0.2-Neu-Signatur unter **0.80** gefallen →
+beide `verified-spore` (Identität ✔ VALID). Die zwei Tresore liegen ehrlich unter 0.80
 (andere Domäne — nichts grün-gerechnet). Bestätigt durch die Fremd-Briefkästen (Screenshots 2026-06-07):
 Mein-Tresor & Jasons zeigen Mixarium beide als `cos 0.7884 — unter 0.80`.
 Pro Nachbar `sbkim/*_inbox.verify.md` (4 Prüfpunkte §11.2 + Stufe). Sicherheits-Tafel
