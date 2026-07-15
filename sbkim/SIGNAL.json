@@ -1,8 +1,8 @@
 {
   "node": "Mein-Mixarium",
-  "lastBuild": "2026-07-14",
-  "seq": 11,
-  "headline": "SB-KIMTool-Point reziprok neu eingestuft: Point v0.2 (ihr SIGNAL seq 34, volle Beschreibung neu signiert); Cosinus unser domainVector <-> Toolpoints neuer v0.2-domainVector = 0.767273 < 0.80 -> von verified-match (0.802994) auf verified-spore (Werkzeug-Hub != Getraenke-Knoten, ehrlich). point_inbox.verify.md + AUSTAUSCH nachgezogen, ack[SB-KIMTool-Point]=34. Adress-Wand-Befund gemeldet: Points committete v0.2-Spore traegt abweichende nodeId JZ7MeMtp... statt kanonisch CyunQNDR.... Browser-Messhelfer sbkim/messung-netz-zugehoerigkeit.html (Kontroll-Versuch 'Teil des Netzes') + v0.2-Live-Neu-Signatur warten auf Klaus.",
+  "lastBuild": "2026-07-15",
+  "seq": 12,
+  "headline": "Reziproke Neu-Einstufung Sage-Protokol -> verified-spore: Sage hat seine Live-Spore auf v0.2 neu signiert (ihr SIGNAL seq 46, ausfuehrliche Beschreibung, 11 snippetVectors, nodeId nysOZE3V... unveraendert, Ed25519 VALID). Cosinus unser domainVector <-> Sages neuer v0.2-domainVector = 0.766963 < 0.80 (war 0.806030/verified-match gegen v0.1) -> verified-spore, dasselbe Muster wie bei SB-KIMTool-Point (Mycel-Hub != Getraenke, ehrlich, nichts gruen-gerechnet). sage_inbox.json byte-1:1 auf v0.2 aktualisiert (keine Adress-Wand, kanonische nodeId), verify.md + AUSTAUSCH-Sage.md (reziproke Bitte) nachgezogen. NETZ-FORM (Klaus 2026-07-15): ehrlicher Themen-Cosinus bleibt Prinzip (nichts per Dekret gruen-gerechnet, keine kuenstliche Board-Achse). Klaus' Weg: Netz-Zugehoerigkeit EHRLICH in die eigene Spore-Selbstbeschreibung (v0.2) aufnehmen - Satz 'Teil des SBKIM-Knotennetzes rund um Sage-Protokoll und SB-KIMTool-Point' - und im Browser messen (Kontroll-Versuch), ob der Cosinus zu den Hubs dadurch ehrlich >= 0.80 steigt (dann verified-match, sonst verified-spore). Bis zur Browser-Neu-Signatur (privater Schluessel nur bei Klaus) bleibt Board-Stufe verified-spore. Briefkasten-Runde quittiert: ack Sage 43->46, Jasons-Tresor 11->14, Mein-Tresor 14->17, Mein-Rezeptbuch 5->11 (Rezeptbuch seq 11 stufte Sage/Point unabhaengig ebenso auf verified-spore ein - selbe Messung, quittiert uns bei ack 11); Point 34 synchron. Messhelfer-Selbsttest-Text korrigiert (Sage 0.766963 statt stale 0.806030); der Zusatz-Satz ist im Messhelfer bereits als NETZ_SUFFIX hinterlegt. v0.2-Live-Neu-Signatur der eigenen Spore (mit dem Satz) + Kontroll-Versuch warten auf Klaus' Browser.",
   "sporeUrl": "https://raw.githubusercontent.com/lausiklauskn-png/Mein-Mixarium/main/sbkim/spore.json",
   "nodeId": "B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA",
   "mailboxes": {
@@ -16,11 +16,11 @@
     "*"
   ],
   "ack": {
-    "Sage-Protokol": 43,
+    "Sage-Protokol": 46,
     "SB-KIMTool-Point": 34,
-    "Jasons-Tresor": 11,
-    "Mein-Tresor": 14,
-    "Mein-Rezeptbuch": 5
+    "Jasons-Tresor": 14,
+    "Mein-Tresor": 17,
+    "Mein-Rezeptbuch": 11
   },
   "_doc": "Maschinenlesbarer Briefkasten-Aushang (INTERFACES §11.6). seq steigt +1 pro gemeldetem Bau; Gegenseite liest bei Sitzungsstart, vergleicht mit ihrem ack und quittiert. Server-los: das Pushen dieser Datei IST das Signal. ack[Nachbar] = die seq, die dieser Knoten vom Nachbarn zuletzt gelesen/quittiert hat. Mein-Rezeptbuch fuehrt aktuell noch kein SIGNAL.json (404) -> erscheint im Briefkasten ehrlich als 'SIGNAL nicht lesbar', wird quittiert sobald vorhanden.",
   "history": [
@@ -73,6 +73,11 @@
       "seq": 11,
       "date": "2026-07-14",
       "headline": "Reziproke Neu-Einstufung SB-KIMTool-Point -> verified-spore (cos 0.767273 < 0.80 gegen Toolpoints v0.2-Vektor, war 0.802994/verified-match). ack[SB-KIMTool-Point]=34. Adress-Wand gemeldet (committete Spore JZ7MeMtp... != kanonisch CyunQNDR...). Neuer Browser-Messhelfer sbkim/messung-netz-zugehoerigkeit.html (Kontroll-Versuch 'Teil des Netzes', wartet auf Klaus)."
+    },
+    {
+      "seq": 12,
+      "date": "2026-07-15",
+      "headline": "Reziproke Neu-Einstufung Sage-Protokol -> verified-spore (cos 0.766963 < 0.80 gegen Sages neuen v0.2-domainVector, war 0.806030/verified-match). Sage v0.2 (SIGNAL seq 46, nodeId unveraendert, VALID, 11 snippetVectors) -> sage_inbox.json byte-1:1 auf v0.2 aktualisiert. NETZ-FORM (Klaus 2026-07-15): ehrlicher Themen-Cosinus bleibt Prinzip; Klaus' Weg = Netz-Zugehoerigkeit ehrlich in die eigene Spore-Beschreibung (v0.2) aufnehmen ('Teil des SBKIM-Knotennetzes ...') und im Browser messen, ob der Cosinus zu den Hubs dadurch >= 0.80 steigt. ack Sage 43->46, Jasons 11->14, Tresor 14->17, Rezeptbuch 5->11 (Rezeptbuch seq 11 stufte Sage/Point unabhaengig ebenso auf verified-spore ein, quittiert uns bei 11); Point 34 synchron. Messhelfer-Selbsttest-Text auf 0.766963 korrigiert. Eigene v0.2-Neu-Signatur (mit Satz) + Kontroll-Versuch warten auf Klaus' Browser."
     }
   ]
 }
