@@ -372,7 +372,13 @@
           if (k === active) opt.selected = true;
           sel.appendChild(opt);
         });
-        if (o) o.textContent = ids.length === 1 ? "Genau eine Identität — sauber." : (ids.length + " Identitäten — wähle die kanonische (aktiv markiert).");
+        var tail = ids.length === 1 ? "Genau eine Identität — sauber." : (ids.length + " Identitäten — wähle die kanonische (aktiv markiert).");
+        if (o) o.textContent = tail;
+        // Aktive nodeId anzeigen — read-only via getNodeId(), erzeugt NICHTS.
+        // So sieht man, WELCHE Identität aktiv ist (zum Abgleich mit der committeten Spore).
+        if (window.SbkimSpore && typeof window.SbkimSpore.getNodeId === "function") {
+          window.SbkimSpore.getNodeId().then(function (nid) { if (o && nid) o.textContent = tail + " · aktive nodeId: " + nid; }).catch(function () {});
+        }
       });
     }).catch(function (e) { if (o) o.textContent = "Fehler beim Lesen der Identitäten: " + (e && e.message || e); });
   }
