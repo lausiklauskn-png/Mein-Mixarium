@@ -4,7 +4,29 @@
 
 Kurzer, ehrlicher Live-Stand des Knotens. Detail-Protokolle: `docs/sessions/`.
 
-## 2026-07-15 (Folge) — Identitäts-Wechsler (Baustein 5) nachgerüstet (gegen Mehrfach-Sporen)
+## 2026-07-15 (Folge 2) — Siegel-Andock-Wizard 1:1 aus dem Sage-Kanon (ersetzt losen Patch)
+- **Klaus-Befund (Screenshots):** Mixariums Siegel war **kein** 1:1 des Sage-Kanons — der 🔑-Knopf
+  öffnete **Modul 18** (Fremd-Andock URL→Spore→Match→Handshake) **statt** des eigenen-Identität-Wizards,
+  das Fenster lag **hinter** dem Siegel, und der Wechsler saß lose auf der Seite. Ehrlicher Prüf-Befund:
+  es gab **gar keine** fertige 1:1-kopierbare Wizard-Datei — Sages voller Wizard lebt nur inline, Kim-Bells
+  Extraktion fehlt der Wechsler.
+- **Gebaut (Klaus-Entscheid „zuerst in Sage, dann 1:1 kopieren"):** kanonische
+  `Sage-Protokol/assets/siegel-inhalt.js` (voller Wizard, **5 Bausteine**, natives `<dialog>` → Top-Layer
+  **vor** dem Siegel) — PR Sage #655 **gemergt**. Diese Datei **1:1 nach Mixarium** kopiert
+  (`sbkim/siegel-inhalt.js`, nur `WIZ`-Config angepasst), in `index.html`+QC geladen.
+- **Alte, abweichende Host-Injektion in `sbkim/sbkim-init.js` entfernt** (die 🔑→Modul-18-Fehlverdrahtung
+  + mein loser Identitäts-Wechsler-Patch aus Folge 1 — **abgelöst**, nicht mehr doppelt injiziert). Modul 18
+  bleibt geladen, ist aber nicht mehr an den 🔑 verdrahtet (Sage hat auch keinen ⛨ Fremd-Andock; falls
+  gewünscht, später separat über Modul 18).
+- **Ergebnis:** der 🔑-Knopf öffnet jetzt den **richtigen** Wizard (Identität erzeugen · Spore signieren+⬇ ·
+  Backup · Wiederherstellen · **Identitäts-Wechsler**) als Fenster **vor** dem Siegel — wie in Sage.
+- **Verifikation:** `node --check` grün (sbkim-init.js/siegel-inhalt.js/app-sw.js), **nur EIN** 🔑-Injektor
+  (keine Doppel-Injektion), Smoke 7/7+14/14+8/8 grün, md5-Drift-Guard (index==QC) grün. `app-sw.js`
+  v66→**v67** (Cache-Bust). **Browser-Sichttest wartet auf Klaus** (DOM-only).
+- **Rand-Befund (offen):** `sbkim/02_spore.js` Byte-Drift gegen Sage-Kanon (API vorhanden) — eigene
+  Re-Sync-Pflege. Sage-Page-Adoption der Datei + Kim-Bell/Point angleichen = eigene Folge-Sitzungen.
+
+## 2026-07-15 (Folge) — Identitäts-Wechsler (Baustein 5) nachgerüstet (ABGELÖST durch Folge 2 — loser Patch)
 - **Auslöser (Klaus):** vor der v0.2-Neu-Signatur die zwei Sage-Bauanleitungen (Siegel + „mit dem
   Knotennetz verbinden") geprüft, weil die alte Falle „Spuren-/Mehrfach-Sporen aus alten Containern"
   wieder droht. Ist-Prüfung: Mixarium hat schon **E1 eigene Schublade** `sbkim_mixarium`, **Modus A**
