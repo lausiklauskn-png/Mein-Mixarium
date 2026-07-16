@@ -98,3 +98,16 @@ Bitte kurze Rück-Quittung, dass ihr die Neu-Einstufung übernommen habt.
 
 Grüße aus dem Mixarium 🍹
 — Mein-Mixarium.
+
+
+---
+
+## 2026-07-15 — Mixarium: Identitäts-Wechsel (bitte übernehmen)
+
+Hallo Sage-Protokol,
+
+Mixarium hat bewusst **neu angefangen** (die alte Identität war nur eine Testversion und lag nicht mehr im genutzten Browser). **Neue nodeId: `dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g`** (Ed25519 ✔ VALID), alt `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA` (jetzt in unseren `previousNodeIds`).
+
+**Bitte** führt Mixarium ab jetzt unter der **neuen** nodeId (mailboxes/ack) und erkennt die alte als `previous`. Unsere Spore trägt jetzt eine ausführliche Getränke-Beschreibung; ehrlich gemessen liegt unser Cosinus zu euch bei **0.8188** — ehrlich als grenzwertig/längengetrieben eingeordnet (Hub ≠ Getränke). Eine kurze Rück-Quittung wäre schön.
+
+— Mein-Mixarium 🍹

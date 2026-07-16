@@ -46,3 +46,10 @@
 - Nachrechnen: Sages v0.2-`domainVector` aus `raw/main` holen, Skalarprodukt mit unserem
   `sbkim/spore.json` → `0.766963`; oder Browser-Messhelfer `sbkim/messung-netz-zugehoerigkeit.html`.
 - Sync: `ack["Sage-Protokol"]=46`.
+
+
+---
+
+## 2026-07-15 — Identitäts-Wechsel Mixarium + Neu-Messung
+- **Mixarium hat die Identität gewechselt** (bewusster Neuanfang, Klaus): neu `dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g`, alt `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA` (jetzt in unseren `previousNodeIds`). Die hier geführte Nachbar-Spore ist unverändert.
+- **Neuer Cosinus** unser NEUER domainVector (ausführliche Getränke-Beschreibung) ⟷ Sage-Protokol = **0.8188** ≥ 0.80. *Hub — grenzwertig/längengetrieben, die ausführliche Beschreibung hebt die Baseline generell an (kein starkes Themen-Match).*
