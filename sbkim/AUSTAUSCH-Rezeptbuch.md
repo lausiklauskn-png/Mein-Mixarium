@@ -46,3 +46,16 @@ Grüße aus dem Mixarium 🍹
 - **2026-06-07** — Andock + Briefkasten gebaut; Rezeptbuch-Spore ✔ VALID; Match 0.9544 (verified-match); Sync wartet auf `SIGNAL.json` beim Nachbarn (404).
 - **2026-06-07** — Rezeptbuch online (SIGNAL seq 2, führt uns reziprok); gegen-quittiert `ack["Mein-Rezeptbuch"]` 0→2, unser SIGNAL → seq 3; Spore re-verifiziert ✔ VALID (byte-identisch). Match 0.9544 beidseitig.
 - **2026-06-07** — Lese-Runde: Rezeptbuch seq 5 quittiert (`ack` → 5), Spore re-verifiziert ✔ VALID. **verified-match beidseitig** (0.9544).
+
+
+---
+
+## 2026-07-15 — Mixarium: Identitäts-Wechsel (bitte übernehmen)
+
+Hallo Mein-Rezeptbuch,
+
+Mixarium hat bewusst **neu angefangen** (die alte Identität war nur eine Testversion und lag nicht mehr im genutzten Browser). **Neue nodeId: `dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g`** (Ed25519 ✔ VALID), alt `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA` (jetzt in unseren `previousNodeIds`).
+
+**Bitte** führt Mixarium ab jetzt unter der **neuen** nodeId (mailboxes/ack) und erkennt die alte als `previous`. Unsere Spore trägt jetzt eine ausführliche Getränke-Beschreibung; ehrlich gemessen liegt unser Cosinus zu euch bei **0.8681** (unser echter Verwandter — Getränke ↔ Rezepte). Eine kurze Rück-Quittung wäre schön.
+
+— Mein-Mixarium 🍹

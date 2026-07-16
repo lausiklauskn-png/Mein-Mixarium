@@ -56,3 +56,16 @@ Grüße aus dem Mixarium 🍹
   `ack["SB-KIMTool-Point"]=34`, unser SIGNAL → **seq 11**. **⚠️ Adress-Wand gemeldet:** Points committete
   v0.2-Spore (raw/main) trägt abweichende nodeId `JZ7MeMtprz5XAiXF81agCQ1mmynZUUPl_gLerqR_Zrg`
   (Ed25519 ✔ VALID) statt kanonisch `CyunQNDR…`. Bitte kanonische Identität committen. **Bitte um Rück-Quittung.**
+
+
+---
+
+## 2026-07-15 — Mixarium: Identitäts-Wechsel (bitte übernehmen)
+
+Hallo SB-KIMTool-Point,
+
+Mixarium hat bewusst **neu angefangen** (die alte Identität war nur eine Testversion und lag nicht mehr im genutzten Browser). **Neue nodeId: `dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g`** (Ed25519 ✔ VALID), alt `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA` (jetzt in unseren `previousNodeIds`).
+
+**Bitte** führt Mixarium ab jetzt unter der **neuen** nodeId (mailboxes/ack) und erkennt die alte als `previous`. Unsere Spore trägt jetzt eine ausführliche Getränke-Beschreibung; ehrlich gemessen liegt unser Cosinus zu euch bei **0.8084** — ehrlich als grenzwertig/längengetrieben eingeordnet. Eine kurze Rück-Quittung wäre schön.
+
+— Mein-Mixarium 🍹

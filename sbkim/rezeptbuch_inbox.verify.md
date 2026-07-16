@@ -25,3 +25,10 @@
 ## Modul-04-Match (live, eigener domainVector ⟷ Mein-Rezeptbuch)
 - **cos = 0.954426** (≥ 0.80) → **verified-match**.
 - Sync: ihr seq 5 quittiert (ack["Mein-Rezeptbuch"]=5). Reziprok: Rezeptbuch fuehrt uns (mailbox✔ + ack=1). verified-match beidseitig (0.9544).
+
+
+---
+
+## 2026-07-15 — Identitäts-Wechsel Mixarium + Neu-Messung
+- **Mixarium hat die Identität gewechselt** (bewusster Neuanfang, Klaus): neu `dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g`, alt `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA` (jetzt in unseren `previousNodeIds`). Die hier geführte Nachbar-Spore ist unverändert.
+- **Neuer Cosinus** unser NEUER domainVector (ausführliche Getränke-Beschreibung) ⟷ Mein-Rezeptbuch = **0.8681** ≥ 0.80. (echter Verwandter; gegenüber dem alten Kurz-Text 0.9544 **gefallen** — Längeneffekt der langen Beschreibung.)

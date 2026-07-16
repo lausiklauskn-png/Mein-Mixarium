@@ -25,3 +25,10 @@
 ## Modul-04-Match (live, eigener domainVector ⟷ Jasons-Tresor)
 - **cos = 0.788402** (unter 0.80) → **verified-spore** (ehrlich kein Match — andere Domaene; nichts gruen-gerechnet).
 - Sync: ihr seq 11 quittiert (ack["Jasons-Tresor"]=11). Jasons fuehrt uns (mailbox✔); reziproke ack steht bei Jasons noch aus. Stufe verified-spore (cos<0.80, kein Match).
+
+
+---
+
+## 2026-07-15 — Identitäts-Wechsel Mixarium + Neu-Messung
+- **Mixarium hat die Identität gewechselt** (bewusster Neuanfang, Klaus): neu `dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g`, alt `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA` (jetzt in unseren `previousNodeIds`). Die hier geführte Nachbar-Spore ist unverändert.
+- **Neuer Cosinus** unser NEUER domainVector (ausführliche Getränke-Beschreibung) ⟷ Jasons-Tresor = **0.8174** ≥ 0.80. *Themenfremd (JSON-Tresor ≠ Getränke) — der Wert liegt nur durch den Prosa-Längeneffekt knapp über 0.80, KEIN echtes Themen-Match.*

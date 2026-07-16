@@ -1,8 +1,38 @@
 # PULS — Mein-Mixarium (SBKIM-Endknoten)
 
-**Stand:** 2026-07-15 · **App-Version:** v9.5 · **nodeId:** `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA`
+**Stand:** 2026-07-15 · **App-Version:** v9.5 · **nodeId:** `dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g`
+(vorher `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA` — Identitäts-Wechsel 2026-07-15, siehe unten)
 
 Kurzer, ehrlicher Live-Stand des Knotens. Detail-Protokolle: `docs/sessions/`.
+
+## 2026-07-15 (Folge 3) — Bewusster Identitäts-Neuanfang + ausführliche Beschreibung
+- **Klaus-Entscheid:** alte Identität `B7Fke9C…` **nicht** retten (alles Testversionen; sie lag ohnehin
+  nicht mehr im genutzten Browser — getrennter DeX/Tablet-Speicher). Stattdessen **frisch angefangen**:
+  im Browser eine neue Identität + Spore erzeugt (mit der neuen ausführlichen Beschreibung) und übernommen.
+- **Neue Identität:** `spore.json` = frische Spore `dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g`
+  (Ed25519 **✔ VALID**, headless geprüft). `SIGNAL.json` seq → **13**, `nodeId` neu, alte in
+  `previousNodeIds`, Headline bittet die Nachbarn, Mixarium unter der **neuen** nodeId zu führen.
+- **Neues Board (ehrlich gemessen gegen die geführten Nachbar-Sporen):**
+
+  | Nachbar | alt (Kurz-Text) | **neu (ausführlich)** | Stufe |
+  |---|---|---|---|
+  | Mein-Rezeptbuch | 0.9544 | **0.8681** | verified-match |
+  | Sage-Protokol | 0.7670 | **0.8188** | verified-match |
+  | Jasons-Tresor | 0.7884 | **0.8174** | verified-match* |
+  | Mein-Tresor | 0.7884 | **0.8174** | verified-match* |
+  | SB-KIMTool-Point | 0.7673 | **0.8084** | verified-match* |
+
+- **⚠️ Ehrliche Einordnung (kein Grün-Rechnen, aber wichtig):** die **ausführliche** Beschreibung hebt die
+  Cosinus-**Baseline** generell an — lange, gut ausformulierte Absätze ähneln sich in der Einbettung quer
+  über Themen. Darum liegen jetzt **auch die themenfremden JSON-Tresore** (Jasons/Mein-Tresor) und der Hub
+  (Point) knapp über 0.80 — das ist **kein starkes Themen-Match**, nur ehrlich gemessen (`*` = grenzwertig,
+  längengetrieben). Der echte Verwandte (Rezeptbuch) ist sogar **gefallen** (0.9544 → 0.8681). Die
+  Beschreibung trennt also **schlechter** als der Kurz-Text.
+- **Offene Folge-Option (Klaus entscheidet):** eine **kürzere, getränke-spitze** Beschreibung, die
+  Rezeptbuch/Getränke hoch hält und die JSON-Tresore ehrlich darunter lässt → bessere Trennschärfe.
+  Dann re-signiert Klaus im Browser (gleiche nodeId `dJ7H5BpjkQ…`, neuer Vektor).
+- **Verifikation:** `spore.json` ✔ VALID, 5 Nachbar-Cosinus unabhängig nachgerechnet, `SIGNAL.json`
+  valides JSON. `*_inbox.verify.md` + `AUSTAUSCH-*` auf die neue Identität nachgezogen.
 
 ## 2026-07-15 (Folge 2) — Siegel-Andock-Wizard 1:1 aus dem Sage-Kanon (ersetzt losen Patch)
 - **Klaus-Befund (Screenshots):** Mixariums Siegel war **kein** 1:1 des Sage-Kanons — der 🔑-Knopf
