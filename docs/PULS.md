@@ -5,6 +5,22 @@
 
 Kurzer, ehrlicher Live-Stand des Knotens. Detail-Protokolle: `docs/sessions/`.
 
+## 2026-07-16 — Spore neu signiert: Organisations-/Kategorisierungs-Kern in der Beschreibung
+- **Klaus' Erkenntnis:** Mixarium (und Rezeptbuch) sind im **Kern Organisations- und Kategorisierungs-
+  Werkzeuge** — nur unter dem Thema Essen/Trinken; aus demselben Grundgerüst hat Klaus weitere Apps gebaut.
+- Ein Satz dazu ist jetzt in der Beschreibung; Klaus hat die Spore **im Browser neu signiert** (gleiche
+  nodeId `dJ7H5BpjkQ…`, ✔ VALID). `spore.json` abgelegt, `SIGNAL.json` seq → **14**.
+- **Board (ehrlich, gegen die geführten Nachbar-Sporen):** Rezeptbuch **0.8685**, Sage **0.8223**,
+  Jasons-Tresor **0.8193**, Mein-Tresor **0.8193**, SB-KIMTool-Point **0.8104** — alle ≥ 0.80.
+- **Ehrliche Einordnung präzisiert:** die Nähe zu den Tresoren ist jetzt **nicht mehr nur** ein
+  Längeneffekt, sondern spiegelt teils eine **echte gemeinsame Werkzeug-DNA** (sammeln/ordnen/
+  kategorisieren) — die Tresore sind selbst Organisations-/Verwahr-Werkzeuge. Rezeptbuch (Getränke↔Rezepte)
+  bleibt der engste Verwandte.
+- **Rezeptbuch** braucht **keine** Änderung — seine Beschreibung trägt den „wandelbarer Baukasten /
+  nicht auf ein Thema festgelegt"-Gedanken (inkl. Chemiebaukasten) bereits ausdrücklich.
+- Verifikation: `spore.json` ✔ VALID, 5 Cosinus unabhängig nachgerechnet, `SIGNAL.json` valides JSON,
+  `*_inbox.verify.md` Match-Werte nachgezogen, md5-Drift-Guard (index==QC) unberührt.
+
 ## 2026-07-15 (Folge 3) — Bewusster Identitäts-Neuanfang + ausführliche Beschreibung
 - **Klaus-Entscheid:** alte Identität `B7Fke9C…` **nicht** retten (alles Testversionen; sie lag ohnehin
   nicht mehr im genutzten Browser — getrennter DeX/Tablet-Speicher). Stattdessen **frisch angefangen**:

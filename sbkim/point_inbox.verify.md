@@ -46,4 +46,4 @@
 
 ## 2026-07-15 — Identitäts-Wechsel Mixarium + Neu-Messung
 - **Mixarium hat die Identität gewechselt** (bewusster Neuanfang, Klaus): neu `dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g`, alt `B7Fke9CYTR1BrC3xOXzEY5q9RuRH8xxHPUuqRHV3utA` (jetzt in unseren `previousNodeIds`). Die hier geführte Nachbar-Spore ist unverändert.
-- **Neuer Cosinus** unser NEUER domainVector (ausführliche Getränke-Beschreibung) ⟷ SB-KIMTool-Point = **0.8084** ≥ 0.80. *Hub — grenzwertig/längengetrieben, kein starkes Themen-Match.*
+- **Neuer Cosinus** unser NEUER domainVector (ausführliche Getränke-Beschreibung) ⟷ SB-KIMTool-Point = **0.8104** ≥ 0.80. *Hub — grenzwertig/längengetrieben, kein starkes Themen-Match.*
