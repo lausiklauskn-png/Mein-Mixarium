@@ -6,6 +6,13 @@
   try {
     await SbkimStorage.init({ dbSuffix: "mixarium" });
 
+    // Modul 20 Schlüssel-Safe — verschlüsselte Ablage der SBKIM-Identität UND
+    // generische Geheimnis-Ablage (BYOK-KI-Schlüssel via putSecret/getSecret,
+    // PBKDF2-600k + AES-GCM-256). Braucht nur Modul 01. autoPrompt Default false
+    // (App startet normal). Der KI-Richter im Netz-Panel (Modul 23 UI) nutzt den
+    // Safe für „🔒 im Tresor merken / 🔓 entsperren"; ohne Modul 20 fail-soft.
+    if (window.SbkimSafe) await SbkimSafe.init();
+
     // Modul 17 Floating-Widget — Endknoten-Standard-Render-Schicht
     // (Karte 09 § Schritt 12). Nach Storage (01) und VOR Spore (02), damit
     // die Proxy-Spans #lamp-fremd + #sbkim-siegel-badge im DOM sind. Sage-
