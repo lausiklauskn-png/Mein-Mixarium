@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-07-18T21:57:18.627Z",
+  "createdAt": "2026-07-19T12:33:40.924Z",
   "domain": "lausiklauskn-png.github.io",
   "domainDescription": "Mein Mixarium ist ein persönliches Getränke-Labor als offline-fähige App (PWA) — eine digitale Werkstatt und Sammlung rund um alles Trinkbare. Der Schwerpunkt liegt ausschließlich auf Getränken: alkoholische und alkoholfreie Cocktails, Mocktails, Smoothies und Shakes, Limonaden und Erfrischungsgetränke, Tees und Kaffees, Bowlen und Punsche sowie selbstgemachte Sirupe und Basis-Zutaten. Eigene Rezepte lassen sich anlegen, sammeln, in Ordnern und Kategorien sortieren, bewerten und mehrsprachig führen. Über die Anbindung an eine öffentliche Cocktail-Datenbank kann man bekannte Drinks entdecken und übernehmen; ein KI-gestütztes Labor erzeugt auf Wunsch neue, experimentelle Getränke-Rezepte samt Zutaten, Zubereitungsschritten, Glastyp, Alkohol-Angabe und Geschmacksprofil, die man verkosten, bewerten und ins eigene Buch aufnehmen oder verwerfen kann. Ein Wochen- und Menüplan hilft, Drinks für Anlässe und Gäste zusammenzustellen. Als kleine Begleitung zu den Getränken gibt es zusätzlich Knabbereien und Fingerfood — Essen ist aber ausdrücklich nicht das Thema. Gedacht ist die App für Hobby-Mixologen, Gastgeber und alle, die gern neue Drinks ausprobieren, mischen, dokumentieren und offline griffbereit haben. Im Kern ist Mein Mixarium ein Organisations- und Kategorisierungs-Werkzeug — sammeln, ordnen, benennen, bewerten und wiederfinden — hier ausgeprägt für das Thema Getränke; dasselbe Grundgerüst trägt auch verwandte Apps (z. B. Rezept- und Verwahr-Werkzeuge).",
   "domainKeywords": [
@@ -403,7 +403,7 @@
     "Knabbereien",
     "Fingerfood"
   ],
-  "id": "dJ7H5BpjkQvkOyGS6qWrZgpDocVIPAVsJNB1wqt9h3g",
+  "id": "YD68l2ScNzd-RWS8tCrL_JAtgpoPp3i3VKc4N9GKvbo",
   "nodeName": "Mixarium Klaus",
   "nodeType": "hybrid",
   "protocolVersion": "0.2",
@@ -415,9 +415,9 @@
       "verify"
     ],
     "kty": "OKP",
-    "x": "fe93mLGX6iy72jnVvMsTNKP5wxuGToCR2vFn-xMGKas"
+    "x": "wTsaJ_26sDoHdIZ5G_ewkn7Tb_vbwm50s4nUrAzT80k"
   },
-  "signature": "6cR12gIp3VaswlXUgBHIC1j-5pU_IFlX-sfUF7K7UmvgWVy0Vseif0EkVtly1Tfsdm5dX-EGNVGjaj6NtowBCw",
+  "signature": "OfYAlNh8R_2FvwZqibjgau7-SDmPWWKsRWb29xCkGMcziaXpjyacFNIUFNn1L3JAS7w9C2jRdR83k-1DziTrDw",
   "snippetVectors": [
     {
       "text": "Mein Mixarium ist ein persönliches Getränke-Labor als offline-fähige App (PWA) — eine digitale Werkstatt und Sammlung rund um alles Trinkbare.",
