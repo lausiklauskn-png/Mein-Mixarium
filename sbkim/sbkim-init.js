@@ -33,6 +33,11 @@
     SbkimSiegel.init({
       badgeSelector: "#sbkim-siegel-badge",
       repoUrl: "https://github.com/lausiklauskn-png/Mein-Mixarium",
+      // PFLICHT (Skill „status-leiste-siegel", TEIL 2b): ohne ribbonText bleibt das
+      // Ordens-Band im Wappen LEER — es gibt bewusst keine Auto-Ableitung aus
+      // repoUrl (kein geratener Name auf einer Auszeichnung). Mein-Mixarium war
+      // 2026-07-30 die letzte App ohne eigene Gravur.
+      ribbonText: "Mein Mixarium",
     });
 
     // Modul 18 Tool-PWA Sub (a) Vorab — Andock-Wizard, getriggert durch
@@ -207,7 +212,11 @@
           nodeName: displayNodeName("Mein Mixarium"),
           dbSuffix: "mixarium",
           createIdentity: function () { return window.__sbkimErzeugeSpore(); },
-          ensureIdentity: true,
+          // ensureIdentity ABSICHTLICH NICHT (Stufe 0b, 2026-07-30): Modus A legte
+          // beim Seiten-Start WORTLOS eine neue Kennung an, wenn die Schublade leer
+          // war. Aus einem Speicher-Problem wurde so unbemerkt ein Identitaets-
+          // Wechsel. Die Kennung entsteht jetzt nur auf ausdrueckliche Nutzer-
+          // Entscheidung im Netz-Panel (neu anlegen ODER Sicherung einspielen).
         });
       } catch (e) { console.warn("SBKIM-Rendezvous (Modus A) übersprungen:", e); }
     }
