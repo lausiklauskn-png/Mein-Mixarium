@@ -7,7 +7,7 @@ console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 //
 // Ab v5: Navigation und Pre-Cache umgehen den Browser-HTTP-Cache aktiv
 // (cache:'reload'), damit App-Änderungen ohne manuelles Cache-Löschen ankommen.
-const SW_VERSION = 'mixarium-sw-v81';
+const SW_VERSION = 'mixarium-sw-v82';
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
@@ -34,11 +34,21 @@ const PRECACHE_FRISCH = [
 // wenn doch, wird ohnehin SW_VERSION hochgezaehlt UND GitHub Pages laesst seinen
 // Cache nach 10 Minuten verfallen. Ohne 'reload' nimmt der Pre-Cache hier das,
 // was der Browser gerade geholt hat - kein zweiter Download.
+// Ab v82 OHNE die beiden Intro-Videos (Lighthouse-Messung 2026-08-02): der
+// Browser spielt genau EIN Format — die <video>-Quellen stehen als webm zuerst,
+// mp4 als Rueckfall. Der Vorrat holte trotzdem BEIDE. Auf einem Geraet, das
+// webm kann, wurden die 620 KiB mp4 also fuer ein Format geladen, das dort nie
+// laeuft; das webm kam obendrein doppelt (einmal fuer die Seite, einmal fuer
+// den Vorrat). Zusammen 910 KiB bei jedem Erstbesuch.
+//
+// Sie werden trotzdem offline verfuegbar: STATIC_PATH_RE deckt mp4/webm ab,
+// der Laufzeit-Cache legt also genau das Format ab, das die Seite wirklich
+// geholt hat. Ehrliche Grenze: wer die App installiert und offline geht, BEVOR
+// das Intro je gelaufen ist, sieht es beim ersten Mal nicht — danach immer.
+// Das Intro ist Zierde, nicht Funktion; die App laeuft ohne es vollstaendig.
 const PRECACHE_MEDIEN = [
   './mixarium_icon.svg',
-  './mixarium_icon.png',
-  './mixarium_intro.mp4',
-  './mixarium_intro.webm'
+  './mixarium_icon.png'
 ];
 
 const STATIC_PATH_RE = /\.(?:css|js|mjs|png|jpg|jpeg|gif|svg|webp|ico|json|woff2?|mp4|webm)$/i;
