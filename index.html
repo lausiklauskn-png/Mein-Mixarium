@@ -2573,8 +2573,17 @@ body:not([data-theme]) #bnav{
 
 <div id="boot-splash">
   <video id="bs-video" muted playsinline autoplay preload="auto">
-    <source src="mixarium_intro.webm" type="video/webm">
-    <source src="mixarium_intro.mp4" type="video/mp4">
+    <!-- Codecs AUSDRUECKLICH benannt (Lighthouse-Befund 2026-08-02): stand hier
+         nur "video/webm" bzw. "video/mp4", antwortete der Browser auf die Frage
+         "kannst du das?" mit "vielleicht" — und musste die Datei anfassen, um
+         es herauszufinden. Auf der Messmaschine landeten dadurch BEIDE Formate
+         im Netz (620 + 290 KiB), obwohl nur eins gespielt wird.
+         Mit der genauen Kennung antwortet er "ja" oder "nein", ohne zu laden:
+         wer VP9 kann, holt nur das webm; wer nicht, holt nur das mp4.
+         Werte aus den Dateien selbst gelesen — webm: V_VP9, mp4: avcC-Box
+         profile 0x64 / compat 0x00 / level 0x1F. -->
+    <source src="mixarium_intro.webm" type='video/webm; codecs="vp9"'>
+    <source src="mixarium_intro.mp4" type='video/mp4; codecs="avc1.64001F"'>
   </video>
   <div id="bs-skip">Tippen zum Überspringen</div>
   <div id="bs-load">
