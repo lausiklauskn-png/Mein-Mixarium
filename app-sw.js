@@ -7,14 +7,34 @@ console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 //
 // Ab v5: Navigation und Pre-Cache umgehen den Browser-HTTP-Cache aktiv
 // (cache:'reload'), damit App-Änderungen ohne manuelles Cache-Löschen ankommen.
-const SW_VERSION = 'mixarium-sw-v80';
+const SW_VERSION = 'mixarium-sw-v81';
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
-const PRECACHE_URLS = [
-  './',
+// Ab v81 in ZWEI Gruppen geteilt (Lighthouse-Befund 2026-08-02: im Bericht kam
+// JEDE Datei doppelt vor - einmal fuer die Seite, einmal fuer den Pre-Cache,
+// zusammen 4156 KiB statt rund 2000). Ursache war cache:'reload' auf ALLEN
+// Adressen: das ueberspringt den Browser-Cache mit Absicht und erzwingt damit
+// einen zweiten Download derselben Datei.
+//
+// FRISCH (cache:'reload'): nur das, was sich mit jeder App-Aenderung aendert.
+// Hier ist der Zwang richtig - sonst landet veralteter HTML-Stand in der neuen
+// SW-Version, und genau dagegen wurde die Regel damals eingefuehrt.
+// './' ist bewusst NICHT dabei: das ist dieselbe Datei wie './index.html', nur
+// unter zweiter Adresse - sie wuerde das groesste Stueck der App ein weiteres
+// Mal ueber die Leitung holen. Der Offline-Fall ist trotzdem gedeckt, weil der
+// navigate-Zweig unten der Reihe nach caches.match(req) UND danach
+// caches.match('./index.html') versucht. Mit einem Offline-Aufruf von '/'
+// nachgeprueft, nicht nur so gedacht.
+const PRECACHE_FRISCH = [
   './index.html',
-  './manifest.json',
+  './manifest.json'
+];
+// UNVERAENDERLICH: Bilder und Videos. Diese Dateien aendern sich praktisch nie;
+// wenn doch, wird ohnehin SW_VERSION hochgezaehlt UND GitHub Pages laesst seinen
+// Cache nach 10 Minuten verfallen. Ohne 'reload' nimmt der Pre-Cache hier das,
+// was der Browser gerade geholt hat - kein zweiter Download.
+const PRECACHE_MEDIEN = [
   './mixarium_icon.svg',
   './mixarium_icon.png',
   './mixarium_intro.mp4',
@@ -28,8 +48,10 @@ self.addEventListener('install', event => {
     const cache = await caches.open(PRECACHE);
     // Pre-Cache MUSS frisches Material holen, sonst landet veralteter HTML-Stand
     // in der neuen SW-Version. cache:'reload' überspringt jeden HTTP-Cache.
-    const reloadRequests = PRECACHE_URLS.map(u => new Request(u, { cache: 'reload' }));
-    await cache.addAll(reloadRequests);
+    // Das gilt aber nur für die frische Gruppe — bei Bildern/Videos erzwingt es
+    // nur einen zweiten Download derselben Datei (siehe Kommentar oben).
+    await cache.addAll(PRECACHE_FRISCH.map(u => new Request(u, { cache: 'reload' })));
+    await cache.addAll(PRECACHE_MEDIEN.map(u => new Request(u)));
     self.skipWaiting();
   })());
 });
