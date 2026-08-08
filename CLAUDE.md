@@ -177,6 +177,39 @@ Die `mr-*.html`-Dateien (`mr-gift.html`, `mr-gift2.html`, `mr-invite-v5.html`) s
 
 ---
 
+## ⚠️ REGEL 2026-08-08: Icons der HAUPT-App als Datei mit Versionsnummer
+
+Die Symbole der App steckten als Base64 in `index.html` — 439 KB, die bei
+**jedem** Seitenaufruf auf dem kritischen Pfad lagen, obwohl sie während des
+Ladens niemand sieht (Tab- und Startbildschirm-Symbole).
+
+| | vorher | nachher |
+|---|---|---|
+| Dokument | 1.385 K | **946 K** |
+| erster Anstrich | 3,7 s | **2,0 s** |
+| Leistung (Handy, lokal) | 39 · 55 | **65 · 66** |
+| übertragen | 1.330 KiB | **804 KiB** |
+
+**Regel:** Icons als Datei verlinken, mit **Versionsnummer in der Adresse**:
+
+```html
+<link rel="icon" type="image/png" sizes="192x192" href="icons/mixarium-192.png?v=1">
+```
+
+Eine geänderte Adresse ist für den Cache ein **anderes** Bild — deshalb ersetzt
+die Versionsnummer den früheren Zweck der Einbettung (aggressives
+Favicon-Caching) vollständig.
+
+**Nach jeder Icon-Änderung `?v=` um eins hochzählen** — in `index.html`, in der
+QC-Datei **und** in `app-sw.js`. Alle drei müssen dieselbe Adresse nennen.
+
+**Pflicht dabei:** jedes verlinkte Icon gehört in `PRECACHE_FRISCH` in
+`app-sw.js`, sonst fehlen die Symbole offline.
+
+**Das gilt NICHT für die eigenständigen Seiten** — siehe die nächste Regel.
+
+---
+
 ## ⚠️ REGEL: Icons in eigenständigen Seiten müssen inline sein
 
 Externe Icon-Referenzen (`href="icons/icon-book-blue.svg"`) sind **verboten** — wenn die Icon-Datei umbenannt oder verschoben wird, bricht das Icon lautlos. Pflicht: alle Icons in `gift.html`, `gift2.html`, `invite-v5.html`, `impressum.html` als **inline Base64 data-URI**.
