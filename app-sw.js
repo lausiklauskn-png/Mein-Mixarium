@@ -7,7 +7,7 @@ console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 //
 // Ab v5: Navigation und Pre-Cache umgehen den Browser-HTTP-Cache aktiv
 // (cache:'reload'), damit App-Änderungen ohne manuelles Cache-Löschen ankommen.
-const SW_VERSION = 'mixarium-sw-v84';
+const SW_VERSION = 'mixarium-sw-v85';
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
@@ -28,7 +28,27 @@ const RUNTIME = `runtime-${SW_VERSION}`;
 // nachgeprueft, nicht nur so gedacht.
 const PRECACHE_FRISCH = [
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icons/mixarium-120.png?v=1',
+  './icons/mixarium-144.png?v=1',
+  './icons/mixarium-152.png?v=1',
+  './icons/mixarium-180.png?v=1',
+  './icons/mixarium-192.png?v=1',
+  './icons/mixarium-72.png?v=1',
+  './icons/mixarium-96.png?v=1',
+  './icons/mixarium-leerkarte.jpg?v=1',
+  './icons/splash-1125x2436.png?v=1',
+  './icons/splash-1170x2532.png?v=1',
+  './icons/splash-1179x2556.png?v=1',
+  './icons/splash-1242x2208.png?v=1',
+  './icons/splash-1242x2688.png?v=1',
+  './icons/splash-1284x2778.png?v=1',
+  './icons/splash-1290x2796.png?v=1',
+  './icons/splash-1536x2048.png?v=1',
+  './icons/splash-2048x2732.png?v=1',
+  './icons/splash-640x1136.png?v=1',
+  './icons/splash-750x1334.png?v=1',
+  './icons/splash-828x1792.png?v=1'
 ];
 // UNVERAENDERLICH: Bilder und Videos. Diese Dateien aendern sich praktisch nie;
 // wenn doch, wird ohnehin SW_VERSION hochgezaehlt UND GitHub Pages laesst seinen
