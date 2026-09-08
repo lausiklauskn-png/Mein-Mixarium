@@ -11,6 +11,18 @@ const SW_VERSION = 'mixarium-sw-v85';
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
+/* ⚠ NUR EIGENE VORRAETE AUFRAEUMEN — `caches` gehoert dem URSPRUNG, nicht dem
+ * Pfad. Auf lausiklauskn-png.github.io liegen rund zwanzig Apps; der Filter
+ * `k !== PRECACHE && k !== RUNTIME` liess ALLE fremden durch und loeschte sie.
+ * Gemessen am 2026-09-08 (Sage-Protokol/tests/vorrat_wirkung.mjs).
+ *
+ * ⚠ HIER GEHT KEIN PRAEFIX. Die Vorraete heissen `precache-mixarium-sw-v85`
+ * und `runtime-mixarium-sw-v85` — sie FANGEN NICHT mit dem App-Namen an.
+ * Ein `startsWith("mixarium-")` haette NICHTS getroffen und die App ihre
+ * eigenen alten Vorraete nie mehr wegraeumen lassen: derselbe Fehler wie das
+ * Loeschen fremder, nur andersherum und still. Gepruefte Kennung statt Praefix. */
+const VORRAT_KENNUNG = "mixarium-sw-";
+
 // Ab v81 in ZWEI Gruppen geteilt (Lighthouse-Befund 2026-08-02: im Bericht kam
 // JEDE Datei doppelt vor - einmal fuer die Seite, einmal fuer den Pre-Cache,
 // zusammen 4156 KiB statt rund 2000). Ursache war cache:'reload' auf ALLEN
@@ -91,7 +103,7 @@ self.addEventListener('activate', event => {
     const keys = await caches.keys();
     await Promise.all(
       keys
-        .filter(k => k !== PRECACHE && k !== RUNTIME)
+        .filter(k => k.includes(VORRAT_KENNUNG) && k !== PRECACHE && k !== RUNTIME)
         .map(k => caches.delete(k))
     );
     await self.clients.claim();
