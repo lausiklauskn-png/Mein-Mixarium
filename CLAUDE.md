@@ -335,6 +335,42 @@ bleibt so — sie ist ehrlicher.
 wenn über das **Siegel** neu signiert wird. Wer nur die Datei ändert und darauf
 wartet, dass die Zahl steigt, wartet vergeblich.
 
+### ✅ Und es hat gewirkt — gemessen am 2026-09-10, 16:29
+
+Klaus hat über das **Siegel** neu signiert. Der Mycel-Mitschnitt danach:
+
+| | vorher | nachher |
+|---|---|---|
+| gegen Sage | 0.826040 | **0.883142** |
+| Text im Raum | 88 Zeichen | **2141** |
+| Kennung | `6U3aniLM3Rps…` | **dieselbe** — die Identität hat den Wechsel überlebt |
+| Vektor-Grundlage | `embeddingSource: "content"` (Drinks) | die **Beschreibung** (14 Schnipsel, Siegel-Weg) |
+
+⚠ **Das ist nicht nur ein besserer Text, es ist eine andere MESSGRUNDLAGE.**
+Vorher rechnete die Zahl aus den Getränke-Namen, jetzt aus der
+Selbstbeschreibung. Beide Wege sind gewollt (siehe oben) — wer die Zahlen über
+die Zeit vergleicht, muss wissen, welcher gerade greift.
+
+**Die Spore liegt seitdem unter `sbkim/spore.json`**, die alte als
+`sbkim/spore-vorgaenger-2026-07-19.json` daneben. Geprüft, bevor sie abgelegt
+wurde: VALID · `id == base64url(SHA256(rawPub))` · kein `d` · `key_ops` nur
+`["verify"]` · L2 = 1 · byte-gleich mit der Spore im Raum · Text byte-gleich mit
+dem Depot.
+
+⚠ **DIE KENNUNG IST IN DER PROBE GENAGELT.** Ohne den Nagel fängt kein Wächter
+eine erfundene Spore: wer ein frisches Schlüsselpaar erzeugt und damit
+unterschreibt, bekommt eine, die in sich tadellos ist und nur einen **anderen**
+Knoten ankündigt. Wer die Kennung wechselt, zieht sie **hier UND in
+`Sage-Protokol/status.json`** nach — das ist der Preis, und er ist beabsichtigt.
+
+⚠ **UND DIE GEGENPROBE MUSSTE NEU UNTERSCHREIBEN, statt zu verbiegen.** Jedes
+Feld einer Spore steht **unter** der Signatur; ein Eingriff von Hand bricht also
+immer zuerst den Signatur-Wächter, und der Fall wäre „gefangen", ohne den
+gemeinten je erreicht zu haben. `tests/gegenprobe_spore.mjs` unterschreibt mit
+einem frischen Paar, das nur im Arbeitsspeicher lebt. Vier Fälle ziehen dabei den
+genagelten Wert in der **Kopie** der Probe nach — sonst fiele der
+Kennungs-Wächter stellvertretend um.
+
 ### Warum das Protokoll in der Beschreibung steht
 
 Gemessen an den vier Mycel-Mitschnitten vom 2026-09-10, in denen alle 21 Knoten
