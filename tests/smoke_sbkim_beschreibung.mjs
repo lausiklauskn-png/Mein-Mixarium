@@ -31,7 +31,8 @@
  *
  * Lauf: node tests/smoke_sbkim_beschreibung.mjs
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
+import { createPublicKey, verify, createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -110,6 +111,62 @@ ok("ein Knopf holt den zuletzt signierten Text zurück",
    nicht zu unterscheiden — ausser für den, der es nicht sieht. */
 ok("… und beide hängen wirklich im Block",
   /wrap\.appendChild\(herkunft\)/.test(siegel) && /wrap\.appendChild\(zurueck\)/.test(siegel));
+
+/* ── 4 · Die abgelegte Spore (seit 2026-09-10) ───────────────────────────────
+   ⚠ „EINE DATEI, DIE AUSSIEHT WIE EINE IDENTITÄT, IST SCHLIMMER ALS KEINE."
+   Bewacht wird deshalb die ZUSICHERUNG, nicht der Dateiname: liegt hier eine
+   Spore, muss sie sich gegen ihren EIGENEN Schlüssel verifizieren, darf keinen
+   privaten Teil tragen und muss DIESEN Knoten ankündigen. Liegt keine da, ist
+   das in Ordnung — sie entsteht im Browser, und Sages Tafel sagt: die Spore im
+   Netz ist nicht die Spore im Depot.
+
+   ⚠ DIE KENNUNG IST GENAGELT. Ohne den Nagel fängt kein Wächter eine erfundene
+   Spore: wer ein frisches Schlüsselpaar erzeugt und damit unterschreibt, bekommt
+   eine, die in sich tadellos ist und nur einen ANDEREN Knoten ankündigt. Wer die
+   Kennung wechselt, zieht sie hier UND in Sage-Protokol/status.json nach — das
+   ist der Preis, und er ist beabsichtigt. */
+const KENNUNG = "6U3aniLM3RpsmjPMV1nTYTPBaNP7C19Frvd5ZLCoaTQ";
+const SPORE = join(WURZEL, "sbkim", "spore.json");
+
+if (!existsSync(SPORE)) {
+  console.log("  ⊘ keine abgelegte Spore — in Ordnung, sie entsteht im Browser");
+} else {
+  const sp = JSON.parse(readFileSync(SPORE, "utf8"));
+  const jwk = sp.publicKey || {};
+  const canon = (v) => v === null ? null : Array.isArray(v) ? v.map(canon)
+    : (typeof v === "object" ? Object.keys(v).sort().reduce((o, k) => (o[k] = canon(v[k]), o), {}) : v);
+  const b64u = (b) => Buffer.from(b).toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+  let gueltig = false;
+  try {
+    const { signature, ...unsigned } = sp;
+    gueltig = verify(null, Buffer.from(JSON.stringify(canon(unsigned)), "utf8"),
+      createPublicKey({ key: jwk, format: "jwk" }),
+      Buffer.from(String(signature).replace(/-/g, "+").replace(/_/g, "/"), "base64"));
+  } catch { /* bleibt false — gleich als rot gemeldet */ }
+  ok("die abgelegte Spore verifiziert gegen ihren eigenen Schlüssel", gueltig);
+
+  let idOk = false;
+  try {
+    const roh = Buffer.from(String(jwk.x).replace(/-/g, "+").replace(/_/g, "/"), "base64");
+    idOk = b64u(createHash("sha256").update(roh).digest()) === sp.id;
+  } catch { /* bleibt false */ }
+  ok("… ihre Kennung ist base64url(SHA256(rawPub))", idOk);
+
+  /* Der eine Fehler, den ein öffentliches Depot sich nicht leisten kann. */
+  ok("… und sie trägt KEINEN privaten Schlüsselteil", !("d" in jwk));
+  ok("… key_ops erlaubt nur 'verify'", JSON.stringify(jwk.key_ops || []) === '["verify"]');
+
+  const l2 = Math.sqrt((sp.domainVector || []).reduce((a, x) => a + x * x, 0));
+  ok(`… der Vektor ist 384-dim und normiert (L2 = ${l2.toFixed(6)})`,
+    (sp.domainVector || []).length === 384 && Math.abs(l2 - 1) < 1e-6);
+
+  ok("… sie kündigt DIESEN Knoten an (genagelte Kennung)", sp.id === KENNUNG);
+  /* Eine Spore mit einem anderen Text als die App wäre eine zweite Wahrheit —
+     dann misst das Register gegen etwas, das im Raum niemand ansagt. */
+  ok("… und trägt denselben Text wie die App", sp.domainDescription === text);
+}
 
 console.log(`\n═══ ${gruen} grün · ${rot} ROT ═══\n`);
 process.exit(rot > 0 ? 1 : 0);
