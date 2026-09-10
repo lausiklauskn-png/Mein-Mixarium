@@ -1,5 +1,19 @@
 # Inbox-Vermerk — Sage-Protokol (reziproke Spore-Pruefung)
 
+> ⚠ **NEUE FASSUNG AM 2026-09-10.** Sage hat neu signiert — **neue Kennung**
+> `BgjXhSApoOrJD6zFJ4uuEpAliGWPokpKn7UMWRm94PA`
+> (vorher `nysOZE3VuKqZA23i5G2XL67s41JIIykI58zXMtJkYfA`) und eine neue
+> Bedeutungs-Beschreibung (3028 Zeichen statt 2527,
+> 50 Stichworte, 17 Schnipsel).
+> `sbkim/sage_inbox.json` trägt seitdem diese Fassung. Reziprok geprüft:
+> **✔ VALID** · `id == base64url(SHA256(rawPub))` · kein `d` im JWK ·
+> `key_ops` nur `["verify"]` · `domainVector` 384 Zahlen, L2 = 0.999999927 ·
+> kein `_demo`. Sages Cosinus zu diesem Knoten: **0.817718** (vorher 0.822299) —
+> weiter `verified-match`.
+>
+> **Der Vermerk darunter bleibt unverändert.** Er belegt, was am jeweiligen
+> Datum galt; ihn umzuschreiben wäre Geschichtsfälschung.
+
 > Gegenprobe der byte-1:1 uebernommenen Nachbar-Spore `sbkim/sage_inbox.json`.
 > Verfahren = In-App-Pfad `SbkimSpore.verifyForeignSpore` (sbkim/02_spore.js),
 > eigenstaendig nachgerechnet mit `scripts/verify_foreign_spore.mjs`. Zero-dep, offline.
