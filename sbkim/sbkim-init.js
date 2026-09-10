@@ -47,7 +47,7 @@
       await SbkimToolPwa.init({
         endpoint:        "https://lausiklauskn-png.github.io/Mein-Mixarium/",
         domain:          "mixarium",
-        domainKeywords:  ["Cocktail", "Drink", "Mocktail", "Limonade", "Smoothie", "Aperitif", "Sake"],
+        domainKeywords:  ["Cocktail", "Drink", "Mocktail", "Limonade", "Smoothie", "Aperitif", "Sake", "SBKIM", "SBKIM-Protokoll", "Mycel", "Knoten", "Endknoten", "Sage-Protokol", "Spore", "Rendezvous", "semantisches Matching", "Bedeutung statt Stichwort", "server-los", "offline", "PWA", "Getränke-Labor", "Rezepte"],
         stammCategories: ["Cocktails", "Mocktails", "Alkfr. Cocktails", "Smoothies & Shakes", "Limonaden", "Tees & Kaffees", "Bowlen", "Sirup & Basis"],
         guestCategories: ["Knabbereien", "Fingerfood"],
         repoUrl:         "https://github.com/lausiklauskn-png/Mein-Mixarium",
@@ -263,7 +263,7 @@ window.__sbkimErzeugeSpore = async function () {
 
   var stammCategories = ["Cocktails", "Mocktails", "Alkfr. Cocktails", "Smoothies & Shakes", "Limonaden", "Tees & Kaffees", "Bowlen", "Sirup & Basis"];
   var guestCategories = ["Knabbereien", "Fingerfood"];
-  var domainKeywords = ["Cocktail", "Drink", "Mocktail", "Limonade", "Smoothie", "Aperitif", "Sake"];
+  var domainKeywords = ["Cocktail", "Drink", "Mocktail", "Limonade", "Smoothie", "Aperitif", "Sake", "SBKIM", "SBKIM-Protokoll", "Mycel", "Knoten", "Endknoten", "Sage-Protokol", "Spore", "Rendezvous", "semantisches Matching", "Bedeutung statt Stichwort", "server-los", "offline", "PWA", "Getränke-Labor", "Rezepte"];
   var allText = stammCategories.concat(guestCategories).concat(domainKeywords).join(", ");
 
   // Inhalts-treuer domainVector (2026-06-28): wenn echte Drinks vorhanden sind,
@@ -308,7 +308,7 @@ window.__sbkimErzeugeSpore = async function () {
     endpoint: "https://lausiklauskn-png.github.io/Mein-Mixarium/",
     nodeType: "hybrid",
     nodeName: "Mixarium Klaus",
-    domainDescription: "Klaus Mixarium - Cocktails, Mocktails, Smoothies und mehr; Knabbereien als Begleit-Plus.",
+    domainDescription: "Mein Mixarium ist ein persönliches Getränke-Labor als offline-fähige App (PWA) — eine digitale Werkstatt und Sammlung rund um alles Trinkbare. Der Schwerpunkt liegt ausschließlich auf Getränken: alkoholische und alkoholfreie Cocktails, Mocktails, Smoothies und Shakes, Limonaden und Erfrischungsgetränke, Tees und Kaffees, Bowlen und Punsche sowie selbstgemachte Sirupe und Basis-Zutaten. Eigene Rezepte lassen sich anlegen, sammeln, in Ordnern und Kategorien sortieren, bewerten und mehrsprachig führen. Über die Anbindung an eine öffentliche Cocktail-Datenbank kann man bekannte Drinks entdecken und übernehmen; ein KI-gestütztes Labor erzeugt auf Wunsch neue, experimentelle Getränke-Rezepte samt Zutaten, Zubereitungsschritten, Glastyp, Alkohol-Angabe und Geschmacksprofil, die man verkosten, bewerten und ins eigene Buch aufnehmen oder verwerfen kann. Ein Wochen- und Menüplan hilft, Drinks für Anlässe und Gäste zusammenzustellen. Als kleine Begleitung zu den Getränken gibt es zusätzlich Knabbereien und Fingerfood — Essen ist aber ausdrücklich nicht das Thema. Gedacht ist die App für Hobby-Mixologen, Gastgeber und alle, die gern neue Drinks ausprobieren, mischen, dokumentieren und offline griffbereit haben. Im Kern ist Mein Mixarium ein Organisations- und Kategorisierungs-Werkzeug — sammeln, ordnen, benennen, bewerten und wiederfinden — hier ausgeprägt für das Thema Getränke; dasselbe Grundgerüst trägt auch verwandte Apps (z. B. Rezept- und Verwahr-Werkzeuge). SBKIM-PROTOKOLL: Mein Mixarium ist zugleich ein eigener Endknoten im SBKIM-Mycel — dem server-losen Netz aus dem Sage-Protokol, in dem kleine Web-Apps einander nach BEDEUTUNG finden statt nach Stichwörtern. Es trägt eine eigene signierte Spore und meldet sich im gemeinsamen Rendezvous-Raum an; der private Schlüssel bleibt im Browser, es gibt keinen zentralen Vermittler und kein Konto. Semantisches Bidirektionales KI-Matching heißt, dass beide Seiten dasselbe Verfahren benutzen — der Suchende und der Gefundene rechnen ihre Bedeutung mit demselben Modell, und der Vergleich läuft im Browser. Wer im Mycel steht, wird von den anderen Knoten von selbst gefunden.",
     domainKeywords: domainKeywords,
     domainVector: Array.from(vec),
     embeddingSource: source,

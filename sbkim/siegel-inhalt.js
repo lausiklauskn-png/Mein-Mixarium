@@ -38,8 +38,8 @@
     endpoint: "https://lausiklauskn-png.github.io/Mein-Mixarium/",
     nodeType: "hybrid",
     nodeName: "Mixarium Klaus",
-    domainDescription: "Mein Mixarium ist ein persönliches Getränke-Labor als offline-fähige App (PWA) — eine digitale Werkstatt und Sammlung rund um alles Trinkbare. Der Schwerpunkt liegt ausschließlich auf Getränken: alkoholische und alkoholfreie Cocktails, Mocktails, Smoothies und Shakes, Limonaden und Erfrischungsgetränke, Tees und Kaffees, Bowlen und Punsche sowie selbstgemachte Sirupe und Basis-Zutaten. Eigene Rezepte lassen sich anlegen, sammeln, in Ordnern und Kategorien sortieren, bewerten und mehrsprachig führen. Über die Anbindung an eine öffentliche Cocktail-Datenbank kann man bekannte Drinks entdecken und übernehmen; ein KI-gestütztes Labor erzeugt auf Wunsch neue, experimentelle Getränke-Rezepte samt Zutaten, Zubereitungsschritten, Glastyp, Alkohol-Angabe und Geschmacksprofil, die man verkosten, bewerten und ins eigene Buch aufnehmen oder verwerfen kann. Ein Wochen- und Menüplan hilft, Drinks für Anlässe und Gäste zusammenzustellen. Als kleine Begleitung zu den Getränken gibt es zusätzlich Knabbereien und Fingerfood — Essen ist aber ausdrücklich nicht das Thema. Gedacht ist die App für Hobby-Mixologen, Gastgeber und alle, die gern neue Drinks ausprobieren, mischen, dokumentieren und offline griffbereit haben. Im Kern ist Mein Mixarium ein Organisations- und Kategorisierungs-Werkzeug — sammeln, ordnen, benennen, bewerten und wiederfinden — hier ausgeprägt für das Thema Getränke; dasselbe Grundgerüst trägt auch verwandte Apps (z. B. Rezept- und Verwahr-Werkzeuge).",
-    domainKeywords: ["Cocktail", "Drink", "Mocktail", "Limonade", "Smoothie", "Aperitif", "Sake"],
+    domainDescription: "Mein Mixarium ist ein persönliches Getränke-Labor als offline-fähige App (PWA) — eine digitale Werkstatt und Sammlung rund um alles Trinkbare. Der Schwerpunkt liegt ausschließlich auf Getränken: alkoholische und alkoholfreie Cocktails, Mocktails, Smoothies und Shakes, Limonaden und Erfrischungsgetränke, Tees und Kaffees, Bowlen und Punsche sowie selbstgemachte Sirupe und Basis-Zutaten. Eigene Rezepte lassen sich anlegen, sammeln, in Ordnern und Kategorien sortieren, bewerten und mehrsprachig führen. Über die Anbindung an eine öffentliche Cocktail-Datenbank kann man bekannte Drinks entdecken und übernehmen; ein KI-gestütztes Labor erzeugt auf Wunsch neue, experimentelle Getränke-Rezepte samt Zutaten, Zubereitungsschritten, Glastyp, Alkohol-Angabe und Geschmacksprofil, die man verkosten, bewerten und ins eigene Buch aufnehmen oder verwerfen kann. Ein Wochen- und Menüplan hilft, Drinks für Anlässe und Gäste zusammenzustellen. Als kleine Begleitung zu den Getränken gibt es zusätzlich Knabbereien und Fingerfood — Essen ist aber ausdrücklich nicht das Thema. Gedacht ist die App für Hobby-Mixologen, Gastgeber und alle, die gern neue Drinks ausprobieren, mischen, dokumentieren und offline griffbereit haben. Im Kern ist Mein Mixarium ein Organisations- und Kategorisierungs-Werkzeug — sammeln, ordnen, benennen, bewerten und wiederfinden — hier ausgeprägt für das Thema Getränke; dasselbe Grundgerüst trägt auch verwandte Apps (z. B. Rezept- und Verwahr-Werkzeuge). SBKIM-PROTOKOLL: Mein Mixarium ist zugleich ein eigener Endknoten im SBKIM-Mycel — dem server-losen Netz aus dem Sage-Protokol, in dem kleine Web-Apps einander nach BEDEUTUNG finden statt nach Stichwörtern. Es trägt eine eigene signierte Spore und meldet sich im gemeinsamen Rendezvous-Raum an; der private Schlüssel bleibt im Browser, es gibt keinen zentralen Vermittler und kein Konto. Semantisches Bidirektionales KI-Matching heißt, dass beide Seiten dasselbe Verfahren benutzen — der Suchende und der Gefundene rechnen ihre Bedeutung mit demselben Modell, und der Vergleich läuft im Browser. Wer im Mycel steht, wird von den anderen Knoten von selbst gefunden.",
+    domainKeywords: ["Cocktail", "Drink", "Mocktail", "Limonade", "Smoothie", "Aperitif", "Sake", "SBKIM", "SBKIM-Protokoll", "Mycel", "Knoten", "Endknoten", "Sage-Protokol", "Spore", "Rendezvous", "semantisches Matching", "Bedeutung statt Stichwort", "server-los", "offline", "PWA", "Getränke-Labor", "Rezepte"],
     stammCategories: ["Cocktails", "Mocktails", "Alkfr. Cocktails", "Smoothies & Shakes", "Limonaden", "Tees & Kaffees", "Bowlen", "Sirup & Basis"],
     guestCategories: ["Knabbereien", "Fingerfood"],
     backupPrefix: "mein-mixarium-backup",   // Dateiname-Präfix des verschlüsselten Backups
@@ -112,12 +112,58 @@
       "min-height:5.5em;padding:0.55rem 0.65rem;font:inherit;font-size:0.88rem;line-height:1.5;" +
       "color:#F5F5FF;background:rgba(0,0,0,0.35);border:1px solid rgba(201,169,97,0.35);border-radius:8px;";
     ta.value = WIZ.domainDescription;
+    /* ⚠ WELCHER TEXT IM FELD STEHT — und warum der VORSCHLAG DER APP gewinnt.
+       Bis zum 2026-09-10 überschrieb die gespeicherte Spore ihn hier still. Das
+       ist die Fassung, die Klaus in Kim Hub Company zweimal beanstandet hat:
+       „wolltest du nicht den neuen Text automatisch einfügen … der neue Text ist
+       da noch nicht drin." Wer „automatisch" bittet und einen Knopf bekommt, hat
+       nicht bekommen, worum er gebeten hat.
+       HIER war es besonders teuer: Mixarium hat im Mycel-Mitschnitt vom
+       2026-09-10 mit 88 Zeichen im Raum gestanden — „Klaus Mixarium -
+       Cocktails, Mocktails, Smoothies und mehr; Knabbereien als Begleit-Plus."
+       — während in dieser Datei ein ausgearbeiteter Text von über 1400 Zeichen
+       lag. Klaus hat es im Siegel fotografiert. Der Zweizeiler kam aus
+       sbkim-init.js (der stillen Erst-Anmeldung) und wurde hier still
+       durchgereicht; wer neu signierte, bekam ihn zurück.
+       Der Vorschlag der App ist der GEPFLEGTE Text: er wird mit dem Depot
+       aktualisiert. Nichts geht dabei verloren — der zuletzt signierte bleibt in
+       der Spore, bis wirklich neu signiert wird, und ein Knopf holt ihn zurück.
+       Die Zeile darunter NENNT jedes Mal, welcher der beiden im Feld steht;
+       ohne sie wäre der Tausch still, und still ist hier schlimmer als falsch. */
+    var herkunft = document.createElement("p");
+    herkunft.id = "sbkim-si-semantik-herkunft";
+    herkunft.setAttribute("data-woher", "app");
+    herkunft.style.cssText = "margin:0.4rem 0 0;font-size:0.78rem;line-height:1.45;color:rgba(245,245,255,0.62);";
+    herkunft.textContent = "Im Feld steht der Vorschlag dieser App — er wird mit der App gepflegt.";
+
+    var zurueck = document.createElement("button");
+    zurueck.type = "button";
+    zurueck.id = "sbkim-si-semantik-eigener-text";
+    zurueck.hidden = true;
+    zurueck.textContent = "↺ Meinen zuletzt signierten Text zurückholen";
+    zurueck.style.cssText = "display:block;margin:0.4rem 0 0;padding:0.35rem 0.7rem;font:inherit;" +
+      "font-size:0.8rem;cursor:pointer;border-radius:7px;border:1px solid rgba(201,169,97,0.45);" +
+      "background:transparent;color:#F5E6B8;";
+
     try {
       if (window.SbkimSpore && window.SbkimSpore.getOwnSpore) {
         window.SbkimSpore.getOwnSpore().then(function (sp) {
-          if (sp && typeof sp.domainDescription === "string" && sp.domainDescription.trim()) {
-            ta.value = sp.domainDescription; autoGrow(ta);
-          }
+          var eigener = sp && typeof sp.domainDescription === "string" ? sp.domainDescription : "";
+          /* Nur bei ABWEICHUNG. Wer zuletzt mit genau diesem Vorschlag signiert
+             hat, braucht keinen Knopf — und einer, der immer dasteht, ist bald
+             einer, den niemand mehr liest. */
+          var abweichend = !!eigener.trim()
+            && eigener.trim() !== String(WIZ.domainDescription || "").trim();
+          if (!abweichend) return;
+          herkunft.textContent = "Im Feld steht der Vorschlag dieser App. Dein zuletzt "
+            + "signierter Text war ein anderer — er bleibt in deiner Spore, bis du neu signierst.";
+          zurueck.hidden = false;
+          zurueck.addEventListener("click", function () {
+            ta.value = eigener; autoGrow(ta);
+            herkunft.setAttribute("data-woher", "spore");
+            herkunft.textContent = "Im Feld steht jetzt dein zuletzt signierter Text.";
+            zurueck.hidden = true;
+          });
         }).catch(function () {});
       }
     } catch (e) {}
@@ -138,7 +184,8 @@
     out.id = "sbkim-si-semantik-out";
     out.style.cssText = "margin:0.6rem 0 0;font-family:monospace;font-size:0.78rem;line-height:1.5;color:#6ee7d3;word-break:break-word;";
     btn.addEventListener("click", function () { reSignWithDescription(ta, btn, out); });
-    wrap.appendChild(label); wrap.appendChild(ta); wrap.appendChild(hint); wrap.appendChild(btn); wrap.appendChild(out);
+    wrap.appendChild(label); wrap.appendChild(ta);
+    wrap.appendChild(herkunft); wrap.appendChild(zurueck); wrap.appendChild(hint); wrap.appendChild(btn); wrap.appendChild(out);
     setTimeout(function () { autoGrow(ta); }, 0);
     return wrap;
   }

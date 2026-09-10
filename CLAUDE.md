@@ -296,6 +296,65 @@ Das `#mv`-Overlay (Mein Menü / Wochenplan) soll **optisch identisch** mit dem `
 
 ---
 
+## ⚠ ZWEI WEGE ZUR SPORE — und sie rechnen den Vektor VERSCHIEDEN (2026-09-10)
+
+Klaus hat das Siegel fotografiert: im Semantik-Feld stand ein **88-Zeichen-Zweizeiler**
+(„Klaus Mixarium - Cocktails, Mocktails, Smoothies und mehr; Knabbereien als
+Begleit-Plus."), während in `sbkim/siegel-inhalt.js` ein ausgearbeiteter Text von
+über 1400 Zeichen lag. Der Mycel-Mitschnitt desselben Tages zeigt: **genau dieser
+Zweizeiler stand im Raum.**
+
+**Zwei Ursachen, beide behoben:**
+
+1. **`sbkim/sbkim-init.js` trug einen ANDEREN Text** als das Siegel. Zwei Wege zur
+   Spore, zwei Texte — also zwei verschiedene Vektoren für denselben Knoten, je
+   nachdem, welchen Weg der Nutzer nimmt. Beide tragen jetzt denselben Text und
+   dieselben Stichworte, und ein Wächter vergleicht sie wortgleich.
+2. **Die gespeicherte Spore überschrieb den Vorschlag der App still.** Wer neu
+   signierte, bekam den Zweizeiler zurück. Jetzt gewinnt der Vorschlag der App;
+   der zuletzt signierte bleibt hinter einem Knopf erreichbar, und eine Zeile
+   **nennt jedes Mal**, welcher der beiden im Feld steht.
+
+### ⚠ ABER DER VEKTOR KOMMT HIER NICHT AUS DER BESCHREIBUNG
+
+Das ist die Besonderheit dieser App, und wer sie nicht kennt, sucht am falschen
+Ende:
+
+| Weg | was eingebettet wird |
+|---|---|
+| **Siegel** (`reSignWithDescription`) | `embedPassage(beschreibung)` — der **Text** |
+| **stille Erst-Anmeldung** (`sbkim-init.js`) | `embedContentVector(samples)` — die **Getränke-Namen**, wenn welche da sind; sonst `allText` aus Kategorien + Stichworten |
+
+Gemessen an der Spore im Raum vom 2026-09-02: `embeddingSource: "content"`.
+**Mixariums Zahl im Register stammt also aus den Drinks, nicht aus der
+Selbstbeschreibung.** Das ist die Entscheidung vom 2026-06-28 („wenn echte
+Drinks vorhanden sind, entscheidet der INHALT statt der Selbstbeschreibung") und
+bleibt so — sie ist ehrlicher.
+
+**Daraus folgt für die Praxis:** eine bessere Beschreibung wirkt hier **nur**,
+wenn über das **Siegel** neu signiert wird. Wer nur die Datei ändert und darauf
+wartet, dass die Zahl steigt, wartet vergeblich.
+
+### Warum das Protokoll in der Beschreibung steht
+
+Gemessen an den vier Mycel-Mitschnitten vom 2026-09-10, in denen alle 21 Knoten
+live nebeneinander standen: **Länge entscheidet nicht, der Inhalt tut es.**
+Kim-Bell kommt mit **82** Zeichen auf 0.874864, weil es SBKIM, Mycel und Knoten
+nennt; Muster Werbetechnik hat **421** Zeichen und kommt auf 0.793613, weil es
+das Protokoll nicht erwähnt. Deshalb trägt die Beschreibung jetzt einen eigenen
+Absatz dazu — und die Domäne (Getränke) bleibt vorn, wo sie hingehört.
+
+**Geprüft von:** `node tests/smoke_sbkim_beschreibung.mjs` (15 Wächter) ·
+`node tests/gegenprobe_sbkim_beschreibung.mjs` (10 Fälle, jeder von Hand
+nachgestellt).
+
+⚠ **Und der erste Wächter hing an einem LEERZEICHEN.** Er suchte
+`domainKeywords: [` mit genau einem — in `sbkim-init.js` stehen dort zwei, weil
+die Zeile mit ihren Nachbarn ausgerichtet ist. Er meldete eine Abweichung, die
+keine war: ein Fehler im Wächter, der wie ein Fehler im Code aussah.
+
+---
+
 ## SBKIM — Geplante Erweiterung (Stand: Mai 2026)
 
 **SBKIM** (Semantisches Bidirektionales KI-Matching) wird als MVP-Erweiterung in Mein Mixarium aufgebaut. Mein Mixarium ist die **Demo-Plattform** für das offene SBKIM-Protokoll.
