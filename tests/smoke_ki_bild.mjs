@@ -310,6 +310,87 @@ try {
     !pruef.rufe.some(u => u.includes('images/generations')), pruef.rufe.join(', '));
   ok('…das Ergebnis steht daneben', /gültig|valid/i.test(pruef.status), pruef.status);
 
+  // ── 14. Der kleine Knopf vorne an der Karte ───────────────────────────────
+  // Klaus am 2026-09-11: „wie auch das kleine den kleinen Button vorne in
+  // Rezepte für das KI Bild." Im Rezeptbuch ist das der übliche Weg; hier
+  // fehlte er.
+  const karte = await seite.evaluate(async () => {
+    const echt = window.fetch;
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    window.fetch = async () => ({ ok: true, json: async () => ({ data: [{ b64_json: png }] }) });
+    localStorage.setItem('mxoaiimg9m', 'sk-proj-KARTE0123456789abcdef');
+    window.R.length = 0;
+    window.R.push({ id: 777, name: 'Karten-Drink', cat: 'ckt', img: '', ings: [], steps: [], flavors: [] });
+    if (typeof render === 'function') render();
+    const knopf = document.querySelector('.ra-cam');
+    // Gemessen wird, ob man ihn SIEHT — nicht, ob er im Markup steht. Ein
+    // display:none-Knopf ist für den Nutzer keiner. (Gegenprobe 2026-09-11:
+    // die erste Fassung fragte nur nach der Anwesenheit und war blind.)
+    const knopfSichtbar = !!knopf && knopf.getClientRects().length > 0 &&
+      (knopf.checkVisibility ? knopf.checkVisibility() : true);
+    const ausgezeichnet = knopf ? (knopf.getAttribute('title') || '') : '';
+    openImgGenForRecipe(777);
+    const offen = document.getElementById('imp-imggen').classList.contains('on');
+    const einzelDa = document.getElementById('imggenSingleWrap').style.display === 'block';
+    const titel = document.getElementById('imggenSingleTitle').textContent;
+    // Solange es um EIN Getränk geht, darf der Sammel-Knopf nicht danebenstehen
+    const sammelWeg = document.getElementById('igGenBtn').style.display === 'none';
+    await startImgGenSingle();
+    const bild = (window.R.find(r => r.id === 777).img || '').slice(0, 22);
+    // und nach dem Schließen ist der Sammel-Weg wieder da
+    closeImport();
+    const sammelZurueck = document.getElementById('igGenBtn').style.display !== 'none';
+    const einzelWeg = document.getElementById('imggenSingleWrap').style.display === 'none';
+    window.fetch = echt;
+    return { knopfDa: knopfSichtbar, ausgezeichnet, offen, einzelDa, titel, sammelWeg, bild, sammelZurueck, einzelWeg };
+  });
+  ok('an der Karte steht der 📸✨-Knopf', karte.knopfDa);
+  ok('…mit einer Beschriftung, die sagt was er tut', /Bild/i.test(karte.ausgezeichnet), karte.ausgezeichnet);
+  ok('ein Tipp darauf öffnet das KI-Bild-Feld', karte.offen);
+  ok('…im Einzel-Modus', karte.einzelDa);
+  ok('…und nennt das Getränk beim Namen', /Karten-Drink/.test(karte.titel), karte.titel);
+  ok('der Sammel-Knopf tritt dabei zurück', karte.sammelWeg);
+  ok('das Bild landet bei GENAU diesem Getränk', karte.bild.startsWith('data:image/'), karte.bild);
+  ok('nach dem Schließen ist der Sammel-Weg wieder da', karte.sammelZurueck);
+  ok('…und der Einzel-Block weg', karte.einzelWeg);
+
+  // ── 15. Der zweite Modell-Versuch — und seine Grenze ──────────────────────
+  const modelle = await seite.evaluate(async () => {
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const echt = window.fetch;
+    const lauf = async (antwort) => {
+      const gerufen = [];
+      window.fetch = async (u, o) => {
+        const body = JSON.parse(o.body);
+        gerufen.push(body.model);
+        return antwort(body.model, png);
+      };
+      window.R.length = 0;
+      window.R.push({ id: 810, name: 'M', cat: 'ckt', img: '', ings: [], steps: [], flavors: [] });
+      updateImgGenInfo();
+      await startImgGen();
+      return { gerufen, bild: !!window.R.find(r => r.id === 810).img };
+    };
+    // a) dall-e-3 kennt das Konto nicht → der zweite Versuch rettet es
+    const a = await lauf((m, png) => m === 'dall-e-3'
+      ? { ok: false, status: 400, json: async () => ({ error: { message: 'The model `dall-e-3` does not exist' } }) }
+      : { ok: true, json: async () => ({ data: [{ b64_json: png }] }) });
+    // b) der Schlüssel ist abgelehnt → ein zweites Modell ändert daran NICHTS
+    const b = await lauf(() => ({ ok: false, status: 401, json: async () => ({ error: { message: 'Incorrect API key provided' } }) }));
+    // c) kein Guthaben → ebenfalls kein zweiter Versuch (wäre eine zweite Rechnung)
+    const c = await lauf(() => ({ ok: false, status: 429, json: async () => ({ error: { message: 'You exceeded your current quota' } }) }));
+    window.fetch = echt;
+    return { a, b, c };
+  });
+  ok('erst wird dall-e-3 gefragt — wie im Rezeptbuch',
+    modelle.a.gerufen[0] === 'dall-e-3', modelle.a.gerufen.join(' → '));
+  ok('kennt das Konto es nicht, rettet der zweite Versuch den Lauf',
+    modelle.a.gerufen[1] === 'gpt-image-1' && modelle.a.bild, modelle.a.gerufen.join(' → '));
+  ok('ein abgelehnter Schlüssel löst KEINEN zweiten Versuch aus',
+    modelle.b.gerufen.length === 1, modelle.b.gerufen.join(' → '));
+  ok('fehlendes Guthaben ebenso wenig (das wäre eine zweite Rechnung)',
+    modelle.c.gerufen.length === 1, modelle.c.gerufen.join(' → '));
+
   // ── 9. Es ging nichts nach draußen ────────────────────────────────────────
   // Die Zusicherung ist NICHT „die App greift nie ins Netz" — sie holt beim
   // Start die SBKIM-Briefkästen, das ist netzweit vereinbart (INTERFACES §11.6).
