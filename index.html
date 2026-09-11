@@ -3147,6 +3147,12 @@ body:not([data-theme]) #bnav{
           <div class="sett-sub" id="sApiKeySub">Zugangscode verwalten</div></div>
         <div class="sett-arr">›</div>
       </div>
+      <div class="sett-row" onclick="openImport();switchFovTab('importOv','imggen',document.getElementById('impTabImgGen'))">
+        <div class="sett-ico">🎨</div>
+        <div class="sett-body"><div class="sett-lbl" id="sImgGenLbl">OpenAI-Bildschlüssel</div>
+          <div class="sett-sub" id="sImgGenSub">Für KI-Bilder zu deinen Getränken</div></div>
+        <div class="sett-arr">›</div>
+      </div>
       <div class="sett-row" onclick="toggleMistralKeyField()">
         <div class="sett-ico">📄</div>
         <div class="sett-body"><div class="sett-lbl">Mistral-Schlüssel (EU)</div>
@@ -3342,6 +3348,7 @@ Vielen Dank für deine Unterstützung.</div>
     <div class="fovtab" onclick="switchFovTab('importOv','scan',this)" id="impTabScan" title="Rezept per KI-Scan erkennen">📄 KI-Scan</div>
     <div class="fovtab" onclick="switchFovTab('importOv','txt',this)" id="impTabTxt" title="Rezepttext eingeben">📝 Text</div>
     <div class="fovtab" onclick="switchFovTab('importOv','json',this)" id="impTabJson" title="Gespeicherte Rezeptsammlung laden">📥 Rezept laden</div>
+    <div class="fovtab" onclick="switchFovTab('importOv','imggen',this)" id="impTabImgGen" title="KI-Bild für ein Getränk erzeugen">🎨 KI-Bild</div>
   </div>
   <div class="fov-body">
     <div class="fov-pane on" id="imp-img">
@@ -3621,6 +3628,88 @@ Vielen Dank für deine Unterstützung.</div>
         <button class="bigbtn grn" onclick="document.getElementById('jsonFileIn').click()" id="bakBtn" title="Rezeptsammlung auswählen">📂 Datei auswählen</button>
         <input type="file" id="jsonFileIn" accept=".json" style="display:none" onchange="importData(event)"/>
         <div id="upStatus" class="upst"></div>
+      </div>
+    </div>
+
+    <div class="fov-pane" id="imp-imggen">
+      <div id="imggenSetup">
+        <div style="background:var(--teals);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1.5px solid var(--teal)">
+          <div style="font-size:.94rem;font-weight:700;color:var(--teal);font-family:Georgia,serif;margin-bottom:6px" id="imggenSetupTitleEl">🎨 KI-Bildgenerierung einrichten</div>
+          <div style="font-size:.76rem;color:#1e4a45;line-height:1.55" id="imggenSetupDescEl">Erzeugt ein Foto für jedes Getränk — mit OpenAI DALL·E 3. Du brauchst dafür einen eigenen OpenAI-Schlüssel. Der Anthropic-Schlüssel für KI-Scan und Labor passt hier nicht.</div>
+        </div>
+        <div class="paste-box" style="margin-bottom:12px">
+          <div class="paste-box-label">🔑 <span id="imggenKeyLblEl">OpenAI API-Schlüssel</span></div>
+          <div class="paste-row">
+            <input class="scan-key-in" id="imggenKeyIn" type="password"
+              placeholder="sk-…"
+              oninput="onImgGenKeyInput(this.value)"
+              onkeydown="if(event.key==='Enter')saveAndActivateImgGen()"/>
+            <button class="paste-btn" onclick="pasteImgGenKey()" id="imggenPasteBtn" title="Schlüssel aus Zwischenablage einfügen">📋 <span id="imggenPasteBtnLbl">Einfügen</span></button>
+          </div>
+          <button class="scan-key-btn" id="imggenSaveBtn" onclick="saveAndActivateImgGen()" disabled title="OpenAI-Schlüssel speichern und aktivieren">🚀 <span id="imggenSaveBtnLbl">Speichern &amp; aktivieren</span></button>
+          <div class="scan-key-note">🔒 <span id="imggenHintEl">Bleibt nur auf deinem Gerät — wird niemals weitergegeben</span></div>
+        </div>
+        <div style="background:var(--sand2);border-radius:8px;padding:10px 12px;font-size:.74rem;color:var(--dim);line-height:1.65" id="imggenHowToEl">
+          <strong>So erhältst du deinen Schlüssel:</strong><br>
+          1. <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:var(--teal)">platform.openai.com/api-keys</a> → „Create new secret key"<br>
+          2. Schlüssel kopieren (beginnt mit <code style="background:rgba(0,0,0,.07);padding:1px 4px;border-radius:3px;font-size:.68rem">sk-…</code>)<br>
+          3. Hier einfügen &amp; speichern<br>
+          <br>💡 Ein Bild kostet ~0,04 € · Abrechnung direkt bei OpenAI
+        </div>
+      </div>
+
+      <div id="imggenMain" style="display:none">
+        <div style="background:var(--teals);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1.5px solid var(--teal)">
+          <div style="font-size:.94rem;font-weight:700;color:var(--teal);font-family:Georgia,serif;margin-bottom:6px" id="imggenInfoTitle">🎨 KI-Bilder für deine Getränke</div>
+          <div style="display:flex;gap:12px">
+            <div style="flex:1">
+              <div id="imggenInfoCol1Hdr" style="font-size:.66rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Was erzeugt wird</div>
+              <ul id="imggenInfoCol1Items" style="margin:0;padding-left:15px;font-size:.73rem;color:#1e4a45;line-height:1.75">
+                <li>Ein Foto im Glas, passend zum Getränk</li>
+                <li>Knabbereien und Fingerfood auf dem Brett</li>
+                <li>KI-erzeugt mit DALL·E 3</li>
+                <li>Sofort im Getränk gespeichert</li>
+              </ul>
+            </div>
+            <div style="flex:1">
+              <div id="imggenInfoCol2Hdr" style="font-size:.66rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Was du brauchst</div>
+              <ul id="imggenInfoCol2Items" style="margin:0;padding-left:15px;font-size:.73rem;color:#1e4a45;line-height:1.75">
+                <li>OpenAI API-Schlüssel</li>
+                <li>~0,04 € je Bild</li>
+                <li>Abrechnung direkt bei OpenAI</li>
+                <li>Bilder gehen in den Export mit</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="scan-ready-bar">
+          <div class="scan-ready-ico">🎨</div>
+          <div class="scan-ready-txt">
+            <div class="scan-ready-lbl" id="imggenReadyLbl">KI-Bild aktiv</div>
+            <div class="scan-ready-sub" id="imggenReadySub">Schlüssel gespeichert</div>
+          </div>
+          <button class="scan-key-change" onclick="showImgGenSetup()" id="imggenChangeLbl" title="Schlüssel ändern">ändern</button>
+        </div>
+        <div id="imggenInfo" style="font-size:.74rem;color:var(--dim);margin:10px 0 8px"></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--ink);margin-bottom:6px;cursor:pointer;padding:8px 10px;background:var(--sand);border-radius:8px;border:1px solid var(--sand2)">
+          <input type="checkbox" id="imggenReplaceAll" onchange="onImgReplaceToggle()" style="accent-color:var(--teal);width:16px;height:16px">
+          <span id="imggenReplaceLbl">Vorhandene Bilder ersetzen</span>
+        </label>
+        <div id="imggenReplacePanel" style="display:none;margin-bottom:10px;border:1.5px solid var(--sand2);border-radius:10px;overflow:hidden"></div>
+        <button class="scan-key-btn" id="igGenBtn" onclick="startImgGen()">🎨 <span id="igGenBtnLbl">KI-Bilder generieren</span></button>
+        <button class="scan-key-btn" id="igStopBtn" onclick="stopImgGen()" style="display:none;background:#c0392b;margin-top:6px">⏹ <span id="igStopBtnLbl">Generierung stoppen</span></button>
+        <div id="igProgWrap" style="display:none;margin-top:12px">
+          <div style="background:var(--sand2);border-radius:8px;height:10px;overflow:hidden;margin-bottom:7px">
+            <div id="igFill" style="width:0%;height:100%;background:linear-gradient(90deg,var(--teal),var(--grn));border-radius:8px;transition:width .4s ease"></div>
+          </div>
+          <div id="igProgLbl" style="font-size:.78rem;color:var(--ink);text-align:center;font-weight:600"></div>
+          <div id="igCostLbl" style="font-size:.74rem;color:var(--teal);margin-top:5px;text-align:center;font-weight:600"></div>
+          <button class="scan-key-btn" id="igSaveBtn" onclick="closeImport()" style="display:none;background:var(--grn);margin-top:10px">✅ <span id="igSaveBtnLbl">Bilder im Mixarium – schließen</span></button>
+        </div>
+        <div id="igBackupHint" style="display:none;margin-top:12px;background:#fff3cd;border:1.5px solid #e6a817;border-radius:10px;padding:11px 13px;font-size:.76rem;color:#5a3e00;line-height:1.6">
+          <span id="igBackupHintTxt">💰 <strong>Diese Bilder sind bezahlt</strong> — sichere sie jetzt. Beim Löschen der Browserdaten oder auf einem neuen Gerät sind sie sonst weg.</span>
+          <button onclick="closeImport();openExport();" id="igBackupBtnLbl" style="margin-top:9px;width:100%;padding:9px;background:#e6a817;color:#fff;border:none;border-radius:8px;font-size:.80rem;font-weight:700;cursor:pointer;letter-spacing:.01em">📤 Jetzt sichern &amp; exportieren</button>
+        </div>
       </div>
     </div>
 
@@ -4041,6 +4130,7 @@ const LANGS={
     mvPrint:'🖨️ Drucken / PDF',mvClose:'Schließen',
     bnRec:'Drinks',bnFld:'Ordner',bnMen:'Planer',bnSet:'Einst.',bnBv:'Tresor',
     impTitle:'📥 Importieren',impTabImg:'🖼️ Bilder',impTabWeb:'🌐 Web',impTabScan:'📄 KI-Scan',impTabTxt:'📝 Text',impTabJson:'📥 Rezept laden',
+    impTabImgGen:"🎨 KI-Bild",imggenSetupTitleEl:"🎨 KI-Bildgenerierung einrichten",imggenSetupDescEl:"Erzeugt ein Foto für jedes Getränk — mit OpenAI DALL·E 3. Du brauchst dafür einen eigenen OpenAI-Schlüssel. Der Anthropic-Schlüssel für KI-Scan und Labor passt hier nicht.",imggenKeyLblEl:"OpenAI API-Schlüssel",imggenPasteBtnLbl:"Einfügen",imggenSaveBtnLbl:"Speichern & aktivieren",imggenHintEl:"Bleibt nur auf deinem Gerät — wird niemals weitergegeben",imggenHowToEl:"<strong>So erhältst du deinen Schlüssel:</strong><br>1. <a href='https://platform.openai.com/api-keys' target='_blank' rel='noopener' style='color:var(--teal)'>platform.openai.com/api-keys</a> → „Create new secret key\"<br>2. Schlüssel kopieren (beginnt mit <code style='background:rgba(0,0,0,.07);padding:1px 4px;border-radius:3px;font-size:.68rem'>sk-…</code>)<br>3. Hier einfügen &amp; speichern<br><br>💡 Ein Bild kostet ~0,04 € · Abrechnung direkt bei OpenAI",imggenInfoTitle:"🎨 KI-Bilder für deine Getränke",imggenInfoCol1Hdr:"Was erzeugt wird",imggenInfoCol1Items:"<li>Ein Foto im Glas, passend zum Getränk</li><li>Knabbereien und Fingerfood auf dem Brett</li><li>KI-erzeugt mit DALL·E 3</li><li>Sofort im Getränk gespeichert</li>",imggenInfoCol2Hdr:"Was du brauchst",imggenInfoCol2Items:"<li>OpenAI API-Schlüssel</li><li>~0,04 € je Bild</li><li>Abrechnung direkt bei OpenAI</li><li>Bilder gehen in den Export mit</li>",imggenReadyLbl:"KI-Bild aktiv",imggenReadySub:"Schlüssel gespeichert",imggenChangeLbl:"ändern",imggenReplaceLbl:"Vorhandene Bilder ersetzen",igGenBtnLbl:"KI-Bilder generieren",igStopBtnLbl:"Generierung stoppen",igSaveBtnLbl:"Bilder im Mixarium – schließen",igBackupHintTxt:"💰 <strong>Diese Bilder sind bezahlt</strong> — sichere sie jetzt. Beim Löschen der Browserdaten oder auf einem neuen Gerät sind sie sonst weg.",igBackupBtnLbl:"📤 Jetzt sichern & exportieren",igSelHdr:"Getränke auswählen",igSelAll:"Alle",igSelNone:"Keine",igOther:"Sonstige",igNoRec:"Keine Getränke im Buch",igAllHaveImg:"Alle Getränke haben bereits ein KI-Foto",igNoneSel:"Keine Getränke ausgewählt",igNoImg:"ohne Foto",igWillReplace:"werden ersetzt",igStarting:"Starte …",igCostSoFar:"Kosten bisher",igCostTotal:"Gesamt",igImgSaved:"Bilder gespeichert",igErrors:"Fehler",igStopped:"gestoppt",igNothing:"Keine Getränke zum Generieren",igKeyPasted:"Schlüssel eingefügt",igKeySaved:"OpenAI-Schlüssel gespeichert",
     imgDropLbl:'Bilder auswählen oder hierher ziehen',
     imgInfoTitle:'🖼️ Fotos zu Getränken hinzufügen',
     imgInfoDesc:'Wähle ein oder mehrere Fotos aus oder ziehe sie direkt hierher. Weise danach jedem Bild ein Getränk zu — das Foto wird dann automatisch dem gewählten Rezept zugeordnet.',
@@ -4079,6 +4169,7 @@ const LANGS={
     expJsonT:'Datensicherung (JSON)',expJsonD:'Alle Rezepte & Menüpläne als JSON sichern.',expJsonSafe:'🔒 Enthält keine API-Keys — sicher teilbar',expJsonBtn:'💾 Backup erstellen',
     sTheme:'🎨 THEMA',sLang:'🌐 SPRACHE',sData:'📁 IMPORT & EXPORT',
     sImpLbl:'Importieren',sImpSub:'Bilder, KI-Scan, Backup',
+    sImgGenLbl:"OpenAI-Bildschlüssel",sImgGenSub:"Für KI-Bilder zu deinen Getränken",
     sExpLbl:'Exportieren',sExpSub:'E-Book, Blätterbuch, JSON',
     sInfo:'ℹ️ INFO',sStore:'Gespeichert',sClear:'Alle Daten löschen',sClearSub:'Nicht rückgängig',
     fldTitle:'📂 Meine Ordner',fldSearch:'Suche',fldNew:'Neuer Ordner',
@@ -4171,6 +4262,7 @@ const LANGS={
     mvPrint:'🖨️ Print / PDF',mvClose:'Close',
     bnRec:'Drinks',bnFld:'Folders',bnMen:'Planner',bnSet:'Settings',bnBv:'Vault',
     impTitle:'📥 Import',impTabImg:'🖼️ Images',impTabWeb:'🌐 Web',impTabScan:'📄 AI Scan',impTabTxt:'📝 Text',impTabJson:'📥 Load recipes',
+    impTabImgGen:"🎨 AI image",imggenSetupTitleEl:"🎨 Set up AI image generation",imggenSetupDescEl:"Creates a photo for every drink — with OpenAI DALL·E 3. You need your own OpenAI key. The Anthropic key used for AI Scan and the Lab does not work here.",imggenKeyLblEl:"OpenAI API key",imggenPasteBtnLbl:"Paste",imggenSaveBtnLbl:"Save & activate",imggenHintEl:"Stays on your device only — never shared",imggenHowToEl:"<strong>How to get your key:</strong><br>1. <a href='https://platform.openai.com/api-keys' target='_blank' rel='noopener' style='color:var(--teal)'>platform.openai.com/api-keys</a> → “Create new secret key”<br>2. Copy the key (starts with <code style='background:rgba(0,0,0,.07);padding:1px 4px;border-radius:3px;font-size:.68rem'>sk-…</code>)<br>3. Paste it here &amp; save<br><br>💡 One image costs ~€0.04 · billed directly by OpenAI",imggenInfoTitle:"🎨 AI images for your drinks",imggenInfoCol1Hdr:"What gets created",imggenInfoCol1Items:"<li>A photo in the glass, matching the drink</li><li>Snacks and finger food on a board</li><li>AI-generated with DALL·E 3</li><li>Saved with the drink right away</li>",imggenInfoCol2Hdr:"What you need",imggenInfoCol2Items:"<li>OpenAI API key</li><li>~€0.04 per image</li><li>Billed directly by OpenAI</li><li>Images travel with the export</li>",imggenReadyLbl:"AI image active",imggenReadySub:"Key saved",imggenChangeLbl:"change",imggenReplaceLbl:"Replace existing images",igGenBtnLbl:"Generate AI images",igStopBtnLbl:"Stop generating",igSaveBtnLbl:"Images are in the Mixarium – close",igBackupHintTxt:"💰 <strong>These images are paid for</strong> — back them up now. Clearing browser data or switching devices otherwise loses them.",igBackupBtnLbl:"📤 Back up & export now",igSelHdr:"Select drinks",igSelAll:"All",igSelNone:"None",igOther:"Other",igNoRec:"No drinks in the book",igAllHaveImg:"Every drink already has an AI photo",igNoneSel:"No drinks selected",igNoImg:"without a photo",igWillReplace:"will be replaced",igStarting:"Starting …",igCostSoFar:"Cost so far",igCostTotal:"Total",igImgSaved:"images saved",igErrors:"errors",igStopped:"stopped",igNothing:"No drinks to generate",igKeyPasted:"Key pasted",igKeySaved:"OpenAI key saved",
     imgDropLbl:'Select images or drag here',
     imgInfoTitle:'🖼️ Add photos to drinks',
     imgInfoDesc:'Select one or more photos or drag them here. Then assign each image to a drink — the photo will be automatically linked to the chosen recipe.',
@@ -4209,6 +4301,7 @@ const LANGS={
     expJsonT:'Backup (JSON)',expJsonD:'Save all recipes & menu as a JSON file.',expJsonSafe:'🔒 No API keys included — safe to share',expJsonBtn:'💾 Create backup',
     sTheme:'🎨 THEME',sLang:'🌐 LANGUAGE',sData:'📁 IMPORT & EXPORT',
     sImpLbl:'Import',sImpSub:'Images, AI scan, backup',
+    sImgGenLbl:"OpenAI image key",sImgGenSub:"For AI images of your drinks",
     sExpLbl:'Export',sExpSub:'E-Book, flipbook, JSON',
     sInfo:'ℹ️ INFO',sStore:'Saved',sClear:'Delete all data',sClearSub:'Cannot be undone',
     fldTitle:'📂 My Folders',fldSearch:'Search',fldNew:'New folder',
@@ -4301,6 +4394,7 @@ const LANGS={
     mvPrint:'🖨️ Печать / PDF',mvClose:'Закрыть',
     bnRec:'Рецепты',bnFld:'Папки',bnMen:'Планир.',bnSet:'Настр.',bnBv:'Архив',
     impTitle:'📥 Импорт',impTabImg:'🖼️ Фото',impTabWeb:'🌐 Интернет',impTabScan:'📄 ИИ-скан',impTabTxt:'📝 Текст',impTabJson:'📥 Загрузить',
+    impTabImgGen:"🎨 ИИ-фото",imggenSetupTitleEl:"🎨 Настроить генерацию ИИ-фото",imggenSetupDescEl:"Создаёт фото для каждого напитка с помощью OpenAI DALL·E 3. Нужен собственный ключ OpenAI. Ключ Anthropic для ИИ-скана и лаборатории здесь не подходит.",imggenKeyLblEl:"Ключ OpenAI API",imggenPasteBtnLbl:"Вставить",imggenSaveBtnLbl:"Сохранить и включить",imggenHintEl:"Остаётся только на вашем устройстве — никуда не передаётся",imggenHowToEl:"<strong>Как получить ключ:</strong><br>1. <a href='https://platform.openai.com/api-keys' target='_blank' rel='noopener' style='color:var(--teal)'>platform.openai.com/api-keys</a> → «Create new secret key»<br>2. Скопируйте ключ (начинается с <code style='background:rgba(0,0,0,.07);padding:1px 4px;border-radius:3px;font-size:.68rem'>sk-…</code>)<br>3. Вставьте здесь и сохраните<br><br>💡 Одно изображение ~0,04 € · оплата напрямую OpenAI",imggenInfoTitle:"🎨 ИИ-фото для ваших напитков",imggenInfoCol1Hdr:"Что создаётся",imggenInfoCol1Items:"<li>Фото в бокале, под сам напиток</li><li>Снэки и закуски на доске</li><li>Создано ИИ (DALL·E 3)</li><li>Сразу сохраняется в напитке</li>",imggenInfoCol2Hdr:"Что нужно",imggenInfoCol2Items:"<li>Ключ OpenAI API</li><li>~0,04 € за изображение</li><li>Оплата напрямую OpenAI</li><li>Изображения попадают в экспорт</li>",imggenReadyLbl:"ИИ-фото включено",imggenReadySub:"Ключ сохранён",imggenChangeLbl:"изменить",imggenReplaceLbl:"Заменить существующие изображения",igGenBtnLbl:"Создать ИИ-фото",igStopBtnLbl:"Остановить создание",igSaveBtnLbl:"Изображения в Mixarium — закрыть",igBackupHintTxt:"💰 <strong>Эти изображения оплачены</strong> — сохраните их сейчас. При очистке данных браузера или на новом устройстве они пропадут.",igBackupBtnLbl:"📤 Сохранить и экспортировать",igSelHdr:"Выбрать напитки",igSelAll:"Все",igSelNone:"Ничего",igOther:"Прочее",igNoRec:"В книге нет напитков",igAllHaveImg:"У всех напитков уже есть ИИ-фото",igNoneSel:"Напитки не выбраны",igNoImg:"без фото",igWillReplace:"будут заменены",igStarting:"Запуск …",igCostSoFar:"Затраты",igCostTotal:"Всего",igImgSaved:"изображений сохранено",igErrors:"ошибок",igStopped:"остановлено",igNothing:"Нет напитков для создания",igKeyPasted:"Ключ вставлен",igKeySaved:"Ключ OpenAI сохранён",
     imgDropLbl:'Выбрать фото или перетащить',
     imgInfoTitle:'🖼️ Добавить фото к напиткам',
     imgInfoDesc:'Выберите одно или несколько фото или перетащите их сюда. Затем назначьте каждому фото напиток — фотография будет автоматически привязана к выбранному рецепту.',
@@ -4339,6 +4433,7 @@ const LANGS={
     expJsonT:'Резервная копия (JSON)',expJsonD:'Сохранить все рецепты и меню как JSON-файл.',expJsonSafe:'🔒 API-ключи не включены — безопасно для передачи',expJsonBtn:'💾 Создать резервную копию',
     sTheme:'🎨 ТЕМА',sLang:'🌐 ЯЗЫК',sData:'📁 ИМПОРТ & ЭКСПОРТ',
     sImpLbl:'Импорт',sImpSub:'Фото, ИИ-скан, резерв',
+    sImgGenLbl:"Ключ OpenAI для фото",sImgGenSub:"Для ИИ-фото ваших напитков",
     sExpLbl:'Экспорт',sExpSub:'Эл. книга, листалка, JSON',
     sInfo:'ℹ️ О ПРОГРАММЕ',sStore:'Сохранено',sClear:'Удалить все данные',sClearSub:'Нельзя отменить',
     fldTitle:'📂 Мои папки',fldSearch:'Поиск',fldNew:'Новая папка',
@@ -4431,6 +4526,7 @@ const LANGS={
     mvPrint:'🖨️ 打印 / PDF',mvClose:'关闭',
     bnRec:'食谱',bnFld:'文件夹',bnMen:'菜单计划',bnSet:'设置',bnBv:'备份',
     impTitle:'📥 导入',impTabImg:'🖼️ 图片',impTabWeb:'🌐 网络',impTabScan:'📄 AI扫描',impTabTxt:'📝 文本',impTabJson:'📥 加载食谱',
+    impTabImgGen:"🎨 AI 图片",imggenSetupTitleEl:"🎨 设置 AI 图片生成",imggenSetupDescEl:"用 OpenAI DALL·E 3 为每款饮品生成照片。需要你自己的 OpenAI 密钥。用于 AI 扫描和实验室的 Anthropic 密钥在这里不适用。",imggenKeyLblEl:"OpenAI API 密钥",imggenPasteBtnLbl:"粘贴",imggenSaveBtnLbl:"保存并启用",imggenHintEl:"仅保存在你的设备上 — 绝不外传",imggenHowToEl:"<strong>如何获取密钥：</strong><br>1. <a href='https://platform.openai.com/api-keys' target='_blank' rel='noopener' style='color:var(--teal)'>platform.openai.com/api-keys</a> → “Create new secret key”<br>2. 复制密钥（以 <code style='background:rgba(0,0,0,.07);padding:1px 4px;border-radius:3px;font-size:.68rem'>sk-…</code> 开头）<br>3. 粘贴到此处并保存<br><br>💡 每张图片约 0.04 € · 由 OpenAI 直接结算",imggenInfoTitle:"🎨 为你的饮品生成 AI 图片",imggenInfoCol1Hdr:"生成什么",imggenInfoCol1Items:"<li>杯中照片，贴合该饮品</li><li>小吃与指食摆在木板上</li><li>由 DALL·E 3 生成</li><li>立即保存到该饮品</li>",imggenInfoCol2Hdr:"你需要什么",imggenInfoCol2Items:"<li>OpenAI API 密钥</li><li>每张约 0.04 €</li><li>由 OpenAI 直接结算</li><li>图片随导出一起带走</li>",imggenReadyLbl:"AI 图片已启用",imggenReadySub:"密钥已保存",imggenChangeLbl:"更改",imggenReplaceLbl:"替换已有图片",igGenBtnLbl:"生成 AI 图片",igStopBtnLbl:"停止生成",igSaveBtnLbl:"图片已存入 Mixarium — 关闭",igBackupHintTxt:"💰 <strong>这些图片是付费生成的</strong> — 请立即备份。清除浏览器数据或换设备后会丢失。",igBackupBtnLbl:"📤 立即备份并导出",igSelHdr:"选择饮品",igSelAll:"全部",igSelNone:"全不选",igOther:"其他",igNoRec:"书中还没有饮品",igAllHaveImg:"所有饮品都已有 AI 图片",igNoneSel:"未选择饮品",igNoImg:"张无图片",igWillReplace:"张将被替换",igStarting:"开始 …",igCostSoFar:"目前花费",igCostTotal:"合计",igImgSaved:"张图片已保存",igErrors:"个错误",igStopped:"已停止",igNothing:"没有可生成的饮品",igKeyPasted:"密钥已粘贴",igKeySaved:"OpenAI 密钥已保存",
     imgDropLbl:'选择或拖拽图片至此',
     imgInfoTitle:'🖼️ 为饮品添加图片',
     imgInfoDesc:'选择一张或多张照片，或直接拖放至此。然后为每张图片指定一款饮品——照片将自动关联到所选配方。',
@@ -4469,6 +4565,7 @@ const LANGS={
     expJsonT:'数据备份（JSON）',expJsonD:'将所有食谱和菜单保存为JSON文件。',expJsonSafe:'🔒 不含API密钥 — 可安全共享',expJsonBtn:'💾 创建备份',
     sTheme:'🎨 主题',sLang:'🌐 语言',sData:'📁 导入 & 导出',
     sImpLbl:'导入',sImpSub:'图片、AI扫描、备份',
+    sImgGenLbl:"OpenAI 图片密钥",sImgGenSub:"用于生成饮品 AI 图片",
     sExpLbl:'导出',sExpSub:'电子书、翻页书、JSON',
     sInfo:'ℹ️ 关于',sStore:'已保存',sClear:'删除所有数据',sClearSub:'无法撤销',
     fldTitle:'📂 我的文件夹',fldSearch:'搜索',fldNew:'新建文件夹',
@@ -4561,6 +4658,7 @@ const LANGS={
     mvPrint:'🖨️ Imprimir / PDF',mvClose:'Cerrar',
     bnRec:'Recetas',bnFld:'Carpetas',bnMen:'Planif.',bnSet:'Ajustes',bnBv:'Bóveda',
     impTitle:'📥 Importar',impTabImg:'🖼️ Imágenes',impTabWeb:'🌐 Web',impTabScan:'📄 Scan IA',impTabTxt:'📝 Texto',impTabJson:'📥 Cargar recetas',
+    impTabImgGen:"🎨 Imagen IA",imggenSetupTitleEl:"🎨 Configurar generación de imágenes IA",imggenSetupDescEl:"Crea una foto para cada bebida con OpenAI DALL·E 3. Necesitas tu propia clave de OpenAI. La clave de Anthropic del Scan IA y del Laboratorio no sirve aquí.",imggenKeyLblEl:"Clave API de OpenAI",imggenPasteBtnLbl:"Pegar",imggenSaveBtnLbl:"Guardar y activar",imggenHintEl:"Solo en tu dispositivo — nunca se comparte",imggenHowToEl:"<strong>Cómo obtener tu clave:</strong><br>1. <a href='https://platform.openai.com/api-keys' target='_blank' rel='noopener' style='color:var(--teal)'>platform.openai.com/api-keys</a> → «Create new secret key»<br>2. Copia la clave (empieza por <code style='background:rgba(0,0,0,.07);padding:1px 4px;border-radius:3px;font-size:.68rem'>sk-…</code>)<br>3. Pégala aquí y guarda<br><br>💡 Una imagen cuesta ~0,04 € · facturación directa de OpenAI",imggenInfoTitle:"🎨 Imágenes IA para tus bebidas",imggenInfoCol1Hdr:"Qué se crea",imggenInfoCol1Items:"<li>Una foto en la copa, acorde a la bebida</li><li>Aperitivos y tapas sobre una tabla</li><li>Generado por IA con DALL·E 3</li><li>Se guarda de inmediato en la bebida</li>",imggenInfoCol2Hdr:"Qué necesitas",imggenInfoCol2Items:"<li>Clave API de OpenAI</li><li>~0,04 € por imagen</li><li>Facturación directa de OpenAI</li><li>Las imágenes viajan en la exportación</li>",imggenReadyLbl:"Imagen IA activa",imggenReadySub:"Clave guardada",imggenChangeLbl:"cambiar",imggenReplaceLbl:"Sustituir imágenes existentes",igGenBtnLbl:"Generar imágenes IA",igStopBtnLbl:"Detener la generación",igSaveBtnLbl:"Imágenes en el Mixarium – cerrar",igBackupHintTxt:"💰 <strong>Estas imágenes están pagadas</strong> — guárdalas ahora. Al borrar los datos del navegador o cambiar de dispositivo se pierden.",igBackupBtnLbl:"📤 Guardar y exportar ahora",igSelHdr:"Seleccionar bebidas",igSelAll:"Todas",igSelNone:"Ninguna",igOther:"Otras",igNoRec:"No hay bebidas en el libro",igAllHaveImg:"Todas las bebidas ya tienen foto IA",igNoneSel:"No hay bebidas seleccionadas",igNoImg:"sin foto",igWillReplace:"se sustituirán",igStarting:"Empezando …",igCostSoFar:"Coste hasta ahora",igCostTotal:"Total",igImgSaved:"imágenes guardadas",igErrors:"errores",igStopped:"detenido",igNothing:"No hay bebidas que generar",igKeyPasted:"Clave pegada",igKeySaved:"Clave de OpenAI guardada",
     imgDropLbl:'Seleccionar imágenes o arrastrar aquí',
     imgInfoTitle:'🖼️ Añadir fotos a bebidas',
     imgInfoDesc:'Selecciona una o varias fotos o arrástralas aquí. Luego asigna cada imagen a una bebida — la foto se vinculará automáticamente a la receta elegida.',
@@ -4599,6 +4697,7 @@ const LANGS={
     expJsonT:'Copia de seguridad (JSON)',expJsonD:'Guardar todas las recetas y menús como JSON.',expJsonSafe:'🔒 Sin claves API — seguro para compartir',expJsonBtn:'💾 Crear copia de seguridad',
     sTheme:'🎨 TEMA',sLang:'🌐 IDIOMA',sData:'📁 IMPORTAR & EXPORTAR',
     sImpLbl:'Importar',sImpSub:'Imágenes, Scan IA, Copia',
+    sImgGenLbl:"Clave de imágenes OpenAI",sImgGenSub:"Para imágenes IA de tus bebidas",
     sExpLbl:'Exportar',sExpSub:'E-Book, Libro, JSON',
     sInfo:'ℹ️ INFO',sStore:'Guardado',sClear:'Borrar todos los datos',sClearSub:'No se puede deshacer',
     fldTitle:'📂 Mis carpetas',fldSearch:'Buscar',fldNew:'Nueva carpeta',
@@ -4717,6 +4816,7 @@ const LANGS={
     impTabScan:'📄 Scan IA',
     impTabTxt:'📝 Texte',
     impTabJson:'📥 Charger recettes',
+    impTabImgGen:"🎨 Image IA",imggenSetupTitleEl:"🎨 Configurer la génération d'images IA",imggenSetupDescEl:"Crée une photo pour chaque boisson avec OpenAI DALL·E 3. Il vous faut votre propre clé OpenAI. La clé Anthropic du Scan IA et du Laboratoire ne convient pas ici.",imggenKeyLblEl:"Clé API OpenAI",imggenPasteBtnLbl:"Coller",imggenSaveBtnLbl:"Enregistrer et activer",imggenHintEl:"Reste uniquement sur votre appareil — jamais transmise",imggenHowToEl:"<strong>Comment obtenir votre clé :</strong><br>1. <a href='https://platform.openai.com/api-keys' target='_blank' rel='noopener' style='color:var(--teal)'>platform.openai.com/api-keys</a> → « Create new secret key »<br>2. Copiez la clé (commence par <code style='background:rgba(0,0,0,.07);padding:1px 4px;border-radius:3px;font-size:.68rem'>sk-…</code>)<br>3. Collez-la ici et enregistrez<br><br>💡 Une image coûte ~0,04 € · facturation directe par OpenAI",imggenInfoTitle:"🎨 Images IA pour vos boissons",imggenInfoCol1Hdr:"Ce qui est créé",imggenInfoCol1Items:"<li>Une photo dans le verre, fidèle à la boisson</li><li>Grignotages et amuse-bouches sur une planche</li><li>Généré par IA avec DALL·E 3</li><li>Enregistré aussitôt dans la boisson</li>",imggenInfoCol2Hdr:"Ce qu'il vous faut",imggenInfoCol2Items:"<li>Clé API OpenAI</li><li>~0,04 € par image</li><li>Facturation directe par OpenAI</li><li>Les images partent avec l'export</li>",imggenReadyLbl:"Image IA active",imggenReadySub:"Clé enregistrée",imggenChangeLbl:"modifier",imggenReplaceLbl:"Remplacer les images existantes",igGenBtnLbl:"Générer les images IA",igStopBtnLbl:"Arrêter la génération",igSaveBtnLbl:"Images dans le Mixarium – fermer",igBackupHintTxt:"💰 <strong>Ces images sont payées</strong> — sauvegardez-les maintenant. En effaçant les données du navigateur ou en changeant d'appareil, elles disparaissent.",igBackupBtnLbl:"📤 Sauvegarder et exporter",igSelHdr:"Choisir les boissons",igSelAll:"Toutes",igSelNone:"Aucune",igOther:"Autres",igNoRec:"Aucune boisson dans le livre",igAllHaveImg:"Toutes les boissons ont déjà une photo IA",igNoneSel:"Aucune boisson sélectionnée",igNoImg:"sans photo",igWillReplace:"seront remplacées",igStarting:"Démarrage …",igCostSoFar:"Coût jusqu'ici",igCostTotal:"Total",igImgSaved:"images enregistrées",igErrors:"erreurs",igStopped:"arrêté",igNothing:"Aucune boisson à générer",igKeyPasted:"Clé collée",igKeySaved:"Clé OpenAI enregistrée",
     imgDropLbl:'Sélectionner des images',
     imgInfoTitle:'🖼️ Ajouter des photos aux boissons',
     imgInfoDesc:'Sélectionnez une ou plusieurs photos ou faites-les glisser ici. Associez ensuite chaque image à une boisson — la photo sera automatiquement liée à la recette choisie.',
@@ -4773,6 +4873,7 @@ const LANGS={
     sLang:'🌐 LANGUE',
     sData:'📁 IMPORT EXPORT',
     sImpLbl:'Importer',
+    sImgGenLbl:"Clé images OpenAI",sImgGenSub:"Pour les images IA de vos boissons",
     sImpSub:'Images Scan Sauvegarde',
     sExpLbl:'Exporter',
     sExpSub:'E-Book Livre JSON',
@@ -4956,6 +5057,7 @@ const LANGS={
     impTabScan:'📄 Scan IA',
     impTabTxt:'📝 Testo',
     impTabJson:'📥 Carica ricette',
+    impTabImgGen:"🎨 Immagine IA",imggenSetupTitleEl:"🎨 Configura la generazione di immagini IA",imggenSetupDescEl:"Crea una foto per ogni bevanda con OpenAI DALL·E 3. Serve una tua chiave OpenAI. La chiave Anthropic di Scan IA e Laboratorio qui non funziona.",imggenKeyLblEl:"Chiave API OpenAI",imggenPasteBtnLbl:"Incolla",imggenSaveBtnLbl:"Salva e attiva",imggenHintEl:"Resta solo sul tuo dispositivo — mai condivisa",imggenHowToEl:"<strong>Come ottenere la chiave:</strong><br>1. <a href='https://platform.openai.com/api-keys' target='_blank' rel='noopener' style='color:var(--teal)'>platform.openai.com/api-keys</a> → «Create new secret key»<br>2. Copia la chiave (inizia con <code style='background:rgba(0,0,0,.07);padding:1px 4px;border-radius:3px;font-size:.68rem'>sk-…</code>)<br>3. Incollala qui e salva<br><br>💡 Un'immagine costa ~0,04 € · addebito diretto da OpenAI",imggenInfoTitle:"🎨 Immagini IA per le tue bevande",imggenInfoCol1Hdr:"Cosa viene creato",imggenInfoCol1Items:"<li>Una foto nel bicchiere, coerente con la bevanda</li><li>Stuzzichini e finger food sul tagliere</li><li>Generato dall'IA con DALL·E 3</li><li>Salvato subito nella bevanda</li>",imggenInfoCol2Hdr:"Cosa ti serve",imggenInfoCol2Items:"<li>Chiave API OpenAI</li><li>~0,04 € per immagine</li><li>Addebito diretto da OpenAI</li><li>Le immagini viaggiano con l'export</li>",imggenReadyLbl:"Immagine IA attiva",imggenReadySub:"Chiave salvata",imggenChangeLbl:"modifica",imggenReplaceLbl:"Sostituisci le immagini esistenti",igGenBtnLbl:"Genera immagini IA",igStopBtnLbl:"Interrompi la generazione",igSaveBtnLbl:"Immagini nel Mixarium – chiudi",igBackupHintTxt:"💰 <strong>Queste immagini sono a pagamento</strong> — salvale ora. Cancellando i dati del browser o cambiando dispositivo vanno perse.",igBackupBtnLbl:"📤 Salva ed esporta ora",igSelHdr:"Seleziona le bevande",igSelAll:"Tutte",igSelNone:"Nessuna",igOther:"Altre",igNoRec:"Nessuna bevanda nel libro",igAllHaveImg:"Tutte le bevande hanno già una foto IA",igNoneSel:"Nessuna bevanda selezionata",igNoImg:"senza foto",igWillReplace:"verranno sostituite",igStarting:"Avvio …",igCostSoFar:"Costo finora",igCostTotal:"Totale",igImgSaved:"immagini salvate",igErrors:"errori",igStopped:"interrotto",igNothing:"Nessuna bevanda da generare",igKeyPasted:"Chiave incollata",igKeySaved:"Chiave OpenAI salvata",
     imgDropLbl:'Seleziona immagini',
     imgInfoTitle:'🖼️ Aggiungi foto alle bevande',
     imgInfoDesc:'Seleziona una o più foto o trascinale qui. Poi assegna ogni immagine a una bevanda — la foto verrà collegata automaticamente alla ricetta scelta.',
@@ -5012,6 +5114,7 @@ const LANGS={
     sLang:'🌐 LINGUA',
     sData:'📁 IMPORTA ESPORTA',
     sImpLbl:'Importa',
+    sImgGenLbl:"Chiave immagini OpenAI",sImgGenSub:"Per immagini IA delle tue bevande",
     sImpSub:'Immagini Scan Backup',
     sExpLbl:'Esporta',
     sExpSub:'E-Book Libro JSON',
@@ -5195,6 +5298,7 @@ const LANGS={
     impTabScan:'📄 Scan IA',
     impTabTxt:'📝 Texto',
     impTabJson:'📥 Carregar receitas',
+    impTabImgGen:"🎨 Imagem IA",imggenSetupTitleEl:"🎨 Configurar a geração de imagens IA",imggenSetupDescEl:"Cria uma foto para cada bebida com o OpenAI DALL·E 3. Precisa da sua própria chave OpenAI. A chave Anthropic do Scan IA e do Laboratório não serve aqui.",imggenKeyLblEl:"Chave API da OpenAI",imggenPasteBtnLbl:"Colar",imggenSaveBtnLbl:"Guardar e ativar",imggenHintEl:"Fica apenas no seu dispositivo — nunca é partilhada",imggenHowToEl:"<strong>Como obter a sua chave:</strong><br>1. <a href='https://platform.openai.com/api-keys' target='_blank' rel='noopener' style='color:var(--teal)'>platform.openai.com/api-keys</a> → «Create new secret key»<br>2. Copie a chave (começa por <code style='background:rgba(0,0,0,.07);padding:1px 4px;border-radius:3px;font-size:.68rem'>sk-…</code>)<br>3. Cole aqui e guarde<br><br>💡 Uma imagem custa ~0,04 € · faturação direta pela OpenAI",imggenInfoTitle:"🎨 Imagens IA para as suas bebidas",imggenInfoCol1Hdr:"O que é criado",imggenInfoCol1Items:"<li>Uma foto no copo, de acordo com a bebida</li><li>Petiscos e finger food numa tábua</li><li>Gerado por IA com DALL·E 3</li><li>Guardado logo na bebida</li>",imggenInfoCol2Hdr:"Do que precisa",imggenInfoCol2Items:"<li>Chave API da OpenAI</li><li>~0,04 € por imagem</li><li>Faturação direta pela OpenAI</li><li>As imagens seguem na exportação</li>",imggenReadyLbl:"Imagem IA ativa",imggenReadySub:"Chave guardada",imggenChangeLbl:"alterar",imggenReplaceLbl:"Substituir imagens existentes",igGenBtnLbl:"Gerar imagens IA",igStopBtnLbl:"Parar a geração",igSaveBtnLbl:"Imagens no Mixarium – fechar",igBackupHintTxt:"💰 <strong>Estas imagens são pagas</strong> — guarde-as agora. Ao apagar os dados do navegador ou mudar de dispositivo perdem-se.",igBackupBtnLbl:"📤 Guardar e exportar agora",igSelHdr:"Selecionar bebidas",igSelAll:"Todas",igSelNone:"Nenhuma",igOther:"Outras",igNoRec:"Sem bebidas no livro",igAllHaveImg:"Todas as bebidas já têm foto IA",igNoneSel:"Nenhuma bebida selecionada",igNoImg:"sem foto",igWillReplace:"serão substituídas",igStarting:"A iniciar …",igCostSoFar:"Custo até agora",igCostTotal:"Total",igImgSaved:"imagens guardadas",igErrors:"erros",igStopped:"parado",igNothing:"Nenhuma bebida para gerar",igKeyPasted:"Chave colada",igKeySaved:"Chave OpenAI guardada",
     imgDropLbl:'Selecionar imagens',
     imgInfoTitle:'🖼️ Adicionar fotos a bebidas',
     imgInfoDesc:'Selecione uma ou mais fotos ou arraste-as para aqui. De seguida, associe cada imagem a uma bebida — a foto será automaticamente ligada à receita escolhida.',
@@ -5251,6 +5355,7 @@ const LANGS={
     sLang:'🌐 IDIOMA',
     sData:'📁 IMPORTAR EXPORTAR',
     sImpLbl:'Importar',
+    sImgGenLbl:"Chave de imagens OpenAI",sImgGenSub:"Para imagens IA das suas bebidas",
     sImpSub:'Imagens Scan Cópia',
     sExpLbl:'Exportar',
     sExpSub:'E-Book Livro JSON',
@@ -6033,6 +6138,7 @@ function applyLang(code){
     'menuTitle','mActAdd','mActView','mvTitle','mvTabTl','mvTabSh','mvTabCk','mvTabAl','mvPrintBtn','mvCloseBtn',
     'bnRec','bnFld','bnMen','bnSet','bnBv',
     'impTitle','impTabImg','impTabWeb','impTabScan','impTabTxt','impTabJson','imgDropLbl',
+    'impTabImgGen','imggenSetupTitleEl','imggenSetupDescEl','imggenKeyLblEl','imggenPasteBtnLbl','imggenSaveBtnLbl','imggenHintEl','imggenInfoTitle','imggenInfoCol1Hdr','imggenInfoCol2Hdr','imggenReadyLbl','imggenChangeLbl','imggenReplaceLbl','igGenBtnLbl','igStopBtnLbl','igSaveBtnLbl','igBackupBtnLbl',
     'imgInfoTitle','imgInfoDesc',
     'scanInfoTitle','scanInfoCol1Hdr','scanInfoCol2Hdr',
     'webInfoTitle','webInfoDesc','webInfoHint',
@@ -6046,7 +6152,7 @@ function applyLang(code){
     'sBvScreenTitle','sBvLbl','sBvSub',
     'expTitle','expPdfT','expPdfD','expPdfBtn','expFlipT','expFlipD','expFlipBtn',
     'expJsonT','expJsonD','expJsonSafe','expJsonBtn',
-    'sTheme','sLang','sData','sImpLbl','sImpSub','sExpLbl','sExpSub',
+    'sTheme','sLang','sData','sImpLbl','sImpSub','sExpLbl','sExpSub','sImgGenLbl','sImgGenSub',
     'sInfo','sStore','sClear','sClearSub',
     'sManualHead','sManualLbl','sManualSub','manOvTitle','manPdfLbl',
     'sReloadHead','sReloadLbl','sReloadSub',
@@ -6059,7 +6165,7 @@ function applyLang(code){
     'hlpShareBtn','hlpExportBtn','hlpImportBtn','hlpCacheBtn','hlpResetBtn'];
   ids.forEach(id=>{const el=document.getElementById(id);if(el&&L[id]!==undefined)el.textContent=L[id];});
   // HTML-Keys (Listen): innerHTML statt textContent
-  ['scanInfoCol1Items','scanInfoCol2Items','txtListItems'].forEach(id=>{const el=document.getElementById(id);if(el&&L[id]!==undefined)el.innerHTML=L[id];});
+  ['scanInfoCol1Items','scanInfoCol2Items','txtListItems','imggenHowToEl','imggenInfoCol1Items','imggenInfoCol2Items','igBackupHintTxt'].forEach(id=>{const el=document.getElementById(id);if(el&&L[id]!==undefined)el.innerHTML=L[id];});
   const phs={srchIn:'searchPH',newName:'lName',newFlavor:'lFlavor',fldNameIn:'fldNameLbl'};
   for(const[id,k]of Object.entries(phs)){const el=document.getElementById(id);if(el)el.placeholder=L[k]||'';}
   const logo=document.getElementById('appLogo');
@@ -7431,10 +7537,299 @@ function renderApiKeyOv(){
 <button class="api-key-row-btn" style="width:100%;justify-content:center;background:var(--teal);color:#fff;border-color:var(--teal);font-size:.88rem;padding:12px 0" onclick="closeApiKeyOv();openImport();switchFovTab('importOv','scan',document.getElementById('impTabScan'))">${t.cta}</button>
 </div>`;
 }
+// ═══════════════════════════════════════════════════════
+// KI-BILD (DALL·E 3) — Foto für ein Getränk erzeugen
+// Übernommen aus Mein-Rezeptbuch, auf Getränke umgestellt.
+// Der Schlüssel ist ein OPENAI-Schlüssel und hat mit dem
+// Anthropic-Schlüssel (mxkey9m, KI-Scan/Labor) nichts zu tun.
+// ═══════════════════════════════════════════════════════
+
+// Nie alle Bilder gleichzeitig erzeugen — immer nur 1 Getränk im RAM.
+var _imgGenAborted=false;
+async function _runImgQueue(rids,genFn,onProgress){
+  const total=rids.length;
+  let done=0,ok=0,fail=0;
+  for(const rid of rids){
+    if(_imgGenAborted)break;
+    const r=R.find(x=>x.id===rid);
+    if(r){
+      try{
+        let raw=await genFn(rid,r);                   // 1. Bild holen (ein Aufruf)
+        let comp=await resizeImage(raw,800,0.82);     // 2. verkleinern wie beim Bild-Import
+        raw=null;                                     // 3. Rohbild aus dem RAM
+        r.img=comp;comp=null;
+        r.imgCrop={x:50,y:50,scale:1};
+        sv();                                         // 4. sofort sichern
+        ok++;
+      }catch(err){
+        fail++;
+        console.warn('_runImgQueue rid='+rid,err);
+      }
+    }
+    done++;
+    if(onProgress)onProgress({done,total,ok,fail,rid});
+  }
+  return{ok,fail,total,aborted:_imgGenAborted};
+}
+
+// ── OpenAI-Schlüssel (eigene Schublade, NICHT mxkey9m) ───────────────────────
+const OPENAI_IMG_KEY_LS='mxoaiimg9m';
+function getOpenAiImgKey(){return localStorage.getItem(OPENAI_IMG_KEY_LS)||'';}
+function saveOpenAiImgKey(key){if(key){localStorage.setItem(OPENAI_IMG_KEY_LS,key.trim());}else{localStorage.removeItem(OPENAI_IMG_KEY_LS);}}
+
+// ── Prompt ───────────────────────────────────────────────────────────────────
+// Knabbereien und Fingerfood sind KEIN Getränk. Ohne diese Unterscheidung
+// malt die KI Brezeln in ein Cocktailglas.
+function _buildDallePrompt(recipe){
+  const name=recipe.name||'drink';
+  const ings=(recipe.ings||[]).slice(0,5).map(i=>i.name).filter(Boolean).join(', ');
+  const flav=(recipe.flavors||[]).slice(0,3).filter(Boolean).join(', ');
+  if(recipe.cat==='knab'||recipe.cat==='finger'){
+    return `Food photography: "${name}", an appetizing snack${ings?', made with '+ings:''}. Served on a slate or wooden board, natural light, shallow depth of field, no text, no labels, no watermark.`;
+  }
+  const cat=(typeof CATS!=='undefined')?CATS.find(c=>c.id===recipe.cat):null;
+  const kind=(cat&&cat.en&&cat.id!=='all')?cat.en.toLowerCase().replace(/s$/,''):'mixed';
+  const glass=recipe.glass?` served in a ${recipe.glass} glass`:'';
+  return `Beverage photography: a beautifully presented "${name}", a ${kind} drink${glass}${ings?', made with '+ings:''}${flav?'. Flavour notes: '+flav:''}. Fresh garnish, condensation on the glass, bar counter, natural light, appetizing, no text, no labels, no watermark.`;
+}
+
+async function _dalleGenImg(rid,recipe){
+  const key=getOpenAiImgKey();
+  if(!key)throw new Error('Kein OpenAI-Schlüssel');
+  const resp=await fetch('https://api.openai.com/v1/images/generations',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model:'dall-e-3',prompt:_buildDallePrompt(recipe),n:1,size:'1024x1024',response_format:'b64_json'})
+  });
+  if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+resp.status);}
+  const data=await resp.json();
+  const b64=data.data?.[0]?.b64_json;
+  if(!b64)throw new Error('Kein Bild erhalten');
+  return 'data:image/png;base64,'+b64;
+}
+
+// ── Welche Getränke kommen dran ──────────────────────────────────────────────
+var _igrSel=new Set();
+function _igEligible(){
+  const cb=document.getElementById('imggenReplaceAll');
+  const panel=document.getElementById('imggenReplacePanel');
+  const replaceChecked=!!(cb&&cb.checked);
+  const panelVisible=replaceChecked&&panel&&panel.style.display!=='none';
+  const all=R.filter(r=>r.name&&!r.blank);
+  if(panelVisible){
+    const withoutImg=all.filter(r=>!r.img);
+    const selectedWithImg=all.filter(r=>r.img&&_igrSel.has(r.id));
+    return{all,replaceChecked,list:withoutImg.concat(selectedWithImg)};
+  }
+  if(replaceChecked)return{all,replaceChecked,list:all};
+  return{all,replaceChecked,list:all.filter(r=>!r.img)};
+}
+
+function updateImgGenInfo(){
+  const st=_igEligible();
+  const el=document.getElementById('imggenInfo');
+  const btn=document.getElementById('igGenBtn');
+  if(el){
+    if(!st.all.length){
+      el.innerHTML='<span style="color:var(--dim)">ℹ️ '+h(T('igNoRec'))+'</span>';
+    }else if(!st.list.length&&!st.replaceChecked){
+      el.innerHTML='<span style="color:var(--grn)">✅ '+h(T('igAllHaveImg'))+'</span>';
+    }else if(!st.list.length){
+      el.innerHTML='<span style="color:var(--dim)">ℹ️ '+h(T('igNoneSel'))+'</span>';
+    }else{
+      const noImg=st.list.filter(r=>!r.img).length;
+      const toReplace=st.list.filter(r=>r.img).length;
+      const parts=[];
+      if(noImg)parts.push(noImg+' '+T('igNoImg'));
+      if(toReplace)parts.push(toReplace+' '+T('igWillReplace'));
+      const cost=(st.list.length*0.04).toFixed(2).replace('.',',');
+      el.textContent=parts.join(' · ')+' · ~'+cost+' €';
+    }
+  }
+  if(btn)btn.disabled=(!st.list.length);
+}
+
+// ── Auswahl-Panel „Vorhandene Bilder ersetzen" ───────────────────────────────
+function onImgReplaceToggle(){
+  const cb=document.getElementById('imggenReplaceAll');
+  const panel=document.getElementById('imggenReplacePanel');
+  if(!cb||!panel)return;
+  if(cb.checked){_renderIgrPanel();panel.style.display='block';}
+  else{panel.style.display='none';_igrSel.clear();}
+  updateImgGenInfo();
+}
+
+function _igrRow(r){
+  return '<label style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:.74rem;color:var(--ink);cursor:pointer">'
+    +'<input type="checkbox" class="igr-cb" data-rid="'+r.id+'" checked onchange="igrOnChange()" style="accent-color:var(--teal);width:14px;height:14px;flex-shrink:0">'
+    +'<span>'+(r.img?'🖼️ ':'')+h(r.name||'')+'</span></label>';
+}
+function _igrMiniBtn(fn,lbl){
+  return '<button onclick="'+fn+'" style="font-size:.63rem;padding:2px 6px;border-radius:5px;border:1px solid var(--sand2);background:var(--parch);color:var(--ink);cursor:pointer">'+h(lbl)+'</button>';
+}
+
+function _renderIgrPanel(){
+  const panel=document.getElementById('imggenReplacePanel');
+  if(!panel)return;
+  _igrSel.clear();
+  const named=R.filter(r=>r.name&&!r.blank);
+  named.forEach(r=>_igrSel.add(r.id));
+  const cats=CATS.filter(c=>c.id!=='all');
+  let html='<div style="padding:7px 10px;background:var(--parch);border-bottom:1px solid var(--sand2);display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-size:.72rem;font-weight:700;color:var(--dim)">'+h(T('igSelHdr'))+'</span>'
+    +'<span style="display:flex;gap:5px">'+_igrMiniBtn('igrAllRecipes(true)',T('igSelAll'))+_igrMiniBtn('igrAllRecipes(false)',T('igSelNone'))+'</span></div>';
+  cats.forEach(cat=>{
+    const recs=named.filter(r=>r.cat===cat.id);
+    if(!recs.length)return;
+    html+='<div style="border-bottom:1px solid var(--sand2)">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:var(--sand)">'
+      +'<span style="font-size:.75rem;font-weight:700;color:var(--ink)">'+cat.ico+' '+h(cat[CL]||cat.de)+'</span>'
+      +'<span style="display:flex;gap:5px">'
+      +_igrMiniBtn("event.stopPropagation();igrCatAll('"+cat.id+"',true)",T('igSelAll'))
+      +_igrMiniBtn("event.stopPropagation();igrCatAll('"+cat.id+"',false)",T('igSelNone'))
+      +'</span></div><div class="igr-cat-items" style="padding:4px 10px 6px">';
+    recs.forEach(r=>{html+=_igrRow(r);});
+    html+='</div></div>';
+  });
+  const knownCatIds=cats.map(c=>c.id);
+  const other=named.filter(r=>!r.cat||!knownCatIds.includes(r.cat));
+  if(other.length){
+    html+='<div style="border-bottom:1px solid var(--sand2)">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:var(--sand)">'
+      +'<span style="font-size:.75rem;font-weight:700;color:var(--ink)">📁 '+h(T('igOther'))+'</span>'
+      +'<span style="display:flex;gap:5px">'
+      +_igrMiniBtn("igrCatAll('__other',true)",T('igSelAll'))
+      +_igrMiniBtn("igrCatAll('__other',false)",T('igSelNone'))
+      +'</span></div><div class="igr-cat-items" style="padding:4px 10px 6px">';
+    other.forEach(r=>{html+=_igrRow(r);});
+    html+='</div></div>';
+  }
+  panel.innerHTML=html;
+}
+
+function igrOnChange(){
+  _igrSel.clear();
+  document.querySelectorAll('#imggenReplacePanel .igr-cb').forEach(cb=>{if(cb.checked)_igrSel.add(Number(cb.dataset.rid));});
+  updateImgGenInfo();
+}
+function igrCatAll(catId,checked){
+  const panel=document.getElementById('imggenReplacePanel');
+  if(!panel)return;
+  const knownCatIds=CATS.filter(c=>c.id!=='all').map(c=>c.id);
+  panel.querySelectorAll('.igr-cb').forEach(cb=>{
+    const r=R.find(x=>x.id===Number(cb.dataset.rid));
+    if(!r)return;
+    const inCat=catId==='__other'?(!r.cat||!knownCatIds.includes(r.cat)):r.cat===catId;
+    if(inCat)cb.checked=checked;
+  });
+  igrOnChange();
+}
+function igrAllRecipes(checked){
+  document.querySelectorAll('#imggenReplacePanel .igr-cb').forEach(cb=>{cb.checked=checked;});
+  igrOnChange();
+}
+
+// ── Lauf ─────────────────────────────────────────────────────────────────────
+function stopImgGen(){_imgGenAborted=true;}
+async function startImgGen(){
+  _imgGenAborted=false;
+  const rids=_igEligible().list.map(r=>r.id);
+  if(!rids.length){toast('ℹ️ '+T('igNothing'));return;}
+  const btn=document.getElementById('igGenBtn');
+  const stopBtn=document.getElementById('igStopBtn');
+  const wrap=document.getElementById('igProgWrap');
+  const fill=document.getElementById('igFill');
+  const lbl=document.getElementById('igProgLbl');
+  const costLbl=document.getElementById('igCostLbl');
+  const saveBtn=document.getElementById('igSaveBtn');
+  if(btn)btn.style.display='none';
+  if(stopBtn)stopBtn.style.display='flex';
+  if(saveBtn)saveBtn.style.display='none';
+  if(wrap)wrap.style.display='block';
+  if(fill)fill.style.width='0%';
+  if(lbl)lbl.textContent=T('igStarting');
+  if(costLbl){costLbl.textContent=T('igCostSoFar')+': 0,00 €';costLbl.style.display='block';}
+  const res=await _runImgQueue(rids,_dalleGenImg,p=>{
+    const pct=Math.round(p.done/p.total*100);
+    if(fill)fill.style.width=pct+'%';
+    const r=R.find(x=>x.id===p.rid);
+    if(lbl)lbl.textContent=p.done+' / '+p.total+(r?' · '+(r.name||''):'')+(p.fail?' · '+p.fail+' ✗':'');
+    if(costLbl)costLbl.textContent=T('igCostSoFar')+': ~'+(p.ok*0.04).toFixed(2).replace('.',',')+' €';
+  });
+  if(fill)fill.style.width='100%';
+  const stopTxt=res.aborted?' · '+T('igStopped'):'';
+  if(lbl)lbl.textContent=(res.aborted?'⏹':'✅')+' '+res.ok+' '+T('igImgSaved')+(res.fail?' · '+res.fail+' '+T('igErrors'):'')+stopTxt;
+  if(costLbl)costLbl.textContent=T('igCostTotal')+': ~'+(res.ok*0.04).toFixed(2).replace('.',',')+' €';
+  if(stopBtn)stopBtn.style.display='none';
+  if(btn)btn.style.display='flex';
+  if(saveBtn&&res.ok>0)saveBtn.style.display='flex';
+  if(res.ok>0){
+    toast('✅ '+res.ok+' '+T('igImgSaved'));
+    const hint=document.getElementById('igBackupHint');
+    if(hint)hint.style.display='block';
+  }
+  if(typeof render==='function')render();
+  updateImgGenInfo();
+}
+
+// ── Schlüssel-Oberfläche ─────────────────────────────────────────────────────
+function onImgGenKeyInput(v){
+  const btn=document.getElementById('imggenSaveBtn');
+  if(btn)btn.disabled=v.trim().length<20;
+  const inp=document.getElementById('imggenKeyIn');
+  if(inp)inp.style.borderColor=(v.trim().startsWith('sk-')&&v.length>20)?'var(--grn)':'var(--sand2)';
+}
+async function pasteImgGenKey(){
+  try{
+    const txt=await navigator.clipboard.readText();
+    const inp=document.getElementById('imggenKeyIn');
+    if(inp){inp.value=txt.trim();onImgGenKeyInput(txt.trim());inp.focus();}
+    if(txt.trim().startsWith('sk-'))toast('✅ '+T('igKeyPasted'));
+  }catch(e){
+    const inp=document.getElementById('imggenKeyIn');
+    if(inp){inp.focus();inp.select();}
+    toast('📋 Strg+V / Cmd+V');
+  }
+}
+function saveAndActivateImgGen(){
+  const v=document.getElementById('imggenKeyIn')?.value?.trim()||'';
+  if(!v)return;
+  saveOpenAiImgKey(v);
+  toast('✅ '+T('igKeySaved'));
+  switchToImgGenMain();
+}
+function switchToImgGenMain(){
+  const setup=document.getElementById('imggenSetup');
+  const main=document.getElementById('imggenMain');
+  if(setup)setup.style.display='none';
+  if(main)main.style.display='block';
+  const key=getOpenAiImgKey();
+  const sub=document.getElementById('imggenReadySub');
+  if(sub&&key)sub.textContent=key.slice(0,7)+'…'+key.slice(-4);
+  updateImgGenInfo();
+}
+function showImgGenSetup(){
+  const setup=document.getElementById('imggenSetup');
+  const main=document.getElementById('imggenMain');
+  if(setup)setup.style.display='block';
+  if(main)main.style.display='none';
+  setTimeout(()=>{const inp=document.getElementById('imggenKeyIn');if(inp){inp.value='';inp.focus();}},100);
+}
+function initImgGenPane(){
+  if(getOpenAiImgKey()){switchToImgGenMain();}
+  else{
+    const setup=document.getElementById('imggenSetup');
+    const main=document.getElementById('imggenMain');
+    if(setup)setup.style.display='block';
+    if(main)main.style.display='none';
+  }
+}
+
 function openImport(){
   document.getElementById('importOv').style.display='flex';
   initScanPane();
   initTxtPane();
+  initImgGenPane();
 }
 function closeImport(){document.getElementById('importOv').style.display='none';}
 function openExport(){document.getElementById('exportOv').style.display='flex';}
@@ -7447,6 +7842,7 @@ function switchFovTab(ovId,tab,el){
   document.getElementById('imp-'+tab)?.classList.add('on');
   if(tab==='scan')initScanPane();
   if(tab==='txt')initTxtPane();
+  if(tab==='imggen')initImgGenPane();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -10764,8 +11160,8 @@ var _A11Y_MAP = ['sm','md','lg'];
 
 // ── IMPORT-OVERLAY: Tab-Swipe ─────────────────────────
 (function(){
-  const TAB_ORDER=['img','web','scan','txt','json'];
-  const TAB_EL={img:'impTabImg',web:'impTabWeb',scan:'impTabScan',txt:'impTabTxt',json:'impTabJson'};
+  const TAB_ORDER=['img','web','scan','txt','json','imggen'];
+  const TAB_EL={img:'impTabImg',web:'impTabWeb',scan:'impTabScan',txt:'impTabTxt',json:'impTabJson',imggen:'impTabImgGen'};
   function doImportSwipe(dx){
     const ov=document.getElementById('importOv');
     if(!ov||ov.style.display==='none')return;
@@ -12950,7 +13346,7 @@ function buildManualSections(){
      short:({de:'Importieren',en:'Import',ru:'Импорт',zh:'导入',es:'Importar',fr:'Importer',it:'Importa',pt:'Importar'})[lang]||'Import',
      title:({de:'Rezepte importieren',en:'Importing Recipes',ru:'Импорт рецептов',zh:'导入食谱',es:'Importar recetas',fr:'Importer des recettes',it:'Importare ricette',pt:'Importar receitas'})[lang]||'Importing Recipes',
      content:({
-       de:`<div class="man-intro">Vier Wege, Rezepte ins Buch zu übertragen: Foto-Scan, Web-Import, Texteingabe oder Backup laden.</div><h4 class="man-sub">🌐 Web-Import (Internet-Adresse)</h4><ul><li>URL einer Rezeptseite eingeben (z.B. Diffordsguide, Liquor.com, TheCocktailDB, Tipsy Bartender)</li><li>App lädt Seite automatisch und erkennt das Rezept</li><li>Funktioniert bei den meisten großen Cocktail- und Getränkeseiten auch <strong>ohne</strong> KI-Schlüssel</li><li>Unbekannte Seiten: <span class="man-badge rust">KI-Schlüssel nötig</span></li></ul><h4 class="man-sub">🖼️ Bilder / Foto-Scan</h4><ul><li>Foto eines Rezepts (Kochbuch, Zettel, Zeitschrift) auswählen</li><li>Die KI erkennt automatisch Zutaten, Mengen und Schritte</li><li><span class="man-badge rust">KI-Schlüssel nötig</span></li></ul><h4 class="man-sub">📝 Text einfügen</h4><ul><li>Rezepttext kopieren und einfügen</li><li>KI erkennt Zutaten und Schritte automatisch</li><li><span class="man-badge rust">KI-Schlüssel nötig</span></li></ul><h4 class="man-sub">💾 Backup laden</h4><ul><li>Zuvor exportierte JSON-Datei laden</li><li>Alle Rezepte werden wiederhergestellt</li><li><span class="man-badge grn">Kein KI-Schlüssel nötig</span></li></ul><div class="man-tip"><div class="man-tip-title">💡 Tipp</div>Der Web-Import ist der einfachste Weg: einfach die URL einer Rezeptseite einfügen und auf Laden tippen.</div>`,
+       de:`<div class="man-intro">Fünf Wege im Importieren-Fenster: Foto-Scan, Web-Import, Texteingabe, Backup laden — und KI-Bilder zu deinen Getränken erzeugen.</div><h4 class="man-sub">🌐 Web-Import (Internet-Adresse)</h4><ul><li>URL einer Rezeptseite eingeben (z.B. Diffordsguide, Liquor.com, TheCocktailDB, Tipsy Bartender)</li><li>App lädt Seite automatisch und erkennt das Rezept</li><li>Funktioniert bei den meisten großen Cocktail- und Getränkeseiten auch <strong>ohne</strong> KI-Schlüssel</li><li>Unbekannte Seiten: <span class="man-badge rust">KI-Schlüssel nötig</span></li></ul><h4 class="man-sub">🖼️ Bilder / Foto-Scan</h4><ul><li>Foto eines Rezepts (Kochbuch, Zettel, Zeitschrift) auswählen</li><li>Die KI erkennt automatisch Zutaten, Mengen und Schritte</li><li><span class="man-badge rust">KI-Schlüssel nötig</span></li></ul><h4 class="man-sub">📝 Text einfügen</h4><ul><li>Rezepttext kopieren und einfügen</li><li>KI erkennt Zutaten und Schritte automatisch</li><li><span class="man-badge rust">KI-Schlüssel nötig</span></li></ul><h4 class="man-sub">💾 Backup laden</h4><ul><li>Zuvor exportierte JSON-Datei laden</li><li>Alle Rezepte werden wiederhergestellt</li><li><span class="man-badge grn">Kein KI-Schlüssel nötig</span></li></ul><div class="man-tip"><div class="man-tip-title">💡 Tipp</div>Der Web-Import ist der einfachste Weg: einfach die URL einer Rezeptseite einfügen und auf Laden tippen.</div>`,
        en:`<div class="man-intro">Four ways to transfer recipes: web import, photo scan, text paste or load a backup.</div><h4 class="man-sub">🌐 Web Import (URL)</h4><ul><li>Enter the URL of a recipe page (e.g. Diffordsguide, Liquor.com, TheCocktailDB, Tipsy Bartender)</li><li>App automatically loads the page and recognises the recipe</li><li>Works on most major cocktail and drinks sites even <strong>without</strong> an AI key</li><li>Unknown sites: <span class="man-badge rust">AI key required</span></li></ul><h4 class="man-sub">🖼️ Images / Photo Scan</h4><ul><li>Select a photo of a recipe (cookbook, note, magazine)</li><li>AI automatically recognises ingredients, amounts and steps</li><li><span class="man-badge rust">AI key required</span></li></ul><h4 class="man-sub">📝 Paste text</h4><ul><li>Copy and paste a recipe text</li><li>AI recognises ingredients and steps automatically</li><li><span class="man-badge rust">AI key required</span></li></ul><h4 class="man-sub">💾 Load backup</h4><ul><li>Load a previously exported JSON file</li><li>All recipes are restored</li><li><span class="man-badge grn">No AI key required</span></li></ul><div class="man-tip"><div class="man-tip-title">💡 Tip</div>Web import is the easiest way: just paste the URL of a recipe page and tap Load.</div>`,
        ru:`<div class="man-intro">Четыре способа добавить рецепты: веб-импорт, сканирование фото, вставка текста или загрузка резервной копии.</div><h4 class="man-sub">🌐 Веб-импорт (URL)</h4><ul><li>Введите URL страницы с рецептом (например, Diffordsguide, Liquor.com, TheCocktailDB, Tipsy Bartender)</li><li>Приложение автоматически загружает страницу и распознаёт рецепт</li><li>Работает на большинстве крупных кулинарных сайтов <strong>без</strong> ключа ИИ</li><li>Неизвестные сайты: <span class="man-badge rust">нужен ключ ИИ</span></li></ul><h4 class="man-sub">🖼️ Фото-сканирование</h4><ul><li>Выбрать фото рецепта (из кулинарной книги, записки, журнала)</li><li>ИИ автоматически распознаёт ингредиенты, количества и шаги</li><li><span class="man-badge rust">нужен ключ ИИ</span></li></ul><h4 class="man-sub">📝 Вставить текст</h4><ul><li>Скопировать и вставить текст рецепта</li><li>ИИ автоматически распознаёт ингредиенты и шаги</li><li><span class="man-badge rust">нужен ключ ИИ</span></li></ul><h4 class="man-sub">💾 Загрузить резервную копию</h4><ul><li>Загрузить ранее экспортированный JSON-файл</li><li>Все рецепты будут восстановлены</li><li><span class="man-badge grn">ключ ИИ не нужен</span></li></ul><div class="man-tip"><div class="man-tip-title">💡 Совет</div>Веб-импорт — самый простой способ: вставьте URL страницы с рецептом и нажмите «Загрузить».</div>`,
        zh:`<div class="man-intro">四种方式导入食谱：网络导入、照片扫描、粘贴文本或加载备份。</div><h4 class="man-sub">🌐 网络导入（URL）</h4><ul><li>输入食谱页面的URL（例如 Chefkoch、Allrecipes、BBC Good Food）</li><li>应用自动加载页面并识别食谱</li><li>大多数主要烹饪网站无需AI密钥即可使用</li><li>未知网站：<span class="man-badge rust">需要AI密钥</span></li></ul><h4 class="man-sub">🖼️ 照片扫描</h4><ul><li>选择食谱照片（食谱书、便条、杂志）</li><li>AI自动识别食材、用量和步骤</li><li><span class="man-badge rust">需要AI密钥</span></li></ul><h4 class="man-sub">📝 粘贴文本</h4><ul><li>复制并粘贴食谱文本</li><li>AI自动识别食材和步骤</li><li><span class="man-badge rust">需要AI密钥</span></li></ul><h4 class="man-sub">💾 加载备份</h4><ul><li>加载之前导出的JSON文件</li><li>所有食谱将被恢复</li><li><span class="man-badge grn">无需AI密钥</span></li></ul><div class="man-tip"><div class="man-tip-title">💡 提示</div>网络导入是最简单的方式：只需粘贴食谱页面的URL并点击加载。</div>`,
