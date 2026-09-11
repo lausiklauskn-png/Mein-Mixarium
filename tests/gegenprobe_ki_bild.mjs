@@ -67,8 +67,8 @@ const FAELLE = [
     trifft: /nach einem bezahlten Lauf wird zum Sichern geraten/ },
 
   { name: 'ein anderes Modell wird gerufen',
-    alt: `body:JSON.stringify({model:'dall-e-3',prompt:_buildDallePrompt(recipe)`,
-    neu: `body:JSON.stringify({model:'dall-e-2',prompt:_buildDallePrompt(recipe)`,
+    alt: `  {model:'dall-e-3',   extra:{response_format:'b64_json'}},`,
+    neu: `  {model:'dall-e-2',   extra:{response_format:'b64_json'}},`,
     trifft: /gerufen wird OpenAI, mit dall-e-3/ },
 
   { name: 'der Knopf bleibt offen, obwohl es nichts zu tun gibt',
@@ -140,6 +140,54 @@ const FAELLE = [
     body:JSON.stringify({model:'dall-e-3',prompt:'test',n:1,size:'1024x1024'})
   });`,
     trifft: /KEIN Bild erzeugt/ },
+
+  // ── seit dem 2026-09-11: der kleine Knopf vorne an der Karte ──────────────
+  { name: 'der Kamera-Knopf verschwindet von der Karte',
+    alt: `<button class="ra ra-cam" onclick="event.stopPropagation();openImgGenForRecipe(\${r.id})"`,
+    neu: `<button class="ra ra-cam" style="display:none" onclick="event.stopPropagation();openImgGenForRecipe(\${r.id})"`,
+    trifft: /an der Karte steht der/ },
+
+  { name: 'der Einzel-Block bleibt zu',
+    alt: `  if(sw)sw.style.display='block';
+  if(title&&r)title.textContent='📸 '+T('igFuer')+' '+(r.name||'');`,
+    neu: `  if(title&&r)title.textContent='📸 '+T('igFuer')+' '+(r.name||'');`,
+    trifft: /im Einzel-Modus/ },
+
+  { name: 'das Getränk wird nicht beim Namen genannt',
+    alt: `  if(title&&r)title.textContent='📸 '+T('igFuer')+' '+(r.name||'');`,
+    neu: `  if(title&&r)title.textContent='📸';`,
+    trifft: /nennt das Getränk beim Namen/ },
+
+  { name: 'der Sammel-Knopf steht im Einzel-Modus daneben',
+    alt: `  if(rl)rl.style.display='none';
+  if(gb)gb.style.display='none';
+  const fbox=document.getElementById('igFehlerBox');if(fbox)fbox.style.display='none';`,
+    neu: `  const fbox=document.getElementById('igFehlerBox');if(fbox)fbox.style.display='none';`,
+    trifft: /Sammel-Knopf tritt dabei zurück/ },
+
+  { name: 'closeImport räumt den Einzel-Modus nicht mehr auf',
+    alt: `  const gb=document.getElementById('igGenBtn');if(gb)gb.style.display='';
+}`,
+    neu: `}`,
+    trifft: /Sammel-Weg wieder da/ },
+
+  // ── der zweite Modell-Versuch und seine Grenze ────────────────────────────
+  { name: 'der zweite Versuch fällt weg',
+    alt: `  {model:'gpt-image-1',extra:{}},`,
+    neu: ``,
+    trifft: /rettet der zweite Versuch den Lauf/ },
+
+  { name: 'gpt-image-1 wird ZUERST gefragt statt dall-e-3',
+    alt: `  {model:'dall-e-3',   extra:{response_format:'b64_json'}},
+  {model:'gpt-image-1',extra:{}},`,
+    neu: `  {model:'gpt-image-1',extra:{}},
+  {model:'dall-e-3',   extra:{response_format:'b64_json'}},`,
+    trifft: /erst wird dall-e-3 gefragt/ },
+
+  { name: 'auch ein abgelehnter Schlüssel löst einen zweiten (bezahlten) Versuch aus',
+    alt: `      if(!err.modellProblem)throw err;`,
+    neu: ``,
+    trifft: /abgelehnter Schlüssel löst KEINEN zweiten Versuch aus/ },
 ];
 
 // ── Ausgangslage: die Probe muss OHNE Eingriff grün sein ─────────────────────
