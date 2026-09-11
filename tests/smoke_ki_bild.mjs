@@ -112,6 +112,7 @@ try {
   await seite.evaluate(() => { localStorage.setItem('mxkey9m', 'sk-ant-UNBERUEHRT'); });
   await seite.fill('#imggenKeyIn', 'sk-proj-0123456789abcdefghij');
   await seite.evaluate(() => saveAndActivateImgGen());
+  await seite.waitForTimeout(80);
   ok('der OpenAI-Schlüssel liegt unter mxoaiimg9m',
     (await seite.evaluate(() => localStorage.getItem('mxoaiimg9m'))) === 'sk-proj-0123456789abcdefghij');
   ok('der Anthropic-Schlüssel bleibt unberührt',
@@ -214,15 +215,113 @@ try {
   ok('der Tab ist in allen acht Sprachen beschriftet', werte.every(v => v && v.trim().length > 1), JSON.stringify(namen));
   ok('und nicht achtmal derselbe Text', new Set(werte).size > 1, JSON.stringify(namen));
 
+  // ── 10. Ein Fehlschlag NENNT seinen Grund ─────────────────────────────────
+  // Klaus am 2026-09-11: „hat nicht funktioniert trotz API key." Der Grund ging
+  // in ein console.warn; auf dem Schirm stand nur „1 Fehler". Ein Fehlschlag
+  // ohne Grund ist von einem kaputten Knopf nicht zu unterscheiden.
+  const FEHLERFAELLE = [
+    { name: 'der Browser kam gar nicht hinaus (CORS / kein Netz)', netz: true,
+      erwartet: /konnte OpenAI gar nicht erst fragen/, nichtRoh: /Failed to fetch/ },
+    { name: 'OpenAI lehnt den Schlüssel ab (401)', status: 401,
+      body: { error: { message: 'Incorrect API key provided' } }, erwartet: /Schlüssel abgelehnt/ },
+    { name: 'kein Guthaben auf dem Konto', status: 429,
+      body: { error: { message: 'You exceeded your current quota, please check your billing' } },
+      erwartet: /kein Guthaben/ },
+  ];
+  for (const f of FEHLERFAELLE) {
+    const erg = await seite.evaluate(async (f) => {
+      const echt = window.fetch;
+      window.fetch = async () => {
+        if (f.netz) throw new TypeError('Failed to fetch');
+        return { ok: false, status: f.status, json: async () => f.body };
+      };
+      localStorage.setItem('mxoaiimg9m', 'sk-proj-EGAL0123456789abcdef');
+      window.R.length = 0;
+      window.R.push({ id: 900, name: 'Fehlerfall', cat: 'ckt', img: '', ings: [], steps: [], flavors: [] });
+      updateImgGenInfo();
+      await startImgGen();
+      const box = document.getElementById('igFehlerBox');
+      window.fetch = echt;
+      return { sichtbar: box && box.style.display === 'block', text: box ? box.textContent : '' };
+    }, { netz: !!f.netz, status: f.status || 0, body: f.body || {} });
+    ok('der Grund steht da — ' + f.name,
+      erg.sichtbar && f.erwartet.test(erg.text), erg.text.slice(0, 95));
+    if (f.nichtRoh) ok('…und nicht als roher Browser-Satz', !f.nichtRoh.test(erg.text), erg.text.slice(0, 95));
+  }
+
+  // ── 11. EIN Schlüssel, zwei Felder, eine Schublade ────────────────────────
+  const einOrt = await seite.evaluate(async () => {
+    const echt = window.fetch;
+    window.fetch = async () => ({ ok: true, json: async () => ({ data: [] }) });
+    localStorage.removeItem('mxoaiimg9m');
+    toggleImgKeyField();                                   // das Feld in den Einstellungen
+    document.getElementById('imgKeySettIn').value = 'sk-proj-AUSDENEINSTELLUNGEN99';
+    await saveImgKeyFromSettings();
+    const inSchublade = localStorage.getItem('mxoaiimg9m');
+    openImport(); switchFovTab('importOv', 'imggen', document.getElementById('impTabImgGen'));
+    const sub = document.getElementById('imggenReadySub').textContent;
+    const setupZu = document.getElementById('imggenSetup').style.display === 'none';
+    window.fetch = echt;
+    return { inSchublade, sub, setupZu };
+  });
+  ok('in den Einstellungen eingegeben → DIESELBE Schublade',
+    einOrt.inSchublade === 'sk-proj-AUSDENEINSTELLUNGEN99', String(einOrt.inSchublade));
+  ok('das Importieren-Fenster fragt danach NICHT noch einmal', einOrt.setupZu);
+  ok('…und zeigt denselben Schlüssel maskiert',
+    einOrt.sub.includes('…') && !einOrt.sub.includes('AUSDENEINSTELLUNGEN99'), einOrt.sub);
+
+  // ── 12. Der Satz, der die Verwechslung beendet ────────────────────────────
+  const satz = await seite.evaluate(() => {
+    const el = document.getElementById('imggenWhyOwnKey');
+    localStorage.setItem('mxkey9m', 'sk-ant-api03-KLAUS');
+    localStorage.removeItem('mxoaiimg9m');
+    initImgGenPane();
+    const nurClaude = { da: el.style.display === 'block', text: el.textContent };
+    localStorage.setItem('mxoaiimg9m', 'sk-proj-XYZ0123456789abcdef');
+    initImgGenPane();
+    const beide = el.style.display === 'block';
+    localStorage.removeItem('mxkey9m'); localStorage.removeItem('mxoaiimg9m');
+    initImgGenPane();
+    const keiner = el.style.display === 'block';
+    return { nurClaude, beide, keiner };
+  });
+  ok('wer NUR den Claude-Schlüssel hat, erfährt warum der hier nicht zählt',
+    satz.nurClaude.da && /Claude erzeugt keine Bilder/.test(satz.nurClaude.text),
+    satz.nurClaude.text.slice(0, 75));
+  ok('…der Hinweis verschwindet, sobald der Bildschlüssel da ist', satz.beide === false);
+  ok('…und steht nicht da, wenn gar nichts hinterlegt ist', satz.keiner === false);
+
+  // ── 13. Geprüft wird OHNE ein Bild zu erzeugen ────────────────────────────
+  const pruef = await seite.evaluate(async () => {
+    const rufe = [];
+    const echt = window.fetch;
+    window.fetch = async (u) => { rufe.push(String(u)); return { ok: true, json: async () => ({ data: [] }) }; };
+    localStorage.removeItem('mxoaiimg9m');
+    openImport(); switchFovTab('importOv', 'imggen', document.getElementById('impTabImgGen'));
+    document.getElementById('imggenKeyIn').value = 'sk-proj-PRUEFMICH0123456789';
+    await saveAndActivateImgGen();
+    const st = document.getElementById('imggenKeyStatus');
+    window.fetch = echt;
+    return { rufe, status: st ? st.textContent : '' };
+  });
+  ok('beim Speichern wird der Schlüssel wirklich geprüft',
+    pruef.rufe.some(u => u.includes('/v1/models')), pruef.rufe.join(', '));
+  ok('…und dabei KEIN Bild erzeugt (das würde Geld kosten)',
+    !pruef.rufe.some(u => u.includes('images/generations')), pruef.rufe.join(', '));
+  ok('…das Ergebnis steht daneben', /gültig|valid/i.test(pruef.status), pruef.status);
+
   // ── 9. Es ging nichts nach draußen ────────────────────────────────────────
   // Die Zusicherung ist NICHT „die App greift nie ins Netz" — sie holt beim
   // Start die SBKIM-Briefkästen, das ist netzweit vereinbart (INTERFACES §11.6).
   // Die Zusicherung ist: DIESE Probe hat keinen bezahlten Bild-Aufruf ausgelöst.
   // Eine pauschale Lockerung wäre ein Scheunentor, deshalb steht daneben eine
   // NAMENTLICHE Liste dessen, was hinaus darf — alles andere ist ein Befund.
-  const ERLAUBT = [/^https:\/\/raw\.githubusercontent\.com\/lausiklauskn-png\//];
-  ok('kein einziger Aufruf ging an OpenAI',
-    !fremd.some(u => u.includes('api.openai.com')), fremd.filter(u => u.includes('openai')).join(', '));
+  const ERLAUBT = [
+    /^https:\/\/raw\.githubusercontent\.com\/lausiklauskn-png\//,
+    /^https:\/\/api\.openai\.com\/v1\/models$/,   // Schlüssel-Prüfung — erzeugt kein Bild, kostet nichts
+  ];
+  ok('kein BEZAHLTER Aufruf ging hinaus (images/generations)',
+    !fremd.some(u => u.includes('images/generations')), fremd.filter(u => u.includes('generations')).join(', '));
   ok('und was sonst hinaus wollte, steht auf der benannten Liste',
     fremd.every(u => ERLAUBT.some(re => re.test(u))),
     fremd.filter(u => !ERLAUBT.some(re => re.test(u))).join(', '));

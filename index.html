@@ -3147,11 +3147,23 @@ body:not([data-theme]) #bnav{
           <div class="sett-sub" id="sApiKeySub">Zugangscode verwalten</div></div>
         <div class="sett-arr">›</div>
       </div>
-      <div class="sett-row" onclick="openImport();switchFovTab('importOv','imggen',document.getElementById('impTabImgGen'))">
+      <div class="sett-row" onclick="toggleImgKeyField()">
         <div class="sett-ico">🎨</div>
         <div class="sett-body"><div class="sett-lbl" id="sImgGenLbl">OpenAI-Bildschlüssel</div>
           <div class="sett-sub" id="sImgGenSub">Für KI-Bilder zu deinen Getränken</div></div>
-        <div class="sett-arr">›</div>
+        <div class="sett-arr" id="imgKeyArr">›</div>
+      </div>
+      <div id="imgKeyPanel" style="display:none;padding:12px 16px 14px;border-bottom:1px solid var(--sand2);background:var(--sand)">
+        <div id="sImgGenPanelDesc" style="font-size:.72rem;color:var(--dim);line-height:1.5;margin-bottom:9px">Einmal hier hinterlegen — dann nutzt ihn jedes Werkzeug der App, das Bilder erzeugt. Er ist NICHT derselbe wie der KI-Zugangscode oben: Claude erzeugt keine Bilder, das macht OpenAI.</div>
+        <div style="font-size:.72rem;line-height:1.5;margin-bottom:9px">🔑 <span id="sImgGenPanelLink">Schlüssel erstellen</span>: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline">platform.openai.com/api-keys</a></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="scan-key-in" id="imgKeySettIn" type="password" placeholder="sk-…" style="flex:1"
+            oninput="onImgKeySettInput(this.value)"
+            onkeydown="if(event.key==='Enter')saveImgKeyFromSettings()"/>
+          <button class="paste-btn" onclick="saveImgKeyFromSettings()" title="OpenAI-Bildschlüssel speichern und prüfen">💾 <span id="imggenSaveShort">Speichern</span></button>
+        </div>
+        <div id="imgKeySettStatus" style="display:none;font-size:.74rem;margin-top:8px;line-height:1.5"></div>
+        <div class="scan-key-note" style="margin-top:8px">🔒 <span id="imggenHintEl2">Bleibt nur auf deinem Gerät — wird niemals weitergegeben</span></div>
       </div>
       <div class="sett-row" onclick="toggleMistralKeyField()">
         <div class="sett-ico">📄</div>
@@ -3635,6 +3647,7 @@ Vielen Dank für deine Unterstützung.</div>
       <div id="imggenSetup">
         <div style="background:var(--teals);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1.5px solid var(--teal)">
           <div style="font-size:.94rem;font-weight:700;color:var(--teal);font-family:Georgia,serif;margin-bottom:6px" id="imggenSetupTitleEl">🎨 KI-Bildgenerierung einrichten</div>
+          <div id="imggenWhyOwnKey" style="display:none;font-size:.76rem;color:#7a4a00;background:#fff3cd;border:1.5px solid #e6a817;border-radius:8px;padding:9px 11px;line-height:1.55;margin-bottom:9px"></div>
           <div style="font-size:.76rem;color:#1e4a45;line-height:1.55" id="imggenSetupDescEl">Erzeugt ein Foto für jedes Getränk — mit OpenAI DALL·E 3. Du brauchst dafür einen eigenen OpenAI-Schlüssel. Der Anthropic-Schlüssel für KI-Scan und Labor passt hier nicht.</div>
         </div>
         <div class="paste-box" style="margin-bottom:12px">
@@ -3646,7 +3659,8 @@ Vielen Dank für deine Unterstützung.</div>
               onkeydown="if(event.key==='Enter')saveAndActivateImgGen()"/>
             <button class="paste-btn" onclick="pasteImgGenKey()" id="imggenPasteBtn" title="Schlüssel aus Zwischenablage einfügen">📋 <span id="imggenPasteBtnLbl">Einfügen</span></button>
           </div>
-          <button class="scan-key-btn" id="imggenSaveBtn" onclick="saveAndActivateImgGen()" disabled title="OpenAI-Schlüssel speichern und aktivieren">🚀 <span id="imggenSaveBtnLbl">Speichern &amp; aktivieren</span></button>
+            <button class="scan-key-btn" id="imggenSaveBtn" onclick="saveAndActivateImgGen()" disabled title="OpenAI-Schlüssel speichern, prüfen und aktivieren">🚀 <span id="imggenSaveBtnLbl">Speichern &amp; aktivieren</span></button>
+          <div id="imggenKeyStatus" style="display:none;font-size:.74rem;margin-top:8px;line-height:1.5"></div>
           <div class="scan-key-note">🔒 <span id="imggenHintEl">Bleibt nur auf deinem Gerät — wird niemals weitergegeben</span></div>
         </div>
         <div style="background:var(--sand2);border-radius:8px;padding:10px 12px;font-size:.74rem;color:var(--dim);line-height:1.65" id="imggenHowToEl">
@@ -3705,6 +3719,7 @@ Vielen Dank für deine Unterstützung.</div>
           <div id="igProgLbl" style="font-size:.78rem;color:var(--ink);text-align:center;font-weight:600"></div>
           <div id="igCostLbl" style="font-size:.74rem;color:var(--teal);margin-top:5px;text-align:center;font-weight:600"></div>
           <button class="scan-key-btn" id="igSaveBtn" onclick="closeImport()" style="display:none;background:var(--grn);margin-top:10px">✅ <span id="igSaveBtnLbl">Bilder im Mixarium – schließen</span></button>
+          <div id="igFehlerBox" style="display:none;margin-top:10px;background:#fdecea;border:1.5px solid #c0392b;border-radius:9px;padding:10px 12px;font-size:.76rem;color:#7b241c;line-height:1.6"></div>
         </div>
         <div id="igBackupHint" style="display:none;margin-top:12px;background:#fff3cd;border:1.5px solid #e6a817;border-radius:10px;padding:11px 13px;font-size:.76rem;color:#5a3e00;line-height:1.6">
           <span id="igBackupHintTxt">💰 <strong>Diese Bilder sind bezahlt</strong> — sichere sie jetzt. Beim Löschen der Browserdaten oder auf einem neuen Gerät sind sie sonst weg.</span>
@@ -4170,6 +4185,7 @@ const LANGS={
     sTheme:'🎨 THEMA',sLang:'🌐 SPRACHE',sData:'📁 IMPORT & EXPORT',
     sImpLbl:'Importieren',sImpSub:'Bilder, KI-Scan, Backup',
     sImgGenLbl:"OpenAI-Bildschlüssel",sImgGenSub:"Für KI-Bilder zu deinen Getränken",
+    imggenWhyOwnKey:"Dein KI-Zugangscode ist hinterlegt — der gilt hier nicht. Claude erzeugt keine Bilder; dafür braucht es einen eigenen Schlüssel von OpenAI. Einmal eingeben, dann gilt er in der ganzen App.",sImgGenPanelDesc:"Einmal hier hinterlegen — dann nutzt ihn jedes Werkzeug der App, das Bilder erzeugt. Er ist NICHT derselbe wie der KI-Zugangscode oben: Claude erzeugt keine Bilder, das macht OpenAI.",sImgGenPanelLink:"Schlüssel erstellen",imggenSaveShort:"Speichern",imggenHintEl2:"Bleibt nur auf deinem Gerät — wird niemals weitergegeben",igKeyRemoved:"Bildschlüssel entfernt",igKeyChecking:"Schlüssel wird geprüft …",igKeyOk:"Schlüssel gültig — Bilder können erzeugt werden",igErrNetz:"Der Browser konnte OpenAI gar nicht erst fragen. Das heißt: kein Internet, oder dein Netz lässt den Aufruf nicht durch. Der Schlüssel ist damit weder bestätigt noch widerlegt.",igErr401:"OpenAI hat den Schlüssel abgelehnt. Prüfe, ob er vollständig kopiert ist und noch gültig.",igErr429:"OpenAI hat zu viele Anfragen gemeldet. Kurz warten und noch einmal versuchen.",igErrGeld:"Auf dem OpenAI-Konto ist kein Guthaben. Ein Schlüssel allein genügt nicht — bei OpenAI muss Guthaben aufgeladen sein.",igErr400:"OpenAI hat die Anfrage abgelehnt",igErrUnbekannt:"Unbekannter Fehler — mehr steht in der Entwickler-Konsole.",
     sExpLbl:'Exportieren',sExpSub:'E-Book, Blätterbuch, JSON',
     sInfo:'ℹ️ INFO',sStore:'Gespeichert',sClear:'Alle Daten löschen',sClearSub:'Nicht rückgängig',
     fldTitle:'📂 Meine Ordner',fldSearch:'Suche',fldNew:'Neuer Ordner',
@@ -4302,6 +4318,7 @@ const LANGS={
     sTheme:'🎨 THEME',sLang:'🌐 LANGUAGE',sData:'📁 IMPORT & EXPORT',
     sImpLbl:'Import',sImpSub:'Images, AI scan, backup',
     sImgGenLbl:"OpenAI image key",sImgGenSub:"For AI images of your drinks",
+    imggenWhyOwnKey:"Your AI access code is stored — it does not apply here. Claude does not create images; that needs its own OpenAI key. Enter it once and it applies across the whole app.",sImgGenPanelDesc:"Store it here once — then every tool in the app that creates images uses it. It is NOT the same as the AI access code above: Claude does not create images, OpenAI does.",sImgGenPanelLink:"Create a key",imggenSaveShort:"Save",imggenHintEl2:"Stays on your device only — never shared",igKeyRemoved:"Image key removed",igKeyChecking:"Checking the key …",igKeyOk:"Key is valid — images can be created",igErrNetz:"The browser could not even reach OpenAI. That means no internet, or your network blocks the call. This neither confirms nor disproves the key.",igErr401:"OpenAI rejected the key. Check that it was copied in full and is still valid.",igErr429:"OpenAI reported too many requests. Wait a moment and try again.",igErrGeld:"The OpenAI account has no credit. A key alone is not enough — OpenAI needs credit on the account.",igErr400:"OpenAI rejected the request",igErrUnbekannt:"Unknown error — more detail is in the developer console.",
     sExpLbl:'Export',sExpSub:'E-Book, flipbook, JSON',
     sInfo:'ℹ️ INFO',sStore:'Saved',sClear:'Delete all data',sClearSub:'Cannot be undone',
     fldTitle:'📂 My Folders',fldSearch:'Search',fldNew:'New folder',
@@ -4434,6 +4451,7 @@ const LANGS={
     sTheme:'🎨 ТЕМА',sLang:'🌐 ЯЗЫК',sData:'📁 ИМПОРТ & ЭКСПОРТ',
     sImpLbl:'Импорт',sImpSub:'Фото, ИИ-скан, резерв',
     sImgGenLbl:"Ключ OpenAI для фото",sImgGenSub:"Для ИИ-фото ваших напитков",
+    imggenWhyOwnKey:"Ваш ИИ-ключ сохранён, но здесь он не подходит. Claude не создаёт изображения — для этого нужен отдельный ключ OpenAI. Введите один раз, и он будет действовать во всём приложении.",sImgGenPanelDesc:"Введите один раз — и его будет использовать каждый инструмент приложения, создающий изображения. Это НЕ тот же ключ, что ИИ-код выше: Claude не создаёт изображения, это делает OpenAI.",sImgGenPanelLink:"Создать ключ",imggenSaveShort:"Сохранить",imggenHintEl2:"Остаётся только на вашем устройстве — никуда не передаётся",igKeyRemoved:"Ключ для изображений удалён",igKeyChecking:"Проверка ключа …",igKeyOk:"Ключ действителен — изображения можно создавать",igErrNetz:"Браузер вообще не смог обратиться к OpenAI: нет интернета или сеть блокирует запрос. Это не подтверждает и не опровергает ключ.",igErr401:"OpenAI отклонил ключ. Проверьте, скопирован ли он полностью и действителен ли ещё.",igErr429:"OpenAI сообщил о слишком большом числе запросов. Подождите и повторите.",igErrGeld:"На счёте OpenAI нет средств. Одного ключа недостаточно — на счёт нужно внести средства.",igErr400:"OpenAI отклонил запрос",igErrUnbekannt:"Неизвестная ошибка — подробности в консоли разработчика.",
     sExpLbl:'Экспорт',sExpSub:'Эл. книга, листалка, JSON',
     sInfo:'ℹ️ О ПРОГРАММЕ',sStore:'Сохранено',sClear:'Удалить все данные',sClearSub:'Нельзя отменить',
     fldTitle:'📂 Мои папки',fldSearch:'Поиск',fldNew:'Новая папка',
@@ -4566,6 +4584,7 @@ const LANGS={
     sTheme:'🎨 主题',sLang:'🌐 语言',sData:'📁 导入 & 导出',
     sImpLbl:'导入',sImpSub:'图片、AI扫描、备份',
     sImgGenLbl:"OpenAI 图片密钥",sImgGenSub:"用于生成饮品 AI 图片",
+    imggenWhyOwnKey:"你的 AI 访问密钥已保存，但在这里用不了。Claude 不生成图片，这需要单独的 OpenAI 密钥。输入一次，全应用通用。",sImgGenPanelDesc:"在此输入一次 — 应用内每个生成图片的工具都会使用它。它与上面的 AI 访问密钥不同：Claude 不生成图片，OpenAI 才生成。",sImgGenPanelLink:"创建密钥",imggenSaveShort:"保存",imggenHintEl2:"仅保存在你的设备上 — 绝不外传",igKeyRemoved:"图片密钥已移除",igKeyChecking:"正在检查密钥 …",igKeyOk:"密钥有效 — 可以生成图片",igErrNetz:"浏览器根本无法访问 OpenAI：没有网络，或网络阻止了该请求。这既不能证明也不能否定密钥。",igErr401:"OpenAI 拒绝了该密钥。请检查是否完整复制且仍然有效。",igErr429:"OpenAI 提示请求过多。请稍候再试。",igErrGeld:"OpenAI 账户没有余额。仅有密钥不够 — 账户需要充值。",igErr400:"OpenAI 拒绝了该请求",igErrUnbekannt:"未知错误 — 详情见开发者控制台。",
     sExpLbl:'导出',sExpSub:'电子书、翻页书、JSON',
     sInfo:'ℹ️ 关于',sStore:'已保存',sClear:'删除所有数据',sClearSub:'无法撤销',
     fldTitle:'📂 我的文件夹',fldSearch:'搜索',fldNew:'新建文件夹',
@@ -4698,6 +4717,7 @@ const LANGS={
     sTheme:'🎨 TEMA',sLang:'🌐 IDIOMA',sData:'📁 IMPORTAR & EXPORTAR',
     sImpLbl:'Importar',sImpSub:'Imágenes, Scan IA, Copia',
     sImgGenLbl:"Clave de imágenes OpenAI",sImgGenSub:"Para imágenes IA de tus bebidas",
+    imggenWhyOwnKey:"Tu código de acceso IA está guardado, pero aquí no sirve. Claude no crea imágenes; para eso hace falta una clave propia de OpenAI. Introdúcela una vez y valdrá en toda la app.",sImgGenPanelDesc:"Guárdala aquí una vez y la usará cualquier herramienta de la app que cree imágenes. NO es la misma que el código de acceso IA de arriba: Claude no crea imágenes, lo hace OpenAI.",sImgGenPanelLink:"Crear clave",imggenSaveShort:"Guardar",imggenHintEl2:"Solo en tu dispositivo — nunca se comparte",igKeyRemoved:"Clave de imágenes eliminada",igKeyChecking:"Comprobando la clave …",igKeyOk:"Clave válida — se pueden crear imágenes",igErrNetz:"El navegador ni siquiera pudo contactar con OpenAI: sin internet, o tu red bloquea la llamada. Esto no confirma ni descarta la clave.",igErr401:"OpenAI rechazó la clave. Comprueba que se copió entera y que sigue siendo válida.",igErr429:"OpenAI informó de demasiadas solicitudes. Espera un momento y vuelve a intentarlo.",igErrGeld:"La cuenta de OpenAI no tiene saldo. La clave sola no basta: hay que cargar saldo en OpenAI.",igErr400:"OpenAI rechazó la solicitud",igErrUnbekannt:"Error desconocido — hay más detalle en la consola de desarrollador.",
     sExpLbl:'Exportar',sExpSub:'E-Book, Libro, JSON',
     sInfo:'ℹ️ INFO',sStore:'Guardado',sClear:'Borrar todos los datos',sClearSub:'No se puede deshacer',
     fldTitle:'📂 Mis carpetas',fldSearch:'Buscar',fldNew:'Nueva carpeta',
@@ -4874,6 +4894,7 @@ const LANGS={
     sData:'📁 IMPORT EXPORT',
     sImpLbl:'Importer',
     sImgGenLbl:"Clé images OpenAI",sImgGenSub:"Pour les images IA de vos boissons",
+    imggenWhyOwnKey:"Votre code d'accès IA est enregistré, mais il ne s'applique pas ici. Claude ne crée pas d'images ; il faut une clé OpenAI distincte. Saisissez-la une fois, elle vaut pour toute l'application.",sImgGenPanelDesc:"Enregistrez-la ici une fois : chaque outil de l'application qui crée des images l'utilisera. Ce n'est PAS le code d'accès IA ci-dessus : Claude ne crée pas d'images, OpenAI si.",sImgGenPanelLink:"Créer une clé",imggenSaveShort:"Enregistrer",imggenHintEl2:"Reste uniquement sur votre appareil — jamais transmise",igKeyRemoved:"Clé images supprimée",igKeyChecking:"Vérification de la clé …",igKeyOk:"Clé valide — les images peuvent être créées",igErrNetz:"Le navigateur n'a même pas pu joindre OpenAI : pas d'internet, ou votre réseau bloque l'appel. Cela ne confirme ni n'infirme la clé.",igErr401:"OpenAI a rejeté la clé. Vérifiez qu'elle est copiée en entier et toujours valide.",igErr429:"OpenAI a signalé trop de requêtes. Patientez un instant et réessayez.",igErrGeld:"Le compte OpenAI n'a pas de crédit. Une clé seule ne suffit pas : il faut créditer le compte.",igErr400:"OpenAI a rejeté la requête",igErrUnbekannt:"Erreur inconnue — plus de détails dans la console développeur.",
     sImpSub:'Images Scan Sauvegarde',
     sExpLbl:'Exporter',
     sExpSub:'E-Book Livre JSON',
@@ -5115,6 +5136,7 @@ const LANGS={
     sData:'📁 IMPORTA ESPORTA',
     sImpLbl:'Importa',
     sImgGenLbl:"Chiave immagini OpenAI",sImgGenSub:"Per immagini IA delle tue bevande",
+    imggenWhyOwnKey:"Il tuo codice di accesso IA è salvato, ma qui non vale. Claude non crea immagini: serve una chiave OpenAI a parte. Inseriscila una volta e vale in tutta l'app.",sImgGenPanelDesc:"Inseriscila qui una volta: la userà ogni strumento dell'app che crea immagini. NON è la stessa del codice di accesso IA sopra: Claude non crea immagini, lo fa OpenAI.",sImgGenPanelLink:"Crea una chiave",imggenSaveShort:"Salva",imggenHintEl2:"Resta solo sul tuo dispositivo — mai condivisa",igKeyRemoved:"Chiave immagini rimossa",igKeyChecking:"Verifica della chiave …",igKeyOk:"Chiave valida — le immagini si possono creare",igErrNetz:"Il browser non è riuscito nemmeno a contattare OpenAI: nessuna connessione, o la rete blocca la chiamata. Questo non conferma né smentisce la chiave.",igErr401:"OpenAI ha rifiutato la chiave. Controlla che sia copiata per intero e ancora valida.",igErr429:"OpenAI ha segnalato troppe richieste. Attendi un momento e riprova.",igErrGeld:"L'account OpenAI non ha credito. La chiave da sola non basta: serve credito sull'account.",igErr400:"OpenAI ha rifiutato la richiesta",igErrUnbekannt:"Errore sconosciuto — altri dettagli nella console per sviluppatori.",
     sImpSub:'Immagini Scan Backup',
     sExpLbl:'Esporta',
     sExpSub:'E-Book Libro JSON',
@@ -5356,6 +5378,7 @@ const LANGS={
     sData:'📁 IMPORTAR EXPORTAR',
     sImpLbl:'Importar',
     sImgGenLbl:"Chave de imagens OpenAI",sImgGenSub:"Para imagens IA das suas bebidas",
+    imggenWhyOwnKey:"O seu código de acesso IA está guardado, mas aqui não serve. O Claude não cria imagens; para isso é preciso uma chave própria da OpenAI. Introduza-a uma vez e vale em toda a app.",sImgGenPanelDesc:"Guarde-a aqui uma vez — depois qualquer ferramenta da app que crie imagens usa-a. NÃO é a mesma do código de acesso IA acima: o Claude não cria imagens, a OpenAI cria.",sImgGenPanelLink:"Criar chave",imggenSaveShort:"Guardar",imggenHintEl2:"Fica apenas no seu dispositivo — nunca é partilhada",igKeyRemoved:"Chave de imagens removida",igKeyChecking:"A verificar a chave …",igKeyOk:"Chave válida — as imagens podem ser criadas",igErrNetz:"O navegador nem sequer conseguiu contactar a OpenAI: sem internet, ou a sua rede bloqueia a chamada. Isto não confirma nem desmente a chave.",igErr401:"A OpenAI rejeitou a chave. Verifique se foi copiada por inteiro e se ainda é válida.",igErr429:"A OpenAI comunicou demasiados pedidos. Aguarde um momento e tente de novo.",igErrGeld:"A conta OpenAI não tem saldo. A chave por si só não chega — é preciso carregar saldo.",igErr400:"A OpenAI rejeitou o pedido",igErrUnbekannt:"Erro desconhecido — há mais detalhe na consola de programador.",
     sImpSub:'Imagens Scan Cópia',
     sExpLbl:'Exportar',
     sExpSub:'E-Book Livro JSON',
@@ -6138,7 +6161,7 @@ function applyLang(code){
     'menuTitle','mActAdd','mActView','mvTitle','mvTabTl','mvTabSh','mvTabCk','mvTabAl','mvPrintBtn','mvCloseBtn',
     'bnRec','bnFld','bnMen','bnSet','bnBv',
     'impTitle','impTabImg','impTabWeb','impTabScan','impTabTxt','impTabJson','imgDropLbl',
-    'impTabImgGen','imggenSetupTitleEl','imggenSetupDescEl','imggenKeyLblEl','imggenPasteBtnLbl','imggenSaveBtnLbl','imggenHintEl','imggenInfoTitle','imggenInfoCol1Hdr','imggenInfoCol2Hdr','imggenReadyLbl','imggenChangeLbl','imggenReplaceLbl','igGenBtnLbl','igStopBtnLbl','igSaveBtnLbl','igBackupBtnLbl',
+    'impTabImgGen','imggenSetupTitleEl','imggenSetupDescEl','imggenKeyLblEl','imggenPasteBtnLbl','imggenSaveBtnLbl','imggenHintEl','imggenInfoTitle','imggenInfoCol1Hdr','imggenInfoCol2Hdr','imggenReadyLbl','imggenChangeLbl','imggenReplaceLbl','igGenBtnLbl','igStopBtnLbl','igSaveBtnLbl','igBackupBtnLbl','sImgGenPanelDesc','sImgGenPanelLink','imggenSaveShort','imggenHintEl2',
     'imgInfoTitle','imgInfoDesc',
     'scanInfoTitle','scanInfoCol1Hdr','scanInfoCol2Hdr',
     'webInfoTitle','webInfoDesc','webInfoHint',
@@ -7548,7 +7571,7 @@ function renderApiKeyOv(){
 var _imgGenAborted=false;
 async function _runImgQueue(rids,genFn,onProgress){
   const total=rids.length;
-  let done=0,ok=0,fail=0;
+  let done=0,ok=0,fail=0,letzterFehler=null;
   for(const rid of rids){
     if(_imgGenAborted)break;
     const r=R.find(x=>x.id===rid);
@@ -7563,13 +7586,14 @@ async function _runImgQueue(rids,genFn,onProgress){
         ok++;
       }catch(err){
         fail++;
+        letzterFehler=err;              // der Grund muss aus der Schleife heraus
         console.warn('_runImgQueue rid='+rid,err);
       }
     }
     done++;
     if(onProgress)onProgress({done,total,ok,fail,rid});
   }
-  return{ok,fail,total,aborted:_imgGenAborted};
+  return{ok,fail,total,aborted:_imgGenAborted,letzterFehler};
 }
 
 // ── OpenAI-Schlüssel (eigene Schublade, NICHT mxkey9m) ───────────────────────
@@ -7763,6 +7787,13 @@ async function startImgGen(){
   if(stopBtn)stopBtn.style.display='none';
   if(btn)btn.style.display='flex';
   if(saveBtn&&res.ok>0)saveBtn.style.display='flex';
+  const fbox=document.getElementById('igFehlerBox');
+  if(fbox){
+    if(res.fail&&res.letzterFehler){
+      fbox.textContent='⚠️ '+_imgFehlerText(res.letzterFehler);
+      fbox.style.display='block';
+    }else{fbox.style.display='none';}
+  }
   if(res.ok>0){
     toast('✅ '+res.ok+' '+T('igImgSaved'));
     const hint=document.getElementById('igBackupHint');
@@ -7770,6 +7801,99 @@ async function startImgGen(){
   }
   if(typeof render==='function')render();
   updateImgGenInfo();
+}
+
+// ── Warum ein Fehlschlag stumm blieb ────────────────────────────────────────
+// Klaus am 2026-09-11: „Die Bildgenerierung hat nicht funktioniert trotz API
+// key." Der Grund stand nirgends — er ging in ein console.warn, und auf dem
+// Schirm blieb nur „1 Fehler". Ein Fehlschlag ohne Grund ist von einem kaputten
+// Knopf nicht zu unterscheiden. (Das Rezeptbuch macht es genauso; hier nicht
+// mehr.)
+function _imgFehlerText(err){
+  const m=String((err&&err.message)||err||'');
+  // Der Browser meldet „Failed to fetch", wenn er die Anfrage GAR NICHT
+  // hinausgelassen hat — gesperrtes Netz, kein Internet, oder die Gegenstelle
+  // erlaubt den Aufruf aus einer Seite heraus nicht. Für einen Menschen ist
+  // dieser Satz keine Auskunft.
+  if(/failed to fetch|load failed|networkerror|network request failed/i.test(m))return T('igErrNetz');
+  if(/401|invalid[_ ]api[_ ]key|incorrect api key/i.test(m))return T('igErr401');
+  if(/429|rate.?limit/i.test(m))return T('igErr429');
+  if(/quota|billing|insufficient|402/i.test(m))return T('igErrGeld');
+  if(/\b400\b|model/i.test(m))return T('igErr400')+' — '+m;
+  return m||T('igErrUnbekannt');
+}
+
+// Prüft den Schlüssel, ohne ein Bild zu erzeugen — kostet also nichts. Damit
+// trennt sich „Schlüssel taugt nicht" von „der Bild-Aufruf scheitert", und der
+// Nutzer erfährt es beim Eintippen statt nach einem stillen Fehlschlag.
+async function pruefeImgSchluessel(key){
+  const resp=await fetch('https://api.openai.com/v1/models',{
+    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'}
+  });
+  if(!resp.ok){
+    const e=await resp.json().catch(()=>({}));
+    throw new Error(e.error?.message||'HTTP '+resp.status);
+  }
+  return true;
+}
+
+async function _meldeSchluesselPruefung(elId,key){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  el.style.display='block';
+  el.textContent='⏳ '+T('igKeyChecking');
+  el.style.color='var(--dim)';
+  try{
+    await pruefeImgSchluessel(key);
+    el.textContent='✅ '+T('igKeyOk');
+    el.style.color='var(--grn)';
+  }catch(err){
+    el.textContent='⚠️ '+_imgFehlerText(err);
+    el.style.color='#c0392b';
+  }
+}
+
+// Wer seinen KI-Zugangscode hinterlegt hat, erwartet zu Recht, dass er überall
+// gilt — bei KI-Scan, Labor, Übersetzung und Sinn-Suche tut er das auch. Hier
+// nicht, und das hat einen Grund, den die Seite NENNEN muss. Ein Feld, das nach
+// einem Schlüssel fragt, den man gerade eingegeben zu haben glaubt, sieht sonst
+// aus wie ein Fehler.
+function zeigeWarumEigenerSchluessel(){
+  const el=document.getElementById('imggenWhyOwnKey');
+  if(!el)return;
+  let claude='';
+  try{claude=localStorage.getItem('mxkey9m')||'';}catch(e){}
+  if(claude&&!getOpenAiImgKey()){el.textContent=T('imggenWhyOwnKey');el.style.display='block';}
+  else{el.style.display='none';}
+}
+
+// EIN Schlüssel, zwei Felder, eine Schublade: das Feld in den Einstellungen und
+// das im Importieren-Fenster schreiben denselben Wert. Kein zweites Eintippen.
+function toggleImgKeyField(){
+  const p=document.getElementById('imgKeyPanel');
+  const arr=document.getElementById('imgKeyArr');
+  if(!p)return;
+  const open=p.style.display==='none'||!p.style.display;
+  p.style.display=open?'block':'none';
+  if(arr)arr.textContent=open?'⌄':'›';
+  if(open){
+    const inp=document.getElementById('imgKeySettIn');
+    if(inp){inp.value=getOpenAiImgKey();onImgKeySettInput(inp.value);setTimeout(()=>inp.focus(),80);}
+    const st=document.getElementById('imgKeySettStatus');
+    if(st){st.style.display='none';st.textContent='';}
+  }
+}
+function onImgKeySettInput(v){
+  const inp=document.getElementById('imgKeySettIn');
+  if(inp)inp.style.borderColor=(v.trim().startsWith('sk-')&&v.trim().length>=20)?'var(--grn)':'var(--sand2)';
+}
+async function saveImgKeyFromSettings(){
+  const v=document.getElementById('imgKeySettIn')?.value?.trim()||'';
+  if(!v){saveOpenAiImgKey('');toast(T('igKeyRemoved'));initImgGenPane();return;}
+  saveOpenAiImgKey(v);
+  toast('✅ '+T('igKeySaved'));
+  initImgGenPane();                       // das andere Feld sofort nachziehen
+  await _meldeSchluesselPruefung('imgKeySettStatus',v);
 }
 
 // ── Schlüssel-Oberfläche ─────────────────────────────────────────────────────
@@ -7791,12 +7915,16 @@ async function pasteImgGenKey(){
     toast('📋 Strg+V / Cmd+V');
   }
 }
-function saveAndActivateImgGen(){
+async function saveAndActivateImgGen(){
   const v=document.getElementById('imggenKeyIn')?.value?.trim()||'';
   if(!v)return;
   saveOpenAiImgKey(v);
   toast('✅ '+T('igKeySaved'));
   switchToImgGenMain();
+  // Erst speichern, dann prüfen: eine schlechte Verbindung darf den Schlüssel
+  // nicht wegwerfen. Das Ergebnis steht daneben, statt sich erst beim ersten
+  // bezahlten Versuch zu zeigen.
+  await _meldeSchluesselPruefung('imggenKeyStatus',v);
 }
 function switchToImgGenMain(){
   const setup=document.getElementById('imggenSetup');
@@ -7823,6 +7951,7 @@ function initImgGenPane(){
     if(setup)setup.style.display='block';
     if(main)main.style.display='none';
   }
+  zeigeWarumEigenerSchluessel();
 }
 
 function openImport(){

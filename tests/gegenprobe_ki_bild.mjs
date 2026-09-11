@@ -80,6 +80,66 @@ const FAELLE = [
     alt: `'impTabImgGen','imggenSetupTitleEl'`,
     neu: `'imggenSetupTitleEl'`,
     trifft: /nicht achtmal derselbe Text/ },
+
+  // ── seit dem 2026-09-11: der Grund eines Fehlschlags muss DASTEHEN ────────
+  { name: 'ein Fehlschlag bleibt wieder stumm',
+    alt: `      fbox.textContent='⚠️ '+_imgFehlerText(res.letzterFehler);
+      fbox.style.display='block';`,
+    neu: `      fbox.style.display='none';`,
+    trifft: /der Grund steht da/ },
+
+  { name: 'der rohe Browser-Satz wird durchgereicht',
+    alt: `  if(/failed to fetch|load failed|networkerror|network request failed/i.test(m))return T('igErrNetz');`,
+    neu: ``,
+    trifft: /der Grund steht da — der Browser kam gar nicht hinaus/ },
+
+  { name: 'ein abgelehnter Schlüssel wird nicht erkannt',
+    alt: `  if(/401|invalid[_ ]api[_ ]key|incorrect api key/i.test(m))return T('igErr401');`,
+    neu: ``,
+    trifft: /der Grund steht da — OpenAI lehnt den Schlüssel ab/ },
+
+  { name: 'fehlendes Guthaben wird nicht erkannt',
+    alt: `  if(/quota|billing|insufficient|402/i.test(m))return T('igErrGeld');`,
+    neu: ``,
+    trifft: /der Grund steht da — kein Guthaben/ },
+
+  // ── EIN Schlüssel für die ganze App ───────────────────────────────────────
+  { name: 'das Einstellungs-Feld schreibt in eine EIGENE Schublade',
+    alt: `  saveOpenAiImgKey(v);
+  toast('✅ '+T('igKeySaved'));
+  initImgGenPane();                       // das andere Feld sofort nachziehen`,
+    neu: `  try{localStorage.setItem('mxoaiimg9m_settings',v);}catch(e){}
+  toast('✅ '+T('igKeySaved'));
+  initImgGenPane();`,
+    trifft: /DIESELBE Schublade/ },
+
+  { name: 'der erklärende Satz erscheint nie',
+    alt: `  if(claude&&!getOpenAiImgKey()){el.textContent=T('imggenWhyOwnKey');el.style.display='block';}`,
+    neu: `  if(false){el.textContent=T('imggenWhyOwnKey');el.style.display='block';}`,
+    trifft: /erfährt warum der hier nicht zählt/ },
+
+  { name: 'der erklärende Satz steht immer da, auch wenn beides hinterlegt ist',
+    alt: `  if(claude&&!getOpenAiImgKey()){el.textContent=T('imggenWhyOwnKey');el.style.display='block';}
+  else{el.style.display='none';}`,
+    neu: `  el.textContent=T('imggenWhyOwnKey');el.style.display='block';`,
+    trifft: /verschwindet, sobald der Bildschlüssel da ist/ },
+
+  // ── geprüft wird, ohne Geld auszugeben ────────────────────────────────────
+  { name: 'der Schlüssel wird beim Speichern gar nicht geprüft',
+    alt: `  await _meldeSchluesselPruefung('imggenKeyStatus',v);`,
+    neu: ``,
+    trifft: /wird der Schlüssel wirklich geprüft/ },
+
+  { name: 'die Prüfung erzeugt ein BILD statt nur nachzufragen',
+    alt: `  const resp=await fetch('https://api.openai.com/v1/models',{
+    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'}
+  });`,
+    neu: `  const resp=await fetch('https://api.openai.com/v1/images/generations',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+    body:JSON.stringify({model:'dall-e-3',prompt:'test',n:1,size:'1024x1024'})
+  });`,
+    trifft: /KEIN Bild erzeugt/ },
 ];
 
 // ── Ausgangslage: die Probe muss OHNE Eingriff grün sein ─────────────────────
