@@ -170,6 +170,8 @@ try {
   ok('nur das Getränk OHNE Bild wird gefahren', lauf.rufe.length === 1, lauf.rufe.length + ' Aufrufe');
   ok('gerufen wird OpenAI, mit dall-e-3',
     lauf.rufe[0]?.url === 'https://api.openai.com/v1/images/generations' && lauf.rufe[0]?.body.model === 'dall-e-3');
+  ok('und OHNE response_format — der Parameter wird nicht mehr angenommen',
+    lauf.rufe[0] && !('response_format' in lauf.rufe[0].body), JSON.stringify(lauf.rufe[0]?.body || {}).slice(0, 110));
   ok('der Schlüssel reist im Kopf mit', lauf.rufe[0]?.auth === 'Bearer sk-proj-0123456789abcdefghij');
   ok('das Bild landet im Getränk', lauf.bild101.startsWith('data:image/'), lauf.bild101);
   ok('ein vorhandenes Bild wird ohne Haken NICHT ersetzt', lauf.bild102unveraendert);
@@ -373,7 +375,7 @@ try {
     };
     // a) dall-e-3 kennt das Konto nicht → der zweite Versuch rettet es
     const a = await lauf((m, png) => m === 'dall-e-3'
-      ? { ok: false, status: 400, json: async () => ({ error: { message: 'The model `dall-e-3` does not exist' } }) }
+      ? { ok: false, status: 400, json: async () => ({ error: { message: "Unknown parameter: 'foo'." } }) }
       : { ok: true, json: async () => ({ data: [{ b64_json: png }] }) });
     // b) der Schlüssel ist abgelehnt → ein zweites Modell ändert daran NICHTS
     const b = await lauf(() => ({ ok: false, status: 401, json: async () => ({ error: { message: 'Incorrect API key provided' } }) }));
@@ -390,6 +392,62 @@ try {
     modelle.b.gerufen.length === 1, modelle.b.gerufen.join(' → '));
   ok('fehlendes Guthaben ebenso wenig (das wäre eine zweite Rechnung)',
     modelle.c.gerufen.length === 1, modelle.c.gerufen.join(' → '));
+
+  // ── 16. Der Befund von Klaus' Gerät, 2026-09-11 ───────────────────────────
+  // „Unknown parameter: 'response_format'." — genau daran ist jeder Versuch
+  // gescheitert. Der Parameter darf nicht mehr mitgehen.
+  const echterFall = await seite.evaluate(async () => {
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const echt = window.fetch;
+    const gesendet = [];
+    // Ein Server, der sich genau so verhält wie OpenAI heute: response_format
+    // wird abgewiesen, ohne ihn kommt ein Bild.
+    window.fetch = async (u, o) => {
+      const body = JSON.parse(o.body);
+      gesendet.push(body);
+      if ('response_format' in body) {
+        return { ok: false, status: 400, json: async () => ({ error: { message: "Unknown parameter: 'response_format'." } }) };
+      }
+      return { ok: true, json: async () => ({ data: [{ b64_json: png }] }) };
+    };
+    localStorage.setItem('mxoaiimg9m', 'sk-proj-ECHT0123456789abcdef');
+    window.R.length = 0;
+    window.R.push({ id: 850, name: 'Bananen-Basilikum Traum', cat: 'ckt', img: '', ings: [], steps: [], flavors: [] });
+    updateImgGenInfo();
+    await startImgGen();
+    const bild = !!window.R.find(r => r.id === 850).img;
+    const box = document.getElementById('igFehlerBox');
+    window.fetch = echt;
+    return { gesendet, bild, fehlerSichtbar: box && box.style.display === 'block' };
+  });
+  ok('response_format geht NICHT mehr mit hinaus',
+    echterFall.gesendet.every(b => !('response_format' in b)),
+    JSON.stringify(echterFall.gesendet[0] || {}).slice(0, 110));
+  ok('…und damit klappt der Lauf, der bei Klaus scheiterte', echterFall.bild);
+  ok('…ohne Fehlerkasten', echterFall.fehlerSichtbar === false);
+
+  // ── 17. Kommt nur eine Adresse zurück, wird das Bild geholt ───────────────
+  // Ohne response_format ist das Antwortformat nicht mehr festgelegt.
+  const perAdresse = await seite.evaluate(async () => {
+    const echt = window.fetch;
+    const geholt = [];
+    window.fetch = async (u, o) => {
+      if (o && o.method === 'POST') return { ok: true, json: async () => ({ data: [{ url: 'https://example.invalid/bild.png' }] }) };
+      geholt.push(String(u));
+      return { ok: true, blob: async () => new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }) };
+    };
+    window.R.length = 0;
+    window.R.push({ id: 860, name: 'Adress-Drink', cat: 'ckt', img: '', ings: [], steps: [], flavors: [] });
+    updateImgGenInfo();
+    await startImgGen();
+    const img = window.R.find(r => r.id === 860).img || '';
+    window.fetch = echt;
+    return { geholt, alsDatenUrl: img.startsWith('data:'), fremdeAdresse: img.startsWith('http') };
+  });
+  ok('eine zurückgegebene Adresse wird wirklich abgerufen',
+    perAdresse.geholt.some(u => u.includes('bild.png')), perAdresse.geholt.join(', '));
+  ok('…und das Bild landet als data:-URL im Getränk', perAdresse.alsDatenUrl);
+  ok('…nie als fremde Adresse (die verfällt und ist offline tot)', !perAdresse.fremdeAdresse);
 
   // ── 9. Es ging nichts nach draußen ────────────────────────────────────────
   // Die Zusicherung ist NICHT „die App greift nie ins Netz" — sie holt beim

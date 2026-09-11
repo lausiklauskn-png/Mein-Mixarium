@@ -7651,28 +7651,55 @@ function _buildDallePrompt(recipe){
 //
 // Das Rezeptbuch hat diesen zweiten Versuch nicht. Wenn er sich bewährt,
 // gehört er dorthin nachgezogen.
+// ⚠ response_format WIRD NICHT MEHR ANGENOMMEN — gemessen an Klaus' Geraet
+// am 2026-09-11: „Unknown parameter: 'response_format'." OpenAI hat den
+// Parameter aus /v1/images/generations entfernt. Genau daran ist jeder
+// Versuch gescheitert, und der Aufruf war byte-gleich mit Mein-Rezeptbuch —
+// DORT IST DIE BILDGENERIERUNG AUS DEMSELBEN GRUND KAPUTT (zwei Stellen:
+// _dalleGenImg und die Food-Zine). Wer dort repariert, liest das hier.
+//
+// Der Parameter faellt also weg. Was zurueckkommt, ist damit nicht mehr
+// festgelegt: b64_json ODER eine url. Beides wird gelesen.
 const _IMG_MODELLE=[
-  {model:'dall-e-3',   extra:{response_format:'b64_json'}},
-  {model:'gpt-image-1',extra:{}},
+  {model:'dall-e-3'},
+  {model:'gpt-image-1'},     // liefert immer b64_json, braucht nie einen Parameter
 ];
 
 async function _einBildVersuch(key,prompt,variante){
   const resp=await fetch('https://api.openai.com/v1/images/generations',{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-    body:JSON.stringify(Object.assign({model:variante.model,prompt,n:1,size:'1024x1024'},variante.extra))
+    body:JSON.stringify({model:variante.model,prompt,n:1,size:'1024x1024'})
   });
   if(!resp.ok){
     const e=await resp.json().catch(()=>({}));
     const err=new Error(e.error?.message||'HTTP '+resp.status);
     err.status=resp.status;
-    err.modellProblem=(resp.status===400||resp.status===404)&&/model/i.test(e.error?.message||'');
+    // Ein 400 oder 404 heisst: DIESER Aufruf passt nicht zu DIESEM Modell —
+    // da kann ein anderes Modell helfen. Frueher stand hier zusaetzlich ein
+    // Test auf das Wort „model" im Text; genau daran ist der zweite Versuch
+    // am 2026-09-11 vorbeigelaufen, denn „Unknown parameter" enthaelt es nicht.
+    err.andresModellKoennteHelfen=(resp.status===400||resp.status===404);
     throw err;
   }
   const data=await resp.json();
-  const b64=data.data?.[0]?.b64_json;
-  if(!b64)throw new Error('Kein Bild erhalten');
-  return 'data:image/png;base64,'+b64;
+  const eintrag=data.data?.[0]||{};
+  if(eintrag.b64_json)return 'data:image/png;base64,'+eintrag.b64_json;
+  // Nur eine Adresse bekommen: das Bild noch holen und einpacken. Es muss als
+  // data:-URL im Getraenk landen — eine fremde Adresse verfaellt (OpenAI gibt
+  // sie nur fuer kurze Zeit heraus), und offline waere sie ohnehin tot.
+  if(eintrag.url){
+    const bild=await fetch(eintrag.url);
+    if(!bild.ok)throw new Error('Bild-Adresse nicht abrufbar (HTTP '+bild.status+')');
+    const blob=await bild.blob();
+    return await new Promise((ja,nein)=>{
+      const fr=new FileReader();
+      fr.onload=()=>ja(fr.result);
+      fr.onerror=()=>nein(new Error('Bild konnte nicht gelesen werden'));
+      fr.readAsDataURL(blob);
+    });
+  }
+  throw new Error('Kein Bild erhalten');
 }
 
 async function _dalleGenImg(rid,recipe){
@@ -7688,7 +7715,7 @@ async function _dalleGenImg(rid,recipe){
       // Nur bei einem MODELL-Problem weitersuchen. Ein abgelehnter Schlüssel,
       // ein Limit oder fehlendes Guthaben ändern sich durch ein anderes Modell
       // nicht — ein zweiter Versuch wäre dort nur eine zweite Rechnung.
-      if(!err.modellProblem)throw err;
+      if(!err.andresModellKoennteHelfen)throw err;
     }
   }
   throw ersterFehler||new Error('Kein Bild erhalten');
