@@ -67,8 +67,8 @@ const FAELLE = [
     trifft: /nach einem bezahlten Lauf wird zum Sichern geraten/ },
 
   { name: 'ein anderes Modell wird gerufen',
-    alt: `  {model:'dall-e-3',   extra:{response_format:'b64_json'}},`,
-    neu: `  {model:'dall-e-2',   extra:{response_format:'b64_json'}},`,
+    alt: `  {model:'dall-e-3'},`,
+    neu: `  {model:'dall-e-2'},`,
     trifft: /gerufen wird OpenAI, mit dall-e-3/ },
 
   { name: 'der Knopf bleibt offen, obwohl es nichts zu tun gibt',
@@ -173,21 +173,43 @@ const FAELLE = [
 
   // ── der zweite Modell-Versuch und seine Grenze ────────────────────────────
   { name: 'der zweite Versuch fällt weg',
-    alt: `  {model:'gpt-image-1',extra:{}},`,
+    alt: `  {model:'gpt-image-1'},     // liefert immer b64_json, braucht nie einen Parameter`,
     neu: ``,
     trifft: /rettet der zweite Versuch den Lauf/ },
 
   { name: 'gpt-image-1 wird ZUERST gefragt statt dall-e-3',
-    alt: `  {model:'dall-e-3',   extra:{response_format:'b64_json'}},
-  {model:'gpt-image-1',extra:{}},`,
-    neu: `  {model:'gpt-image-1',extra:{}},
-  {model:'dall-e-3',   extra:{response_format:'b64_json'}},`,
+    alt: `  {model:'dall-e-3'},
+  {model:'gpt-image-1'},     // liefert immer b64_json, braucht nie einen Parameter`,
+    neu: `  {model:'gpt-image-1'},
+  {model:'dall-e-3'},     // liefert immer b64_json, braucht nie einen Parameter`,
     trifft: /erst wird dall-e-3 gefragt/ },
 
   { name: 'auch ein abgelehnter Schlüssel löst einen zweiten (bezahlten) Versuch aus',
-    alt: `      if(!err.modellProblem)throw err;`,
+    alt: `      if(!err.andresModellKoennteHelfen)throw err;`,
     neu: ``,
     trifft: /abgelehnter Schlüssel löst KEINEN zweiten Versuch aus/ },
+
+  // ── der Befund von Klaus' Gerät, 2026-09-11 ───────────────────────────────
+  { name: 'response_format wandert wieder in den Aufruf',
+    alt: `    body:JSON.stringify({model:variante.model,prompt,n:1,size:'1024x1024'})`,
+    neu: `    body:JSON.stringify({model:variante.model,prompt,n:1,size:'1024x1024',response_format:'b64_json'})`,
+    trifft: /response_format geht NICHT mehr mit hinaus/ },
+
+  { name: 'eine zurückgegebene Adresse wird nicht mehr abgerufen',
+    alt: `  if(eintrag.url){`,
+    neu: `  if(false){`,
+    trifft: /Adresse wird wirklich abgerufen/ },
+
+  { name: 'das geholte Bild bleibt eine fremde Adresse statt data:',
+    alt: `    const blob=await bild.blob();`,
+    neu: `    return eintrag.url;
+    const blob=await bild.blob();`,
+    trifft: /nie als fremde Adresse/ },
+
+  { name: 'der zweite Versuch hängt wieder am Wort „model" im Fehlertext',
+    alt: `    err.andresModellKoennteHelfen=(resp.status===400||resp.status===404);`,
+    neu: `    err.andresModellKoennteHelfen=(resp.status===400||resp.status===404)&&/model/i.test(e.error?.message||'');`,
+    trifft: /rettet der zweite Versuch den Lauf/ },
 ];
 
 // ── Ausgangslage: die Probe muss OHNE Eingriff grün sein ─────────────────────
