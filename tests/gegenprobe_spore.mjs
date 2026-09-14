@@ -22,7 +22,7 @@ import { tmpdir } from "node:os";
 
 const WURZEL = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PROBE = "tests/smoke_sbkim_beschreibung.mjs";
-const MIT = ["sbkim/siegel-inhalt.js", "sbkim/sbkim-init.js"];
+const MIT = ["sbkim/siegel-inhalt.js", "sbkim/sbkim-andock-wizard.js", "sbkim/sbkim-init.js"];
 const SPORE = "sbkim/spore.json";
 
 const canon = (v) => v === null ? null : Array.isArray(v) ? v.map(canon)

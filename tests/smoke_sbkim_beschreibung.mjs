@@ -62,6 +62,11 @@ const holKw = (q) => {
 };
 
 const siegel = lies("sbkim/siegel-inhalt.js");
+/* ⚠ SEIT A18 (2026-09-14) LIEGT DER WIZARD-CODE IN EINER EIGENEN, NETZWEIT
+   BYTE-GLEICHEN DATEI; `siegel-inhalt.js` traegt nur noch die Identitaet dieses
+   Knotens. Die Waechter darunter messen den ABLAUF und sind deshalb MITGEZOGEN,
+   nicht geloescht. Vertrag: Sage-Protokol/docs/INTERFACES.md 11.9. */
+const wizard = lies("sbkim/sbkim-andock-wizard.js");
 const init = lies("sbkim/sbkim-init.js");
 const text = holText(siegel);
 
@@ -91,26 +96,26 @@ ok("die Stichworte nennen SBKIM, Mycel und Knoten",
    steht ZWEIMAL — als Vorbelegung und im Rückhol-Knopf. Ein Wächter, der frei
    in der Datei sucht, findet die zweite Stelle und bleibt grün, wenn die erste
    fehlt. Genau so ist es in Kim Hub Company durchgerutscht. */
-const iFeld = siegel.indexOf('ta.id = "sbkim-si-semantik-text"');
-const iHerk = siegel.indexOf("var herkunft = document.createElement");
-const vorbelegung = iFeld >= 0 && iHerk > iFeld ? siegel.slice(iFeld, iHerk) : "";
+const iFeld = wizard.indexOf('ta.id = "sbkim-si-semantik-text"');
+const iHerk = wizard.indexOf("var herkunft = document.createElement");
+const vorbelegung = iFeld >= 0 && iHerk > iFeld ? wizard.slice(iFeld, iHerk) : "";
 ok("das Feld zeigt den Vorschlag der APP",
-  /ta\.value = WIZ\.domainDescription;/.test(vorbelegung));
+  /ta\.value = c\.domainDescription\b/.test(vorbelegung));
 
-const iLade = siegel.indexOf("getOwnSpore().then");
-const iEnde = siegel.indexOf('ta.addEventListener("input"', iLade);
-const ladePfad = iLade >= 0 && iEnde > iLade ? siegel.slice(iLade, iEnde) : "";
+const iLade = wizard.indexOf("getOwnSpore().then");
+const iEnde = wizard.indexOf('ta.addEventListener("input"', iLade);
+const ladePfad = iLade >= 0 && iEnde > iLade ? wizard.slice(iLade, iEnde) : "";
 ok("… und die gespeicherte Spore überschreibt ihn NICHT mehr von selbst",
   ladePfad.length > 0 && (ladePfad.match(/ta\.value\s*=/g) || []).length === 1
   && /if \(!abweichend\) return;/.test(ladePfad));
 ok("eine Zeile NENNT, welcher Text im Feld steht",
-  /id = "sbkim-si-semantik-herkunft"/.test(siegel) && /data-woher/.test(siegel));
+  /id = "sbkim-si-semantik-herkunft"/.test(wizard) && /data-woher/.test(wizard));
 ok("ein Knopf holt den zuletzt signierten Text zurück",
-  /id = "sbkim-si-semantik-eigener-text"/.test(siegel) && /zurueck\.hidden = true;/.test(siegel));
+  /id = "sbkim-si-semantik-eigener-text"/.test(wizard) && /zurueck\.hidden = true;/.test(wizard));
 /* Ein Element, das gebaut, aber nie eingehängt wird, ist von einem fehlenden
    nicht zu unterscheiden — ausser für den, der es nicht sieht. */
 ok("… und beide hängen wirklich im Block",
-  /wrap\.appendChild\(herkunft\)/.test(siegel) && /wrap\.appendChild\(zurueck\)/.test(siegel));
+  /wrap\.appendChild\(herkunft\)/.test(wizard) && /wrap\.appendChild\(zurueck\)/.test(wizard));
 
 /* ── 4 · Die abgelegte Spore (seit 2026-09-10) ───────────────────────────────
    ⚠ „EINE DATEI, DIE AUSSIEHT WIE EINE IDENTITÄT, IST SCHLIMMER ALS KEINE."
