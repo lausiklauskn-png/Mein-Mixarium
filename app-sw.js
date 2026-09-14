@@ -7,7 +7,7 @@ console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 //
 // Ab v5: Navigation und Pre-Cache umgehen den Browser-HTTP-Cache aktiv
 // (cache:'reload'), damit App-Änderungen ohne manuelles Cache-Löschen ankommen.
-const SW_VERSION = 'mixarium-sw-v90';
+const SW_VERSION = 'mixarium-sw-v91';
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
@@ -16,8 +16,8 @@ const RUNTIME = `runtime-${SW_VERSION}`;
  * `k !== PRECACHE && k !== RUNTIME` liess ALLE fremden durch und loeschte sie.
  * Gemessen am 2026-09-08 (Sage-Protokol/tests/vorrat_wirkung.mjs).
  *
- * ⚠ HIER GEHT KEIN PRAEFIX. Die Vorraete heissen `precache-mixarium-sw-v86`
- * und `runtime-mixarium-sw-v86` — sie FANGEN NICHT mit dem App-Namen an.
+ * ⚠ HIER GEHT KEIN PRAEFIX. Die Vorraete heissen `precache-mixarium-sw-v91`
+ * und `runtime-mixarium-sw-v91` — sie FANGEN NICHT mit dem App-Namen an.
  * Ein `startsWith("mixarium-")` haette NICHTS getroffen und die App ihre
  * eigenen alten Vorraete nie mehr wegraeumen lassen: derselbe Fehler wie das
  * Loeschen fremder, nur andersherum und still. Gepruefte Kennung statt Praefix. */
