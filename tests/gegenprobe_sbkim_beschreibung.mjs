@@ -21,6 +21,10 @@ import { tmpdir } from "node:os";
 const WURZEL = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PROBE = "tests/smoke_sbkim_beschreibung.mjs";
 const SIEGEL = "sbkim/siegel-inhalt.js";
+/* ⚠ VIERTE DATEI SEIT A18 (2026-09-14): der Wizard-Code. Vier Faelle unten
+   zielen dorthin. Wer sie nicht mitzieht, bekommt einen TOTEN ANKER — der Fall
+   meldet sich als „nicht gefangen", obwohl der Waechter tadellos ist. */
+const WIZARD = "sbkim/sbkim-andock-wizard.js";
 const INIT = "sbkim/sbkim-init.js";
 
 const FAELLE = [
@@ -49,20 +53,20 @@ const FAELLE = [
     ersatz: 'domainKeywords:  ["Cocktail", "Drink", "Mocktail"]' },
 
   { was: "das Feld zeigt nicht mehr den Vorschlag der App",
-    alt: "    ta.value = WIZ.domainDescription;\n    /* ⚠ WELCHER TEXT",
-    neu: "    /* ⚠ WELCHER TEXT", datei: SIEGEL },
+    alt: "    ta.value = c.domainDescription || \"\";\n",
+    neu: "", datei: WIZARD },
 
   { was: "die gespeicherte Spore ueberschreibt den Vorschlag wieder von selbst",
     alt: "          if (!abweichend) return;",
-    neu: "          ta.value = eigener; autoGrow(ta);\n          if (!abweichend) return;", datei: SIEGEL },
+    neu: "          ta.value = eigener; autoGrow(ta);\n          if (!abweichend) return;", datei: WIZARD },
 
   { was: "die Zeile sagt nicht mehr, WELCHER Text im Feld steht",
     alt: 'herkunft.id = "sbkim-si-semantik-herkunft";',
-    neu: 'herkunft.id = "sbkim-si-hinweis";', datei: SIEGEL },
+    neu: 'herkunft.id = "sbkim-si-hinweis";', datei: WIZARD },
 
   { was: "der Rueckhol-Knopf wird gebaut, aber nie eingehaengt",
     alt: "wrap.appendChild(herkunft); wrap.appendChild(zurueck);",
-    neu: "wrap.appendChild(herkunft);", datei: SIEGEL },
+    neu: "wrap.appendChild(herkunft);", datei: WIZARD },
 ];
 
 let gefangen = 0, durch = 0;
@@ -72,7 +76,7 @@ const kopie = mkdtempSync(join(tmpdir(), "mixarium-gp-"));
 try {
   mkdirSync(join(kopie, "sbkim"), { recursive: true });
   mkdirSync(join(kopie, "tests"), { recursive: true });
-  for (const f of [SIEGEL, INIT, PROBE]) cpSync(join(WURZEL, f), join(kopie, f));
+  for (const f of [SIEGEL, WIZARD, INIT, PROBE]) cpSync(join(WURZEL, f), join(kopie, f));
 
   const laeuft = () => {
     try { execFileSync(process.execPath, [join(kopie, PROBE)], { cwd: kopie, stdio: "pipe" }); return true; }
@@ -88,7 +92,7 @@ try {
   console.log("  ✓ unveraendert ist die Probe gruen\n");
 
   const roh = {};
-  for (const f of [SIEGEL, INIT]) roh[f] = readFileSync(join(WURZEL, f), "utf8");
+  for (const f of [SIEGEL, WIZARD, INIT]) roh[f] = readFileSync(join(WURZEL, f), "utf8");
 
   for (const f of FAELLE) {
     const basis = roh[f.datei];
