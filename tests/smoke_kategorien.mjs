@@ -30,6 +30,14 @@ const BESTAND = [
   { id:2, name:"Spaghetti Bolognese", cat:"fleisch", shut:true, ings:[], steps:[], flavors:[] },
   { id:3, name:"Linsensuppe",       cat:"suppe",   shut:true, ings:[], steps:[], flavors:[] },
   { id:4, name:"Apfelschorle",      cat:"drk",     shut:true, ings:[], steps:[], flavors:[] },
+  /* ⚠ ZWEI HEIMATLOSE: der erste hat GAR KEINE Kategorie, der zweite zeigt
+     auf einen Ordner, den es nicht gibt. Beide waren bisher nur ueber die
+     Suche zu finden — genau Klaus' Sushi-Befund vom 2026-09-16. */
+  { id:7, name:"Heimatlos-Ohne", cat:"", shut:true, ings:[], steps:[], flavors:[] },
+  { id:8, name:"Heimatlos-Ordner", cat:"fld_999", shut:true, ings:[], steps:[], flavors:[] },
+  /* ⚠ EINE KENNUNG, DIE DAS WOERTERBUCH NICHT KENNT — ohne sie kann der
+     Waechter „wird nicht erfunden" nichts messen. */
+  { id:9, name:"Fremd-Unbekannt", cat:"zzz_fremd", shut:true, ings:[], steps:[], flavors:[] },
   { id:5, name:"", cat:"fleisch", shut:true, blank:true, ings:[], steps:[], flavors:[] },
 ];
 
@@ -48,7 +56,14 @@ console.log("\n── 1 · Fremde Kategorien bekommen einen Reiter ──");
 const reiter = await seite.evaluate(()=>[...document.querySelectorAll("#catNav .cpill")].map(e=>e.textContent.trim()));
 ok("ein Reiter traegt „fleisch“", reiter.some(t=>/fleisch/i.test(t)));
 ok("ein Reiter traegt „suppe“",   reiter.some(t=>/suppe/i.test(t)));
-ok("ein Reiter traegt „drk“ — der Fall, der bisher STILL verschwand", reiter.some(t=>/drk/i.test(t)));
+/* ⚠ HIER STAND „ein Reiter traegt ‚drk'". DIESE ZUSICHERUNG IST ERSETZT,
+   und zwar von Klaus' eigenem Befund am 2026-09-15: „AFCKT, was ist das?"
+   Eine ROHE Kennung im Reiter war der halbe Weg — sichtbar ja, verstaendlich
+   nein. KAT_FAMILIE uebersetzt sie jetzt. Gemessen wird deshalb BEIDES. */
+ok("ein Reiter fuer die mitgebrachte Kennung ist da — der Fall, der bisher STILL verschwand",
+   reiter.some(t=>/Getränke/.test(t)));
+ok("… und er traegt KLARTEXT, nicht die rohe Kennung",
+   !reiter.some(t=>/(^|\s)drk(\s|$)/i.test(t)));
 
 console.log("\n── 2 · Sie werden auch wirklich gezeichnet ──");
 const inAlle = await seite.evaluate(()=>{ CAT="all"; render();
@@ -230,6 +245,49 @@ ok("beides überlebt ein Neuladen", await seite.evaluate(()=>{
 console.log("\n── 8 · Leere Karten alter Essens-Kategorien fliegen weiter raus ──");
 ok("keine Blank-Karte mit cat='fleisch'",
    await seite.evaluate(()=>!R.some(r=>r.blank && r.cat==="fleisch")));
+
+/* ⚠ „bietet eine Auswahl an (mindestens 40)" WAR ZU LOSE. Die Gegenprobe hat
+   es gefangen: sechs Getraenke-Symbole zu entfernen faellt unter 40 nicht auf.
+   Eine Untergrenze, die weit unter dem Bestand liegt, misst den Bestand nicht.
+   Gemessen wird jetzt die Zusicherung: es SIND Getraenke-Symbole dabei. */
+ok("die Auswahl traegt eigene Getraenke-Symbole (Klaus 2026-09-16)", await seite.evaluate(()=>
+   ["🍶","🍼","🚰","🫧"].every(e=>KAT_EMOJIS.indexOf(e)>=0)
+   && KAT_EMOJIS.length>=130
+   && new Set(KAT_EMOJIS).size===KAT_EMOJIS.length));
+
+console.log("\n── 11 · Klartext statt Kennung ──");
+const reiterN = await seite.evaluate(()=>{ CATS_EIGEN={}; svCatsEigen(); renderCatNav();
+  return [...document.querySelectorAll("#catNav .cpill")].map(e=>e.textContent.trim()); });
+/* ⚠ GEMESSEN WIRD DER NAME, NICHT DIE ANWESENHEIT. Eine rohe Kennung im
+   Reiter war der halbe Weg: sichtbar ja, verstaendlich nein. Klaus am
+   2026-09-15 vor der Ordner-Liste: „AFCKT, was ist das?" */
+ok("eine bekannte fremde Kennung steht im KLARTEXT da", await seite.evaluate(()=>{
+   const c=catsFremd().find(x=>x.id==="drk");
+   return !!c && c.de==="Getränke" && c.ico==="🍷" && !c.unbekannt; }));
+/* ⚠ UND DIE GEGENRICHTUNG: eine unbekannte Kennung wird NICHT erfunden.
+   Ohne diesen Waechter waere auch ein Woerterbuch gruen, das raet. */
+ok("… eine UNBEKANNTE Kennung bekommt keinen erfundenen Namen", await seite.evaluate(()=>{
+   const c=catsFremd().find(x=>x.id==="zzz_fremd"); return !!c && c.unbekannt===true && c.de===c.id && c.ico==="📦"; }));
+ok("das Woerterbuch deckt beide Schwester-Apps ab", await seite.evaluate(()=>
+   KAT_FAMILIE.length===18 && ["afckt","mock","bowle","smooth","vorsp","fleisch","drk"]
+     .every(k=>KAT_FAMILIE.some(x=>x.id===k))));
+
+console.log("\n── 12 · Rezepte ohne Zuhause werden als eigene Kategorie gefuehrt ──");
+ok("ein Reiter sammelt sie ein", reiterN.some(t=>/Ohne Kategorie/.test(t)));
+ok("… und er zaehlt BEIDE (ohne Kategorie + toter Ordner)", await seite.evaluate(()=>{
+   const p=[...document.querySelectorAll("#catNav .cpill")].find(e=>/Ohne Kategorie/.test(e.textContent));
+   return !!p && /(^|\D)2(\D|$)/.test(p.textContent); }));
+const alleN = await seite.evaluate(()=>{ CAT="all"; render(); return document.getElementById("rcont").textContent; });
+ok("„Alle“ zeichnet das Rezept ohne Kategorie", /Heimatlos-Ohne/.test(alleN));
+ok("„Alle“ zeichnet das Rezept mit totem Ordner", /Heimatlos-Ordner/.test(alleN));
+/* ⚠ EIN REITER, DER SICH OEFFNEN LAESST UND NICHTS ZEIGT, IST EIN TOTER
+   KNOPF MIT BESCHRIFTUNG — die schlimmere Sorte. */
+const ohneAnsicht = await seite.evaluate(()=>{ CAT=KAT_OHNE; render(); return document.getElementById("rcont").textContent; });
+ok("der Reiter selbst zeigt sie auch",
+   /Heimatlos-Ohne/.test(ohneAnsicht) && /Heimatlos-Ordner/.test(ohneAnsicht));
+ok("und OHNE Heimatlose gibt es den Reiter nicht", await seite.evaluate(()=>{
+   const sich=R.slice(); R=R.filter(r=>!/^Heimatlos/.test(r.name||""));
+   const weg=catsAlle().some(c=>c.id===KAT_OHNE); R=sich; return !weg; }));
 
 await browser.close(); server.close();
 console.log(`\n${gruen} grün · ${rot} ROT`);
