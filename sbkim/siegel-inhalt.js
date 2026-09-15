@@ -28,5 +28,14 @@
     stammCategories: ["Cocktails", "Mocktails", "Alkfr. Cocktails", "Smoothies & Shakes", "Limonaden", "Tees & Kaffees", "Bowlen", "Sirup & Basis"],
     guestCategories: ["Knabbereien", "Fingerfood"],
     backupPrefix: "mein-mixarium-backup",   // Dateiname-Präfix des verschlüsselten Backups
+    /* ⚠ DER INHALT ENTSCHEIDET ÜBER DEN VEKTOR, wenn welcher da ist.
+       Die Stichprobe selbst lebt in sbkim/sbkim-init.js — hier steht nur der
+       Verweis, SPÄT aufgelöst: sbkim-init.js wird vor dieser Datei geladen,
+       ein direkter Zugriff liefe also ins Leere. Zwei Fassungen derselben
+       Stichprobe ergäben zwei verschiedene Vektoren für denselben Knoten. */
+    sampleContent: function () {
+      var f = window.SBKIM_SAMPLE_CONTENT;
+      return (typeof f === "function") ? f() : [];
+    },
   };
 })();
