@@ -90,6 +90,25 @@ fall "der Dialog listet die mitgebrachten nicht" "listet jede Kategorie" \
 fall "die Herkunfts-Marke am mitgebrachten Eintrag faellt weg" "gekennzeichnet" \
 "      \${c.fremd?\`<span class=\"kat-fremd\">\${h(X.f)}</span>\`:''}@@@      \${''}"
 
+fall "das Symbol-Feld oeffnet die Auswahl nicht mehr" "Tipp aufs Symbol-Feld" \
+'onclick="katEmojiOeffnen(this)" onfocus="katEmojiOeffnen(this)"@@@onclick="void 0" onfocus="void 0"'
+
+fall "das Raster wandert nicht unter die bearbeitete Zeile" "DIREKT unter" \
+"  if(zeile&&zeile.parentNode)zeile.parentNode.insertBefore(raster,zeile.nextSibling);@@@  if(false)zeile.parentNode.insertBefore(raster,zeile.nextSibling);"
+
+fall "die Wahl schreibt nichts ins Feld" "schreibt es ins Feld" \
+"    _katZiel.value=e;@@@    _katZiel.value=_katZiel.value;"
+
+fall "das Raster bleibt nach der Wahl offen" "schliesst das Raster wieder" \
+"  katEmojiSchliessen();
+}
+function openKatUmbenennen(){@@@  _katZiel=null;
+}
+function openKatUmbenennen(){"
+
+fall "der Vorrat schrumpft auf eine Handvoll" "bietet eine Auswahl an" \
+'const KAT_EMOJIS = [@@@const KAT_EMOJIS = ["🍹","🍸","🥤"]; const _KAT_UNUSED = ['
+
 echo
 echo "$gefangen gefangen · $durch durchgerutscht · $falsch aus falschem Grund · $tot tote Anker"
 cd /; rm -rf "$(dirname "$KOPIE")"
