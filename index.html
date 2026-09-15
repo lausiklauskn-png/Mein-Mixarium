@@ -10467,7 +10467,14 @@ function katEmojiOeffnen(feld){
   _katZiel=feld;
   if(zeile&&zeile.parentNode)zeile.parentNode.insertBefore(raster,zeile.nextSibling);
   raster.hidden=false;
-  raster.scrollIntoView({block:'nearest'});
+  /* ⚠ HIER STAND `raster.scrollIntoView({block:'nearest'})`, UND ES HAT DIE
+     AUSWAHL SOFORT WIEDER ZUGEMACHT. Am Symbol-Feld haengen focus und click;
+     focus oeffnet, das Scrollen verschiebt die Liste unter dem Finger, und
+     der danach folgende click landet auf einem ANDEREN Element — worauf der
+     „Tipp daneben"-Riegel schliesst. Gemessen: drei Laeufe derselben Datei,
+     zweimal offen, einmal zu. Ein Flatterfehler, der am Tablet genauso
+     zuschnappt. Das Raster steht ohnehin direkt unter der angetippten
+     Zeile; wer tippt, sieht es. */
 }
 function katEmojiSchliessen(){
   var raster=document.getElementById('katEmojiRaster');
