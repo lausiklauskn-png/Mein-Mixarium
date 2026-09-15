@@ -445,11 +445,47 @@ der falschen, und die rief `startsWith` auf einem Objekt auf. Sie heissen jetzt
 der Browser, nicht das Nachdenken** — vor dem Ergänzen nachsehen, ob es den
 Namen schon gibt.
 
+### Die Emoji-Auswahl — einmal antippen, aussuchen (Klaus 2026-09-15)
+
+Ein Tipp aufs Symbol-Feld im Umbenennen-Dialog öffnet ein Raster mit **107
+Symbolen**. Es steht einmal im Dialog und wandert unter die bearbeitete Zeile;
+dreizehn eigene Raster wären dreizehn Stellen, die auseinanderlaufen.
+
+⚠ **Die Reiter-Leiste öffnet sie NICHT.** Ein Tipp auf eine Kategorie-Pille
+wechselt die Kategorie — ein zweiter Zweck am selben Griff wäre eine Regel,
+die niemand lernt.
+
+⚠ **Tippen bleibt möglich.** Das Raster ist eine Abkürzung, kein Riegel. Wer
+ein Symbol braucht, das fehlt, gibt es weiter von Hand ein.
+
+#### ⚠ Sie war zuerst ein UMSCHALTER — und machte sich damit selbst wieder zu
+
+Am Symbol-Feld hängen `onfocus` **und** `onclick`; ein Fingertipp löst beide
+aus. Das erste öffnete, das zweite sah „schon offen" und schloss. Gemessen im
+Browser: das Raster war nach einem Tipp zu, obwohl es an der richtigen Stelle
+stand — der Wächter „steht direkt unter der Zeile" war grün, der Wächter
+„öffnet es" rot. Sie öffnet jetzt nur; geschlossen wird an drei benannten
+Stellen (nach der Wahl, Tipp daneben, Esc).
+
+#### ⚠ Und danach flatterte sie — `scrollIntoView` war die Ursache
+
+**Drei Läufe derselben Datei, zweimal offen, einmal zu.** Das Scrollen beim
+Öffnen verschob die Liste unter dem Finger; zwischen `focus` und `click`
+wanderte das Feld weg, der Klick landete auf einem anderen Element, und der
+„Tipp daneben"-Riegel schloss sofort. **Kein Proben-Artefakt** — die Liste ist
+scrollbar (`max-height: 46vh`), am Tablet schnappt dasselbe zu.
+
+⚠ **Ein Verhaltens-Wächter allein hätte das durchgelassen** (zwei von drei
+Läufen grün). Daneben steht deshalb ein Wächter auf die **Ursache**:
+`katEmojiOeffnen` darf nicht scrollen. Der war beim ersten Bau prompt zu
+Unrecht rot, weil der Erklärblock an derselben Stelle das Wort
+`scrollIntoView` **nennt** — gemessen wird der Code ohne Kommentare.
+
 ### Geprüft
 
 ```bash
-node tests/smoke_kategorien.mjs        # 23 grün · 0 ROT (echter Browser)
-bash tests/gegenprobe_kategorien.sh    # 10 gefangen · 0 durchgerutscht · 0 falsch · 0 tot
+node tests/smoke_kategorien.mjs        # 34 grün · 0 ROT (echter Browser)
+bash tests/gegenprobe_kategorien.sh    # 16 gefangen · 0 durchgerutscht · 0 falsch · 0 tot
 ```
 
 ⚠ **Die Gegenprobe läuft in einer WEGWERF-KOPIE**, nicht im echten Baum — eine
