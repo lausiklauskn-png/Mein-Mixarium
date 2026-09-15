@@ -715,6 +715,20 @@ body.nav-collapsed{padding-bottom:calc(16px + var(--sb))}
 .share-btn-p{width:100%;background:var(--grn);color:#fff;border:0 !important;\n  appearance:none;\n  -webkit-appearance:none;border-radius:9px;padding:11px;font-size:.83rem;font-weight:700;cursor:pointer;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:7px}
 .share-btn-s{width:100%;background:transparent;border:1.5px solid var(--sand2);border-radius:9px;padding:10px;font-size:.8rem;color:var(--br2);cursor:pointer;margin-bottom:6px}
 .share-btn-cl{width:100%;background:transparent;border:0 !important;\n  appearance:none;\n  -webkit-appearance:none;font-size:.75rem;color:var(--dim);cursor:pointer;padding:4px}
+/* ── Kategorien umbenennen (2026-09-15) ────────────────────────────────
+   .kat-box setzt die Zeilen-Darstellung aus der Medienabfrage weiter unten
+   ausdruecklich zurueck: dort wird .share-box ab 560px zu einer WAAGERECHTEN
+   Reihe, und dieser Dialog braucht eine Liste untereinander. Ohne das
+   staende die Liste neben dem Titel und liefe aus dem Kasten. */
+.kat-box{max-width:420px;width:94%;display:block !important;flex-direction:column !important;text-align:left !important;align-items:stretch !important}
+.kat-list{max-height:46vh;overflow-y:auto;margin:10px 0 8px;display:flex;flex-direction:column;gap:6px}
+.kat-row{display:flex;align-items:center;gap:6px}
+.kat-ico{width:52px;flex:0 0 52px;text-align:center;font-size:1rem;padding:7px 2px;border:1px solid var(--line,#d8cdbb);border-radius:8px;background:var(--card,#fff);color:var(--ink)}
+.kat-name{flex:1 1 auto;min-width:0;font-size:.82rem;padding:7px 8px;border:1px solid var(--line,#d8cdbb);border-radius:8px;background:var(--card,#fff);color:var(--ink)}
+.kat-reset{flex:0 0 auto;min-width:34px;min-height:34px;border:0;border-radius:8px;background:transparent;color:var(--dim);font-size:.95rem;cursor:pointer}
+.kat-reset:disabled{opacity:.28;cursor:default}
+.kat-fremd{flex:0 0 auto;font-size:.6rem;color:var(--dim);background:rgba(0,0,0,.06);padding:2px 6px;border-radius:6px}
+.kat-note{font-size:.68rem;line-height:1.45;color:var(--dim);text-align:left;margin:0 0 12px}
 @media (max-height:540px),(orientation:landscape) and (max-height:680px){
   .share-box{max-width:520px;display:flex;flex-direction:row;align-items:center;gap:16px;text-align:left;padding:14px 18px}
   .share-box-sub{margin-bottom:10px}
@@ -3038,6 +3052,7 @@ body:not([data-theme]) #bnav{
         🔍 <span id="fldSearch">Suche</span>
       </div>
       <div class="fldact r" onclick="openFolderSheet()">+ <span id="fldNew">Neuer Ordner</span></div>
+      <div class="fldact" onclick="openKatUmbenennen()">✎ <span id="fldKatRename">Kategorien umbenennen</span></div>
       <div class="fldact" id="fldToggleAll" onclick="tglAllFld()">▼ Alle aufklappen</div>
     </div>
   </div>
@@ -5651,6 +5666,58 @@ const TEMPS=[
 ];
 // Kompatibilitäts-Alias: COURSES wird durch GLASS_TYPES ersetzt
 const COURSES=GLASS_TYPES;
+
+/* ══ EIGENE KATEGORIE-NAMEN (Klaus 2026-09-15) ═══════════════════════════
+   Klaus: „Man kann auch Essen mixen, nicht nur Getraenke. Also Essen mixen
+   nennt man Kochen." Und die Landingpage verspricht es seit jeher:
+   „aus ‚Mocktails' wird z. B. ‚Salate'". Bis heute gab es dafuer keinen
+   Knopf — CATS war eine Konstante ohne eine einzige Schreibstelle.
+
+   ⚠ GESPEICHERT WIRD NUR DIE BESCHRIFTUNG, NIE DIE KENNUNG. `c.id` bleibt
+   `ckt`, auch wenn dort „Salate" steht. Jedes Rezept zeigt ueber `r.cat`
+   auf diese Kennung; wer sie umbenennt, nimmt allen Rezepten ihr Zuhause.
+
+   ⚠ EIN EIGENER NAME GILT IN ALLEN 8 SPRACHEN. Klaus hat ihn selbst
+   geschrieben — ihn zu uebersetzen hiesse raten. Das steht auch im
+   Dialog, sonst waere es eine stille Entscheidung. */
+const CATS_KEY='mxcats9m';
+let CATS_EIGEN={};
+function ladeCatsEigen(){try{const r=JSON.parse(localStorage.getItem(CATS_KEY)||'{}');CATS_EIGEN=(r&&typeof r==='object')?r:{};}catch(e){CATS_EIGEN={};}}
+function svCatsEigen(){try{localStorage.setItem(CATS_KEY,JSON.stringify(CATS_EIGEN));}catch(e){}}
+ladeCatsEigen();
+/* EINE Stelle fuer den angezeigten Namen. Zwei Stellen liefen auseinander,
+   und dann stuende im Reiter etwas anderes als in der Auswahlliste. */
+/* ⚠ DIE NAMEN SIND MIT BEDACHT ANDERS ALS `catName`/`catIco`. Die gibt es
+   seit jeher und sie nehmen eine KENNUNG; diese hier nehmen das OBJEKT.
+   Beim Bauen hiess dieser hier zuerst `catIco` — Funktions-Deklarationen
+   werden hochgezogen, die spaetere gewann, und jeder Aufruf landete in der
+   falschen. Gefunden hat es der Browser, nicht das Nachdenken. */
+function katBeschriftung(c){if(!c)return'';const e=CATS_EIGEN[c.id];if(e&&e.name)return e.name;return c[CL]||c.de||c.id;}
+function katSymbol(c){if(!c)return'📦';const e=CATS_EIGEN[c.id];if(e&&e.ico)return e.ico;return c.ico||'📦';}
+
+/* ══ FREMDE KATEGORIEN SICHTBAR MACHEN ═══════════════════════════════════
+   Ein Rezeptbuch-Export bringt Kennungen mit, die Mixarium nicht kennt
+   (gemessen am 2026-09-15: `drk`). Solche Rezepte lagen in R, wurden
+   gespeichert und mitexportiert — und NIE gezeichnet, auch nicht unter
+   „Alle": die Alle-Ansicht lief ueber CATS. Zu finden waren sie nur ueber
+   die Suche. Ein Wert, den die App haelt und nie zeigt, ist die stillste
+   Sorte Verlust. Sie bekommen jetzt einen eigenen Reiter und lassen sich
+   umbenennen wie jede andere Kategorie. */
+function catsFremd(){
+  const bekannt=new Set(CATS.map(c=>c.id));
+  const out=[],gesehen=new Set();
+  const arr=(typeof R!=='undefined'&&Array.isArray(R))?R:[];
+  for(const r of arr){
+    const id=(r&&typeof r.cat==='string')?r.cat:'';
+    if(!id||bekannt.has(id)||gesehen.has(id))continue;
+    if(id.indexOf('fld_')===0)continue;            // Ordner haben ihren eigenen Weg
+    gesehen.add(id);
+    out.push({id:id,ico:'📦',de:id,col:'#7a5840',fremd:true});
+  }
+  return out;
+}
+/* Alle Kategorien ausser „Alle" — die eigenen UND die mitgebrachten. */
+function catsAlle(){return CATS.filter(c=>c.id!=='all').concat(catsFremd());}
 const THEMES=[
   {id:'spektral',de:'Spektral',en:'Spectral',ru:'Спектр',zh:'光谱',es:'Espectral',fr:'Spectral',it:'Spettrale',pt:'Espectral',strips:['#FF0000','#FFE500','#00CC00','#8800FF']},
   {id:'default',de:'Mixarium',en:'Mixarium',ru:'Миксариум',zh:'调酒',es:'Mixarium',fr:'Mixarium',it:'Mixarium',pt:'Mixarium',strips:['#fffaf3','#ff5a5f','#2dd4bf','#ffd166']},
@@ -5666,9 +5733,9 @@ const THEMES=[
   {id:'neon',de:'Neon',en:'Neon',ru:'Неон',zh:'霓虹',es:'Neón',fr:'Néon',it:'Neon',pt:'Néon',strips:['#0d0d1a','#9d5cff','#ff3f9a','#00d68f']},
   {id:'pastel',de:'Pastell',en:'Pastel',ru:'Пастель',zh:'粉彩',es:'Pastel',fr:'Pastel',it:'Pastello',pt:'Pastel',strips:['#fff0f9','#c050c8','#ff6090','#4ec888']},
 ];
-function catName(id){if(id&&id.startsWith('fld_')){const f=FD.find(f=>String(f.id)===id.slice(4));return f?f.name:id;}const c=CATS.find(x=>x.id===id);if(!c)return id;return c[CL]||c.de;}
-function catCol(id){if(id&&id.startsWith('fld_')){return'#0d5c5a';}return CATS.find(x=>x.id===id)?.col||'#0d5c5a';}
-function catIco(id){if(id&&id.startsWith('fld_')){const f=FD.find(f=>String(f.id)===id.slice(4));return f?f.ico:'📁';}return CATS.find(x=>x.id===id)?.ico||'🧪';}
+function catName(id){if(typeof id==='string'&&id.indexOf('fld_')===0){const f=FD.find(f=>String(f.id)===id.slice(4));return f?f.name:id;}const c=catsAlle().find(x=>x.id===id);if(!c)return id;return katBeschriftung(c);}
+function catCol(id){if(typeof id==='string'&&id.indexOf('fld_')===0){return'#0d5c5a';}return catsAlle().find(x=>x.id===id)?.col||'#0d5c5a';}
+function catIco(id){if(typeof id==='string'&&id.indexOf('fld_')===0){const f=FD.find(f=>String(f.id)===id.slice(4));return f?f.ico:'📁';}const c=catsAlle().find(x=>x.id===id);return c?katSymbol(c):'🧪';}
 function courseName(id){const c=GLASS_TYPES.find(x=>x.id===id);if(!c)return id;return c[CL]||c.de;}
 function glassName(id){const g=GLASS_TYPES.find(x=>x.id===id);if(!g)return id;return g[CL]||g.de;}
 function tempName(id){const t=TEMPS.find(x=>x.id===id);if(!t)return id;return t[CL]||t.de;}
@@ -5949,24 +6016,24 @@ async function boot(){
       R.forEach(r=>{if(imgMap[r.id])r.img=imgMap[r.id];});
     }
   }catch(e){}
-  // Migration: alte Essens-Kats remappen. Echte Rezepte aus der Vorgänger-App
-  // (z.B. „Muttis Gullasch" mit cat:'fleisch') landen in der neuen Kategorie
-  // 'knab' (Knabbereien) — passt thematisch als Snack zum Drink, statt sie
-  // komplett zu verwerfen. Blank-Karten werden weiterhin entfernt.
+  // ⚠ HIER STAND BIS ZUM 2026-09-15 EIN REMAP NACH „KNABBEREIEN".
+  // Sieben Essens-Kategorien ('vorsp','suppe','fleisch','fisch','vegi',
+  // 'kuchen','dessert') wurden bei JEDEM Laden zu 'knab' zusammengefaltet,
+  // „passt thematisch als Snack zum Drink, statt sie komplett zu verwerfen".
+  //
+  // Die Begruendung war richtig, SOLANGE Mixarium keine eigenen Kategorien
+  // zuliess: zusammenfalten war besser als wegwerfen. Seit Kategorien
+  // umbenennbar sind und fremde Kennungen ihren eigenen Reiter bekommen
+  // (siehe catsFremd), ist er das Gegenteil — er zerstoert genau die
+  // Information, aus der der Nutzer seine eigene Kategorie machen will.
+  // Klaus hat es am Spaghetti Bolognese unter „Knabbereien" gesehen.
+  //
+  // Blank-Karten alter Essens-Kategorien fliegen weiter heraus: eine leere
+  // Karte ist kein Inhalt, und sie wuerde einen Reiter aufspannen, in dem
+  // nichts steht.
   {
-    const OLD_FOOD=['vorsp','suppe','fleisch','fisch','vegi','kuchen','dessert'];
-    const remapped=[];
-    R=R.filter(r=>{
-      if(!OLD_FOOD.includes(r.cat))return true;
-      if(r.blank)return false;
-      remapped.push({id:r.id,name:r.name||'(?)',from:r.cat});
-      r.cat='knab';
-      return true;
-    });
-    if(remapped.length){
-      try{console.info('[Mixarium] Migration: '+remapped.length+
-        ' Essens-Rezept(e) → Knabbereien remapt',remapped);}catch(e){}
-    }
+    const ALT_ESSEN=['vorsp','suppe','fleisch','fisch','vegi','kuchen','dessert'];
+    R=R.filter(r=>!(r.blank&&ALT_ESSEN.includes(r.cat)));
   }
   // Seed blank slots on first run (nur echte Rezepte zählen)
   if(!R.some(r=>!r.blank)){
@@ -6148,6 +6215,11 @@ function applyLang(code){
   const logo=document.getElementById('appLogo');
   if(logo){const t=L.appTitle||'Mein Mixarium';const sp=t.indexOf(' ');logo.innerHTML=sp>-1?h(t.slice(0,sp))+' <em>'+h(t.slice(sp+1))+'</em>':h(t);}
   const lb=document.getElementById('langBtn');if(lb)lb.textContent='🌐 '+code.toUpperCase();
+  /* Der Knopf „Kategorien umbenennen" holt seinen Text aus KAT_TXT statt aus
+     LANGS: acht Sprachen fuer einen Dialog, ohne die grosse Tabelle
+     anzufassen — `check_i18n` prueft LANGS und bleibt damit unberuehrt. */
+  const _kbn=document.getElementById('fldKatRename');
+  if(_kbn)_kbn.textContent=((typeof KAT_TXT!=='undefined'&&(KAT_TXT[code]||KAT_TXT.de))||{}).t?.replace(/^✎\s*/,'')||'Kategorien umbenennen';
   // API-Key Overlay – Titel und Tooltip-Texte aktualisieren
   const _akb=document.getElementById('apiKeyHdrBtn');if(_akb)_akb.title=L.apiKeyOvTitle||'';
   const _aktEl=document.getElementById('apiKeyOvTitleEl');if(_aktEl)_aktEl.textContent=L.apiKeyOvTitle||'';
@@ -7729,7 +7801,7 @@ function _renderIgrPanel(){
     if(!recs.length)return;
     html+='<div style="border-bottom:1px solid var(--sand2)">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:var(--sand)">'
-      +'<span style="font-size:.75rem;font-weight:700;color:var(--ink)">'+cat.ico+' '+h(cat[CL]||cat.de)+'</span>'
+      +'<span style="font-size:.75rem;font-weight:700;color:var(--ink)">'+katSymbol(cat)+' '+h(katBeschriftung(cat))+'</span>'
       +'<span style="display:flex;gap:5px">'
       +_igrMiniBtn("event.stopPropagation();igrCatAll('"+cat.id+"',true)",T('igSelAll'))
       +_igrMiniBtn("event.stopPropagation();igrCatAll('"+cat.id+"',false)",T('igSelNone'))
@@ -9498,7 +9570,7 @@ function renderCatNav(){
   const el=document.getElementById('catNav');if(!el)return;
   // Per-Kategorie-Counts (exakt die Drinks, die render() anzeigt)
   const _catCounts={};
-  CATS.filter(c=>c.id!=='all').forEach(c=>{
+  catsAlle().forEach(c=>{
     _catCounts[c.id]=R.filter(r=>r.cat===c.id&&!r.blank&&r.name&&alcAllowed(r)).length;
   });
   const _fldCount=FD?FD.reduce((s,f)=>s+R.filter(r=>r.cat==='fld_'+f.id&&!r.blank&&r.name&&alcAllowed(r)).length,0):0;
@@ -9506,21 +9578,22 @@ function renderCatNav(){
   // Diagnose: Orphan-Drinks (haben Namen, aber unbekannte Kategorie — werden nicht angezeigt)
   const _orphans=R.filter(r=>!r.blank&&r.name&&alcAllowed(r)).filter(r=>{
     if(!r.cat)return true;
-    if(CATS.some(c=>c.id!=='all'&&c.id===r.cat))return false;
+    if(catsAlle().some(c=>c.id===r.cat))return false;
     if(r.cat.startsWith('fld_')&&FD&&FD.some(f=>'fld_'+f.id===r.cat))return false;
     return true;
   });
   if(_orphans.length){console.warn(`[Mixarium] ${_orphans.length} Orphan-Drink(s) — haben Namen aber keine bekannte Kategorie:`,_orphans.map(r=>({id:r.id,name:r.name,cat:r.cat})));}
   // Kategorien
-  let pills=CATS.map(c=>{
+  let pills=CATS.filter(c=>c.id==='all').concat(catsAlle()).map(c=>{
     const cnt=c.id==='all'?_allCount:(_catCounts[c.id]||0);
-    return`<div class="cpill ${CAT===c.id?'on':''}" onclick="setCAT('${c.id}')">${c.ico} ${c[CL]||c.de} <span style="opacity:.65;font-size:.6rem">${cnt}</span></div>`;
+    const lbl=c.id==='all'?(c[CL]||c.de):katBeschriftung(c),ic=c.id==='all'?c.ico:katSymbol(c);
+    return`<div class="cpill ${CAT===c.id?'on':''}" onclick="setCAT('${c.id}')">${ic} ${h(lbl)} <span style="opacity:.65;font-size:.6rem">${cnt}</span></div>`;
   }).join('');
   if(FD&&FD.length){pills+=FD.map(f=>{const fid='fld_'+f.id;const cnt=R.filter(r=>r.folder===String(f.id)&&r.name).length;return`<div class="cpill ${CAT===fid?'on':''}" onclick="setCAT('${fid}')">${f.ico} ${f.name} <span style="opacity:.65;font-size:.6rem">${cnt}</span></div>`;}).join('');}
   el.innerHTML=pills;
   const catSel=document.getElementById('newCat');
   if(catSel)catSel.innerHTML=`<option value="">— ${T('lCat')} —</option>`+
-    CATS.filter(c=>c.id!=='all').map(c=>`<option value="${c.id}">${c.ico} ${c[CL]||c.de}</option>`).join('');
+    catsAlle().map(c=>`<option value="${c.id}">${katSymbol(c)} ${h(katBeschriftung(c))}</option>`).join('');
   const fldSel=document.getElementById('newFolder');
   if(fldSel)fldSel.innerHTML=`<option value="">— ${T('noFolder')} —</option>`+
     FD.map(f=>`<option value="${f.id}">${f.ico} ${h(f.name)}</option>`).join('');
@@ -10300,6 +10373,90 @@ function doPrint(){
 // FOLDERS
 // ═══════════════════════════════════════════════════════
 function openFolderSheet(){document.getElementById('folderSheet').style.display='block';}
+
+/* ══ KATEGORIEN UMBENENNEN ═══════════════════════════════════════════════
+   Die Texte stehen hier lokal statt in LANGS — dasselbe Muster wie `prompts`
+   weiter unten. Acht Sprachen fuer einen Dialog, ohne die grosse Tabelle
+   anzufassen; `check_i18n` prueft LANGS und bleibt unberuehrt. */
+const KAT_TXT={
+  de:{t:'✎ Kategorien umbenennen',s:'Gib den Kategorien deine eigenen Namen und Symbole. Aus „Mocktails" wird deine „Salatbar".',
+      n:'⚠ Der Name gilt in allen Sprachen — du hast ihn selbst geschrieben. Die Kennung bleibt unveraendert, deine Rezepte behalten ihr Zuhause.',
+      f:'mitgebracht',z:'↺ zuruecksetzen',ok:'Speichern',ab:'Abbrechen',g:'✅ Kategorien gespeichert'},
+  en:{t:'✎ Rename categories',s:'Give the categories your own names and icons. “Mocktails” becomes your “Salad bar”.',
+      n:'⚠ The name applies in every language — you wrote it yourself. The internal id stays, so your recipes keep their home.',
+      f:'imported',z:'↺ reset',ok:'Save',ab:'Cancel',g:'✅ Categories saved'},
+  ru:{t:'✎ Переименовать категории',s:'Дайте категориям свои названия и значки.',
+      n:'⚠ Название действует на всех языках. Идентификатор не меняется — рецепты остаются на месте.',
+      f:'импортировано',z:'↺ сбросить',ok:'Сохранить',ab:'Отмена',g:'✅ Сохранено'},
+  zh:{t:'✎ 重命名分类',s:'为分类设置你自己的名称和图标。',
+      n:'⚠ 该名称适用于所有语言。内部标识不变，菜谱不会丢失。',
+      f:'导入',z:'↺ 重置',ok:'保存',ab:'取消',g:'✅ 已保存'},
+  es:{t:'✎ Renombrar categorías',s:'Da a las categorías tus propios nombres e iconos.',
+      n:'⚠ El nombre vale en todos los idiomas. El identificador no cambia: tus recetas conservan su sitio.',
+      f:'importado',z:'↺ restablecer',ok:'Guardar',ab:'Cancelar',g:'✅ Guardado'},
+  fr:{t:'✎ Renommer les catégories',s:'Donnez aux catégories vos propres noms et icônes.',
+      n:'⚠ Le nom vaut dans toutes les langues. L’identifiant ne change pas : vos recettes gardent leur place.',
+      f:'importé',z:'↺ réinitialiser',ok:'Enregistrer',ab:'Annuler',g:'✅ Enregistré'},
+  it:{t:'✎ Rinomina categorie',s:'Dai alle categorie i tuoi nomi e le tue icone.',
+      n:'⚠ Il nome vale in tutte le lingue. L’identificativo resta: le ricette mantengono il loro posto.',
+      f:'importato',z:'↺ ripristina',ok:'Salva',ab:'Annulla',g:'✅ Salvato'},
+  pt:{t:'✎ Renomear categorias',s:'Dê às categorias os seus próprios nomes e ícones.',
+      n:'⚠ O nome vale em todos os idiomas. O identificador permanece: as receitas mantêm o seu lugar.',
+      f:'importado',z:'↺ repor',ok:'Guardar',ab:'Cancelar',g:'✅ Guardado'}
+};
+function openKatUmbenennen(){
+  const X=KAT_TXT[CL]||KAT_TXT.de;
+  const liste=catsAlle();
+  const ov=document.createElement('div');
+  ov.id='katRenameOv';ov.className='share-ov';
+  const zeilen=liste.map(c=>{
+    const eigen=CATS_EIGEN[c.id]||{};
+    const hatEigen=!!(eigen.name||eigen.ico);
+    /* Der VORGABE-Name steht als Platzhalter da, nicht als Wert. Stuende er
+       als Wert drin, koennte man einen eigenen Namen nicht mehr von der
+       Vorgabe unterscheiden — und „zuruecksetzen" haette nichts zu tun. */
+    return `<div class="kat-row" data-kid="${h(c.id)}">
+      <input class="kat-ico" value="${h(eigen.ico||'')}" placeholder="${h(c.ico||'📦')}" maxlength="4" aria-label="Symbol">
+      <input class="kat-name" value="${h(eigen.name||'')}" placeholder="${h(c[CL]||c.de||c.id)}" aria-label="Name">
+      <button class="kat-reset" onclick="katZuruecksetzen('${h(c.id)}')" ${hatEigen?'':'disabled'} title="${h(X.z)}">↺</button>
+      ${c.fremd?`<span class="kat-fremd">${h(X.f)}</span>`:''}
+    </div>`;
+  }).join('');
+  ov.innerHTML=`<div class="share-box kat-box">
+    <div class="share-box-title">${h(X.t)}</div>
+    <div class="share-box-sub">${h(X.s)}</div>
+    <div class="kat-list">${zeilen}</div>
+    <div class="kat-note">${h(X.n)}</div>
+    <button class="share-btn-p" onclick="katSpeichern()">${h(X.ok)}</button>
+    <button class="share-btn-cl" onclick="document.getElementById('katRenameOv').remove()">${h(X.ab)}</button>
+  </div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+}
+function katZuruecksetzen(id){
+  const row=document.querySelector('#katRenameOv .kat-row[data-kid="'+id+'"]');
+  if(!row)return;
+  row.querySelector('.kat-ico').value='';
+  row.querySelector('.kat-name').value='';
+  row.querySelector('.kat-reset').disabled=true;
+}
+function katSpeichern(){
+  const ov=document.getElementById('katRenameOv');if(!ov)return;
+  const neu={};
+  ov.querySelectorAll('.kat-row').forEach(row=>{
+    const id=row.dataset.kid;
+    const nm=(row.querySelector('.kat-name').value||'').trim();
+    const ic=(row.querySelector('.kat-ico').value||'').trim();
+    /* Leer heisst „Vorgabe", nicht „leerer Name". Wer alles leert, bekommt
+       die Werkseinstellung zurueck — und der Eintrag verschwindet ganz,
+       statt als leeres Objekt liegen zu bleiben. */
+    if(nm||ic){neu[id]={};if(nm)neu[id].name=nm;if(ic)neu[id].ico=ic;}
+  });
+  CATS_EIGEN=neu;svCatsEigen();
+  ov.remove();
+  renderCatNav();render();if(typeof renderFolders==='function')renderFolders();
+  toast((KAT_TXT[CL]||KAT_TXT.de).g);
+}
 function closeFolderSheet(){document.getElementById('folderSheet').style.display='none';}
 function saveFolder(){
   const nm=document.getElementById('fldNameIn').value.trim();if(!nm){toast('⚠️ '+T('fldNameLbl'));return;}
@@ -10312,7 +10469,7 @@ function renderFolders(){
   const tree=document.getElementById('fldTree');if(!tree)return;
   const openGids=new Set([...tree.querySelectorAll('.fld-recs.open')].map(el=>el.closest('.fld-grp')?.dataset.gid).filter(Boolean));
   const groups=[
-    ...CATS.filter(c=>c.id!=='all').map(c=>({id:'cat_'+c.id,name:c[CL]||c.de,ico:c.ico,col:c.col,
+    ...catsAlle().map(c=>({id:'cat_'+c.id,name:katBeschriftung(c),ico:katSymbol(c),col:c.col,
       recipes:R.filter(r=>r.cat===c.id&&r.name)})),
     ...FD.map(f=>({id:'cfd_'+f.id,name:f.name,ico:f.ico,col:'#7a5840',
       recipes:R.filter(r=>r.folder===String(f.id)&&r.name)}))
@@ -10636,7 +10793,7 @@ function render(){
     const cnt=document.getElementById('srchCnt');if(cnt)cnt.textContent=`${named.length} ${T('srchResults')}`;
     html=named.length?named.map(r=>rndCard(r)).join(''):`<div class="empty-state empty-state--search"><div class="empty-state__icon">🔍</div><h3 class="empty-state__title">${T('noResults')}</h3></div>`;
   }else if(CAT==='all'){
-    for(const cat of CATS.filter(c=>c.id!=='all')){
+    for(const cat of catsAlle()){
       const grp=list.filter(r=>r.cat===cat.id);if(!grp.length)continue;
       html+=grp.map(r=>rndCard(r)).join('');
     }
@@ -10664,10 +10821,10 @@ function render(){
   c.innerHTML=html;renderCatNav();badge();restoreTranslPanels();setupTouchDrag();carouselInit();
 }
 function rndDiv(cat,grp){
-  const filled=grp.filter(r=>r.name).length,name=cat[CL]||cat.de;
+  const filled=grp.filter(r=>r.name).length,name=katBeschriftung(cat);
   return`<div style="margin-bottom:5px">
     <div class="cdiv-hd" style="border-left-color:${cat.col}">
-      <div style="font-size:1.05rem">${cat.ico}</div>
+      <div style="font-size:1.05rem">${katSymbol(cat)}</div>
       <div><div class="cdiv-name" style="color:${cat.col}">${name}</div>
         <div class="cdiv-sub">${filled}/${grp.length}</div></div>
     </div>

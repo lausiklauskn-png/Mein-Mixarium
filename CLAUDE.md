@@ -391,6 +391,90 @@ keine war: ein Fehler im Wächter, der wie ein Fehler im Code aussah.
 
 ---
 
+## 🏷️ KATEGORIEN SIND UMBENENNBAR — und fremde verschwinden nicht mehr (Klaus 2026-09-15)
+
+Klaus hat ein Rezeptbuch-JSON ins Mixarium geladen und bekam einen Spaghetti
+Bolognese unter **Knabbereien** zu sehen. Sein Satz dazu: *„Man kann auch
+Essen mixen, nicht nur Getränke. Also Essen mixen nennt man Kochen."*
+
+**Vier Sachen wurden gemessen, und nur eine davon war ein Fehler:**
+
+| | Befund |
+|---|---|
+| Der Remap nach „Knabbereien" | **Absicht.** `OLD_FOOD` (sieben Essens-Kategorien) → `'knab'`, bei JEDEM Laden in `boot()`. Der Kommentar nannte den Grund: *„passt thematisch als Snack zum Drink, statt sie komplett zu verwerfen."* |
+| „Ersetzen" beim Import | **hat ersetzt.** `R=imported`. Die 5 Cocktails und 4 Bowlen kamen aus derselben Datei mit — das Rezeptbuch führt die Getränke-Kategorien auch |
+| **`drk` fiel still durch** | **der echte Fehler.** Weder in `CATS` noch in `OLD_FOOD`: die Rezepte lagen in `R`, wurden gespeichert und mitexportiert — und **nie gezeichnet**, auch nicht unter „Alle" |
+| Umbenennen | **gab es nicht.** `const CATS=[…]`, keine Schreibstelle, keine Oberfläche — nur **Ordner** liessen sich benennen |
+
+⚠ **DER BEFUND WAR SEIT JEHER BEKANNT — er ging nur an die Konsole.**
+`renderCatNav` warnt mit *„N Orphan-Drink(s) — haben Namen aber keine bekannte
+Kategorie"*. Die Auskunft war vollständig und richtig; sie stand nur an einem
+Ort, an dem kein Nutzer nachsieht. **Eine Auskunft, die nur in der Konsole
+steht, hat niemand.**
+
+### Was seitdem gilt
+
+- **`CATS_EIGEN` (`mxcats9m`) trägt eigene Namen und Symbole je Kategorie.**
+  ⚠ **Gespeichert wird NUR die Beschriftung, nie die Kennung.** `c.id` bleibt
+  `ckt`, auch wenn dort „Salate" steht — jedes Rezept zeigt über `r.cat` auf
+  diese Kennung. Wer sie umbenennt, nimmt allen Rezepten ihr Zuhause.
+- **`catsFremd()` / `catsAlle()`:** Kennungen, die in `R` vorkommen und die
+  `CATS` nicht kennt, bekommen einen eigenen Reiter und sind umbenennbar wie
+  jede andere. Sie tragen im Dialog die Marke „mitgebracht".
+- **Ein eigener Name gilt in allen 8 Sprachen.** Klaus hat ihn selbst
+  geschrieben; ihn zu übersetzen hiesse raten. Das steht im Dialog, sonst wäre
+  es eine stille Entscheidung.
+
+### ⚠ Der Remap ist WEG — Tafel-Evolutions-Klausel, ausdrücklich benannt
+
+Die alte Begründung war richtig, **solange Mixarium keine eigenen Kategorien
+zuliess**: zusammenfalten war besser als wegwerfen. Seit Kategorien umbenennbar
+sind, ist er das Gegenteil — er zerstört genau die Information, aus der der
+Nutzer seine eigene Kategorie machen will. **Blank-Karten alter
+Essens-Kategorien fliegen weiter heraus:** eine leere Karte ist kein Inhalt und
+spannte sonst einen Reiter auf, in dem nichts steht.
+
+### ⚠ `catIco` GAB ES SCHON — und die spätere Deklaration gewinnt
+
+Die neuen Helfer hiessen zuerst `catLbl`/`catIco` und nahmen ein **Objekt**.
+`catIco(id)` gibt es seit jeher und nimmt eine **Kennung**. Funktions-
+Deklarationen werden hochgezogen, die spätere gewinnt — jeder Aufruf landete in
+der falschen, und die rief `startsWith` auf einem Objekt auf. Sie heissen jetzt
+**`katBeschriftung(c)`** und **`katSymbol(c)`**, und die id-basierten Altbestände
+(`catName`, `catIco`, `catCol`) hängen an derselben Quelle. **Gefunden hat es
+der Browser, nicht das Nachdenken** — vor dem Ergänzen nachsehen, ob es den
+Namen schon gibt.
+
+### Geprüft
+
+```bash
+node tests/smoke_kategorien.mjs        # 23 grün · 0 ROT (echter Browser)
+bash tests/gegenprobe_kategorien.sh    # 10 gefangen · 0 durchgerutscht · 0 falsch · 0 tot
+```
+
+⚠ **Die Gegenprobe läuft in einer WEGWERF-KOPIE**, nicht im echten Baum — eine
+liegengebliebene Sabotage sieht danach wie ein Baufehler aus.
+
+⚠ **UND MEIN ERSTER GEGENPROBE-LAUF LOG ÜBER SICH SELBST.** Er prüfte die
+Ausgangslage mit `grep -q "0 ROT"` — und **„10 ROT" enthält „0 ROT"**. Zwei
+Fälle standen als „nicht gefangen" da, obwohl beide sauber zuschlugen.
+Dieselbe Familie wie `.gitignore` statt `.git`: ein Name, der das Ende eines
+anderen ist. Gemessen wird jetzt die ganze Schlusszeile.
+
+### ⚠ Und eine ZAHL in `smoke_sbkim_beschreibung.mjs` war seit demselben Tag falsch
+
+Der Wächter „die gespeicherte Spore überschreibt den Vorschlag NICHT mehr von
+selbst" verlangte **genau ein** `ta.value =` im Lade-Pfad. Seit Stufe 5c
+(2026-09-15) hängen an der Herkunfts-Zeile **zwei Knöpfe**, beide setzen
+`ta.value` — auf **Klick**. Der Block enthielt damit drei Zuweisungen, und die
+Probe wurde **ROT, ohne dass eine Zusicherung gefallen wäre.**
+
+Gemessen wird jetzt die Zusicherung: der Lade-Pfad **ohne** die Klick-Handler
+darf `ta.value` nicht unbedingt setzen. **Eine Zahl in einer Prüfung ist kein
+Vertrag** — geschärft, nicht gelockert, und mit eigener Gegenprobe belegt.
+
+---
+
 ## SBKIM — Geplante Erweiterung (Stand: Mai 2026)
 
 **SBKIM** (Semantisches Bidirektionales KI-Matching) wird als MVP-Erweiterung in Mein Mixarium aufgebaut. Mein Mixarium ist die **Demo-Plattform** für das offene SBKIM-Protokoll.

@@ -105,9 +105,25 @@ ok("das Feld zeigt den Vorschlag der APP",
 const iLade = wizard.indexOf("getOwnSpore().then");
 const iEnde = wizard.indexOf('ta.addEventListener("input"', iLade);
 const ladePfad = iLade >= 0 && iEnde > iLade ? wizard.slice(iLade, iEnde) : "";
+/* ⚠ HIER STAND EINE ZAHL, UND SIE IST AM 2026-09-15 FALSCH GEWORDEN.
+   Der Wächter verlangte GENAU EIN `ta.value =` im Lade-Pfad. Das stimmte,
+   solange dort nur eine Zuweisung stand. Seit Stufe 5c gewinnt der eigene
+   Text des Nutzers, und dafür hängen an der Herkunfts-Zeile ZWEI Knöpfe —
+   beide setzen `ta.value`, beide erst auf Klick. Der Block enthielt damit
+   drei Zuweisungen, und die Probe wurde ROT, OHNE dass eine Zusicherung
+   gefallen wäre. Dieselbe Familie wie „ein Wächter, der an einer Zeichenzahl
+   hängt": eine Zahl in einer Prüfung ist kein Vertrag.
+   Gemessen wird jetzt die ZUSICHERUNG: im Lade-Pfad selbst — also ohne die
+   Klick-Handler — darf `ta.value` NICHT unbedingt gesetzt werden. */
+const ohneKlick = ladePfad.replace(/addEventListener\("click",\s*function\s*\(\)\s*\{[\s\S]*?\n\s*\}\);/g, "«klick»");
+const zuwLade = (ohneKlick.match(/ta\.value\s*=/g) || []).length;
 ok("… und die gespeicherte Spore überschreibt ihn NICHT mehr von selbst",
-  ladePfad.length > 0 && (ladePfad.match(/ta\.value\s*=/g) || []).length === 1
-  && /if \(!abweichend\) return;/.test(ladePfad));
+  ladePfad.length > 0
+  && /if \(!abweichend\) return;/.test(ladePfad)
+  && zuwLade === 1
+  && /if \(hatEigenenText\(\)\) \{[\s\S]{0,120}ta\.value = eigener/.test(ohneKlick));
+ok("… und die zwei Knöpfe setzen das Feld nur auf KLICK",
+  (ladePfad.match(/ta\.value\s*=/g) || []).length - zuwLade === 2);
 ok("eine Zeile NENNT, welcher Text im Feld steht",
   /id = "sbkim-si-semantik-herkunft"/.test(wizard) && /data-woher/.test(wizard));
 ok("ein Knopf holt den zuletzt signierten Text zurück",
