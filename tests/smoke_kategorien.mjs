@@ -41,7 +41,7 @@ await seite.addInitScript(b=>{
   localStorage.setItem("mxlang9m","de");
 }, BESTAND);
 await seite.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil:"domcontentloaded" });
-await seite.waitForFunction(()=>typeof window.catsAlle === "function" && Array.isArray(window.R), null, { timeout:20000 });
+await seite.waitForFunction(()=>typeof catsAlle==="function" && typeof R!=="undefined" && Array.isArray(R), null, { timeout:20000 });
 await seite.waitForFunction(()=>document.querySelectorAll("#catNav .cpill").length > 0, null, { timeout:20000 });
 
 console.log("\n── 1 · Fremde Kategorien bekommen einen Reiter ──");
@@ -58,7 +58,7 @@ ok("„Alle“ zeigt Apfelschorle (cat=drk)", /Apfelschorle/.test(inAlle));
 ok("„Alle“ zeigt weiterhin den Mojito", /Mojito/.test(inAlle));
 
 console.log("\n── 3 · Kein Remap mehr nach Knabbereien ──");
-const kats = await seite.evaluate(()=>window.R.filter(r=>r.name).map(r=>[r.name,r.cat]));
+const kats = await seite.evaluate(()=>R.filter(r=>r.name).map(r=>[r.name,r.cat]));
 ok("Spaghetti steht auf 'fleisch', nicht auf 'knab'",
    kats.some(([n,c])=>n==="Spaghetti Bolognese" && c==="fleisch"));
 ok("keins der Gerichte wurde nach 'knab' geschoben", !kats.some(([,c])=>c==="knab"));
@@ -71,7 +71,7 @@ ok("das eigene Symbol steht davor", nachher.some(t=>t.includes("🍝")));
 ok("die alte Beschriftung ist weg", !nachher.some(t=>/\bfleisch\b/i.test(t)));
 
 console.log("\n── 5 · Die KENNUNG bleibt — sonst verlieren Rezepte ihr Zuhause ──");
-const idNach = await seite.evaluate(()=>window.R.find(r=>r.name==="Spaghetti Bolognese").cat);
+const idNach = await seite.evaluate(()=>R.find(r=>r.name==="Spaghetti Bolognese").cat);
 ok("r.cat ist unveraendert 'fleisch'", idNach==="fleisch");
 const nochDa = await seite.evaluate(()=>{ CAT="fleisch"; render();
   return document.getElementById("rcont").textContent.includes("Spaghetti Bolognese"); });
@@ -101,7 +101,7 @@ ok("es ueberlebt ein Neuladen",
    von Hand — eine Sabotage IM Speicher-Weg kommt dort nie vorbei. Gemessen
    wird die Kennung deshalb NACH dem echten Knopf. */
 ok("auch ueber den echten Speicher-Weg bleibt r.cat = 'drk'",
-   await seite.evaluate(()=>window.R.find(r=>r.name==="Apfelschorle").cat === "drk"));
+   await seite.evaluate(()=>R.find(r=>r.name==="Apfelschorle").cat === "drk"));
 ok("und das Rezept steht im umbenannten Reiter", await seite.evaluate(()=>{
    CAT="drk"; render(); return document.getElementById("rcont").textContent.includes("Apfelschorle"); }));
 
@@ -128,6 +128,24 @@ ok("… und schliesst das Raster wieder",
 ok("… und gibt das Zurücksetzen frei",
    await seite.evaluate(()=>!document.querySelector('#katRenameOv .kat-row[data-kid="fleisch"] .kat-reset').disabled));
 
+/* ⚠ EIN WAECHTER AUF DIE URSACHE, nicht nur aufs Verhalten. Der Wächter
+   darüber („öffnet es") war FLATTERHAFT: `scrollIntoView` verschob die Liste
+   zwischen focus und click, der Klick landete woanders, und der
+   „Tipp-daneben"-Riegel schloss sofort. Gemessen: drei Läufe derselben
+   Datei, zweimal offen, einmal zu. Ein Verhaltens-Wächter allein hätte das
+   in zwei von drei Läufen durchgelassen. */
+ok("das Öffnen verschiebt die Liste nicht (kein scrollIntoView)", await (async ()=>{
+  const { readFileSync } = await import("node:fs");
+  const q = readFileSync("QC_Mixarium_20_04_26.html","utf8");
+  const i = q.indexOf("function katEmojiOeffnen"); const j = q.indexOf("function katEmojiSchliessen", i);
+  /* ⚠ OHNE DIE KOMMENTARE. Der Erklaerblock an genau dieser Stelle NENNT
+     `scrollIntoView` — ein Waechter, der frei im Text sucht, wird davon rot,
+     obwohl der Code sauber ist. Dieselbe Falle wie ein Waechter, der im
+     Kommentar fuendig wird, nur in die andere Richtung. */
+  const code = q.slice(i,j).replace(/\/\*[\s\S]*?\*\//g,"").replace(/^\s*\/\/.*$/gm,"");
+  return i>=0 && j>i && !/scrollIntoView/.test(code);
+})());
+
 console.log("\n── 10 · Tippen bleibt möglich, und das Symbol kommt an ──");
 await seite.fill('#katRenameOv .kat-row[data-kid="suppe"] .kat-ico', "🍜");
 await seite.evaluate(()=>katSpeichern());
@@ -140,7 +158,7 @@ ok("beides überlebt ein Neuladen", await seite.evaluate(()=>{
 
 console.log("\n── 8 · Leere Karten alter Essens-Kategorien fliegen weiter raus ──");
 ok("keine Blank-Karte mit cat='fleisch'",
-   await seite.evaluate(()=>!window.R.some(r=>r.blank && r.cat==="fleisch")));
+   await seite.evaluate(()=>!R.some(r=>r.blank && r.cat==="fleisch")));
 
 await browser.close(); server.close();
 console.log(`\n${gruen} grün · ${rot} ROT`);

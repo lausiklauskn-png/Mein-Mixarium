@@ -109,6 +109,12 @@ function openKatUmbenennen(){"
 fall "der Vorrat schrumpft auf eine Handvoll" "bietet eine Auswahl an" \
 'const KAT_EMOJIS = [@@@const KAT_EMOJIS = ["🍹","🍸","🥤"]; const _KAT_UNUSED = ['
 
+fall "das Scrollen beim Oeffnen kommt zurueck" "verschiebt die Liste nicht" \
+"  raster.hidden=false;
+  /* ⚠ HIER STAND@@@  raster.hidden=false;
+  raster.scrollIntoView({block:'nearest'});
+  /* ⚠ HIER STAND"
+
 echo
 echo "$gefangen gefangen · $durch durchgerutscht · $falsch aus falschem Grund · $tot tote Anker"
 cd /; rm -rf "$(dirname "$KOPIE")"
