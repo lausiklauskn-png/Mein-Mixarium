@@ -112,9 +112,65 @@ ok("das Raster ist zu, solange niemand tippt",
 await seite.click('#katRenameOv .kat-row[data-kid="fleisch"] .kat-ico');
 ok("ein Tipp aufs Symbol-Feld öffnet es",
    await seite.evaluate(()=>document.getElementById("katEmojiRaster").hidden === false));
-ok("… und es steht DIREKT unter der bearbeiteten Zeile", await seite.evaluate(()=>{
+/* ⚠ HIER STAND „… und es steht DIREKT unter der bearbeiteten Zeile".
+   DIESE ZUSICHERUNG GILT NICHT MEHR, und sie ist nicht still getauscht:
+   Klaus hat am 2026-09-15 gemeldet, die Auswahl sei „nicht vollkommen
+   aufgeklappt". Gemessen im Browser war sie **12 px hoch** statt 598 px
+   Inhalt — `.kat-list` ist ein Flex-Container, und ein Kind mit
+   `overflow-y:auto` bekommt dort die Mindesthoehe 0. Der alte Waechter war
+   dabei GRUEN: er fragte, WO das Raster haengt, nie WIE HOCH es ist.
+   Ein Waechter auf die Lage misst nicht die Sichtbarkeit. */
+ok("… und es steht AUSSERHALB der scrollenden Liste", await seite.evaluate(()=>{
    const r=document.getElementById("katEmojiRaster");
-   return r.previousElementSibling?.dataset?.kid === "fleisch"; }));
+   return !r.closest(".kat-list") && !!r.closest(".kat-box"); }));
+ok("… und es ist wirklich aufgeklappt (mehrere ganze Reihen hoch)", await seite.evaluate(()=>{
+   const r=document.getElementById("katEmojiRaster").getBoundingClientRect();
+   const k=document.querySelector("#katEmojiRaster .kat-emoji").getBoundingClientRect();
+   /* ⚠ OHNE `k.height > 0` IST DIESER WAECHTER BLIND. Die Gegenprobe hat es
+      gefangen: legt man das Gitter auf `display:none`, hat auch der Knopf
+      keine Box — und `hoehe >= 3 * 0` ist IMMER wahr. Ein Massstab, der
+      selbst verschwinden kann, misst nichts. */
+   if(!(k.height > 0)) return false;
+   /* Gemessen gegen die KNOPFHOEHE, nicht gegen eine genagelte Zahl: die
+      Hoehe haengt am Schirm (30vh), eine feste Zahl waere auf dem naechsten
+      Geraet falsch. Drei Reihen sind die Untergrenze, unter der die Auswahl
+      ihren Zweck verliert. */
+   return r.height >= 3 * k.height; }));
+/* ⚠ DER WAECHTER AUF DIE URSACHE. Zweimal ist an derselben Stelle dasselbe
+   passiert: `scrollIntoView` (2026-09-15 frueh) und das Schrumpfen der Liste
+   (2026-09-15 spaet) haben beide die angetippte Zeile unter dem Finger
+   wegbewegt — der danach folgende `click` landete woanders, und die Auswahl
+   schloss sich sofort wieder. Ein Verhaltens-Waechter allein faengt das nur
+   manchmal: beim ersten Mal war er in zwei von drei Laeufen gruen.
+   Gemessen wird deshalb die BEWEGUNG, nicht die Folge. */
+ok("… und beim Oeffnen bewegt sich die angetippte Zeile NICHT", await seite.evaluate(()=>{
+   katEmojiSchliessen();
+   const feld=document.querySelector('#katRenameOv .kat-row[data-kid="fleisch"] .kat-ico');
+   const vorher=feld.getBoundingClientRect();
+   katEmojiOeffnen(feld);
+   const nachher=feld.getBoundingClientRect();
+   return Math.abs(vorher.top-nachher.top) < 1 && Math.abs(vorher.left-nachher.left) < 1; }));
+ok("… und der ganze Dialog passt dabei noch auf den Schirm", await seite.evaluate(()=>{
+   const b=document.querySelector("#katRenameOv .kat-box").getBoundingClientRect();
+   const r=document.getElementById("katEmojiRaster").getBoundingClientRect();
+   return b.top >= 0 && b.bottom <= innerHeight && r.bottom <= innerHeight; }));
+/* ⚠ EIN WAECHTER AUF „passt auf den Schirm" REICHT NICHT: ein Raster, das
+   den ganzen Dialog verdeckt, passt auch auf den Schirm. Gemessen wird die
+   UEBERLAPPUNG mit dem Speichern-Knopf — ein Knopf, den man sieht und der
+   nichts tut, ist die schlimmere Sorte toter Knopf. */
+ok("… und es verdeckt den Speichern-Knopf nicht", await seite.evaluate(()=>{
+   const r=document.getElementById("katEmojiRaster").getBoundingClientRect();
+   const b=document.querySelector("#katRenameOv .share-btn-p").getBoundingClientRect();
+   return r.bottom <= b.top + 1 || r.top >= b.bottom - 1
+       || r.right <= b.left + 1 || r.left >= b.right - 1; }));
+ok("… die bearbeitete Zeile ist markiert", await seite.evaluate(()=>{
+   const m=document.querySelectorAll("#katRenameOv .kat-row-aktiv");
+   return m.length === 1 && m[0].dataset.kid === "fleisch"; }));
+ok("… und die Kopfzeile nennt sie beim Namen", await seite.evaluate(()=>{
+   const kopf=document.getElementById("katEmojiKopf").textContent||"";
+   const zeile=document.querySelector('#katRenameOv .kat-row[data-kid="fleisch"] .kat-name');
+   const wie=zeile.value||zeile.placeholder;
+   return kopf.length > 0 && kopf.includes(wie); }));
 ok("es bietet eine Auswahl an (" + (await seite.locator("#katEmojiRaster .kat-emoji").count()) + " Symbole)",
    await seite.locator("#katEmojiRaster .kat-emoji").count() >= 40);
 /* ⚠ Gemessen wird ein Emoji, das NICHT die Vorgabe der Kategorie ist —
@@ -125,6 +181,9 @@ ok("ein Tipp aufs Emoji schreibt es ins Feld",
    await seite.inputValue('#katRenameOv .kat-row[data-kid="fleisch"] .kat-ico') === "🥦");
 ok("… und schliesst das Raster wieder",
    await seite.evaluate(()=>document.getElementById("katEmojiRaster").hidden === true));
+ok("… und gibt der Liste ihren Platz zurueck", await seite.evaluate(()=>
+   !document.querySelector("#katRenameOv .kat-box").classList.contains("emoji-auf")
+   && document.querySelectorAll("#katRenameOv .kat-row-aktiv").length === 0));
 ok("… und gibt das Zurücksetzen frei",
    await seite.evaluate(()=>!document.querySelector('#katRenameOv .kat-row[data-kid="fleisch"] .kat-reset').disabled));
 
@@ -144,6 +203,18 @@ ok("das Öffnen verschiebt die Liste nicht (kein scrollIntoView)", await (async 
      Kommentar fuendig wird, nur in die andere Richtung. */
   const code = q.slice(i,j).replace(/\/\*[\s\S]*?\*\//g,"").replace(/^\s*\/\/.*$/gm,"");
   return i>=0 && j>i && !/scrollIntoView/.test(code);
+})());
+/* ⚠ UND EIN WAECHTER AUF DIE ZWEITE URSACHE. Das Raster gehoert NICHT in
+   `.kat-list`: dort drueckt der Flex-Container es platt, und es stuende
+   ausserdem unter der angetippten Zeile — bei einer Zeile weiter unten also
+   ausserhalb des Sichtfelds. Genau dagegen stand einmal `scrollIntoView`.
+   Ein Verhaltens-Waechter allein faengt das nur, solange die Probe zufaellig
+   eine Zeile im Sichtfeld antippt. */
+ok("das Raster wird nicht in die scrollende Liste gebaut", await (async ()=>{
+  const { readFileSync } = await import("node:fs");
+  const q = readFileSync("QC_Mixarium_20_04_26.html","utf8").replace(/\/\*[\s\S]*?\*\//g,"");
+  return !/<div class="kat-list">\$\{zeilen\}\$\{katEmojiRaster\(\)\}/.test(q)
+      && /<div class="kat-list">\$\{zeilen\}<\/div>/.test(q);
 })());
 
 console.log("\n── 10 · Tippen bleibt möglich, und das Symbol kommt an ──");
