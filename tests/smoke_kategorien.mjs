@@ -105,6 +105,39 @@ ok("auch ueber den echten Speicher-Weg bleibt r.cat = 'drk'",
 ok("und das Rezept steht im umbenannten Reiter", await seite.evaluate(()=>{
    CAT="drk"; render(); return document.getElementById("rcont").textContent.includes("Apfelschorle"); }));
 
+console.log("\n── 9 · Emoji-Auswahl: einmal antippen, aussuchen ──");
+await seite.evaluate(()=>{ CATS_EIGEN={}; svCatsEigen(); openKatUmbenennen(); });
+ok("das Raster ist zu, solange niemand tippt",
+   await seite.evaluate(()=>document.getElementById("katEmojiRaster").hidden === true));
+await seite.click('#katRenameOv .kat-row[data-kid="fleisch"] .kat-ico');
+ok("ein Tipp aufs Symbol-Feld öffnet es",
+   await seite.evaluate(()=>document.getElementById("katEmojiRaster").hidden === false));
+ok("… und es steht DIREKT unter der bearbeiteten Zeile", await seite.evaluate(()=>{
+   const r=document.getElementById("katEmojiRaster");
+   return r.previousElementSibling?.dataset?.kid === "fleisch"; }));
+ok("es bietet eine Auswahl an (" + (await seite.locator("#katEmojiRaster .kat-emoji").count()) + " Symbole)",
+   await seite.locator("#katEmojiRaster .kat-emoji").count() >= 40);
+/* ⚠ Gemessen wird ein Emoji, das NICHT die Vorgabe der Kategorie ist —
+   sonst wäre der Wächter auch grün, wenn gar nichts geschrieben würde. */
+await seite.evaluate(()=>[...document.querySelectorAll("#katEmojiRaster .kat-emoji")]
+  .find(b=>b.textContent==="🥦").click());
+ok("ein Tipp aufs Emoji schreibt es ins Feld",
+   await seite.inputValue('#katRenameOv .kat-row[data-kid="fleisch"] .kat-ico') === "🥦");
+ok("… und schliesst das Raster wieder",
+   await seite.evaluate(()=>document.getElementById("katEmojiRaster").hidden === true));
+ok("… und gibt das Zurücksetzen frei",
+   await seite.evaluate(()=>!document.querySelector('#katRenameOv .kat-row[data-kid="fleisch"] .kat-reset').disabled));
+
+console.log("\n── 10 · Tippen bleibt möglich, und das Symbol kommt an ──");
+await seite.fill('#katRenameOv .kat-row[data-kid="suppe"] .kat-ico', "🍜");
+await seite.evaluate(()=>katSpeichern());
+const symbole = await seite.evaluate(()=>[...document.querySelectorAll("#catNav .cpill")].map(e=>e.textContent.trim()));
+ok("das ausgesuchte Symbol steht am Reiter", symbole.some(t=>t.includes("🥦")));
+ok("das getippte Symbol steht am Reiter", symbole.some(t=>t.includes("🍜")));
+ok("beides überlebt ein Neuladen", await seite.evaluate(()=>{
+   const g=JSON.parse(localStorage.getItem("mxcats9m")||"{}");
+   return g.fleisch?.ico==="🥦" && g.suppe?.ico==="🍜"; }));
+
 console.log("\n── 8 · Leere Karten alter Essens-Kategorien fliegen weiter raus ──");
 ok("keine Blank-Karte mit cat='fleisch'",
    await seite.evaluate(()=>!window.R.some(r=>r.blank && r.cat==="fleisch")));

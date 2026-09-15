@@ -729,6 +729,16 @@ body.nav-collapsed{padding-bottom:calc(16px + var(--sb))}
 .kat-reset:disabled{opacity:.28;cursor:default}
 .kat-fremd{flex:0 0 auto;font-size:.6rem;color:var(--dim);background:rgba(0,0,0,.06);padding:2px 6px;border-radius:6px}
 .kat-note{font-size:.68rem;line-height:1.45;color:var(--dim);text-align:left;margin:0 0 12px}
+/* Emoji-Auswahl: ein Raster, das unter die bearbeitete Zeile wandert.
+   44px Berührungshöhe — Klaus bedient das mit dem Finger am Tablet. */
+.kat-emoji-raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:2px;
+  max-height:30vh;overflow-y:auto;padding:6px;margin:2px 0 4px;
+  background:rgba(0,0,0,.05);border-radius:10px}
+.kat-emoji-raster[hidden]{display:none}
+.kat-emoji{min-width:40px;min-height:40px;border:0;border-radius:8px;background:transparent;
+  font-size:1.25rem;line-height:1;cursor:pointer;padding:0}
+.kat-emoji:hover,.kat-emoji:focus{background:rgba(0,0,0,.10);outline:none}
+.kat-ico{cursor:pointer}
 @media (max-height:540px),(orientation:landscape) and (max-height:680px){
   .share-box{max-width:520px;display:flex;flex-direction:row;align-items:center;gap:16px;text-align:left;padding:14px 18px}
   .share-box-sub{margin-bottom:10px}
@@ -10380,30 +10390,99 @@ function openFolderSheet(){document.getElementById('folderSheet').style.display=
    anzufassen; `check_i18n` prueft LANGS und bleibt unberuehrt. */
 const KAT_TXT={
   de:{t:'✎ Kategorien umbenennen',s:'Gib den Kategorien deine eigenen Namen und Symbole. Aus „Mocktails" wird deine „Salatbar".',
-      n:'⚠ Der Name gilt in allen Sprachen — du hast ihn selbst geschrieben. Die Kennung bleibt unveraendert, deine Rezepte behalten ihr Zuhause.',
+      n:'⚠ Der Name gilt in allen Sprachen — du hast ihn selbst geschrieben. Die Kennung bleibt unveraendert, deine Rezepte behalten ihr Zuhause.',sym:'Symbol antippen und aussuchen',
       f:'mitgebracht',z:'↺ zuruecksetzen',ok:'Speichern',ab:'Abbrechen',g:'✅ Kategorien gespeichert'},
   en:{t:'✎ Rename categories',s:'Give the categories your own names and icons. “Mocktails” becomes your “Salad bar”.',
-      n:'⚠ The name applies in every language — you wrote it yourself. The internal id stays, so your recipes keep their home.',
+      n:'⚠ The name applies in every language — you wrote it yourself. The internal id stays, so your recipes keep their home.',sym:'Tap the icon to pick one',
       f:'imported',z:'↺ reset',ok:'Save',ab:'Cancel',g:'✅ Categories saved'},
   ru:{t:'✎ Переименовать категории',s:'Дайте категориям свои названия и значки.',
-      n:'⚠ Название действует на всех языках. Идентификатор не меняется — рецепты остаются на месте.',
+      n:'⚠ Название действует на всех языках. Идентификатор не меняется — рецепты остаются на месте.',sym:'Нажмите на значок и выберите',
       f:'импортировано',z:'↺ сбросить',ok:'Сохранить',ab:'Отмена',g:'✅ Сохранено'},
   zh:{t:'✎ 重命名分类',s:'为分类设置你自己的名称和图标。',
-      n:'⚠ 该名称适用于所有语言。内部标识不变，菜谱不会丢失。',
+      n:'⚠ 该名称适用于所有语言。内部标识不变，菜谱不会丢失。',sym:'点按图标即可选择',
       f:'导入',z:'↺ 重置',ok:'保存',ab:'取消',g:'✅ 已保存'},
   es:{t:'✎ Renombrar categorías',s:'Da a las categorías tus propios nombres e iconos.',
-      n:'⚠ El nombre vale en todos los idiomas. El identificador no cambia: tus recetas conservan su sitio.',
+      n:'⚠ El nombre vale en todos los idiomas. El identificador no cambia: tus recetas conservan su sitio.',sym:'Toca el icono para elegir',
       f:'importado',z:'↺ restablecer',ok:'Guardar',ab:'Cancelar',g:'✅ Guardado'},
   fr:{t:'✎ Renommer les catégories',s:'Donnez aux catégories vos propres noms et icônes.',
-      n:'⚠ Le nom vaut dans toutes les langues. L’identifiant ne change pas : vos recettes gardent leur place.',
+      n:'⚠ Le nom vaut dans toutes les langues. L’identifiant ne change pas : vos recettes gardent leur place.',sym:'Touchez l’icône pour choisir',
       f:'importé',z:'↺ réinitialiser',ok:'Enregistrer',ab:'Annuler',g:'✅ Enregistré'},
   it:{t:'✎ Rinomina categorie',s:'Dai alle categorie i tuoi nomi e le tue icone.',
-      n:'⚠ Il nome vale in tutte le lingue. L’identificativo resta: le ricette mantengono il loro posto.',
+      n:'⚠ Il nome vale in tutte le lingue. L’identificativo resta: le ricette mantengono il loro posto.',sym:'Tocca l’icona per sceglierne una',
       f:'importato',z:'↺ ripristina',ok:'Salva',ab:'Annulla',g:'✅ Salvato'},
   pt:{t:'✎ Renomear categorias',s:'Dê às categorias os seus próprios nomes e ícones.',
-      n:'⚠ O nome vale em todos os idiomas. O identificador permanece: as receitas mantêm o seu lugar.',
+      n:'⚠ O nome vale em todos os idiomas. O identificador permanece: as receitas mantêm o seu lugar.',sym:'Toque no ícone para escolher',
       f:'importado',z:'↺ repor',ok:'Guardar',ab:'Cancelar',g:'✅ Guardado'}
 };
+/* ══ EMOJI-AUSWAHL (Klaus 2026-09-15) ════════════════════════════════════
+   „Einmal anklicken, Emojis aussuchen." Ein Symbol von Hand zu tippen setzt
+   voraus, dass man eine Emoji-Tastatur findet — auf dem Tablet ist das ein
+   Umweg ueber drei Menues.
+
+   ⚠ DIE REITER-LEISTE SELBST OEFFNET SIE NICHT. Ein Tipp auf eine
+   Kategorie-Pille wechselt die Kategorie; ein zweiter Zweck am selben Griff
+   waere eine Regel, die niemand lernt. Die Auswahl haengt am Symbol-Feld im
+   Umbenennen-Dialog — dort, wo man ohnehin gerade umbenennt.
+
+   ⚠ TIPPEN BLEIBT MOEGLICH. Das Raster ist eine Abkuerzung, kein Riegel:
+   wer ein Emoji braucht, das hier fehlt, gibt es weiter von Hand ein. Ein
+   Raster, das die Eingabe SPERRT, waere ein Rueckschritt fuer jeden, dessen
+   Kategorie hier nicht vorkommt. */
+const KAT_EMOJIS = [
+  "🥗","🥦","🥕","🌽","🍅","🥑","🫛","🍆","🥬","🧄",
+  "🍖","🥩","🍗","🥓","🌭","🍔","🧆","🥟","🍝","🍕",
+  "🐟","🍤","🦐","🦑","🦞","🍣","🍱","🐙",
+  "🍜","🥘","🍲","🫕","🥣","🍛","🌮","🌯","🥙","🫔",
+  "🍰","🎂","🧁","🥧","🍪","🍩","🍫","🍬","🍮","🍨",
+  "🍦","🍧","🥞","🧇","🍯","🥐","🥖","🍞","🥨","🧀",
+  "🍹","🍸","🍷","🍺","🍻","🥂","🥃","🧉","🍾","🫗",
+  "🥤","🧋","🧃","☕","🍵","🫖","🥛","🧊","💧",
+  "🍿","🥜","🌰","🍢","🍡","🥠","🥡","🧂","🫙","🍽️",
+  "🌿","🌶️","🍋","🍊","🍓","🍉","🍇","🍍","🥥","🍏",
+  "📦","⭐","❤️","🔥","✨","🏠","🎁","🧪","🍀","🌸"
+];
+function katEmojiRaster(){
+  return '<div class="kat-emoji-raster" id="katEmojiRaster" hidden>'
+    + KAT_EMOJIS.map(function(e){
+        return '<button type="button" class="kat-emoji" onclick="katEmojiWaehlen(\''+e+'\')">'+e+'</button>';
+      }).join('')
+    + '</div>';
+}
+/* Das Raster steht EINMAL im Dialog und wandert unter die Zeile, an der
+   gerade gearbeitet wird. Dreizehn eigene Raster waeren dreizehn Stellen,
+   die auseinanderlaufen — und dreizehnmal dieselben hundert Knoepfe im DOM. */
+var _katZiel = null;
+/* ⚠ DIESE FUNKTION OEFFNET NUR — sie schaltet NICHT um. Als Umschalter
+   gebaut hat sie sich selbst wieder zugemacht: am Symbol-Feld haengen
+   `onfocus` UND `onclick`, und ein Fingertipp loest beide aus. Das erste
+   oeffnete, das zweite sah „schon offen" und schloss. Gemessen im Browser:
+   das Raster war nach einem Tipp zu, obwohl es an der richtigen Stelle
+   stand. Ein Umschalter, den zwei Ereignisse bedienen, ist keiner.
+   Geschlossen wird jetzt an benannten Stellen: nach der Wahl, beim Tipp
+   daneben, mit Esc. */
+function katEmojiOeffnen(feld){
+  var raster=document.getElementById('katEmojiRaster');
+  if(!raster||!feld)return;
+  var zeile=feld.closest('.kat-row');
+  _katZiel=feld;
+  if(zeile&&zeile.parentNode)zeile.parentNode.insertBefore(raster,zeile.nextSibling);
+  raster.hidden=false;
+  raster.scrollIntoView({block:'nearest'});
+}
+function katEmojiSchliessen(){
+  var raster=document.getElementById('katEmojiRaster');
+  if(raster)raster.hidden=true;
+  _katZiel=null;
+}
+function katEmojiWaehlen(e){
+  if(_katZiel){
+    _katZiel.value=e;
+    var zeile=_katZiel.closest('.kat-row');
+    var zur=zeile&&zeile.querySelector('.kat-reset');
+    if(zur)zur.disabled=false;
+  }
+  katEmojiSchliessen();
+}
 function openKatUmbenennen(){
   const X=KAT_TXT[CL]||KAT_TXT.de;
   const liste=catsAlle();
@@ -10416,7 +10495,7 @@ function openKatUmbenennen(){
        als Wert drin, koennte man einen eigenen Namen nicht mehr von der
        Vorgabe unterscheiden — und „zuruecksetzen" haette nichts zu tun. */
     return `<div class="kat-row" data-kid="${h(c.id)}">
-      <input class="kat-ico" value="${h(eigen.ico||'')}" placeholder="${h(c.ico||'📦')}" maxlength="4" aria-label="Symbol">
+      <input class="kat-ico" value="${h(eigen.ico||'')}" placeholder="${h(c.ico||'📦')}" maxlength="4" aria-label="${h(X.sym)}" title="${h(X.sym)}" onclick="katEmojiOeffnen(this)" onfocus="katEmojiOeffnen(this)">
       <input class="kat-name" value="${h(eigen.name||'')}" placeholder="${h(c[CL]||c.de||c.id)}" aria-label="Name">
       <button class="kat-reset" onclick="katZuruecksetzen('${h(c.id)}')" ${hatEigen?'':'disabled'} title="${h(X.z)}">↺</button>
       ${c.fremd?`<span class="kat-fremd">${h(X.f)}</span>`:''}
@@ -10425,12 +10504,21 @@ function openKatUmbenennen(){
   ov.innerHTML=`<div class="share-box kat-box">
     <div class="share-box-title">${h(X.t)}</div>
     <div class="share-box-sub">${h(X.s)}</div>
-    <div class="kat-list">${zeilen}</div>
+    <div class="kat-list">${zeilen}${katEmojiRaster()}</div>
     <div class="kat-note">${h(X.n)}</div>
     <button class="share-btn-p" onclick="katSpeichern()">${h(X.ok)}</button>
     <button class="share-btn-cl" onclick="document.getElementById('katRenameOv').remove()">${h(X.ab)}</button>
   </div>`;
   ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  /* Ein Tipp irgendwo sonst im Dialog macht die Auswahl zu. Ohne das bliebe
+     sie stehen, waehrend man in einem anderen Feld schreibt — und verdeckte
+     genau die Zeile, an der man arbeitet. */
+  ov.addEventListener('click',function(e){
+    if(e.target.closest('.kat-emoji-raster'))return;
+    if(e.target.classList&&e.target.classList.contains('kat-ico'))return;
+    katEmojiSchliessen();
+  },true);
+  ov.addEventListener('keydown',function(e){ if(e.key==='Escape')katEmojiSchliessen(); });
   document.body.appendChild(ov);
 }
 function katZuruecksetzen(id){
