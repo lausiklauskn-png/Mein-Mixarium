@@ -1115,6 +1115,91 @@ es seit demselben Tag.
 
 ---
 
+## 🌐 DER EINSTELLUNGS-BILDSCHIRM SPRACH STELLENWEISE NUR DEUTSCH (Klaus 2026-09-16)
+
+Klaus' Bild kam aus **dieser** App: englische Oberfläche, und mitten darin
+**Mistral-Schlüssel (EU)**, **NETZWERK (SBKIM)**, **Mit dem Netz verbinden**,
+**WERKZEUGE**, **Such-Werkzeug** und **Pinnwand** auf Deutsch — samt aller
+beschreibenden Unterzeilen.
+
+### Der Mechanismus — und wo er still durchfällt
+
+Übersetzt wird eine Beschriftung, wenn **beides** stimmt: sie trägt eine `id`,
+**und** diese id steht in der Namensliste des Setzers in `applyLang`. Fehlt
+eines von beidem, bleibt sie **still deutsch** — kein Fehler, keine rote Zeile,
+nur ein deutscher Satz in einer englischen Oberfläche.
+
+**Gemessen am 2026-09-16: 14 Beschriftungen ohne `id`** — die meisten der drei
+Apps. Nachgetragen sind **vierzehn** Schlüssel in **acht** Sprachen; zwei davon
+gibt es **nur hier**:
+
+| | |
+|---|---|
+| `sYouthHead` | 🔒 JUGENDSCHUTZ & FILTER — den Abschnitt haben die Rezeptbücher nicht |
+| `sAlcLbl` · `sAlcSub` | „Alkoholfreier Modus" und seine Erklärung |
+| `sMistralLbl` · `sMistralSub` | der Mistral-Schlüssel (EU) |
+| `sNetzHead` · `sNetzLbl` · `sNetzSub` | 🌐 NETZWERK (SBKIM) |
+| `sToolsHead` · `sToolsSuchLbl` · `sToolsSuchSub` · `sToolsPinLbl` · `sToolsPinSub` | 🧩 WERKZEUGE |
+| `sOfflineCap` | „Offline-fähig" in der Versionszeile |
+
+⚠ **DIE JUGENDSCHUTZ-ZEILE HATTE EINE KENNUNG UND TROTZDEM KEINEN SCHLÜSSEL.**
+`sAlcLbl` und `sAlcSub` stehen im Markup mit `id` — und sonst **nirgends**: kein
+Eintrag im Wörterbuch, kein Setzer. Eine Quelltext-Inventur nach „Beschriftungen
+ohne id" sieht so etwas **nicht**; gefunden hat es der Lauf im Browser. *Die
+Auskunft war da, nur nicht dort, wo jemand hinsieht* — und einen halb
+übersetzten Jugendschutz-Abschnitt stehen zu lassen wäre die schlimmere Sorte.
+
+⚠ **DIE VERSIONSNUMMER BLEIBT AN EINER STELLE:**
+`Version 1.0 · <span id="sOfflineCap">Offline-fähig</span>` — nur das **Wort**
+wird übersetzt.
+
+### ⚠ Der Wächter misst die WIRKUNG, nicht den Namen
+
+Der erste Anlauf fragte „trägt die Zeile eine id, die ein LANGS-Schlüssel ist?"
+— und meldete drei Zeilen als stumm, **die sehr wohl übersetzt werden**: sie
+hängen an einem Schlüssel mit anderem Namen. Gemessen wird jetzt derselbe
+Bildschirm auf Deutsch **und** auf Englisch, über den echten Weg. Jede
+Beschriftung, die dabei stehen bleibt, braucht einen Grund — Wörterbuch-Eintrag
+mit gleichem Text in beiden Sprachen, oder namentliche Ausnahme.
+
+⚠ **BENANNTE AUSNAHMEN, und warum sie hier anders sind als in den
+Rezeptbüchern:** `updateStatus` zeigt hier „Version: 1.0" (kein deutscher Satz,
+also nichts zu übersetzen), und der Zähler `sRCount` heisst in **beiden**
+Sprachen „Drinks" (`bnRec`). Beide bleiben mit Recht stehen; ein Wächter auf
+ihren Wortlaut misst nichts. Der Zähler steht deshalb als Ausnahme nach
+**Kennung** da, nicht nach Text.
+
+### ⚠ Zwei Fallen beim Bau der Probe — beide nur in DIESER App
+
+- **`window.LANGS` gibt es nicht.** `const LANGS={…}` auf oberster Ebene hängt
+  **nicht** am window-Objekt — dieselbe Falle wie `window.R` in Muttis
+  Rezeptbuch. Die Probe greift auf den globalen Lexikal-Bereich zu.
+- **Die Navi-Leiste ist nicht zu treffen, obwohl sie dasteht.** Beim Start liegt
+  eine Animation über dem Schirm (`#boot-splash`, `#mxAniOv`, 5,5 s), danach
+  klappt sich `#bnav` mit `nav-collapsed` bis auf 16 px unter die Kante. Gemessen
+  bei drei Fenstergrössen: der Knopf steht jedes Mal **genau einen Pixel unter
+  dem Rand** — das sah zuerst nach einem Layout-Fehler aus und ist **Absicht**.
+  Die Probe fährt die Leiste über denselben Weg heraus wie eine Maus
+  (`hover`) und wartet darauf, dass der Knopf **wirklich obenauf liegt**
+  (`elementFromPoint`) — die Bedingung, nicht die Uhr.
+
+### Geprüft
+
+```bash
+node tests/smoke_einstellungen_sprache.mjs        # echter Browser, DE → EN → DE
+bash tests/gegenprobe_einstellungen_sprache.sh    # Wegwerf-Kopie, MIT Spiegel-Schritt
+```
+
+Zuletzt gemessen (2026-09-16): **50 grün · 0 ROT** · Gegenprobe **7 gefangen ·
+0 durchgerutscht · 0 aus falschem Grund · 0 tote Anker** · `smoke_kategorien`
+unverändert **150 grün**, `smoke_herkunft` **37 grün** · `md5sum` von
+`index.html` und QC-Datei gleich. Beide Rückgabewerte **direkt** gelesen.
+
+⚠ **Die Zahl davor bleibt daneben stehen, weil sie den Fund gemacht hat:**
+derselbe Lauf meldete zuerst **43 grün · 1 ROT** — das war die Jugendschutz-Zeile.
+
+---
+
 ## 🏷️ Gerätename · netzweite Regeln
 
 Der Gerätename gehört **ins Verbinden-Panel**, hineingehängt vom app-eigenen Glue
