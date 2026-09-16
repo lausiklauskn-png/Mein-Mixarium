@@ -1015,6 +1015,106 @@ falschem Grund**.
 ---
 
 
+## 🧬 HERKUNFT AM GETRÄNK UND EINE KENNUNG, DIE UMBENENNEN ÜBERSTEHT (Klaus 2026-09-16)
+
+Nachgezogen aus **Mein Rezeptbuch**. Klaus: *„das Rezept Export, dass es die
+Spore trägt. Wenn ich es wieder einfüge, soll die Spur mit drin bleiben."* — und
+sein eigener Einwand gleich danach: *„dann haben wir zwei Spuren drin, das
+könnte einen Konflikt geben."*
+
+**Der Befund ist dort gemacht worden** — hier stehen nur die Stellen, an denen
+sich diese App unterscheidet.
+
+### Der Konflikt löst sich auf, wenn man zwei Dinge trennt
+
+| | was es ist | wie viele |
+|---|---|---|
+| **die Spore** | *wer bin ich* — die Identität der App in diesem Browser | **genau eine** je App, kommt **nie** aus einer Datei |
+| **die Herkunft** | *woher kommt dieses Getränk* | eine je Rezept, wird nur **angehängt** |
+
+Ein Getränk trägt deshalb **keine Spore**, sondern einen Vermerk
+(`r.herkunft`). Eine Import-Datei ist `untrusted external data`; sie darf nie
+ändern, **wer diese App ist**.
+
+`r.id` bleibt die **lokale** Nummer, `r.uid` ist die **Identität** des Rezepts —
+sie übersteht Umbenennen und Gerätewechsel. Ohne sie musste „ist das dasselbe
+Getränk?" am **Namen** entschieden werden, und daraus kamen Klaus' Doppel.
+
+`r.herkunft` ist eine Liste von Stationen `{k, d}`, gedeckelt auf **5**
+(`HERK_MAX`), ohne Wiederholung direkt hintereinander; wird gekürzt, steht
+`herkGekuerzt: true` dabei. Trifft dasselbe Getränk auf zwei Wegen ein, **gewinnt
+die längere Kette**.
+
+⚠ **NUR DIE KENNUNG, NIE EIN GERÄTENAME.** „Klaus-Handy" wäre ein Hinweis auf
+eine **Person** und wandert mit jedem Getränk zu Fremden. Die Kennung tut das
+nicht. `lokal-…` ist dabei kein Beweis, sondern eine ehrliche Marke dieses
+Browsers — und sie sagt es im Namen.
+
+### Was hier anders ist als in den Rezeptbüchern
+
+| | |
+|---|---|
+| **Speicher-Schlüssel** | `mxknoten9m`, nach dem Schema `mx<thema>9m` — die Rezeptbücher (`mrzknoten9m` / `mrzknoten9`) bleiben leer |
+| **Kein `_showCatMapDialog`** | den Zuordnungs-Dialog gibt es hier nicht; die drei neuen Sprach-Schlüssel (`impAdded`, `impFoldersToo`, `impOhneKat`) tragen trotzdem alle **8** Sprachen |
+| **Getränke-Wortlaut** | die Hinweiszeile spricht von Getränken, nicht von Rezepten — eine wortgleich übernommene Zeile wäre hier eine Lüge |
+| **Kein Bau-Schritt** | die Gegenprobe spiegelt zwischen Sabotage und Messung mit `cp "$Q" index.html` statt `python3 build.py`. Ohne das misst sie die alte Datei, und **jeder** Fall wäre „nicht gefangen" |
+
+### ⚠ Zwei Import-Wege, und beide gehen durch dieselbe Tür
+
+Die Datei kommt über `importData(e)` herein und nennt ihre Liste `imported`;
+der **Tresor** kommt über `importJsonFromVault(input)` und nennt sie `recs`. In
+Mein Rezeptbuch ist deswegen zuerst eine **halbe** Reparatur gemergt worden —
+die Bestandsaufnahme suchte nach der ersten Form und fand die zweite nie.
+
+Hier führen von Anfang an **beide** Wege durch `_zusammenfuehren`, und ein
+Wächter besteht darauf, dass der Dubletten-Riegel (`const existingNames=new
+Set`) **genau einmal** im Code steht. Ein dritter Weg, der morgen dazukommt, ist
+damit von selbst richtig.
+
+Gemessen: `_zusammenfuehren(` **3×** (eine Definition, zwei Aufrufe) ·
+`existingNames` **1×** · `impOhneKat:'` **8×**.
+
+### Der Import sagt jetzt, was man nicht sehen wird
+
+> ℹ️ **2** ohne Kategorie — sie erscheinen unter „Ohne Kategorie"
+
+*Die Auskunft war da, nur nicht dort, wo jemand hinsieht.*
+
+Und `onMerge` bringt fehlende **Ordner** aus der Datei mit; vorhandene werden
+**nicht** überschrieben. Sonst zeigte ein mitgebrachtes Getränk auf einen
+Ordner, den es hier nicht gibt — Klaus' „unsichtbarer Ordner", an seiner Quelle
+statt an der Anzeige.
+
+### ⚠ Der geerbte Ausgangslagen-Riegel log über sich selbst — zum zweiten Mal
+
+Die aus Muttis Rezeptbuch übernommene Gegenprobe prüfte ihre Ausgangslage mit
+`grep -q "0 ROT"` — und **„10 ROT" enthält „0 ROT"**. Genau derselbe Fehler, der
+in dieser Datei schon einmal steht (Gegenprobe zu den Kategorien, 2026-09-16),
+nur eine Datei weiter. **Eine Lehre, die nur in der Doku steht, wandert beim
+Kopieren nicht mit.** Gemessen wird jetzt die ganze Schlusszeile
+(`^[0-9]+ grün · 0 ROT$`).
+
+### Geprüft
+
+```bash
+node tests/smoke_herkunft.mjs        # echter Browser
+bash tests/gegenprobe_herkunft.sh    # Wegwerf-Kopie, MIT Spiegel-Schritt
+```
+
+Zuletzt gemessen (2026-09-16): **37 grün · 0 ROT** · Gegenprobe **12 gefangen ·
+0 durchgerutscht · 0 aus falschem Grund · 0 tote Anker** · `smoke_kategorien`
+unverändert **150 grün · 0 ROT**. Beide Rückgabewerte **direkt** gelesen, nicht
+hinter einer Pipe; `md5sum` von `index.html` und QC-Datei vor und nach dem Lauf
+gleich.
+
+⚠ **Der Export ist auf `version: 10` gehoben** und trägt zusätzlich `knoten`.
+Ältere Fassungen lesen die Datei weiter (die neuen Felder stören sie nicht) —
+aber sie **nutzen** sie nicht. *„Vom Mixarium ins Rezeptbuch und zurück" trägt
+erst, wenn beide Apps es können.* Mein Rezeptbuch und Muttis Rezeptbuch können
+es seit demselben Tag.
+
+---
+
 ## 🏷️ Gerätename · netzweite Regeln
 
 Der Gerätename gehört **ins Verbinden-Panel**, hineingehängt vom app-eigenen Glue
