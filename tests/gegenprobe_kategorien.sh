@@ -26,8 +26,16 @@ gefangen=0; durch=0; tot=0; falsch=0
 lauf(){ node tests/smoke_kategorien.mjs 2>&1; }
 
 # Ausgangslage MUSS gruen sein — sonst misst kein Fall etwas.
+# ⚠ EIN TOTER ANKER FIEL BISHER ERST NACH EINEM VOLLEN LAUF AUF — also nach
+#   Minuten. `NUR_ANKER=1 bash tests/gegenprobe_kategorien.sh` prueft in
+#   Sekunden NUR, ob jeder Anker genau einmal trifft; es faehrt keine Probe.
+#   Uebertragen aus Mein Rezeptbuch, wo er am 2026-09-16 viermal zuschlug.
+if [ -n "${NUR_ANKER:-}" ]; then
+  lauf(){ echo "0 grün · 0 ROT"; }
+else
 if lauf | grep -qE "^[0-9]+ grün · 0 ROT$"; then echo "Ausgangslage gruen"; else
   echo "ABBRUCH: die Probe ist schon OHNE Eingriff rot."; lauf | tail -5; exit 2; fi
+fi
 
 fall(){ # $1 Name  $2 Muster-das-in-der-roten-Zeile-stehen-muss  $3 python-Ersetzung
   cp "$DATEI" "$SICH"
@@ -160,8 +168,8 @@ fall "die Getraenke-Symbole verschwinden wieder" "eigene Getraenke-Symbole" \
 '"🍶","🍼","🚰","⚗️","🫧","🍋‍🟩",@@@'
 
 # ── Die Ordner-Ansicht zaehlt wieder anders als die Leiste (Klaus 2026-09-16) ──
-fall "der Ordner-Baum fragt wieder das rohe Feld" "dieselbe Zahl" \
-"      recipes:R.filter(r=>katVonRezept(r)===c.id&&r.name)})),@@@      recipes:R.filter(r=>r.cat===c.id&&r.name)})),"
+fall "der Ordner-Baum fragt wieder das rohe Feld" "Leiste = Baum" \
+"      recipes:R.filter(r=>!r.folder&&katVonRezept(r)===c.id&&r.name)})),@@@      recipes:R.filter(r=>!r.folder&&r.cat===c.id&&r.name)})),"
 
 fall "ein Ordner-Rezept ohne r.folder faellt im Baum wieder heraus" "faellt nirgends heraus" \
 "      recipes:R.filter(r=>(r.folder===String(f.id)||r.cat==='fld_'+f.id)&&r.name)}))@@@      recipes:R.filter(r=>r.folder===String(f.id)&&r.name)}))"
