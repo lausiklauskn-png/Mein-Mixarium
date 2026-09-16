@@ -9756,8 +9756,16 @@ function setCAT(id){
 // BADGE
 // ═══════════════════════════════════════════════════════
 function badge(){
+  /* ⚠ EIN AUSSTIEG NIMMT ALLES MIT, WAS DAHINTER STEHT (gemessen 2026-09-16).
+     Hier stand `if(!b)return;` — und `menuBadge` gibt es in dieser App GAR
+     NICHT (gemessen: `document.getElementById('menuBadge')` ist null). Damit
+     kehrte `badge()` in seiner zweiten Zeile um, und die beiden Abzeichen
+     darunter wurden NIE gesetzt: das Ordner-Abzeichen rechnete richtig
+     (fldCats 0 + fldFolders 1 = 1) und zeigte trotzdem seinen Startwert „0".
+     Ein Platzhalter, kein Ausstieg — dieselbe Lehre wie Kimhubs
+     `if (!$("#live")) return;`, das dort die halbe App stilllegte. */
   const f=MS.filter(s=>s.rid||(s.courseType==='oth'&&s.customText)).length,b=document.getElementById('menuBadge');
-  if(!b)return;b.style.display=f?'block':'none';b.textContent=f;
+  if(b){b.style.display=f?'block':'none';b.textContent=f;}
   const rc=R.filter(r=>!r.blank).length,rb=document.getElementById('recBadge');
   if(rb){rb.style.display=rc?'block':'none';rb.textContent=rc;}
   const fldCats=catsAlle().filter(c=>R.some(r=>!r.folder&&katVonRezept(r)===c.id&&r.name)).length;
