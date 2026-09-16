@@ -681,6 +681,190 @@ Vertrag** — geschärft, nicht gelockert, und mit eigener Gegenprobe belegt.
 
 ---
 
+## 🏷️ NACHGEZOGEN AUS MEIN REZEPTBUCH (2026-09-16)
+
+Klaus: *„jetzt Muttis Rezeptbuch und Mixarium nachziehen."* Was dort an einem
+Tag entstanden ist, steht seitdem auch hier. **Die Befunde sind dort gemacht
+worden** — hier stehen nur die Stellen, an denen sich diese App unterscheidet.
+
+### ⚠ Zuerst ein echter Fund IN DIESER APP: `badge()` stieg in Zeile zwei aus
+
+Die gestrige, nie geprüfte Arbeit hat beim ersten Lauf einen **älteren**
+Fehler ans Licht gebracht:
+
+```js
+// vorher: if(!b)return;b.style.display=f?'block':'none';b.textContent=f;
+const f=MS.filter(…).length,b=document.getElementById('menuBadge');
+if(b){b.style.display=f?'block':'none';b.textContent=f;}
+```
+
+**`menuBadge` gibt es in dieser App nicht** (gemessen: `null`) — also stieg
+`badge()` in seiner zweiten Zeile aus, und das Ordner- wie das Rezept-Abzeichen
+wurden **nie gesetzt**. Gemessen: `fldCats 0 + fldFolders 1 = 1`, angezeigt
+wurde `"0"`. *Ein Ausstieg nimmt alles mit, was dahinter steht* — Kimhubs
+Lehre vom `if (!$("#live")) return;`, an einer anderen Tür. Ein Platzhalter,
+kein Ausstieg.
+
+### ⚠ EIN ORDNER, DEN ES NICHT GIBT, IST KEIN ORDNER
+
+Zeigt `r.folder` auf eine Kennung, die in `FD` nicht steht, fällt das Getränk
+aus **jeder** Kategorie-Gruppe (die fragt `!r.folder`), und einen
+Ordner-Eintrag gibt es auch nicht. Klaus nannte das in Mein Rezeptbuch *„ein
+unsichtbarer Ordner"*.
+
+`ordnerVonRezept(r)` ist das Gegenstück zu `katVonRezept` am **anderen Feld**.
+Eingesetzt an den **drei** Stellen, die „liegt es in einem Ordner?" fragen —
+Ordner-Baum, `imOrdner`-Zahl und `fldCats` in `badge()`.
+
+⚠ **UND DAS ABZEICHEN WAR DABEI BLIND.** Der vorhandene Wächter misst
+„Leiste = Baum" und fragt das Abzeichen bei einem **toten** Ordner gar nicht.
+Gefangen hat es die Gegenprobe in Muttis Rezeptbuch; der Wächter steht hier
+seitdem genauso.
+
+### Der Schlüssel-Sammler — und was er HIER gefunden hat
+
+`T(k)` gibt bei einem fehlenden Schlüssel den **Schlüssel** heraus, also immer
+etwas Wahres; ein `T('x')||'Rückfall'` dahinter kann nie greifen. Der Sammler
+liest jeden `T('…')`-Aufruf aus dem Quelltext und besteht darauf, dass er in
+`LANGS.de` steht.
+
+**Gemessen: 196 benutzte Schlüssel, alle vorhanden — hier war nichts offen.**
+In Muttis Rezeptbuch fand derselbe Sammler beim ersten Lauf `hAddLbl`.
+*Drei Apps dieselbe Zusicherung behaupten zu lassen wäre in einer davon eine
+Lüge*, deshalb steht in jeder App die Zahl, die dort gemessen wurde.
+
+### Eine Kennung kommt genau einmal vor · Kennung sichtbar
+
+`catsAlle()` hängte `CATS` und `catsFremd()` aneinander, **ohne zu prüfen, ob
+eine Kennung schon dabei war**. Zwei Einträge mit derselben Kennung sind für
+die App **eine** Kategorie — ein Tipp markierte folgerichtig beide Pillen. Der
+Riegel sitzt jetzt an der **Quelle**.
+
+Der Umbenennen-Dialog zeigt neben jedem Namen die Kennung **mit ihrer
+Zeichenzahl** (`"ckt" ·3`); ohne die Zahl sehen `"ckt"` und `"ckt "` gleich aus.
+
+⚠ **UND DIE GEGENRICHTUNG DAZU WAR SELBST BLIND — eine Zahl statt einer
+Liste.** Der Wächter „ohne Duplikat geht keine Kategorie verloren" verglich
+`catsAlle().length` mit der Zahl der festen Kategorien. Das misst nichts: die
+Liste trägt außer den festen auch die mitgebrachten und „Ohne Kategorie", ist
+also groß genug, selbst wenn eine feste fehlt. Gemessen wird jetzt
+**namentlich**, welche feste Kennung verschwunden ist. *Eine Zahl in einer
+Prüfung ist kein Vertrag.*
+
+⚠ **Und die zugehörige Sabotage traf zuerst die VORBEDINGUNG.** Sie faltete
+alle Kategorien auf ihren ersten Buchstaben zusammen; die Probe starb damit
+schon im ersten Abschnitt an einem fremden Reiter, und der Fall meldete sich
+als „rot aus falschem Grund" — **rot war es beides Mal, nur trug die rote
+Zeile den falschen Namen.** Weggenommen wird jetzt genau **eine** feste
+Kategorie.
+
+⚠ **UND BASH LIEST EIN SKRIPT STÜCKWEISE — die Gegenprobe-Datei darf während
+ihres eigenen Laufs nicht angefasst werden.** Am 2026-09-16 habe ich einen
+Fall repariert, während der Lauf noch lief; er quittierte mit
+`line 192: n: command not found` und meldete danach Fälle als „rot aus
+falschem Grund", die tadellos waren. **Die Wegwerf-Kopie schützt den Baum,
+nicht das Skript:** `bash tests/gegenprobe_kategorien.sh` liest die Datei im
+**echten** Depot, auch wenn der Lauf danach in die Kopie wechselt. Derselbe
+Fehler wie „nicht am Arbeitsbaum arbeiten, während die Gegenprobe läuft", nur
+an der einen Datei, die man dafür für sicher hält. Der Lauf war als Messung
+wertlos und wurde verworfen statt gezählt.
+
+### Kategorien löschen, zusammenlegen, neu anlegen
+
+📂 **Ordner** → **✎ Kategorien umbenennen** → 🗑 bzw. **＋ Neue Kategorie**.
+Löschen fragt **immer** nach dem Ziel; die Antworten sind **drei**:
+
+| Wahl | was mit `r.cat` geschieht |
+|---|---|
+| eine andere Kategorie | trägt deren Kennung |
+| **ausdrücklich ohne** (`''`) | leer — landet sichtbar unter „Ohne Kategorie" |
+| **es war nichts zu verschieben** (`null`) | gar nichts, die Kategorie war leer |
+
+⚠ **Speicher-Schlüssel nach dem Schema `mx<thema>9m`:** `mxcatsneu9m` und
+`mxcatsaus9m`, passend zu `mxcats9m`.
+
+⚠ **Eine feste Kategorie verschwindet über `CATS_AUS`, und nur solange sie
+leer ist.** Kommt wieder ein Getränk hinein, ist der Reiter von selbst zurück.
+
+### 🏷️ Kategorie zuordnen aus der Getränke-Zeile
+
+Das **🏷️** steht links neben dem Papierkorb: alle Kategorien (die aktuelle mit
+✓), darunter abgesetzt **„ohne Kategorie"** und **＋ Neue Kategorie**.
+**Gesetzt wird NUR `r.cat`** — der Ordner bleibt stehen, ein
+`fld_…`-Altbestand wird ersetzt.
+
+⚠ **DAS AUSWAHL-FENSTER MACHTE SICH IN MEIN REZEPTBUCH SELBST WIEDER ZU.**
+＋ Neue Kategorie tauscht den Inhalt; danach sucht der „Tipp daneben"-Riegel
+den geklickten Knopf **darin**. Repariert wird die Ursache:
+
+```js
+if(!document.contains(e.target))return;   // gerade ersetzt ≠ Tipp nach draußen
+```
+
+⚠ **UND EINE PROBE, DIE SYNCHRON KLICKT, IST DAFÜR BLIND** — der Riegel hängt
+an einem `setTimeout(…,0)`. **Ein Finger ist langsamer als ein Skript.**
+
+### ⚠ DIE KARTEN STEHEN HIER IN EINEM KARUSSELL — und ein Wächter war deshalb blind
+
+**Der wichtigste Befund dieses Durchgangs, und gefunden hat ihn die
+Gegenprobe.** Der Fall „die Auswahl hängt im Fluss der Karte" meldete sich als
+**„rot aus falschem Grund"**: er brach eine andere Zusicherung als die, auf
+die er zeigte.
+
+**Nachgemessen statt geraten** (2026-09-16, echter Browser, drei Zeilen in `R`):
+
+| | |
+|---|---|
+| sichtbare `.rcard` | **genau eine** — `top 149, h 683` |
+| die anderen | inline `display:none`, `top 0, h 0` |
+| Ursache | `carouselShow()`: `_carCards.forEach((c,i)=>{c.style.display=i===_carIdx?'':'none';})` |
+
+**Mein Mixarium zeigt die Getränke im Karussell, nicht als Liste.** Daraus
+folgt zweierlei:
+
+- Der Bewegungs-Wächter maß `document.querySelectorAll('.rcard')[1]` — eine
+  **versteckte** Karte. Ein Rechteck aus lauter Nullen bewegt sich nie, also
+  war er **still grün**. *Dieselbe Familie wie „der Bewegungs-Wächter maß die
+  ERSTE Karte" in Mein Rezeptbuch — eine Karte, die sich nicht bewegen KANN,
+  misst nichts.*
+- Die Zusicherung **„die Auswahl bewegt die Karte DARUNTER nicht"** ist hier
+  gar nicht verletzbar: es gibt keine Karte darunter. Sie wird deshalb
+  **nicht behauptet**. Gemessen wird, was hier wirklich passieren kann — der
+  angetippte Knopf bleibt, wo der Finger ihn gelassen hat.
+
+⚠ **DIE GRENZE IST SELBST BEWACHT, nicht nur hingeschrieben.** Ein Wächter
+besteht darauf, dass wirklich nur **eine** Karte sichtbar ist. Fällt das
+Karussell weg und stehen die Getränke als Liste untereinander, wird er rot —
+und dann gehört die Zusicherung „bewegt die Karte darunter nicht" hierher
+zurück, so wie sie in den Rezeptbüchern steht. **Von Hand nachgestellt, in
+beide Richtungen:** ohne Karussell fallen genau diese zwei Wächter.
+
+**In Muttis Rezeptbuch gilt das NICHT** — dort stehen die Karten als Liste,
+die zweite ist sichtbar, und derselbe Gegenprobe-Fall schlägt dort auf
+„bewegt die Karte nicht" an. *Drei Apps dieselbe Zusicherung behaupten zu
+lassen wäre in einer davon eine Lüge.*
+
+⚠ **BENANNTE GRENZE (nur hier):** die Reiter-Leiste zählt mit `alcAllowed`.
+Steht der Alkohol-Filter an, zeigt sie mit **Absicht** weniger als der Bestand
+— die Probe schaltet ihn vor der Messung ausdrücklich aus, sonst verglichen
+„Leiste" und „echt" zwei verschiedene Fragen.
+
+### Geprüft
+
+Zuletzt gemessen (2026-09-16, nach dem Nachziehen): **116 grün · 0 ROT**
+(196 Schlüssel geprüft).
+
+```bash
+node tests/smoke_kategorien.mjs           # echter Browser
+NUR_ANKER=1 bash tests/gegenprobe_kategorien.sh   # tote Anker in Sekunden
+bash tests/gegenprobe_kategorien.sh       # Wegwerf-Kopie
+```
+
+⚠ **Anders als in den Rezeptbüchern liegt hier KEIN Bau-Schritt dazwischen** —
+`index.html` ist das byte-identische Spiegelbild der QC-Datei.
+
+---
+
 ## SBKIM — Geplante Erweiterung (Stand: Mai 2026)
 
 **SBKIM** (Semantisches Bidirektionales KI-Matching) wird als MVP-Erweiterung in Mein Mixarium aufgebaut. Mein Mixarium ist die **Demo-Plattform** für das offene SBKIM-Protokoll.
