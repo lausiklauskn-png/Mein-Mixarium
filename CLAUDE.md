@@ -804,6 +804,46 @@ if(!document.contains(e.target))return;   // gerade ersetzt ≠ Tipp nach drauß
 ⚠ **UND EINE PROBE, DIE SYNCHRON KLICKT, IST DAFÜR BLIND** — der Riegel hängt
 an einem `setTimeout(…,0)`. **Ein Finger ist langsamer als ein Skript.**
 
+### ⚠ DIE KARTEN STEHEN HIER IN EINEM KARUSSELL — und ein Wächter war deshalb blind
+
+**Der wichtigste Befund dieses Durchgangs, und gefunden hat ihn die
+Gegenprobe.** Der Fall „die Auswahl hängt im Fluss der Karte" meldete sich als
+**„rot aus falschem Grund"**: er brach eine andere Zusicherung als die, auf
+die er zeigte.
+
+**Nachgemessen statt geraten** (2026-09-16, echter Browser, drei Zeilen in `R`):
+
+| | |
+|---|---|
+| sichtbare `.rcard` | **genau eine** — `top 149, h 683` |
+| die anderen | inline `display:none`, `top 0, h 0` |
+| Ursache | `carouselShow()`: `_carCards.forEach((c,i)=>{c.style.display=i===_carIdx?'':'none';})` |
+
+**Mein Mixarium zeigt die Getränke im Karussell, nicht als Liste.** Daraus
+folgt zweierlei:
+
+- Der Bewegungs-Wächter maß `document.querySelectorAll('.rcard')[1]` — eine
+  **versteckte** Karte. Ein Rechteck aus lauter Nullen bewegt sich nie, also
+  war er **still grün**. *Dieselbe Familie wie „der Bewegungs-Wächter maß die
+  ERSTE Karte" in Mein Rezeptbuch — eine Karte, die sich nicht bewegen KANN,
+  misst nichts.*
+- Die Zusicherung **„die Auswahl bewegt die Karte DARUNTER nicht"** ist hier
+  gar nicht verletzbar: es gibt keine Karte darunter. Sie wird deshalb
+  **nicht behauptet**. Gemessen wird, was hier wirklich passieren kann — der
+  angetippte Knopf bleibt, wo der Finger ihn gelassen hat.
+
+⚠ **DIE GRENZE IST SELBST BEWACHT, nicht nur hingeschrieben.** Ein Wächter
+besteht darauf, dass wirklich nur **eine** Karte sichtbar ist. Fällt das
+Karussell weg und stehen die Getränke als Liste untereinander, wird er rot —
+und dann gehört die Zusicherung „bewegt die Karte darunter nicht" hierher
+zurück, so wie sie in den Rezeptbüchern steht. **Von Hand nachgestellt, in
+beide Richtungen:** ohne Karussell fallen genau diese zwei Wächter.
+
+**In Muttis Rezeptbuch gilt das NICHT** — dort stehen die Karten als Liste,
+die zweite ist sichtbar, und derselbe Gegenprobe-Fall schlägt dort auf
+„bewegt die Karte nicht" an. *Drei Apps dieselbe Zusicherung behaupten zu
+lassen wäre in einer davon eine Lüge.*
+
 ⚠ **BENANNTE GRENZE (nur hier):** die Reiter-Leiste zählt mit `alcAllowed`.
 Steht der Alkohol-Filter an, zeigt sie mit **Absicht** weniger als der Bestand
 — die Probe schaltet ihn vor der Messung ausdrücklich aus, sonst verglichen

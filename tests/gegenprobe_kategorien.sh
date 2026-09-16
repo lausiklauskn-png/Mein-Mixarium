@@ -286,7 +286,12 @@ fall "die Auswahl steht nicht mehr beim Knopf" "steht beim Knopf" \
 #   Kimhubs Schluessel-Ablagefach.
 # ⚠ Und der Anker braucht seinen Nachbarn: `document.body.appendChild` steht
 #   auch im Bild-Popup, ein Anker, der zweimal trifft, ist keiner.
-fall "die Auswahl haengt im Fluss der Karte" "bewegt die Karte nicht" \
+# ⚠ HIER ZIELT DER FALL AUF EINEN ANDEREN WAECHTER ALS IN DEN REZEPTBUECHERN,
+#   und das ist gemessen: Mixarium zeigt die Karten im KARUSSELL, es gibt also
+#   keine Karte darunter, die sich verschieben liesse. Was diese Sabotage hier
+#   wirklich bricht, ist die LAGE der Auswahl. Der Fall zielte zuerst auf
+#   „bewegt die Karte nicht" und meldete sich als „rot aus falschem Grund".
+fall "die Auswahl haengt im Fluss der Karte" "steht beim Knopf" \
 "  pop.innerHTML=teile.join('');
   document.body.appendChild(pop);@@@  pop.innerHTML=teile.join('');
   btn.parentNode.appendChild(pop);pop.style.position='static';"

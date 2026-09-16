@@ -744,12 +744,37 @@ const kz = await seite.evaluate(async () => {
      UNTEN, und ihr eigenes `top` bleibt stehen. Der erste Wächter war genau
      dadurch blind, und die Gegenprobe hat es gesagt. Gemessen werden der
      ANGETIPPTE KNOPF und die Karte DARUNTER. */
+  /* ⚠ BENANNTE GRENZE, UND SIE IST GEMESSEN: Mein Mixarium zeigt die Karten
+     in einem KARUSSELL — `carouselShow()` setzt auf alle ausser EINER ein
+     inline `display:none`. Gemessen am 2026-09-16 mit drei Zeilen: genau eine
+     Karte steht bei `top 149, h 683`, die anderen bei `top 0, h 0`.
+     Es gibt hier also KEINE Karte darunter, die eine Auswahl im Fluss
+     wegschieben koennte — die Zusicherung „bewegt die Karte DARUNTER nicht"
+     ist in dieser App nicht verletzbar und wird deshalb NICHT behauptet.
+     Gefunden hat es die Gegenprobe: der Fall „die Auswahl haengt im Fluss der
+     Karte" meldete sich als „rot aus falschem Grund", weil der Waechter eine
+     VERSTECKTE Karte mass und still gruen blieb. Dieselbe Familie wie „der
+     Bewegungs-Waechter mass die ERSTE Karte" — eine Karte, die sich nicht
+     bewegen KANN, misst nichts.
+     Gemessen wird stattdessen, was hier wirklich passieren kann: der
+     angetippte Knopf bleibt, wo der Finger ihn gelassen hat. */
+  const sichtbareKarten = [...document.querySelectorAll('.rcard')]
+    .filter(k => k.getBoundingClientRect().height > 0).length;
+  const nachbarUnten = () => {
+    const rb = knoepfe[iZu].getBoundingClientRect();
+    return [...document.querySelectorAll('.rcard')].find(k => {
+      const r = k.getBoundingClientRect();
+      return r.height > 0 && r.top > rb.top;
+    }) || null;
+  };
+  const nachbar   = nachbarUnten();
+  const messbar   = !!nachbar;
   const knopfVor  = knoepfe[iZu].getBoundingClientRect().top;
-  const untenVor  = document.querySelectorAll('.rcard')[1].getBoundingClientRect().top;
+  const untenVor  = nachbar ? nachbar.getBoundingClientRect().top : 0;
   knoepfe[iZu].click();
   const pop = document.getElementById('katZuPop');
   const knopfNach = knoepfe[iZu].getBoundingClientRect().top;
-  const untenNach = document.querySelectorAll('.rcard')[1].getBoundingClientRect().top;
+  const untenNach = nachbar ? nachbar.getBoundingClientRect().top : 0;
   const offen = !!pop;
   /* ⚠ „die Karte bewegt sich nicht" allein war BLIND. Das Popup haengt an
      `document.body` — es kann die Karte gar nicht schieben, egal welche
@@ -862,6 +887,7 @@ const kz = await seite.evaluate(async () => {
   document.getElementById('katZuPop')?.remove();
   render(); renderCatNav(); renderFolders();
   return { linksNebenWeg, offen, popNahAmKnopf, eintraege, hatOhne, hatNeu, zeigtJetzt,
+           messbar, sichtbareKarten,
            bewegt: Math.max(Math.abs(knopfNach-knopfVor), Math.abs(untenNach-untenVor)),
            catNachher, ordnerNachher,
            popWeg, zielLeiste, zielEcht, catOhne, ordnerOhne, cat92,
@@ -877,7 +903,13 @@ ok("… und „＋ Neue Kategorie“ ebenfalls", kz.hatNeu===true);
 /* ⚠ DIE AUSWAHL DARF DAS LAYOUT NICHT BEWEGEN. Waanderte die Karte unter dem
    Finger weg, landete der Klick auf einer anderen — wortgleich derselbe
    Fehler wie bei der Emoji-Auswahl am 2026-09-15, nur an einer anderen Tuer. */
-ok("… und bewegt die Karte nicht", kz.bewegt<1);
+/* ⚠ DIE GRENZE WIRD GEMESSEN, NICHT BEHAUPTET. Faellt das Karussell weg und
+   stehen die Karten als Liste untereinander, faellt dieser Waechter — und
+   dann gehoert die Zusicherung „bewegt die Karte darunter nicht" hierher
+   zurueck, so wie sie in den Rezeptbuechern steht. */
+ok("nur EINE Karte ist sichtbar — das Karussell (benannte Grenze)", kz.sichtbareKarten===1);
+ok("… es gibt deshalb keine Karte darunter zu verschieben", kz.messbar===false);
+ok("… und der angetippte Knopf bleibt stehen", kz.bewegt<1);
 ok("eine Wahl setzt die Kategorie", kz.catNachher==="smooth");
 /* ⚠ DER KERN: der Ordner bleibt, wo er ist. Ein Griff, der beides aendert,
    frisst das eine mit dem anderen auf — Klaus' Befund vom 2026-09-16. */
