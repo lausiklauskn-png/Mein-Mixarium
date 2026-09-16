@@ -27,8 +27,32 @@
       console.info("SBKIM-Widget grün — Floating-Pille bottom-right aktiv.");
     }
 
+    /* ── Die eigene Wortkarte dieser App (Umzug 2026-09-16) ──────────────
+     * SIE STAND BIS HEUTE IN DER MODUL-KOPIE `sbkim/15_membran.js` — also in
+     * einer byte-1:1-Datei, die "kopieren, nicht klonen" gar nicht zu ändern
+     * erlaubt. Das war echte, nützliche Funktion an der falschen Stelle: das
+     * nächste Nachziehen des Kanons hätte sie LAUTLOS geloescht.
+     *
+     * Seit dem 2026-08-14 traegt der Kanon die Mechanik selbst
+     * (`queryInclusion`, aus BookLedgerPro hochgezogen) — mit der
+     * ausdruecklichen Auflage: die MECHANIK gehoert in den Kanon, die
+     * FACHWORTE bleiben bei der App, die sie kennt. Genau das ist hier
+     * geschehen; der Inhalt der Karte ist Zeichen fuer Zeichen derselbe.
+     *
+     * Vorgabe im Kanon ist `null` = aus. Wer sie hier nicht uebergibt,
+     * bekommt den reinen Cosinus-Pfad wie vor dem 2026-07-02. */
+    const MX_QUERY_SYNONYMS = {
+    "cocktail": ["drink"], "drink": ["cocktail", "getränk"],
+    "getränk": ["drink", "getraenk"], "getraenk": ["getränk"],
+    "limo": ["limonade"], "limonade": ["limo"],
+    "smoothie": ["shake"], "shake": ["smoothie"],
+    "alkoholfrei": ["mocktail"], "mocktail": ["alkoholfrei"],
+    "tee": ["tea"], "sirup": ["sirop"],
+    };
+
     await SbkimMembrane.init({
       allowedOrigins: ["https://lausiklauskn-png.github.io"],
+      queryInclusion: { synonyms: MX_QUERY_SYNONYMS },
     });
     SbkimSiegel.init({
       badgeSelector: "#sbkim-siegel-badge",
