@@ -1014,6 +1014,12 @@ body.nav-collapsed{padding-bottom:calc(16px + var(--sb))}
 .scan-ready-sub{font-size:.70rem;color:var(--dim);margin-top:2px}
 .scan-key-change{background:none;border:1.5px solid var(--sand2);border-radius:7px;padding:5px 10px;font-size:.70rem;color:var(--dim);cursor:pointer;flex-shrink:0}
 .scan-key-change:active{background:var(--sand2)}
+.web-prev-img{display:block;width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin:0 0 10px}
+.key-alt{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.7rem;color:var(--dim);background:var(--sand);border:1px solid var(--sand2);border-radius:8px;padding:6px 9px;margin:0 0 8px}
+.key-alt code{font-size:.68rem}
+.key-del-btn{background:none;border:1.5px solid #c0392b;color:#c0392b;border-radius:7px;padding:5px 10px;font-size:.67rem;cursor:pointer;flex-shrink:0}
+.key-del-btn:active{background:rgba(192,57,43,.1)}
+.crop-hdr-save{background:var(--teal);border:none;color:#fff;border-radius:16px;padding:7px 14px;font-weight:700;font-size:.8rem;cursor:pointer;flex-shrink:0}
 /* Photo zone */
 .scan-photo-zone{border:2.5px dashed var(--sand2);border-radius:14px;padding:26px 16px;text-align:center;cursor:pointer;background:var(--parch);margin-bottom:10px;min-height:155px;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:all .15s;overflow:hidden}
 .scan-photo-zone:active,.scan-photo-zone.drag{border-color:var(--teal);background:var(--teals)}
@@ -3213,13 +3219,13 @@ body:not([data-theme]) #bnav{
       <div class="sett-row" onclick="openImport();switchFovTab('importOv','scan',document.getElementById('impTabScan'))">
         <div class="sett-ico">🤖</div>
         <div class="sett-body"><div class="sett-lbl" id="sApiKeyLbl">Claude API-Schlüssel</div>
-          <div class="sett-sub" id="sApiKeySub">Zugangscode verwalten</div></div>
+          <div class="sett-sub" id="sApiKeySub">Zugangscode verwalten</div><div class="key-alt" data-key-alt="claude" style="display:none;margin-top:6px"></div></div>
         <div class="sett-arr">›</div>
       </div>
       <div class="sett-row" onclick="toggleImgKeyField()">
         <div class="sett-ico">🎨</div>
         <div class="sett-body"><div class="sett-lbl" id="sImgGenLbl">OpenAI-Bildschlüssel</div>
-          <div class="sett-sub" id="sImgGenSub">Für KI-Bilder zu deinen Getränken</div></div>
+          <div class="sett-sub" id="sImgGenSub">Für KI-Bilder zu deinen Getränken</div><div class="key-alt" data-key-alt="openai" style="display:none;margin-top:6px"></div></div>
         <div class="sett-arr" id="imgKeyArr">›</div>
       </div>
       <div id="imgKeyPanel" style="display:none;padding:12px 16px 14px;border-bottom:1px solid var(--sand2);background:var(--sand)">
@@ -3242,6 +3248,7 @@ body:not([data-theme]) #bnav{
       </div>
       <div id="mistralKeyPanel" style="display:none;padding:12px 16px 14px;border-bottom:1px solid var(--sand2);background:var(--sand)">
         <div style="font-size:.72rem;color:var(--dim);line-height:1.5;margin-bottom:9px">Wird für die Text-Erkennung (OCR, EU) im KI-Scan verwendet, wenn du dort „Mistral (EU)" wählst. Das Einordnen ins Getränk macht weiterhin Claude.</div>
+        <div class="key-alt" data-key-alt="mistral" style="display:none"></div>
         <div style="font-size:.72rem;line-height:1.5;margin-bottom:9px">🔑 Schlüssel erstellen: <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline">console.mistral.ai/api-keys</a></div>
         <div style="display:flex;gap:8px;align-items:center">
           <input class="scan-key-in" id="mistralKeyIn" type="password" placeholder="Mistral-Schlüssel …" style="flex:1"
@@ -3510,6 +3517,7 @@ Vielen Dank für deine Unterstützung.</div>
 
         <div class="paste-box">
               <div class="paste-box-label">🔑 <span id="apiKeyLbl">Zugangscode einfügen</span> <span class="key-how-ok" id="stepDone3"></span></div>
+              <div class="key-alt" data-key-alt="claude" style="display:none"></div>
               <div class="paste-row">
                 <input class="scan-key-in" id="apiKeyIn" type="password"
                   placeholder="sk-ant-…"
@@ -3569,6 +3577,7 @@ Vielen Dank für deine Unterstützung.</div>
             <div class="scan-ready-sub" id="scanReadySub">Zugangscode gespeichert</div>
           </div>
           <button class="scan-key-change" onclick="showKeySetup()" id="scanChangeLbl" title="API-Schlüssel ändern">ändern</button>
+          <button class="key-del-btn" data-key-del="claude" onclick="schluesselLoeschen('claude')" title="Gespeicherten Schlüssel löschen">🗑</button>
         </div>
 
         
@@ -3683,6 +3692,7 @@ Vielen Dank für deine Unterstützung.</div>
         </div>
         <div class="paste-box" style="margin-bottom:12px">
           <div class="paste-box-label">🔑 <span id="imggenKeyLblEl">OpenAI API-Schlüssel</span></div>
+              <div class="key-alt" data-key-alt="openai" style="display:none"></div>
           <div class="paste-row">
             <input class="scan-key-in" id="imggenKeyIn" type="password"
               placeholder="sk-…"
@@ -3746,6 +3756,7 @@ Vielen Dank für deine Unterstützung.</div>
             <div class="scan-ready-sub" id="imggenReadySub">Schlüssel gespeichert</div>
           </div>
           <button class="scan-key-change" onclick="showImgGenSetup()" id="imggenChangeLbl" title="Schlüssel ändern">ändern</button>
+          <button class="key-del-btn" data-key-del="openai" onclick="schluesselLoeschen('openai')" title="Gespeicherten Schlüssel löschen">🗑</button>
         </div>
         <div id="imggenInfo" style="font-size:.74rem;color:var(--dim);margin:10px 0 8px"></div>
         <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--ink);margin-bottom:6px;cursor:pointer;padding:8px 10px;background:var(--sand);border-radius:8px;border:1px solid var(--sand2)">
@@ -3845,6 +3856,7 @@ Vielen Dank für deine Unterstützung.</div>
 
         <div class="paste-box">
               <div class="paste-box-label">🔑 Zugangscode einfügen</div>
+              <div class="key-alt" data-key-alt="claude" style="display:none"></div>
               <div class="paste-row">
                 <input class="scan-key-in" id="txtApiKeyIn" type="password"
                   placeholder="sk-ant-…"
@@ -3869,6 +3881,7 @@ Vielen Dank für deine Unterstützung.</div>
             <div class="scan-ready-sub" id="txtReadySub">Zugangscode gespeichert</div>
           </div>
           <button class="scan-key-change" onclick="resetTxtKey()" title="API-Schlüssel ändern">ändern</button>
+          <button class="key-del-btn" data-key-del="claude" onclick="schluesselLoeschen('claude')" title="Gespeicherten Schlüssel löschen">🗑</button>
         </div>
 
         <div style="font-size:.76rem;color:var(--dim);line-height:1.5;margin-bottom:10px">
@@ -4275,7 +4288,7 @@ const LANGS={
     ,apiKeyHelpTtl:'Fragen und Hilfe zum API-Key'
     ,sManualHead:'📚 HANDBUCH'
     ,sManualLbl:'Bedienungsanleitung'
-    ,sReloadHead:'🔄 APP',sReloadLbl:'Aktualisieren & neu laden',sReloadSub:'Cache leeren, neueste Version holen',sMistralLbl:'Mistral-Schlüssel (EU)',sMistralSub:'Für Texterkennung im KI-Scan',sNetzHead:'🌐 NETZWERK (SBKIM)',sNetzLbl:'Mit dem Netz verbinden',sNetzSub:'Im gemeinsamen Raum anmelden & andere Knoten finden (serverlos)',sToolsHead:'🧩 WERKZEUGE',sToolsSuchLbl:'Such-Werkzeug',sToolsSuchSub:'Semantische Suche nach Bedeutung (eigenständige PWA)',sToolsPinLbl:'Pinnwand',sToolsPinSub:'Frage-Antwort-Brett (Bedeutungs-Sortierung & KI-Richter)',sOfflineCap:'Offline-fähig',sYouthHead:'🔒 JUGENDSCHUTZ & FILTER',sAlcLbl:'Alkoholfreier Modus',sAlcSub:'Cocktail-Kategorie & alkoholische Rezepte ausblenden'
+    ,sReloadHead:'🔄 APP',sReloadLbl:'Aktualisieren & neu laden',sReloadSub:'Cache leeren, neueste Version holen',keyDel:'🗑 Löschen',keyDelAsk:'Gespeicherten Schlüssel löschen? Danach kannst du einen neuen einfügen.',keyDelDone:'🗑 Schlüssel gelöscht — jetzt kannst du einen neuen einfügen',keyAlt:'Gespeichert',webBildLaedt:'🖼️ Rezeptbild wird übernommen…',sMistralLbl:'Mistral-Schlüssel (EU)',sMistralSub:'Für Texterkennung im KI-Scan',sNetzHead:'🌐 NETZWERK (SBKIM)',sNetzLbl:'Mit dem Netz verbinden',sNetzSub:'Im gemeinsamen Raum anmelden & andere Knoten finden (serverlos)',sToolsHead:'🧩 WERKZEUGE',sToolsSuchLbl:'Such-Werkzeug',sToolsSuchSub:'Semantische Suche nach Bedeutung (eigenständige PWA)',sToolsPinLbl:'Pinnwand',sToolsPinSub:'Frage-Antwort-Brett (Bedeutungs-Sortierung & KI-Richter)',sOfflineCap:'Offline-fähig',sYouthHead:'🔒 JUGENDSCHUTZ & FILTER',sAlcLbl:'Alkoholfreier Modus',sAlcSub:'Cocktail-Kategorie & alkoholische Rezepte ausblenden'
     ,sManualSub:'Alle Funktionen erklärt · PDF-Download'
     ,manOvTitle:'📚 Handbuch'
     ,manPdfLbl:'PDF'
@@ -4409,7 +4422,7 @@ const LANGS={
     ,apiKeyHelpTtl:'Questions & help about the API Key'
     ,sManualHead:'📚 MANUAL'
     ,sManualLbl:'User Guide'
-    ,sReloadHead:'🔄 APP',sReloadLbl:'Refresh & reload',sReloadSub:'Clear cache, get the latest version',sMistralLbl:'Mistral key (EU)',sMistralSub:'For text recognition in the AI scan',sNetzHead:'🌐 NETWORK (SBKIM)',sNetzLbl:'Connect to the node network',sNetzSub:'Sign in to the shared room & find other nodes (server-less)',sToolsHead:'🧩 TOOLS',sToolsSuchLbl:'Search tool',sToolsSuchSub:'Semantic search by meaning (standalone PWA)',sToolsPinLbl:'Pinboard',sToolsPinSub:'Question-and-answer board (sorted by meaning & AI judge)',sOfflineCap:'Works offline',sYouthHead:'🔒 YOUTH PROTECTION & FILTER',sAlcLbl:'Alcohol-free mode',sAlcSub:'Hide the cocktail category & alcoholic recipes'
+    ,sReloadHead:'🔄 APP',sReloadLbl:'Refresh & reload',sReloadSub:'Clear cache, get the latest version',keyDel:'🗑 Delete',keyDelAsk:'Delete the saved key? You can then paste a new one.',keyDelDone:'🗑 Key deleted — you can now paste a new one',keyAlt:'Saved',webBildLaedt:'🖼️ Fetching the recipe photo…',sMistralLbl:'Mistral key (EU)',sMistralSub:'For text recognition in the AI scan',sNetzHead:'🌐 NETWORK (SBKIM)',sNetzLbl:'Connect to the node network',sNetzSub:'Sign in to the shared room & find other nodes (server-less)',sToolsHead:'🧩 TOOLS',sToolsSuchLbl:'Search tool',sToolsSuchSub:'Semantic search by meaning (standalone PWA)',sToolsPinLbl:'Pinboard',sToolsPinSub:'Question-and-answer board (sorted by meaning & AI judge)',sOfflineCap:'Works offline',sYouthHead:'🔒 YOUTH PROTECTION & FILTER',sAlcLbl:'Alcohol-free mode',sAlcSub:'Hide the cocktail category & alcoholic recipes'
     ,sManualSub:'All features explained · PDF download'
     ,manOvTitle:'📚 Manual'
     ,manPdfLbl:'PDF'
@@ -4543,7 +4556,7 @@ const LANGS={
     ,apiKeyHelpTtl:'Вопросы и помощь по API-ключу'
     ,sManualHead:'📚 РУКОВОДСТВО'
     ,sManualLbl:'Руководство пользователя'
-    ,sReloadHead:'🔄 ПРИЛОЖЕНИЕ',sReloadLbl:'Обновить и перезагрузить',sReloadSub:'Очистить кэш, загрузить новую версию',sMistralLbl:'Ключ Mistral (ЕС)',sMistralSub:'Для распознавания текста в ИИ-сканере',sNetzHead:'🌐 СЕТЬ (SBKIM)',sNetzLbl:'Подключиться к сети узлов',sNetzSub:'Войти в общую комнату и найти другие узлы (без сервера)',sToolsHead:'🧩 ИНСТРУМЕНТЫ',sToolsSuchLbl:'Инструмент поиска',sToolsSuchSub:'Семантический поиск по смыслу (отдельное PWA)',sToolsPinLbl:'Доска',sToolsPinSub:'Доска вопросов и ответов (сортировка по смыслу и ИИ-судья)',sOfflineCap:'Работает офлайн',sYouthHead:'🔒 ЗАЩИТА ДЕТЕЙ И ФИЛЬТР',sAlcLbl:'Безалкогольный режим',sAlcSub:'Скрыть категорию коктейлей и алкогольные рецепты'
+    ,sReloadHead:'🔄 ПРИЛОЖЕНИЕ',sReloadLbl:'Обновить и перезагрузить',sReloadSub:'Очистить кэш, загрузить новую версию',keyDel:'🗑 Удалить',keyDelAsk:'Удалить сохранённый ключ? Затем можно вставить новый.',keyDelDone:'🗑 Ключ удалён — теперь можно вставить новый',keyAlt:'Сохранён',webBildLaedt:'🖼️ Загружается фото рецепта…',sMistralLbl:'Ключ Mistral (ЕС)',sMistralSub:'Для распознавания текста в ИИ-сканере',sNetzHead:'🌐 СЕТЬ (SBKIM)',sNetzLbl:'Подключиться к сети узлов',sNetzSub:'Войти в общую комнату и найти другие узлы (без сервера)',sToolsHead:'🧩 ИНСТРУМЕНТЫ',sToolsSuchLbl:'Инструмент поиска',sToolsSuchSub:'Семантический поиск по смыслу (отдельное PWA)',sToolsPinLbl:'Доска',sToolsPinSub:'Доска вопросов и ответов (сортировка по смыслу и ИИ-судья)',sOfflineCap:'Работает офлайн',sYouthHead:'🔒 ЗАЩИТА ДЕТЕЙ И ФИЛЬТР',sAlcLbl:'Безалкогольный режим',sAlcSub:'Скрыть категорию коктейлей и алкогольные рецепты'
     ,sManualSub:'Все функции объяснены · Скачать PDF'
     ,manOvTitle:'📚 Руководство'
     ,manPdfLbl:'PDF'
@@ -4677,7 +4690,7 @@ const LANGS={
     ,apiKeyHelpTtl:'关于API密钥的问题与帮助'
     ,sManualHead:'📚 手册'
     ,sManualLbl:'用户手册'
-    ,sReloadHead:'🔄 应用',sReloadLbl:'刷新并重新加载',sReloadSub:'清除缓存，获取最新版本',sMistralLbl:'Mistral 密钥（欧盟）',sMistralSub:'用于 AI 扫描中的文字识别',sNetzHead:'🌐 网络 (SBKIM)',sNetzLbl:'连接节点网络',sNetzSub:'登录共享空间并查找其他节点（无服务器）',sToolsHead:'🧩 工具',sToolsSuchLbl:'搜索工具',sToolsSuchSub:'按含义进行语义搜索（独立 PWA）',sToolsPinLbl:'留言板',sToolsPinSub:'问答板（按含义排序与 AI 评审）',sOfflineCap:'可离线使用',sYouthHead:'🔒 青少年保护与过滤',sAlcLbl:'无酒精模式',sAlcSub:'隐藏鸡尾酒分类与含酒精配方'
+    ,sReloadHead:'🔄 应用',sReloadLbl:'刷新并重新加载',sReloadSub:'清除缓存，获取最新版本',keyDel:'🗑 删除',keyDelAsk:'删除已保存的密钥？之后可以粘贴新的密钥。',keyDelDone:'🗑 密钥已删除 — 现在可以粘贴新的密钥',keyAlt:'已保存',webBildLaedt:'🖼️ 正在获取菜谱图片…',sMistralLbl:'Mistral 密钥（欧盟）',sMistralSub:'用于 AI 扫描中的文字识别',sNetzHead:'🌐 网络 (SBKIM)',sNetzLbl:'连接节点网络',sNetzSub:'登录共享空间并查找其他节点（无服务器）',sToolsHead:'🧩 工具',sToolsSuchLbl:'搜索工具',sToolsSuchSub:'按含义进行语义搜索（独立 PWA）',sToolsPinLbl:'留言板',sToolsPinSub:'问答板（按含义排序与 AI 评审）',sOfflineCap:'可离线使用',sYouthHead:'🔒 青少年保护与过滤',sAlcLbl:'无酒精模式',sAlcSub:'隐藏鸡尾酒分类与含酒精配方'
     ,sManualSub:'所有功能说明 · PDF下载'
     ,manOvTitle:'📚 手册'
     ,manPdfLbl:'PDF'
@@ -4809,7 +4822,7 @@ const LANGS={
     ,apiKeyHelpTtl:'Preguntas y ayuda sobre el API Key'
     ,sManualHead:'📚 MANUAL'
     ,sManualLbl:'Manual de usuario'
-    ,sReloadHead:'🔄 APP',sReloadLbl:'Actualizar y recargar',sReloadSub:'Vaciar caché, obtener la última versión',sMistralLbl:'Clave Mistral (UE)',sMistralSub:'Para el reconocimiento de texto en el escaneo con IA',sNetzHead:'🌐 RED (SBKIM)',sNetzLbl:'Conectar con la red de nodos',sNetzSub:'Entrar en la sala compartida y encontrar otros nodos (sin servidor)',sToolsHead:'🧩 HERRAMIENTAS',sToolsSuchLbl:'Herramienta de búsqueda',sToolsSuchSub:'Búsqueda semántica por significado (PWA independiente)',sToolsPinLbl:'Tablón',sToolsPinSub:'Tablón de preguntas y respuestas (orden por significado y juez de IA)',sOfflineCap:'Funciona sin conexión',sYouthHead:'🔒 PROTECCIÓN DE MENORES Y FILTRO',sAlcLbl:'Modo sin alcohol',sAlcSub:'Ocultar la categoría de cócteles y las recetas con alcohol'
+    ,sReloadHead:'🔄 APP',sReloadLbl:'Actualizar y recargar',sReloadSub:'Vaciar caché, obtener la última versión',keyDel:'🗑 Eliminar',keyDelAsk:'¿Eliminar la clave guardada? Después puedes pegar una nueva.',keyDelDone:'🗑 Clave eliminada — ya puedes pegar una nueva',keyAlt:'Guardada',webBildLaedt:'🖼️ Obteniendo la foto de la receta…',sMistralLbl:'Clave Mistral (UE)',sMistralSub:'Para el reconocimiento de texto en el escaneo con IA',sNetzHead:'🌐 RED (SBKIM)',sNetzLbl:'Conectar con la red de nodos',sNetzSub:'Entrar en la sala compartida y encontrar otros nodos (sin servidor)',sToolsHead:'🧩 HERRAMIENTAS',sToolsSuchLbl:'Herramienta de búsqueda',sToolsSuchSub:'Búsqueda semántica por significado (PWA independiente)',sToolsPinLbl:'Tablón',sToolsPinSub:'Tablón de preguntas y respuestas (orden por significado y juez de IA)',sOfflineCap:'Funciona sin conexión',sYouthHead:'🔒 PROTECCIÓN DE MENORES Y FILTRO',sAlcLbl:'Modo sin alcohol',sAlcSub:'Ocultar la categoría de cócteles y las recetas con alcohol'
     ,sManualSub:'Todas las funciones explicadas · Descargar PDF'
     ,manOvTitle:'📚 Manual'
     ,manPdfLbl:'PDF'
@@ -5052,7 +5065,7 @@ const LANGS={
     ,apiKeyHelpTtl:'Questions et aide sur la clé API'
     ,sManualHead:'📚 MANUEL'
     ,sManualLbl:'Guide d\'utilisation'
-    ,sReloadHead:'🔄 APPLI',sReloadLbl:'Actualiser et recharger',sReloadSub:'Vider le cache, obtenir la dernière version',sMistralLbl:'Clé Mistral (UE)',sMistralSub:'Pour la reconnaissance de texte dans le scan IA',sNetzHead:'🌐 RÉSEAU (SBKIM)',sNetzLbl:'Se connecter au réseau de nœuds',sNetzSub:'Rejoindre la salle partagée et trouver les autres nœuds (sans serveur)',sToolsHead:'🧩 OUTILS',sToolsSuchLbl:'Outil de recherche',sToolsSuchSub:'Recherche sémantique par le sens (PWA autonome)',sToolsPinLbl:'Tableau',sToolsPinSub:'Tableau de questions-réponses (tri par le sens et juge IA)',sOfflineCap:'Fonctionne hors ligne',sYouthHead:'🔒 PROTECTION DES MINEURS ET FILTRE',sAlcLbl:'Mode sans alcool',sAlcSub:'Masquer la catégorie cocktails et les recettes alcoolisées'
+    ,sReloadHead:'🔄 APPLI',sReloadLbl:'Actualiser et recharger',sReloadSub:'Vider le cache, obtenir la dernière version',keyDel:'🗑 Supprimer',keyDelAsk:'Supprimer la clé enregistrée ? Tu pourras ensuite en coller une nouvelle.',keyDelDone:'🗑 Clé supprimée — tu peux maintenant en coller une nouvelle',keyAlt:'Enregistrée',webBildLaedt:'🖼️ Récupération de la photo de la recette…',sMistralLbl:'Clé Mistral (UE)',sMistralSub:'Pour la reconnaissance de texte dans le scan IA',sNetzHead:'🌐 RÉSEAU (SBKIM)',sNetzLbl:'Se connecter au réseau de nœuds',sNetzSub:'Rejoindre la salle partagée et trouver les autres nœuds (sans serveur)',sToolsHead:'🧩 OUTILS',sToolsSuchLbl:'Outil de recherche',sToolsSuchSub:'Recherche sémantique par le sens (PWA autonome)',sToolsPinLbl:'Tableau',sToolsPinSub:'Tableau de questions-réponses (tri par le sens et juge IA)',sOfflineCap:'Fonctionne hors ligne',sYouthHead:'🔒 PROTECTION DES MINEURS ET FILTRE',sAlcLbl:'Mode sans alcool',sAlcSub:'Masquer la catégorie cocktails et les recettes alcoolisées'
     ,sManualSub:'Toutes les fonctions expliquées · Télécharger PDF'
     ,manOvTitle:'📚 Manuel'
     ,manPdfLbl:'PDF'
@@ -5295,7 +5308,7 @@ const LANGS={
     ,apiKeyHelpTtl:'Domande e aiuto sulla chiave API'
     ,sManualHead:'📚 MANUALE'
     ,sManualLbl:'Manuale utente'
-    ,sReloadHead:'🔄 APP',sReloadLbl:'Aggiorna e ricarica',sReloadSub:'Svuota la cache, scarica l\'ultima versione',sMistralLbl:'Chiave Mistral (UE)',sMistralSub:'Per il riconoscimento del testo nella scansione IA',sNetzHead:'🌐 RETE (SBKIM)',sNetzLbl:'Collegarsi alla rete di nodi',sNetzSub:'Accedere alla stanza condivisa e trovare altri nodi (senza server)',sToolsHead:'🧩 STRUMENTI',sToolsSuchLbl:'Strumento di ricerca',sToolsSuchSub:'Ricerca semantica per significato (PWA autonoma)',sToolsPinLbl:'Bacheca',sToolsPinSub:'Bacheca di domande e risposte (ordinata per significato e giudice IA)',sOfflineCap:'Funziona offline',sYouthHead:'🔒 PROTEZIONE DEI MINORI E FILTRO',sAlcLbl:'Modalità analcolica',sAlcSub:'Nascondere la categoria cocktail e le ricette alcoliche'
+    ,sReloadHead:'🔄 APP',sReloadLbl:'Aggiorna e ricarica',sReloadSub:'Svuota la cache, scarica l\'ultima versione',keyDel:'🗑 Elimina',keyDelAsk:'Eliminare la chiave salvata? Poi potrai incollarne una nuova.',keyDelDone:'🗑 Chiave eliminata — ora puoi incollarne una nuova',keyAlt:'Salvata',webBildLaedt:'🖼️ Recupero della foto della ricetta…',sMistralLbl:'Chiave Mistral (UE)',sMistralSub:'Per il riconoscimento del testo nella scansione IA',sNetzHead:'🌐 RETE (SBKIM)',sNetzLbl:'Collegarsi alla rete di nodi',sNetzSub:'Accedere alla stanza condivisa e trovare altri nodi (senza server)',sToolsHead:'🧩 STRUMENTI',sToolsSuchLbl:'Strumento di ricerca',sToolsSuchSub:'Ricerca semantica per significato (PWA autonoma)',sToolsPinLbl:'Bacheca',sToolsPinSub:'Bacheca di domande e risposte (ordinata per significato e giudice IA)',sOfflineCap:'Funziona offline',sYouthHead:'🔒 PROTEZIONE DEI MINORI E FILTRO',sAlcLbl:'Modalità analcolica',sAlcSub:'Nascondere la categoria cocktail e le ricette alcoliche'
     ,sManualSub:'Tutte le funzioni spiegate · Scarica PDF'
     ,manOvTitle:'📚 Manuale'
     ,manPdfLbl:'PDF'
@@ -5533,7 +5546,7 @@ const LANGS={
     ,apiKeyHelpTtl:'Perguntas e ajuda sobre a chave API'
     ,sManualHead:'📚 MANUAL'
     ,sManualLbl:'Manual do utilizador'
-    ,sReloadHead:'🔄 APP',sReloadLbl:'Atualizar e recarregar',sReloadSub:'Limpar cache, obter a versão mais recente',sMistralLbl:'Chave Mistral (UE)',sMistralSub:'Para o reconhecimento de texto na digitalização com IA',sNetzHead:'🌐 REDE (SBKIM)',sNetzLbl:'Ligar à rede de nós',sNetzSub:'Entrar na sala partilhada e encontrar outros nós (sem servidor)',sToolsHead:'🧩 FERRAMENTAS',sToolsSuchLbl:'Ferramenta de pesquisa',sToolsSuchSub:'Pesquisa semântica por significado (PWA autónoma)',sToolsPinLbl:'Quadro',sToolsPinSub:'Quadro de perguntas e respostas (ordenado por significado e juiz de IA)',sOfflineCap:'Funciona offline',sYouthHead:'🔒 PROTEÇÃO DE MENORES E FILTRO',sAlcLbl:'Modo sem álcool',sAlcSub:'Ocultar a categoria de cocktails e as receitas com álcool'
+    ,sReloadHead:'🔄 APP',sReloadLbl:'Atualizar e recarregar',sReloadSub:'Limpar cache, obter a versão mais recente',keyDel:'🗑 Apagar',keyDelAsk:'Apagar a chave guardada? Depois podes colar uma nova.',keyDelDone:'🗑 Chave apagada — agora podes colar uma nova',keyAlt:'Guardada',webBildLaedt:'🖼️ A obter a foto da receita…',sMistralLbl:'Chave Mistral (UE)',sMistralSub:'Para o reconhecimento de texto na digitalização com IA',sNetzHead:'🌐 REDE (SBKIM)',sNetzLbl:'Ligar à rede de nós',sNetzSub:'Entrar na sala partilhada e encontrar outros nós (sem servidor)',sToolsHead:'🧩 FERRAMENTAS',sToolsSuchLbl:'Ferramenta de pesquisa',sToolsSuchSub:'Pesquisa semântica por significado (PWA autónoma)',sToolsPinLbl:'Quadro',sToolsPinSub:'Quadro de perguntas e respostas (ordenado por significado e juiz de IA)',sOfflineCap:'Funciona offline',sYouthHead:'🔒 PROTEÇÃO DE MENORES E FILTRO',sAlcLbl:'Modo sem álcool',sAlcSub:'Ocultar a categoria de cocktails e as receitas com álcool'
     ,sManualSub:'Todas as funções explicadas · Baixar PDF'
     ,manOvTitle:'📚 Manual'
     ,manPdfLbl:'PDF'
@@ -7849,6 +7862,7 @@ function alcAllowed(r){
 }
 
 function updateSettings(){
+  keyAltZeilen();
   renderThemeGrid();renderLangGrid();
   const cnt=R.filter(r=>r.name).length;
   const el=document.getElementById('sRCount');
@@ -8103,6 +8117,36 @@ async function _runImgQueue(rids,genFn,onProgress){
 }
 
 // ── OpenAI-Schlüssel (eigene Schublade, NICHT mxkey9m) ───────────────────────
+// ── SCHLÜSSEL LÖSCHEN — an jeder Stelle, an der einer gespeichert ist ──
+// Klaus 2026-10-12: „den API-Key nicht rückgängig machen, wenn der nicht
+// funktioniert … Alten API-Key löschen, neuen erstellen." Bis dahin ging das
+// nur versteckt: „ändern" bei KI-Bild öffnete das Feld, ließ den alten
+// Schlüssel aber gespeichert — beim nächsten Öffnen war er wieder aktiv.
+// ⚠ Eigene Ablagen nach dem Schema mx<thema>9m — die Rezeptbücher (claudeKey9m, …) bleiben unberührt.
+const KEY_LS={claude:['mxkey9m'],openai:['mxoaiimg9m'],mistral:['mxmistralkey9m']};
+function keyWert(art){for(const k of KEY_LS[art]||[]){const v=localStorage.getItem(k);if(v)return v;}return '';}
+function keyMaske(v){return v.length>14?v.slice(0,7)+'…'+v.slice(-4):'…';}
+function keyAltZeilen(){
+  document.querySelectorAll('[data-key-alt]').forEach(el=>{
+    const art=el.dataset.keyAlt,v=keyWert(art);
+    if(!v){el.style.display='none';el.innerHTML='';return;}
+    el.style.display='flex';
+    el.innerHTML=`<span>🔑 ${h(T('keyAlt'))}: <code>${h(keyMaske(v))}</code></span><button class="key-del-btn" onclick="event.stopPropagation();schluesselLoeschen('${art}')">${h(T('keyDel'))}</button>`;
+  });
+  document.querySelectorAll('[data-key-del]').forEach(b=>{b.title=T('keyDel');});
+}
+function schluesselLoeschen(art){
+  if(!keyWert(art))return;
+  if(!confirm(T('keyDelAsk')))return;
+  (KEY_LS[art]||[]).forEach(k=>localStorage.removeItem(k));
+  const felder={claude:['apiKeyIn','txtApiKeyIn'],openai:['imggenKeyIn'],mistral:['mistralKeyIn']}[art]||[];
+  felder.forEach(id=>{const i=document.getElementById(id);if(i){i.value='';i.style.borderColor='';}});
+  if(art==='claude'){initScanPane();initTxtPane();}
+  if(art==='openai')initImgGenPane();
+  keyAltZeilen();
+  toast(T('keyDelDone'));
+}
+
 const OPENAI_IMG_KEY_LS='mxoaiimg9m';
 function getOpenAiImgKey(){return localStorage.getItem(OPENAI_IMG_KEY_LS)||'';}
 function saveOpenAiImgKey(key){if(key){localStorage.setItem(OPENAI_IMG_KEY_LS,key.trim());}else{localStorage.removeItem(OPENAI_IMG_KEY_LS);}}
@@ -8594,8 +8638,10 @@ function switchToImgGenMain(){
   const sub=document.getElementById('imggenReadySub');
   if(sub&&key)sub.textContent=key.slice(0,7)+'…'+key.slice(-4);
   updateImgGenInfo();
+  keyAltZeilen();
 }
 function showImgGenSetup(){
+  keyAltZeilen();
   const setup=document.getElementById('imggenSetup');
   const main=document.getElementById('imggenMain');
   if(setup)setup.style.display='block';
@@ -8603,6 +8649,7 @@ function showImgGenSetup(){
   setTimeout(()=>{const inp=document.getElementById('imggenKeyIn');if(inp){inp.value='';inp.focus();}},100);
 }
 function initImgGenPane(){
+  keyAltZeilen();
   if(getOpenAiImgKey()){switchToImgGenMain();}
   else{
     const setup=document.getElementById('imggenSetup');
@@ -9085,7 +9132,7 @@ function getScanProvider(){const p=localStorage.getItem('mxscanprov9m');return p
 function setScanProvider(v){const p=(v==='mistral')?'mistral':'anthropic';localStorage.setItem('mxscanprov9m',p);const sel=document.getElementById('scanProviderSel');if(sel)sel.value=p;}
 function getMistralKey(){return localStorage.getItem('mxmistralkey9m')||'';}
 function onMistralKeyInput(v){const inp=document.getElementById('mistralKeyIn');if(inp)inp.style.borderColor=v.trim().length>=20?'var(--grn)':'var(--sand2)';}
-function saveMistralKey(){const v=document.getElementById('mistralKeyIn')?.value?.trim()||'';if(v){localStorage.setItem('mxmistralkey9m',v);toast('✅ Mistral-Schlüssel gespeichert!');}else{localStorage.removeItem('mxmistralkey9m');toast('Mistral-Schlüssel entfernt');}}
+function saveMistralKey(){const v=document.getElementById('mistralKeyIn')?.value?.trim()||'';if(v){localStorage.setItem('mxmistralkey9m',v);toast('✅ Mistral-Schlüssel gespeichert!');}else{localStorage.removeItem('mxmistralkey9m');toast('Mistral-Schlüssel entfernt');}keyAltZeilen();}
 function toggleMistralKeyField(){const p=document.getElementById('mistralKeyPanel');const arr=document.getElementById('mistralKeyArr');if(!p)return;const open=p.style.display==='none'||!p.style.display;p.style.display=open?'block':'none';if(arr)arr.textContent=open?'⌄':'›';if(open){const inp=document.getElementById('mistralKeyIn');if(inp){inp.value=getMistralKey();onMistralKeyInput(inp.value);setTimeout(()=>inp.focus(),80);}}}
 
 function onApiKeyInput(v){
@@ -9149,6 +9196,7 @@ function saveApiKey(){
 }
 
 function showKeySetup(){
+  keyAltZeilen();
   document.getElementById('scanSetup').style.display='block';
   document.getElementById('scanMain').style.display='none';
   // Don't clear the key field — let user see/edit it
@@ -9168,6 +9216,7 @@ function switchToScanMain(){
 }
 
 function initScanPane(){
+  keyAltZeilen();
   const sel=document.getElementById('scanProviderSel');
   if(sel)sel.value=getScanProvider();
   if(getSavedKey()){
@@ -11594,11 +11643,47 @@ function openCropOv(rid){
   if(sl)sl.value=Math.round(_cropCr.scale*100);
   const lb=document.getElementById('cropZoomLbl');
   if(lb)lb.textContent=_cropCr.scale.toFixed(1)+'×';
+  const hs=document.getElementById('cropHdrSave');if(hs)hs.textContent=T('cropSave');
   document.getElementById('cropOv').style.display='flex';
+  cropAnSichtAn();
   _cropApplyPos();
   _cropInitDrag();
 }
+// ── Der Dialog folgt dem SICHTBAREN Ausschnitt — und „Speichern" steht oben ──
+// Übertragen aus den Rezeptbüchern (#424/#426). Klaus 2026-10-12, Tablet quer:
+// „Speichern" lag unter dem Rand (gemessen hier: 833×470 → außerhalb, schon
+// OHNE Zoom), und hineingezoomt hing `position:fixed; inset:0` am
+// Seitenrahmen statt am Sichtbaren. Zoomen bleibt erlaubt (Lesbarkeit).
+function cropAnSicht(){
+  const ov=document.getElementById('cropOv'),vv=window.visualViewport;
+  if(!ov||!vv||ov.style.display==='none')return;
+  ov.style.inset='auto';
+  ov.style.left=vv.offsetLeft+'px';ov.style.top=vv.offsetTop+'px';
+  ov.style.width=vv.width+'px';ov.style.height=vv.height+'px';
+  _cropFormAnpassen();
+}
+function cropAnSichtAn(){
+  cropAnSicht();
+  _cropFormAnpassen();
+  if(window.visualViewport){visualViewport.addEventListener('resize',cropAnSicht);visualViewport.addEventListener('scroll',cropAnSicht);}
+}
+function cropAnSichtAus(){
+  if(window.visualViewport){visualViewport.removeEventListener('resize',cropAnSicht);visualViewport.removeEventListener('scroll',cropAnSicht);}
+  const ov=document.getElementById('cropOv');
+  if(ov)['inset','left','top','width','height'].forEach(k=>ov.style[k]='');
+}
+// Die Vorschau hat die FORM DER KARTE: gemessen an der sichtbaren Karte, sonst
+// 3:4 wie .rcard-img-wrap. object-fit:cover hängt allein am Seitenverhältnis.
+function _cropFormAnpassen(){
+  const wrap=document.getElementById('cropPrevWrap');if(!wrap||!wrap.offsetWidth)return;
+  let q=4/3;
+  const k=[...document.querySelectorAll('#c'+_cropRid+' .rcard-img-wrap')].find(e=>e.offsetWidth>=50&&e.offsetHeight>=50);
+  if(k)q=k.offsetHeight/k.offsetWidth;
+  wrap.style.aspectRatio='auto';
+  wrap.style.height=Math.round(wrap.offsetWidth*q)+'px';
+}
 function closeCropOv(){
+  cropAnSichtAus();
   document.getElementById('cropOv').style.display='none';
   document.removeEventListener('mousemove',_cropMouseMove);
   document.removeEventListener('mouseup',_cropMouseUp);
@@ -13310,6 +13395,7 @@ function closeSpellModal() {
 // ── TEXT-IMPORT ─────────────────────────────────
 
 function initTxtPane() {
+  keyAltZeilen();
   const key = getSavedKey();
   const setup = document.getElementById('txtSetup');
   const main  = document.getElementById('txtMain');
@@ -13550,22 +13636,35 @@ function renderTxtResult(rec) {
 // ═══════════════════════════════════════════════════════
 // WEB RECIPE IMPORT – Rezept aus dem Internet laden
 // ═══════════════════════════════════════════════════════
-const _WEB_PROXY='https://api.allorigins.win/get?url=';
-const _WEB_PROXY2='https://corsproxy.io/?url=';
+// ⚠ Fremde Abruf-Dienste ändern ihre Bedingungen ohne Ankündigung (2026-10:
+// corsproxy.io antwortete 401, weil es fremde Webseiten nur noch mit Schlüssel
+// bedient). Deshalb eine KETTE: fällt einer aus, kommt der nächste dran — und
+// die Meldung nennt am Ende jeden Dienst mit seinem Grund, statt nur den letzten.
+const _WEB_DIENSTE=[
+  {n:'allorigins',  u:x=>'https://api.allorigins.win/get?url='+encodeURIComponent(x), json:true},
+  {n:'allorigins-raw',u:x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)},
+  {n:'codetabs',    u:x=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(x)},
+  {n:'jina',        u:x=>'https://r.jina.ai/'+x, h:{'X-Return-Format':'html'}},
+  {n:'corsproxy',   u:x=>'https://corsproxy.io/?url='+encodeURIComponent(x)}
+];
 let _webRec=null;
+let _webBasis='';   // Seitenadresse — löst relative Bild-Adressen auf
 
 async function _webFetch(url){
-  // Primärer Proxy (gibt JSON zurück mit .contents)
-  try{
-    const r=await fetch(_WEB_PROXY+encodeURIComponent(url),{signal:AbortSignal.timeout(14000)});
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const d=await r.json();
-    if(d.contents)return d.contents;
-  }catch(e){}
-  // Fallback-Proxy (gibt HTML direkt zurück)
-  const r2=await fetch(_WEB_PROXY2+encodeURIComponent(url),{signal:AbortSignal.timeout(14000)});
-  if(!r2.ok)throw new Error('Seite nicht erreichbar (HTTP '+r2.status+')');
-  return await r2.text();
+  const gruende=[];
+  for(const d of _WEB_DIENSTE){
+    try{
+      const r=await fetch(d.u(url),{headers:d.h||{},signal:AbortSignal.timeout(14000)});
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const html=d.json?((await r.json()).contents||''):await r.text();
+      // Eine leere Antwort oder eine Fehlerseite des Dienstes ist kein Rezept.
+      if(html.length<500)throw new Error('leere Antwort');
+      return html;
+    }catch(e){
+      gruende.push(d.n+': '+(e.name==='TimeoutError'?'keine Antwort':e.message));
+    }
+  }
+  throw new Error('Seite nicht erreichbar — alle Abruf-Dienste gescheitert<br><small>'+gruende.map(h).join(' · ')+'</small>');
 }
 
 function _parseJsonLdRecipe(html){
@@ -13611,11 +13710,67 @@ function _parseInstr(instr){
   return steps;
 }
 
+// ── Das Rezeptbild von einer Webseite ──────────────────────────────────────
+// Klaus 2026-10-12: „Beim Einfügen der Webadresse sollten auch die Bilder mit
+// übernommen werden. Er erkennt die Bilder nicht." Gelesen wurde nur EINE
+// Form: ein Text, oder das ERSTE Feld einer Liste — war das ein Bild-Objekt
+// ({url, width}), landete ein Objekt in r.img und die Karte zeigte nichts.
+// Der KI-Weg und Seiten ohne Bild in den Rezeptdaten fragten gar nicht.
+// Jetzt: jede schema.org-Form (Text · Liste · ImageObject · contentUrl ·
+// relativ), sonst die Seiten-Vorschau (og:image, twitter:image, image_src).
+function _bildAusSchema(img,basis){
+  const kand=[];
+  const sammle=x=>{
+    if(!x)return;
+    if(typeof x==='string'){kand.push({u:x,w:0});return;}
+    if(Array.isArray(x)){x.forEach(sammle);return;}
+    if(typeof x==='object'){
+      const u=x.url||x.contentUrl||x['@id'];
+      if(typeof u==='string')kand.push({u,w:parseInt(x.width)||0});else sammle(u);
+    }
+  };
+  sammle(img);
+  // das breiteste zuerst; ohne Angabe bleibt die Reihenfolge der Seite
+  kand.sort((a,b)=>b.w-a.w);
+  for(const k of kand){try{const u=new URL(k.u.trim(),basis).href;if(/^https?:/.test(u))return u;}catch(e){}}
+  return '';
+}
+function _bildAusSeite(html,basis){
+  const d=new DOMParser().parseFromString(html,'text/html');
+  const sel=['meta[property="og:image:secure_url"]','meta[property="og:image"]','meta[name="og:image"]','meta[property="og:image:url"]',
+    'meta[name="twitter:image"]','meta[name="twitter:image:src"]','meta[property="twitter:image"]','link[rel="image_src"]','meta[itemprop="image"]'];
+  for(const q of sel){
+    const el=d.querySelector(q);const v=el&&(el.getAttribute('content')||el.getAttribute('href'));
+    if(v){const u=_bildAusSchema(v,basis);if(u)return u;}
+  }
+  return '';
+}
+// Das Bild wird HERUNTERGELADEN und als eigene Kopie gespeichert, nicht nur
+// verlinkt: eine fremde Adresse bricht offline, beim Umzug der Seite und bei
+// Diensten, die fremdes Einbetten sperren. Erst direkt, dann über dieselbe
+// Dienst-Kette wie die Seite (nur die, die Rohdaten liefern). Gelingt nichts,
+// bleibt die Adresse stehen — ein verlinktes Bild ist besser als keins.
+async function _bildHolen(u){
+  const wege=[{n:'direkt',u:x=>x}].concat(_WEB_DIENSTE.filter(d=>!d.json&&!d.h));
+  for(const w of wege){
+    try{
+      const r=await fetch(w.u(u),{signal:AbortSignal.timeout(12000)});
+      if(!r.ok)continue;
+      const b=await r.blob();
+      if(!/^image\//.test(b.type)||b.size<500)continue;
+      const daten=await new Promise((ok,nein)=>{const fr=new FileReader();fr.onload=()=>ok(fr.result);fr.onerror=nein;fr.readAsDataURL(b);});
+      const klein=await resizeImage(daten,1200,0.85);
+      if(/^data:image\//.test(klein))return klein;
+    }catch(e){}
+  }
+  return u;
+}
+
 function _schemaToRec(s){
   const ings=(s.recipeIngredient||[]).map((x,i)=>{const p=_parseIngStr(x);return{id:i+1,...p,ck:false,note:''};});
   const steps=_parseInstr(s.recipeInstructions).map((t,i)=>({id:i+1,txt:t,note:''}));
   const srv=parseInt(Array.isArray(s.recipeYield)?s.recipeYield[0]:s.recipeYield)||4;
-  const img=typeof s.image==='string'?s.image:Array.isArray(s.image)?s.image[0]:s.image?.url||'';
+  const img=_bildAusSchema(s.image,_webBasis);
   let nutrition=null;
   if(s.nutrition&&typeof s.nutrition==='object'){
     const n=s.nutrition;
@@ -13655,6 +13810,13 @@ Seite:\n${text}`;
   return rec;
 }
 
+async function _webBildAnhaengen(rec,html,url){
+  if(!rec.img)rec.img=_bildAusSeite(html,url);
+  if(!rec.img)return;
+  _webSetSt('⏳ '+h(T('webBildLaedt')),'loading');
+  rec.img=await _bildHolen(rec.img);
+}
+
 function _webSetSt(msg,cls){
   const el=document.getElementById('webStatus');
   if(!el)return;
@@ -13672,7 +13834,7 @@ function _webRenderResult(rec,url,method){
   let host='';try{host=new URL(url).hostname.replace('www.','');}catch(e){host=url;}
   document.getElementById('webResult').innerHTML=`
     <div class="scan-result" style="margin-top:10px">
-      <div class="scan-result-icon">${method==='ai'?'🤖':'🌐'}</div>
+      ${rec.img?`<img class="web-prev-img" src="${h(rec.img)}" alt="" onerror="this.remove()">`:`<div class="scan-result-icon">${method==='ai'?'🤖':'🌐'}</div>`}
       <h3 class="scan-result-name">${h(rec.name||'Importiertes Rezept')}</h3>
       <div class="scan-result-meta">
         <span class="scan-meta-pill">${catIco(catId)} ${catName(catId)}</span>
@@ -13698,10 +13860,12 @@ async function fetchWebRecipe(){
   document.getElementById('webFetchBtn').disabled=true;
   try{
     const html=await _webFetch(url);
+    _webBasis=url;
     const schema=_parseJsonLdRecipe(html);
     if(schema){
       const rec=_schemaToRec(schema);
       rec.source=url;
+      await _webBildAnhaengen(rec,html,url);
       _webRec=rec;
       _webRenderResult(rec,url,'json-ld');
       _webSetSt('✅ Rezept erkannt (strukturierte Daten — kein KI-Schlüssel benötigt)','ok');
@@ -13717,6 +13881,7 @@ async function fetchWebRecipe(){
     const rec=await _aiExtractWeb(html,url);
     if(!rec||!rec.name)throw new Error('Kein Rezept auf dieser Seite gefunden');
     rec.source=url;
+    await _webBildAnhaengen(rec,html,url);
     _webRec=rec;
     _webRenderResult(rec,url,'ai');
     _webSetSt('✅ Rezept per KI erkannt','ok');
@@ -15163,6 +15328,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   <div class="fov-hdr" onclick="closeCropOv()">
     <button class="fov-back" onclick="event.stopPropagation();closeCropOv()" title="Zurück">←</button>
     <div class="fov-title" id="cropTitle">✂️ Bildausschnitt anpassen</div>
+    <button class="crop-hdr-save" onclick="event.stopPropagation();saveCropOv()" id="cropHdrSave">✓ Speichern</button>
   </div>
   <div class="fov-body" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px 14px 30px">
     <div class="crop-prev-wrap" id="cropPrevWrap" style="max-width:300px">
