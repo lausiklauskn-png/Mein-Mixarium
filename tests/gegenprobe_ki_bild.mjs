@@ -37,8 +37,10 @@ const FAELLE = [
     trifft: /der Anthropic-Schlüssel bleibt unberührt/ },
 
   { name: 'der Schlüssel wird ausgeschrieben statt maskiert',
-    alt: `  if(sub&&key)sub.textContent=key.slice(0,7)+'…'+key.slice(-4);`,
-    neu: `  if(sub&&key)sub.textContent=key;`,
+    // Anker nachgezogen 2026-10-12: die Zeile steht seit der Schlüssel-Prüfung im
+    // Zweig für einen GÜLTIGEN Schlüssel (`_openAiKeyOk`).
+    alt: `    if(_openAiKeyOk(key)){sub.textContent=key.slice(0,7)+'…'+key.slice(-4);sub.style.color='';}`,
+    neu: `    if(_openAiKeyOk(key)){sub.textContent=key;sub.style.color='';}`,
     trifft: /der Schlüssel wird maskiert/ },
 
   { name: 'Knabbereien werden als Getränk beschrieben',
