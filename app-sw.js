@@ -7,7 +7,7 @@ console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 //
 // Ab v5: Navigation und Pre-Cache umgehen den Browser-HTTP-Cache aktiv
 // (cache:'reload'), damit App-Änderungen ohne manuelles Cache-Löschen ankommen.
-const SW_VERSION = 'mixarium-sw-v117';
+const SW_VERSION = 'mixarium-sw-v118';
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
@@ -40,6 +40,8 @@ const VORRAT_KENNUNG = "mixarium-sw-";
 // nachgeprueft, nicht nur so gedacht.
 const PRECACHE_FRISCH = [
   './index.html',
+  // 🧽 Reinigung vor der KI · 🛡 Prüfung auf Knopfdruck (2026-10-14): byte-1:1 aus Workflow PDF
+  './assets/reinigung.js?v=1', './assets/eingang.js?v=1', './assets/pruefer-mail.js?v=2', './assets/pruefer-formate.js?v=2', './assets/pruefer-anhang.js?v=4',
   './manifest.json',
   './icons/mixarium-120.png?v=1',
   './icons/mixarium-144.png?v=1',
