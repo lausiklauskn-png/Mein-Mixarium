@@ -1476,3 +1476,18 @@ die **Adresse** schon eine App installiert ist; das neue Menü-Fenster fragt nac
 **Kennung** — und fand unter `…github.io/` bzw. `…github.io/index.html` eine fremde App.
 chrome://webapks am Tablet: 10 installierte Apps mit `…github.io/`, 2 mit `…/index.html`.
 Eine schon installierte App übernimmt eine geänderte `id` nicht — einmal neu installieren.
+
+## 📲 Installieren in den Einstellungen — wie in Mein Rezeptbuch (Klaus 2026-10-18)
+
+Klaus: *„Den Installieren-Button überall fest einbauen … so wie bei meinem Rezeptbuch, der auch in den Einstellungen
+auftaucht … Sobald die Installation stattgefunden hat … verschwindet der Installations-Button."*
+
+Bis hierher erschien `#pwaBar` nur nach `beforeinstallprompt` (dazu einmalig ein „Anleitung"-Link auf `invite-v5.html`,
+gesteuert über `mxInstGuide9`). Übernommen ist die Fassung aus Mein Rezeptbuch (`pwaLaeuftAlsApp`, `pwaRefresh`,
+`triggerPWA` mit Anleitung, Schlüssel `pwaDone`/`pwaHow`/`pwaHowIos`/`pwaHowBtn`/`pwaInstalled` in allen 8 Sprachen):
+die Leiste steht immer oben in den Einstellungen; als App ist der Knopf weg („✅ Läuft als installierte App"). Der
+einmalige Anleitung-Link ist dafür entfallen. SW `mixarium-sw-v133`.
+⚠ Die Leiste steht OBEN in den Einstellungen wie im Vorbild, nicht als letztes Element.
+Gemessen (Playwright, Seite unter `/Mein-Mixarium/`): Knopf sichtbar · als App weg · Tipp ohne Angebot zeigt die
+Anleitung · keine Installierbarkeits-Fehler, AppId `/Mein-Mixarium/index.html` · 360 px ohne Querlaufen.
+`md5sum` von `index.html` und QC-Datei gleich. ⚠ Am Tablet nicht gemessen.
