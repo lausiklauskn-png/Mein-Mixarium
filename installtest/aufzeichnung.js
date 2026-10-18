@@ -28,29 +28,31 @@ function modus(){
 
 // ── Ereignisse, die Chrome rund ums Installieren erzeugt ──
 addEventListener('beforeinstallprompt', e => {
-  e.preventDefault(); bip = e;
+  // NUR BEOBACHTEN: kein preventDefault, kein eigener Knopf. Ob die SEITE das
+  // Ereignis abfängt (Mixarium tut es), wird gemessen statt verändert.
+  bip = e;
   log('beforeinstallprompt', { platforms: e.platforms || null });
   befund('Chrome meldet: <b>installierbar</b> (beforeinstallprompt)', true);
-  const g = document.getElementById('gross'); if (g) g.disabled = false;
-  const bh = document.getElementById('bipHinweis'); if (bh) bh.textContent = 'Chrome hält diese Seite für installierbar.';
+  setTimeout(() => log('beforeinstallprompt-von-seite-abgefangen', e.defaultPrevented), 0);
 });
 addEventListener('appinstalled', () => { log('appinstalled'); befund('Chrome meldet: <b>installiert</b> (appinstalled)', true); });
+// ── Was rund um das Chrome-Menü passiert (das Menü selbst sieht die Seite nicht) ──
+addEventListener('focus', () => log('fokus', 'zurück'));
+addEventListener('blur', () => log('fokus', 'weg (z. B. Menü oder Dialog offen)'));
+addEventListener('resize', () => log('fenstergroesse', innerWidth + 'x' + innerHeight));
+let tipps = 0;
+addEventListener('pointerdown', e => {
+  if (++tipps > 40) return;
+  const z = e.target.closest('button,a') || e.target;
+  log('tipp', { x: Math.round(e.clientX), y: Math.round(e.clientY), auf: (z.id || z.tagName.toLowerCase()) + (z.textContent ? ' „' + z.textContent.trim().slice(0, 30) + '“' : '') });
+}, { passive: true, capture: true });
+for (const m of ['standalone', 'minimal-ui', 'fullscreen', 'browser'])
+  matchMedia(`(display-mode: ${m})`).addEventListener('change', e => { if (e.matches) log('anzeige-jetzt', m); });
 document.addEventListener('visibilitychange', () => log('sichtbarkeit', document.visibilityState));
 addEventListener('pageshow', e => { if (e.persisted) log('pageshow-aus-cache'); });
 addEventListener('error', e => log('fehler', String(e.message || e.error)));
 addEventListener('unhandledrejection', e => log('fehler-promise', String(e.reason)));
-matchMedia('(display-mode: standalone)').addEventListener('change', e => log('anzeige-wechsel', e.matches ? 'standalone' : 'browser'));
 
-async function installieren(){
-  if (!bip) return;
-  log('knopf-installieren');
-  try {
-    bip.prompt();
-    const r = await bip.userChoice;
-    log('auswahl', { outcome: r.outcome, platform: r.platform });
-  } catch (err) { log('knopf-fehler', String(err)); }
-  bip = null; const g2 = document.getElementById('gross'); if (g2) g2.disabled = true;
-}
 
 // ── Umgebung ──
 async function umgebung(){

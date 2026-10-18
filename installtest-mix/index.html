@@ -135,6 +135,8 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:.75rem;max-height:40vh;
 .klein{font-size:.85rem;opacity:.85}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1c1917;color:#fff;padding:8px 14px;border-radius:9px;opacity:0;transition:opacity .2s}
 .toast.show{opacity:1}
+/* Nur der Browser-Weg wird getestet: die Leiste bleibt im Code (1:1), ist aber unsichtbar. */
+#pwaBar,#pwaBar.show{display:none!important}
 /* ── 1:1 aus Mixarium ── */
 .pwa-install{background:var(--teals);border:1px solid var(--teal);border-radius:9px;padding:10px 11px;display:flex;align-items:center;gap:8px;margin-bottom:10px;display:none}
 .pwa-install.show{display:flex}
@@ -150,7 +152,7 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:.75rem;max-height:40vh;
 <h1>🧪 Mini-Mixarium · Installations-Test</h1>
 <div class="box" id="modus"></div>
 <p class="klein">Manifest, Service Worker, Symbole und Installieren-Leiste sind 1:1 die von Mein Mixarium.
-Die grüne Leiste unten ist <b>dieselbe</b> wie oben in den Mixarium-Einstellungen.</p>
+Auch der Code, der Chromes Installier-Signal abfängt, ist 1:1 drin — nur die grüne Leiste ist <b>ausgeblendet</b>, damit allein das Chrome-Menü getestet wird.</p>
 <!-- ── 1:1 aus Mixarium (Einstellungen) ── -->
     <div class="pwa-install" id="pwaBar">
       <div class="pwa-txt" id="pwaText">Als App installieren — offline verfügbar</div>
@@ -162,13 +164,17 @@ Die grüne Leiste unten ist <b>dieselbe</b> wie oben in den Mixarium-Einstellung
       <button class="upd-btn" onclick="applyUpdate()">Jetzt laden</button>
     </div>
 
-<div class="box"><b>So testest du</b>
+<div class="box">
+<b>So testest du — nur über das Chrome-Menü</b>
 <ol>
-<li>Diese Seite in <b>Chrome</b> öffnen.</li>
-<li>Zuerst über das <b>Chrome-Menü</b> installieren und das neue Mixarium-Symbol antippen.</li>
-<li>Kommt „konnte nicht geöffnet werden“: zurück in Chrome auf diese Seite und <b>„Bericht an GitHub senden“</b>.</li>
-<li>Dann wieder entfernen, mit dem Knopf <b>„Installieren“</b> in der grünen Leiste installieren und noch einmal senden.</li>
-</ol></div>
+<li><b>Im echten Chrome öffnen.</b> Siehst du oben eine schwarze Leiste mit <b>✕</b> und <b>⌄</b>, bist du in einem App-internen Fenster. Dann ⋮ → <b>„In Chrome öffnen“</b>.</li>
+<li>„Protokoll löschen“ tippen.</li>
+<li>Chrome-Menü <b>⋮</b> → <b>„App installieren“</b> bzw. „Zum Startbildschirm hinzufügen“ → bestätigen.</li>
+<li>Das neue Symbol auf dem Startbildschirm antippen.</li>
+<li>Was auch passiert: zurück in Chrome auf diese Seite, <b>„Bericht kopieren“</b> und mir schicken.</li>
+</ol>
+<p class="klein">Diese Seite hat <b>keinen</b> Installieren-Knopf. Sie schaut nur zu: wann Chrome „installierbar“ meldet, wann das Menü den Fokus nimmt, was installiert wird und ob die App danach wirklich startet.</p>
+</div>
 <div class="box"><b>Befund dieser Sitzung</b><ul id="befund"></ul></div>
 <div class="knoepfe">
 <button onclick="anGithub()">Bericht an GitHub senden</button>
@@ -260,6 +266,6 @@ function applyUpdate(){
 </script>
 <script>window.INSTTEST = { app: 'Mini-Mixarium', swSelbst: false, verwandt: false,
   pruefen: [['./manifest.json', 'Mini-Mixarium'], ['../manifest.json', 'Mixarium']] };</script>
-<script src="../installtest/aufzeichnung.js?v=1"></script>
+<script src="../installtest/aufzeichnung.js?v=2"></script>
 </body>
 </html>
