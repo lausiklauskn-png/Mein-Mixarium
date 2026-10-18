@@ -7,7 +7,7 @@ console.info("SBKIM-SW geladen via importScripts (Variante 3b)");
 //
 // Ab v5: Navigation und Pre-Cache umgehen den Browser-HTTP-Cache aktiv
 // (cache:'reload'), damit App-Änderungen ohne manuelles Cache-Löschen ankommen.
-const SW_VERSION = 'minimix-sw-v131'; // ⚠ EINZIGE ABWEICHUNG zu Mixarium (dazu VORRAT_KENNUNG): caches gehoeren der ganzen Adresse — mit dem Mixarium-Namen wuerde dieser Test die Vorraete der echten App loeschen.
+const SW_VERSION = 'minimix-sw-v132'; // ⚠ EINZIGE ABWEICHUNG zu Mixarium (dazu VORRAT_KENNUNG): caches gehoeren der ganzen Adresse — mit dem Mixarium-Namen wuerde dieser Test die Vorraete der echten App loeschen.
 const PRECACHE = `precache-${SW_VERSION}`;
 const RUNTIME = `runtime-${SW_VERSION}`;
 
