@@ -1437,7 +1437,7 @@ Am Tablet nicht gemessen.
 
 Klaus: Installieren über das Chrome-Menü endet mit „App konnte nicht geöffnet werden",
 der Knopf in der App klappt. Gefunden über die Test-Apps `installtest/` und
-`installtest-mix/` und ein Bild von **chrome://webapks** vom Tablet:
+`installtest-mix/` (am 2026-10-18 nach getaner Arbeit wieder entfernt, Klaus: „Ja") und ein Bild von **chrome://webapks** vom Tablet:
 
 | App | Manifest Id laut Chrome |
 |---|---|
