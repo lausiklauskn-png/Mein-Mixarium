@@ -40,7 +40,9 @@ function finde(dir) {
   return aus;
 }
 const dateien = finde(WURZEL);
-ok('Selbst-Riegel: mindestens drei Manifeste gefunden', dateien.length >= 3, String(dateien.length));
+// Die Test-Apps (installtest/, installtest-mix/) sind seit 2026-10-18 entfernt; gemessen wird,
+// dass der Sammler das Manifest der App selbst findet, nicht eine Anzahl.
+ok('Selbst-Riegel: das Manifest der App wird gefunden', dateien.some(f => f === join(WURZEL, 'manifest.json')), dateien.join(', '));
 const gesehen = new Map();
 for (const f of dateien) {
   const rel = relative(WURZEL, f);
