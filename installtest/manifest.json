@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "Installations-Test",
+  "short_name": "InstTest",
+  "description": "Mini-App, die nur das Installieren prüft und aufzeichnet.",
+  "start_url": "./?quelle=app",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff7ed",
+  "theme_color": "#c2410c",
+  "lang": "de",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "related_applications": [
+    { "platform": "webapp", "url": "https://lausiklauskn-png.github.io/Mein-Mixarium/installtest/manifest.json" }
+  ],
+  "prefer_related_applications": false
+}
