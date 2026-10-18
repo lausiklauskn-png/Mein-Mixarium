@@ -1465,4 +1465,14 @@ Gemessen 2026-10-18 in den anderen Repos (nur gelesen, dort nichts geändert):
 Kimseek, Family-Projekt.de-Video, Sage-Protokol/pinnwand, Sage-Protokol/such-tool,
 SB-KIMTool-Point/such-tool · `"./index.html"` in Mein-Rezeptbuch und Muttis-Rezeptbuch.
 Richtig: Sage-Protokol, SB-KIMTool-Point, Mein-Tresor, Jasons-Tresor.
-⚠ Am Tablet nach der Reparatur noch nicht gemessen.
+✅ **Am Tablet bestätigt (Klaus 2026-10-18):** Installieren über das Chrome-Menü klappt
+„einwandfrei“ — erst Chromes Fenster (App installieren / Verknüpfung), danach die
+Installationsbitte der App. Vorher stand hier: *„Am Tablet nach der Reparatur noch nicht
+gemessen."*
+
+**Warum der Knopf in der App immer ging und das Menü nicht** (aus Klaus' Messungen
+abgeleitet, nicht aus einer Chrome-Doku): der Knopf (`beforeinstallprompt`) fragt, ob für
+die **Adresse** schon eine App installiert ist; das neue Menü-Fenster fragt nach der
+**Kennung** — und fand unter `…github.io/` bzw. `…github.io/index.html` eine fremde App.
+chrome://webapks am Tablet: 10 installierte Apps mit `…github.io/`, 2 mit `…/index.html`.
+Eine schon installierte App übernimmt eine geänderte `id` nicht — einmal neu installieren.
