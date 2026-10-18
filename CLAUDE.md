@@ -1432,3 +1432,37 @@ Proben:
 - Gegenprobe `NUR_FALL="QUALITÄT"`: 2 gefangen.
 
 Am Tablet nicht gemessen.
+
+## 🪪 DIE MANIFEST-`id` WIRD VON DER HAUPTADRESSE AUS GERECHNET (Klaus 2026-10-18)
+
+Klaus: Installieren über das Chrome-Menü endet mit „App konnte nicht geöffnet werden",
+der Knopf in der App klappt. Gefunden über die Test-Apps `installtest/` und
+`installtest-mix/` und ein Bild von **chrome://webapks** vom Tablet:
+
+| App | Manifest Id laut Chrome |
+|---|---|
+| Sage-Pinnwand (`"id": "./"`) | `https://lausiklauskn-png.github.io/` |
+| Mini-Mixarium (`"id": "./index.html"`) | `https://lausiklauskn-png.github.io/index.html` |
+
+⚠ **Chrome rechnet `id` vom URSPRUNG aus, nicht vom Ordner der App.** Aus `"./"` wird
+für jede App auf `lausiklauskn-png.github.io` dieselbe Kennung. Chrome hält solche Apps
+für **eine** App: das Menü sagt „Diese App wurde bereits installiert", und das Öffnen
+scheitert.
+
+⚠ **UND ICH HABE MIXARIUM AM SELBEN TAG IN GENAU DIESE FALLE GESETZT** (PR #259,
+`"id": "./index.html"` → `/index.html`, dieselbe Kennung wie Mein Rezeptbuch und Muttis
+Rezeptbuch). Meine Messung damals rechnete `new URL(id, start_url)` und war damit falsch.
+Jetzt: **`"id": "/Mein-Mixarium/index.html"`** — das ist die Kennung, die Mixarium vor
+#259 ohne `id` hatte, eine ältere Installation bleibt also dieselbe App.
+
+**Regel:** `id` immer als absoluter Pfad mit dem eigenen Ordner (`/Mein-Mixarium/…`).
+`node tests/smoke_manifest_id.mjs` rechnet wie Chrome und prüft jedes Manifest im Depot
+(Kennung im eigenen Ordner, keine doppelt). Gegenprobe von Hand: mit `./index.html` rot.
+Gegengemessen mit Chromium (`Page.getAppId`).
+
+Gemessen 2026-10-18 in den anderen Repos (nur gelesen, dort nichts geändert):
+`"./"` in Workflow-PDF, Workflow-Calculate, Workflow-Needs, Mein-In-and-Out-Book, Kimboard,
+Kimseek, Family-Projekt.de-Video, Sage-Protokol/pinnwand, Sage-Protokol/such-tool,
+SB-KIMTool-Point/such-tool · `"./index.html"` in Mein-Rezeptbuch und Muttis-Rezeptbuch.
+Richtig: Sage-Protokol, SB-KIMTool-Point, Mein-Tresor, Jasons-Tresor.
+⚠ Am Tablet nach der Reparatur noch nicht gemessen.
