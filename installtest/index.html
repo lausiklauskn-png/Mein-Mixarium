@@ -17,7 +17,6 @@ h1{font-size:1.3rem;margin:.2em 0 .6em}
 button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px 16px;margin:4px 6px 4px 0;background:var(--akz);color:#fff;cursor:pointer}
 button[disabled]{opacity:.4;cursor:not-allowed}
 button.zweit{background:transparent;color:var(--akz);border:2px solid var(--akz)}
-#gross{font-size:1.25rem;width:100%;padding:18px}
 ol{padding-left:1.2em;margin:.3em 0}
 .gut{color:var(--gut);font-weight:700}.schlecht{color:var(--schlecht);font-weight:700}
 #befund li{margin:.2em 0}
@@ -30,17 +29,16 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:.75rem;max-height:40vh;
 
 <div class="box" id="modus"></div>
 
-<button id="gross" disabled onclick="installieren()">Installieren</button>
-<p class="klein" id="bipHinweis">Der Knopf wird aktiv, sobald Chrome meldet, dass die App installierbar ist.</p>
-
 <div class="box">
-<b>So testest du</b>
+<b>So testest du — nur über das Chrome-Menü</b>
 <ol>
-<li>Diese Seite in <b>Chrome</b> öffnen (nicht aus einer anderen App heraus).</li>
-<li><b>Zuerst über das Chrome-Menü</b> (⋮ → „App installieren“ / „Zum Startbildschirm hinzufügen“) installieren und das neue Symbol antippen.</li>
-<li>Kommt „konnte nicht geöffnet werden“: zurück in Chrome auf diese Seite und <b>„Bericht an GitHub senden“</b> tippen.</li>
-<li>Danach die Test-App wieder entfernen und mit dem großen Knopf oben installieren — und noch einmal senden.</li>
+<li><b>Im echten Chrome öffnen.</b> Siehst du oben eine schwarze Leiste mit <b>✕</b> und <b>⌄</b>, bist du in einem App-internen Fenster. Dann ⋮ → <b>„In Chrome öffnen“</b>.</li>
+<li>„Protokoll löschen“ tippen.</li>
+<li>Chrome-Menü <b>⋮</b> → <b>„App installieren“</b> bzw. „Zum Startbildschirm hinzufügen“ → bestätigen.</li>
+<li>Das neue Symbol auf dem Startbildschirm antippen.</li>
+<li>Was auch passiert: zurück in Chrome auf diese Seite, <b>„Bericht kopieren“</b> und mir schicken.</li>
 </ol>
+<p class="klein">Diese Seite hat <b>keinen</b> Installieren-Knopf. Sie schaut nur zu: wann Chrome „installierbar“ meldet, wann das Menü den Fokus nimmt, was installiert wird und ob die App danach wirklich startet.</p>
 </div>
 
 <div class="box"><b>Befund dieser Sitzung</b><ul id="befund"></ul></div>
@@ -55,6 +53,6 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:.75rem;max-height:40vh;
 
 <div class="box"><b>Protokoll</b> <span class="klein">(bleibt auf dem Gerät gespeichert, auch zwischen Browser und installierter App)</span><pre id="proto"></pre></div>
 
-<script src="aufzeichnung.js?v=1"></script>
+<script src="aufzeichnung.js?v=2"></script>
 </body>
 </html>
