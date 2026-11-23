@@ -8,24 +8,23 @@ import { platzbild } from './platzbild.mjs';
 import { alteAppLesen, vorabLesen } from './alt.mjs';
 import { speicher } from '../kern/speicher/speicher.mjs';
 import { tresor } from '../kern/speicher/tresor.mjs';
-import { FARBEN, TOENE, istDunkel, farbeSetzen } from '../kern/oberflaeche/farben.mjs';
+import { FARBEN, TOENE, istDunkel, farbeSetzen, farbName as kernFarbName, tonName } from '../kern/oberflaeche/farben.mjs';
 import { schriftWert, schriftSetzen, schriftRegler } from '../kern/oberflaeche/schrift.mjs';
 import { bildAusDatei } from '../kern/oberflaeche/bild.mjs';
-import { kiBild, gratisBild, KOSTEN_TEXT } from '../kern/ki/bild.mjs';
+import { kiBild, gratisBild, KOSTEN } from '../kern/ki/bild.mjs';
 import { sicht as kernSicht } from '../kern/modell/rezept.mjs';
 import { diktat, diktatAus, diktatMoeglich } from '../kern/oberflaeche/diktat.mjs';
 
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor6';
+export const FASSUNG = '10.0.0-vor7';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* Wasserfarben des Familienbüros, wie in der Private Akte. */
 /* Farben, Ton (hell/dunkel) und Schrift-Regler kommen aus dem Küchen-Kern. Englische Farbnamen hat der Kern nicht; sie stehen hier. */
-const FARBE_EN = { braun: 'Light brown', dunkel: 'Dark brown', blau: 'Water blue', gruen: 'Water green', gelb: 'Light yellow', koralle: 'Coral', see: 'Lake blue', flieder: 'Lilac', kraeftig: 'Strong' };
-const farbName = (k) => L((FARBEN[k] || FARBEN.blau).de, FARBE_EN[k] || k);
+const farbName = (k) => kernFarbName(FARBEN[k] ? k : 'blau', sprache());   // Namen de/en stehen seit Kern 0.11 im Kern
 const SPRACHEN = [['de', 'Deutsch'], ['en', 'English'], ['es', 'Español'], ['fr', 'Français'], ['it', 'Italiano'], ['pt', 'Português'], ['ru', 'Русский'], ['zh', '中文']];
 const NAV = [['start', ['Getränke', 'Drinks'], 'drinks'], ['karte', ['Karte', 'Drinks list'], 'plan'], ['einkauf', ['Einkauf', 'Shopping'], 'cart'], ['labor', ['Labor', 'Lab'], 'lab'], ['mehr', ['Einstellungen', 'Settings'], 'settings']];
 const KAT_SYM = { all: 'drinks', mock: 'drinks', afckt: 'drinks', ckt: 'wine', smooth: 'glass', limo: 'citrus', tee: 'coffee', sirup: 'drop', bowle: 'users', knab: 'box', finger: 'box' };
@@ -98,8 +97,8 @@ function flLeiste() {
 }
 function menue() {
   if (Z.menue === 'sprache') return `<div class="sprachmenue" role="menu"><h3>${L('Sprache der App', 'App language')}</h3><button role="menuitemradio" aria-checked="${!E.sprache}" data-lang="">${L('Wie das Gerät', 'Same as device')}${!E.sprache ? I('check') : ''}</button>${SPRACHEN.map(([k, n]) => `<button role="menuitemradio" aria-checked="${E.sprache === k}" data-lang="${k}">${n}${E.sprache === k ? I('check') : ''}</button>`).join('')}<p>${L('Vollständig sind Deutsch und Englisch. In den anderen Sprachen sind Kategorien und Gläser übersetzt, die übrige Oberfläche erscheint vorerst auf Englisch.', 'German and English are complete. In the other languages categories and glasses are translated; the rest of the interface is in English for now.')}</p></div>`;
-  if (Z.menue === 'schrift') return `<div class="farbmenue schriftfeld" role="dialog" aria-label="${L('Schriftgröße', 'Text size')}"><h3>${L('Schriftgröße', 'Text size')}</h3>${schriftRegler(E.schrift)}<p>${L('Die Schrift ändert sich sofort, während du schiebst. Gilt für die ganze App, auch für die Mix-Ansicht.', 'The text changes right away while you slide. Applies to the whole app, including the mix view.')}</p><button data-a="schrift-100">${L('Zurück auf 100 %', 'Back to 100 %')}</button></div>`;
-  if (Z.menue === 'farbe') return `<div class="farbmenue" role="menu"><h3>${L('Farbe der App', 'App colour')}</h3>${Object.entries(FARBEN).map(([k, f]) => `<button role="menuitemradio" aria-checked="${E.farbe === k}" data-farbe="${k}"><span class="fleck" style="background:linear-gradient(135deg,${f.k[0]},${f.k[2]})"></span>${farbName(k)}</button>`).join('')}<hr><h3>${L('Hell oder dunkel', 'Light or dark')}</h3>${Object.keys(TOENE).map((k) => `<button role="menuitemradio" aria-checked="${E.ton === k}" data-ton="${k}">${I(k === 'dunkel' ? 'moon' : 'sun')}${{ geraet: L('Wie das Gerät', 'Same as device'), hell: L('Hell', 'Light'), dunkel: L('Dunkel', 'Dark') }[k]}</button>`).join('')}</div>`;
+  if (Z.menue === 'schrift') return `<div class="farbmenue schriftfeld" role="dialog" aria-label="${L('Schriftgröße', 'Text size')}"><h3>${L('Schriftgröße', 'Text size')}</h3>${schriftRegler(E.schrift, sprache())}<p>${L('Die Schrift ändert sich sofort, während du schiebst. Gilt für die ganze App, auch für die Mix-Ansicht.', 'The text changes right away while you slide. Applies to the whole app, including the mix view.')}</p><button data-a="schrift-100">${L('Zurück auf 100 %', 'Back to 100 %')}</button></div>`;
+  if (Z.menue === 'farbe') return `<div class="farbmenue" role="menu"><h3>${L('Farbe der App', 'App colour')}</h3>${Object.entries(FARBEN).map(([k, f]) => `<button role="menuitemradio" aria-checked="${E.farbe === k}" data-farbe="${k}"><span class="fleck" style="background:linear-gradient(135deg,${f.k[0]},${f.k[2]})"></span>${farbName(k)}</button>`).join('')}<hr><h3>${L('Hell oder dunkel', 'Light or dark')}</h3>${Object.keys(TOENE).map((k) => `<button role="menuitemradio" aria-checked="${E.ton === k}" data-ton="${k}">${I(k === 'dunkel' ? 'moon' : 'sun')}${tonName(k, sprache())}</button>`).join('')}</div>`;
   return '';
 }
 function leiste() {
@@ -303,7 +302,7 @@ function bildBlatt() {
   const r = getr(Z.uid); if (!r) return;
   const z = (akt, i, t, w) => `<button class="ezeile" data-a="${akt}">${I(i)}<span><b>${t}</b><small>${w}</small></span>${I('right')}</button>`;
   Z.fenster = { titel: sicht(r).name, html: `${r.img ? `<button class="bb-bild" data-a="bildvoll" aria-label="${L('Ganzes Bild im Vollbild', 'Whole picture full screen')}"><img src="${esc(r.img)}" alt=""></button>` : `<p class="ftext">${L('Dieses Getränk hat noch kein Bild.', 'This drink has no picture yet.')}</p>`}
-   <div class="eliste">${r.img ? z('bildvoll', 'full', L('Ganzes Bild', 'Whole picture'), L('im Vollbild ansehen', 'view full screen')) + z('ausschnitt', 'crop', L('Ausschnitt anpassen', 'Adjust section'), L('verschieben, was auf Karte und Kopfbild zu sehen ist', 'move what shows on card and header')) : ''}${z('bild-datei', 'camera', r.img ? L('Bild ersetzen', 'Replace picture') : L('Bild einfügen', 'Add picture'), L('Foto aufnehmen oder Datei wählen', 'Take a photo or choose a file'))}${z('ki-bild', 'sparkle', L('Bild von der KI erzeugen', 'Create picture with AI'), 'OpenAI, ' + L(KOSTEN_TEXT, 'about 4 cents per picture, billed by OpenAI'))}${z('gratis-bild', 'image', L('Gratis-Foto erzeugen', 'Create free photo'), L('ohne Schlüssel; der Name des Getränks geht an den Dienst Pollinations', 'no key; the drink name goes to the Pollinations service'))}</div>
+   <div class="eliste">${r.img ? z('bildvoll', 'full', L('Ganzes Bild', 'Whole picture'), L('im Vollbild ansehen', 'view full screen')) + z('ausschnitt', 'crop', L('Ausschnitt anpassen', 'Adjust section'), L('verschieben, was auf Karte und Kopfbild zu sehen ist', 'move what shows on card and header')) : ''}${z('bild-datei', 'camera', r.img ? L('Bild ersetzen', 'Replace picture') : L('Bild einfügen', 'Add picture'), L('Foto aufnehmen oder Datei wählen', 'Take a photo or choose a file'))}${z('ki-bild', 'sparkle', L('Bild von der KI erzeugen', 'Create picture with AI'), 'OpenAI, ' + L(KOSTEN.de, KOSTEN.en))}${z('gratis-bild', 'image', L('Gratis-Foto erzeugen', 'Create free photo'), L('ohne Schlüssel; der Name des Getränks geht an den Dienst Pollinations', 'no key; the drink name goes to the Pollinations service'))}</div>
    <input type="file" id="bbdatei" accept="image/*" hidden>` };
   zeichne();
 }
@@ -319,7 +318,7 @@ async function bildErzeugen(gratis) {
   if (!gratis) { schluessel = (await lager.hol('schluessel-openai')) || ''; if (!schluessel) return schluesselFenster(true); }
   Z.fenster = null; melde(gratis ? L('Gratis-Foto wird erzeugt …', 'Creating free photo …') : L('KI-Bild wird erzeugt, das dauert etwa 20 Sekunden …', 'Creating AI picture, this takes about 20 seconds …'));
   try {
-    const roh = gratis ? await gratisBild(sicht(r)) : await kiBild(schluessel, sicht(r));
+    const roh = gratis ? await gratisBild(sicht(r), { art: 'getraenk' }) : await kiBild(schluessel, sicht(r), { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
     bildSetzen(await bildAusDatei(await (await fetch(roh)).blob())); melde(L('Das neue Bild ist da.', 'The new picture is there.'));
   } catch (f) { melde(L('Das hat nicht geklappt: ', 'That did not work: ') + (f && f.message ? f.message : L('unbekannter Fehler', 'unknown error'))); }
 }
