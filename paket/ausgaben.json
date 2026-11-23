@@ -1,0 +1,22 @@
+{
+ "hinweis": "Einstellungen des Paket-Werkzeugs für Mein Mixarium. Was in ein Paket kommt, entscheidet ausgaben/<name>/ausgabe.json (Küchen-Kern); hier steht nur, was die Hüllen dazu brauchen. App-Kennung und App-Name sind Vorschläge, bis Klaus sie bestätigt.",
+ "inhalt": [
+  { "ordner": "neu", "ohne": ["README.md"] },
+  { "ordner": "kern", "nur": [".mjs"] },
+  { "ordner": "getraenke", "nur": [".mjs"] },
+  { "ordner": "assets", "nur": [".js"] },
+  { "datei": "sbkim/03_embedding.js" },
+  { "datei": "sbkim/04_match.js" },
+  { "datei": "impressum.html" },
+  { "datei": "LICENSE" },
+  { "datei": "THIRD_PARTY.md" }
+ ],
+ "dienstarbeiter": "neu/sw.js",
+ "weiche": { "datei": "neu/app.mjs", "muster": "const AUSGABE = '{ausgabe}';", "fest": "mixarium-voll" },
+ "verweiseOhneZiel": {},
+ "ausgaben": {
+  "mixarium-store": { "appId": "de.family_projekt.mixarium", "appName": "Mein Mixarium", "grund": "#10202e" },
+  "mixarium-voll": { "appId": "de.family_projekt.mixarium.voll", "appName": "Mein Mixarium (voll)", "grund": "#10202e" }
+ },
+ "probe": { "art": "mixarium" }
+}
