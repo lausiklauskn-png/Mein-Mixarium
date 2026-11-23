@@ -24,7 +24,7 @@ import { ladeBausteine, korpus as semKorpus, sucheBedeutung } from '../kern/such
 import * as LAB from '../getraenke/labor.mjs';
 import { hinweiseEinrichten } from '../kern/oberflaeche/hinweis.mjs';
 import { wartenEinrichten, modellFortschritt, bytesMitAnteil } from '../kern/oberflaeche/warten.mjs';
-import { text as spText, fuelle } from '../kern/oberflaeche/sprache.mjs';
+import { text as spText, fuelle, ladeTabelle } from '../kern/oberflaeche/sprache.mjs';
 import { schluessel as schluesselLager, ANBIETER, erklaerung as schlErklaerung, formPasst, pruefeSchluessel, schluesselAdresse } from '../kern/ki/schluessel.mjs';
 import { STUFEN } from '../kern/ki/claude.mjs';
 import { vorbereiten, erkennen, rezeptAusScan, wasGehtHinaus, wohinKurz, istPdf, istBild } from '../kern/import/scan.mjs';
@@ -65,7 +65,9 @@ let A = null;
 const Z = { einstAuf: new Set(), entd: null, scanMehr: false, scan: null, web: null, lab: { kat: 'mock', geschmack: [], zutaten: '', entwurf: null, laeuft: false, fehler: '', entfernteAuf: false }, planTag: new Date(), bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
 
 const sprache = () => E.sprache || (A && A.einstellungen && A.einstellungen.sprache) || ((navigator.language || 'de').slice(0, 2));
-const L = (de, en) => spText(sprache(), de, en);   /* Deutsch und Englisch im Code; die übrigen Sprachen über Tabellen des Kerns, sonst Englisch */
+const L = (de, en) => spText(sprache(), de, en);
+/* Die sechs übrigen Sprachen: erst die Tabelle des Kerns, dann die der App (bei gleichem Schlüssel gewinnt die der App). Fehlt eine, steht Englisch da. */
+const tabellenLaden = (code = sprache()) => ladeTabelle(code, [new URL('../kern/sprachen/' + code + '.mjs', import.meta.url).href, new URL('./sprachen/' + code + '.mjs', import.meta.url).href]).catch(() => false);   /* Deutsch und Englisch im Code; die übrigen Sprachen über Tabellen des Kerns, sonst Englisch */
 const dunkel = () => istDunkel(E.farbe, E.ton);
 const breit = () => innerWidth >= 1000;
 const ohneAlk = () => !!(A.einstellungen && A.einstellungen.ohneAlkohol);
@@ -163,7 +165,7 @@ function flLeiste() {
   return `<aside class="${cls}" style="${ort}"><div class="fl-knoepfe" role="menu"><button class="fl-zu" data-a="fl-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button>${k('data-a="oben"', I('up'), L('Nach oben', 'To top'))}${Z.view !== 'start' ? k('data-a="zurueck"', I('left'), L('Zurück', 'Back')) : ''}${NAV.map(([v, n, i]) => k(`data-go="${v}"`, I(i), L(...n), akt === v)).join('')}<hr><div class="fl-werk" role="group" aria-label="${L('Werkzeuge', 'Tools')}">${w('data-ton="hell"', I('sun'), L('Hell', 'Light'), !dunkel())}${w('data-ton="dunkel"', I('moon'), L('Dunkel', 'Dark'), dunkel())}${w('data-a="menue" data-m="farbe"', '<span class="fleck farbknopf"></span>', L('Farbe', 'Colour'))}${w('data-a="menue" data-m="schrift"', '<span class="aa" aria-hidden="true">A<b>A</b></span>', L('Schrift', 'Text'))}${w('data-a="menue" data-m="sprache"', I('lang'), L('Sprache', 'Language'))}${w(`data-a="alk" title="${L('Ohne Alkohol: Getränke mit Alkohol ausblenden', 'Alcohol-free: hide drinks with alcohol')}"`, I('noalc'), L('Ohne Alk.', 'No alc.'), ohneAlk())}${w(`data-a="sichern" class="breit" title="${L('Sicherung als Datei speichern', 'Save a backup file')}"`, I('download'), L('Sichern', 'Backup'))}</div></div></aside>`;
 }
 function menue() {
-  if (Z.menue === 'sprache') return `<div class="sprachmenue" role="menu"><h3>${L('Sprache der App', 'App language')}</h3><button role="menuitemradio" aria-checked="${!E.sprache}" data-lang="">${L('Wie das Gerät', 'Same as device')}${!E.sprache ? I('check') : ''}</button>${SPRACHEN.map(([k, n]) => `<button role="menuitemradio" aria-checked="${E.sprache === k}" data-lang="${k}">${n}${E.sprache === k ? I('check') : ''}</button>`).join('')}<p>${L('Vollständig sind Deutsch und Englisch. In den anderen Sprachen sind Kategorien und Gläser übersetzt, die übrige Oberfläche erscheint vorerst auf Englisch.', 'German and English are complete. In the other languages categories and glasses are translated; the rest of the interface is in English for now.')}</p></div>`;
+  if (Z.menue === 'sprache') return `<div class="sprachmenue" role="menu"><h3>${L('Sprache der App', 'App language')}</h3><button role="menuitemradio" aria-checked="${!E.sprache}" data-lang="">${L('Wie das Gerät', 'Same as device')}${!E.sprache ? I('check') : ''}</button>${SPRACHEN.map(([k, n]) => `<button role="menuitemradio" aria-checked="${E.sprache === k}" data-lang="${k}">${n}${E.sprache === k ? I('check') : ''}</button>`).join('')}</div>`;
   if (Z.menue === 'schrift') return `<div class="farbmenue schriftfeld" role="dialog" aria-label="${L('Schriftgröße', 'Text size')}"><h3>${L('Schriftgröße', 'Text size')}</h3>${schriftRegler(E.schrift, sprache())}<p>${L('Die Schrift ändert sich sofort, während du schiebst. Gilt für die ganze App, auch für die Mix-Ansicht.', 'The text changes right away while you slide. Applies to the whole app, including the mix view.')}</p><button data-a="schrift-100">${L('Zurück auf 100 %', 'Back to 100 %')}</button></div>`;
   if (Z.menue === 'farbe') return `<div class="farbmenue" role="menu"><h3>${L('Farbe der App', 'App colour')}</h3>${Object.entries(FARBEN).map(([k, f]) => `<button role="menuitemradio" aria-checked="${E.farbe === k}" data-farbe="${k}"><span class="fleck" style="background:linear-gradient(135deg,${f.k[0]},${f.k[2]})"></span>${farbName(k)}</button>`).join('')}<hr><h3>${L('Hell oder dunkel', 'Light or dark')}</h3>${['hell', 'dunkel'].map((k) => `<button role="menuitemradio" aria-checked="${E.ton === k}" data-ton="${k}">${I(k === 'dunkel' ? 'moon' : 'sun')}${tonName(k, sprache())}</button>`).join('')}</div>`;
   return '';
@@ -1152,7 +1154,7 @@ document.addEventListener('click', (ev) => {
   if (!b) return;
   const d = b.dataset;
   if (d.a === 'fenster-zu-aussen') { if (ev.target === b) fZu(); return; }
-  if (d.lang !== undefined) { E.sprache = d.lang || null; Z.menue = null; einstSichern(); return zeichne(true); }
+  if (d.lang !== undefined) { E.sprache = d.lang || null; Z.menue = null; einstSichern(); document.documentElement.lang = sprache(); tabellenLaden().then(() => zeichne(true)); return; }
   if (d.farbe) { E.farbe = d.farbe; einstSichern(); return zeichne(); }
   if (b.closest('.fl-werk')) Z.flAuf = false;   /* ein Werkzeug aus der Leiste gewählt: Leiste zu */
   if (d.ton) { E.ton = d.ton; einstSichern(); return zeichne(); }
@@ -1258,6 +1260,7 @@ async function start() {
   if (!A) A = G.leereSammlung();
   A.einkauf = A.einkauf || []; A.anlaesse = A.anlaesse || []; A.einstellungen = A.einstellungen || { ohneAlkohol: false, sprache: null };
   breitWar = breit();
+  document.documentElement.lang = sprache(); await tabellenLaden();   /* vor dem ersten Zeichnen; für Deutsch und Englisch ist das nichts */
   hinweiseEinrichten(document, { aus: () => !!E.hinweiseAus });   // Hinweis-Blasen wie in der alten App (Kern 0.16), ausschaltbar
   const geteilt = new URLSearchParams(location.search), geteilteAdresse = webAdresse(geteilt.get('url') || '') || webAdresse(geteilt.get('text') || '');   /* über „Teilen“ an die installierte App geschickt */
   const geteiltesGetraenk = /^#share=/.test(location.hash) ? location.href : '';   /* Link aus einem QR-Code (Format der bisherigen App) */
