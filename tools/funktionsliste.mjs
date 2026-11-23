@@ -75,6 +75,7 @@ out.push(`## Außerhalb der Seite
 | \`mr-*.html\` | – | Fremdkörper aus Muttis Rezeptbuch, nicht anfassen |
 | TheCocktailDB (Entdecken) | nur Mixarium | Netz nur auf Knopfdruck |
 | Web-Import über allorigins/codetabs | **entfällt** | in der App direkt laden (Capacitor-HTTP) |
+| Beispielgetränke | nur Mixarium | zwei Ausgaben (Klaus 23.11.): *store* nur ohne Alkohol, *voll* mit allen; Pakete unter \`beispiele/\`, löschbar mit einem Klick |
 
 ## Speicher (Übernahme in der Getränke-Schicht)
 

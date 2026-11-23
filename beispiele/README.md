@@ -21,6 +21,21 @@ ordnet zu und legt das Ergebnis als Paket ab. Die Rohdateien gehen nicht in die 
 Mein Rezeptbuch bereitet ebenfalls Getränke für das Mixarium vor (8 mit Alkohol, dazu alkoholfreie im Beispielbuch).
 Sie werden übernommen, sobald das Rezeptbuch damit fertig ist und sie auf dessen main liegen.
 
+## Zwei Ausgaben (Klaus 23.11.2026: „Ja, zwei Ausgaben, so machen“)
+
+Eine Codebasis, zwei Ausgaben, gebaut mit einem Schalter (wie Muttis Rezeptbuch als Ausgabe des Rezeptbuchs),
+z. B. `npm run bau -- --ausgabe=store` bzw. `--ausgabe=voll`. Kein zweites Repo.
+
+| Ausgabe | Wo | Beispiele im Paket | Alkohol-Paket |
+|---|---|---|---|
+| **store** | Google Play (später Microsoft Store) | nur `getraenke.json` (ohne Alkohol) | nicht enthalten, wird nicht angeboten (Altersfreigabe) |
+| **voll** | Web-App (GitHub Pages), Klaus' eigene APK/Windows-App | `getraenke.json` und `getraenke-mit-alkohol.json` | enthalten, unter Einstellungen → Beispiele ladbar |
+
+Alle Getränke bleiben im Repo erhalten; die Store-Ausgabe lässt beim Bauen nur das Alkohol-Paket weg. Eigene
+Getränke mit Alkohol lassen sich in beiden Ausgaben anlegen und per Sicherung einspielen; der Schalter
+„Ohne Alkohol“ bleibt. Eine Probe prüft, dass im Store-Paket kein Getränk mit `alcohol: true` und keine
+Kategorie mit `alcohol: true` (Cocktails) mitgeliefert wird.
+
 ## Was daraus wird
 
 | Datei | Inhalt |
