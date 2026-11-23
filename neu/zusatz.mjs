@@ -1,15 +1,17 @@
 // Mein Mixarium · Zusätze: Stücke, die für sich stehen, damit die Hauptdatei (app.mjs) nicht weiter wächst.
-// Prüfung des Bildauftrags · KI-Bilder für alle ohne Bild · KI-Richter der Suche.
+// Prüfung des Bildauftrags · KI-Bilder für alle ohne Bild · KI-Richter der Suche · Tresor-Stände der bisherigen App.
 // app.mjs reicht ihre Werkzeuge herein und ruft die Stücke an wenigen, benannten Stellen (such dort nach „ZU.“).
 // Die Aktionen hängen sich selbst in TUN; Rückgabe false heißt wie dort: nicht neu zeichnen.
 import { pruefeBildAuftrag, sammelBilder, sammelKosten, ohneBild } from '../kern/ki/bild.mjs';
 import { kiAnweisungen } from '../kern/pruefung/datei.mjs';
 import { richte, kandidat, richterHinaus, RICHTER_MAX } from '../kern/suche/richter.mjs';
+import { leseAltenTresor, alteStaendeInTresor } from '../kern/speicher/alt-tresor.mjs';
 import { text as spText, fuelle } from '../kern/oberflaeche/sprache.mjs';
 
 /** app: { sprache(), esc, I, Z, TUN, SK, W, melde, sichern, zeichne, schluesselFenster(a, danach), bildAusDatei(blob), tresorAuto(grund),
  *         bildAn(uid, img), sichtbare() → die Getränke, die zu sehen sind („Ohne Alkohol“ gilt: nichts Ausgeblendetes geht an eine KI),
  *         warte(fenster, fertig) → ruft fertig, sobald dieses Fenster nicht mehr offen ist,
+ *         tr → der Tresor des Kerns, E() → Einstellungen des Geräts, einstSichern(),
  *         sinnTreffer() → Treffer der Sinn-Suche (nur Sichtbares), sicht(r) → Fassung in der Sprache der Oberfläche, katName(r) } */
 export function zusatz(app) {
   const { esc, I, Z, TUN, SK, W, melde, zeichne } = app;
@@ -99,7 +101,19 @@ export function zusatz(app) {
     } catch (f) { melde(f.message); } finally { ri.laeuft = false; }
   }
 
+  /* ── Tresor-Stände der bisherigen App: einmal lesen und mit Name und alter Zeit in den neuen Tresor legen. Dort wird nur gelesen;
+     gibt es ihre Datenbank nicht, entsteht sie beim Nachsehen auch nicht (kern/speicher/alt-tresor.mjs). ── */
+  const ALT_TRESOR = { db: 'MeinMxBackup1', schluessel: 'mix9m_bvault', bilder: 'mrz9m_bvi_' };   /* so heißen Datenbank, Liste und Bilder dort (am Code der bisherigen App geprüft) */
+  async function altTresor() {
+    const E = app.E(); if (E.altTresor) return 0;
+    const staende = await leseAltenTresor(ALT_TRESOR); if (!staende.length) return 0;
+    const e = await alteStaendeInTresor(app.tr, staende); E.altTresor = true; app.einstSichern();   /* zwei Riegel gegen doppelt: der Merker hier, die alte Kennung am Stand */
+    const sag = () => (Z.toast ? setTimeout(sag, 600) : melde(e.dazu === 1 ? L('Tresor: +1 Stand', 'Vault: +1 state') : fuelle(L('Tresor: +{0} Stände', 'Vault: +{0} states'), e.dazu)));   /* eine Meldung, die gerade dasteht, bleibt stehen */
+    if (e.dazu) sag();
+    return e.dazu;
+  }
+
   /* Was nach dem Speichern eines Schlüssels von selbst weitergeht (Kennung = Name der Aktion in TUN). */
   const danach = ['sammel-bilder', 'richter'];
-  return { bildFreigabe, sammelKnopf, sinnBlock, danach, wahl, stellenHtml };
+  return { bildFreigabe, sammelKnopf, sinnBlock, altTresor, danach, wahl, stellenHtml };
 }

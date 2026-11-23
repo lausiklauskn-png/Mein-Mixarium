@@ -2,7 +2,14 @@
 # und die rote Zeile muss den Namen der Zusicherung tragen. Aufruf: python3 -u tests/gegenprobe_neu_zusatz.py   (NUR_FALL=a,b · NUR_ANKER=1)
 # Ein Fall: (Name, alt, neu, Datei, erwartete rote Zeile[, alt2, neu2, Datei2]) – wo zwei Riegel einander decken, nimmt die Sabotage beide.
 import subprocess, shutil, os, tempfile, sys
-F=[('richter-ohne-schluessel', "    if (!SK.anthropic) { app.schluesselFenster('anthropic', 'richter'); return; }", "", 'neu/zusatz.mjs', 'ohne Anthropic-Schlüssel kommt das Schlüssel-Fenster'),
+# Zwei Riegel decken einander (Merker in den Einstellungen + alte Kennung am Stand): die Sabotage nimmt beide.
+F=[('alter-stand-doppelt', "    if (schon.has(s.alt)) continue;", "", 'kern/speicher/alt-tresor.mjs', 'kein alter Stand doppelt', "E.altTresor = true; app.einstSichern();", "app.einstSichern();", 'neu/zusatz.mjs'),
+   ('alte-zeit-verloren', "await tr.ablegen(s.sicherung, s.art, s.name, { ts: s.ts, alt: s.alt });", "await tr.ablegen(s.sicherung, s.art, s.name, { alt: s.alt });", 'kern/speicher/alt-tresor.mjs', 'mit ihrem Namen, ihrer alten Zeit'),
+   ('alte-bilder-fehlen', "(!r.img && r.id != null && b[r.id] ? { ...r, img: b[r.id] } : r)", "(r)", 'kern/speicher/alt-tresor.mjs', 'das Bild hängt wieder an seinem Getränk'),
+   ('alte-db-angelegt', "      a.onupgradeneeded = () => { neu = true; try { a.transaction.abort(); } catch { /* schon zu */ } };", "      a.onupgradeneeded = () => { neu = true; };", 'kern/speicher/alt-tresor.mjs', 'wird ihre Datenbank nicht angelegt', "    if (idb.databases) { const alle = await idb.databases(); if (!alle.some((x) => x.name === ort.db)) return []; }\n", "", 'kern/speicher/alt-tresor.mjs'),
+   ('alter-ort-falsch', "schluessel: 'mix9m_bvault'", "schluessel: 'mrz9m_bvault'", 'neu/zusatz.mjs', 'eine kurze Meldung sagt, dass zwei Stände übernommen sind'),
+   ('alter-start-fehlt', "  ZU.altTresor().catch(() => {});", "", 'neu/app.mjs', 'eine kurze Meldung sagt, dass zwei Stände übernommen sind'),
+   ('richter-ohne-schluessel', "    if (!SK.anthropic) { app.schluesselFenster('anthropic', 'richter'); return; }", "", 'neu/zusatz.mjs', 'ohne Anthropic-Schlüssel kommt das Schlüssel-Fenster'),
    ('richter-nicht-weiter', "  const danach = ['sammel-bilder', 'richter'];", "  const danach = ['sammel-bilder'];", 'neu/zusatz.mjs', 'läuft die Prüfung von selbst weiter'),
    ('richter-sendet-falle', "if ((await pruefe(k.text)).length) urteile.push({ uid: k.uid, passt: null, warum: '', ausgeschlossen: 'ki-anweisung' }); else zumRichter.push(k);", "zumRichter.push(k);", 'kern/suche/richter.mjs', 'das Getränk mit dem Befehl an eine KI geht nicht hinaus'),
    ('richter-sendet-schritte', "zut && 'Zutaten: ' + kurz(zut, 300)]", "zut && 'Zutaten: ' + kurz(zut, 300), (r.steps || []).map((x) => x.txt).join(' ')]", 'kern/suche/richter.mjs', 'Schritte gehen nie hinaus'),

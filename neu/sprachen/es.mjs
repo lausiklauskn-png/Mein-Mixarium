@@ -576,6 +576,8 @@ export default {
   'Nichts zu prüfen': 'Nada que comprobar',
   '{0} von {1} passen': '{0} de {1} encajan',
   '{0} nicht gesendet': '{0} no enviados',
+  'Tresor: +1 Stand': 'Bóveda: +1 versión',
+  'Tresor: +{0} Stände': 'Bóveda: +{0} versiones',
   /* getraenke/entdecken.mjs */
   'thecocktaildb.com antwortet nicht.': 'thecocktaildb.com no responde.',
   'Keine Verbindung zu thecocktaildb.com. Bitte die Internetverbindung prüfen.': 'Sin conexión con thecocktaildb.com. Comprueba la conexión a internet.',

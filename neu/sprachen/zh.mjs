@@ -576,6 +576,8 @@ export default {
   'Nichts zu prüfen': '没有可检查的内容',
   '{0} von {1} passen': '{0}/{1} 相符',
   '{0} nicht gesendet': '{0} 个未发送',
+  'Tresor: +1 Stand': '备份库：+1 个版本',
+  'Tresor: +{0} Stände': '备份库：+{0} 个版本',
   /* getraenke/entdecken.mjs */
   'thecocktaildb.com antwortet nicht.': 'thecocktaildb.com 没有响应。',
   'Keine Verbindung zu thecocktaildb.com. Bitte die Internetverbindung prüfen.': '无法连接 thecocktaildb.com。请检查网络连接。',

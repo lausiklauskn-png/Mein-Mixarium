@@ -69,6 +69,36 @@ let p, c, netz;
 const auftragText = (leib) => (leib ? (typeof leib.messages[0].content === 'string' ? leib.messages[0].content : leib.messages[0].content.map((x) => x.text || '').join('\n')) : '');
 const namen = (p, sel) => p.locator(sel).evaluateAll((l) => l.map((e) => e.textContent.trim()));
 
+/* Die Datenbank der bisherigen App: Speicher „kv“ mit { k, v }. */
+const alteDb = (q, eintraege) => q.evaluate((eintraege) => new Promise((ja, nein) => { const a = indexedDB.open('MeinMxBackup1', 1); a.onupgradeneeded = () => a.result.createObjectStore('kv', { keyPath: 'k' }); a.onerror = () => nein(a.error);
+  a.onsuccess = () => { try { const t = a.result.transaction('kv', 'readwrite'); for (const [k, v] of Object.entries(eintraege)) t.objectStore('kv').put({ k, v }); t.oncomplete = () => { a.result.close(); ja(); }; t.onerror = () => nein(t.error); } catch (f) { nein(f); } }; }), eintraege);
+const tresorAuf = async (q) => { await zuEinst(q); await q.click('[data-a=tresor]'); await q.waitForSelector('#trform'); return (await q.locator('.fenster .slot').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ')); };
+
+if (will(1)) {
+  console.log('1 · Tresor-Stände der bisherigen App kommen einmal in den neuen Tresor');
+  const altLimo = { id: 5, name: 'Omas Holunderlimo', cat: 'limo', ings: [{ amt: '4', unit: 'cl', name: 'Holundersirup' }], steps: [{ txt: 'Aufgießen.' }] }, altTee = { id: 6, name: 'Eistee Pfirsich', cat: 'tee', ings: [{ amt: '1', unit: 'l', name: 'Schwarztee' }], steps: [{ txt: 'Kalt stellen.' }] };
+  const altInhalt = { mix9m_bvault: JSON.stringify([{ id: 'man-2026-05-01T10:00:00.000Z', name: 'Vor dem Aufräumen', type: 'manual', ts: '2026-05-01T10:00:00.000Z', recCnt: 2, r: JSON.stringify([altLimo, altTee]), ms: '[]', fd: '[]' }, { id: 'auto-2026-06-02T08:30:00.000Z', name: 'Auto 02.06.26 10:30', type: 'auto', ts: '2026-06-02T08:30:00.000Z', recCnt: 1, r: JSON.stringify([altLimo]), ms: '[]', fd: '[]' }]),
+    'mrz9m_bvi_man-2026-05-01T10:00:00.000Z': JSON.stringify({ 5: BILD }) };
+  ({ p, c } = await seite({ getraenke: [D(1, 'Zitronen-Spritz')], vorher: (q) => alteDb(q, altInhalt) }));
+  let t = await toastMit(p, /Tresor: \+2/, 8000);
+  pruefe('eine kurze Meldung sagt, dass zwei Stände übernommen sind', /^Tresor: \+2 Stände$/.test(t), t);
+  await p.waitForSelector('.mxtoast', { state: 'detached' }).catch(() => {});
+  const zeilen = await tresorAuf(p);
+  pruefe('im Tresor stehen beide Stände mit ihrem Namen, ihrer alten Zeit und der Zahl der Getränke', zeilen.length === 2 && zeilen.some((x) => x.includes('Vor dem Aufräumen') && x.includes('01.05.2026') && x.includes('2 Getränke') && x.includes('benannt')) && zeilen.some((x) => x.includes('Auto 02.06.26') && x.includes('02.06.2026') && /1 Getränk /.test(x) && x.includes('automatisch')), zeilen.join(' | '));
+  await p.locator('.fenster .slot', { hasText: 'Vor dem Aufräumen' }).locator('[data-a=tresor-holen]').click(); await p.click('[data-a=fenster-ja]'); await toastMit(p, /zurückgeholt/);
+  const nach = (await sammlungWenn(p, (s) => s.getraenke.some((r) => r.name === 'Eistee Pfirsich'))).getraenke;
+  pruefe('zurückgeholt: beide Getränke sind da, das Bild hängt wieder an seinem Getränk', nach.map((r) => r.name).sort().join('|') === 'Eistee Pfirsich|Omas Holunderlimo' && String(nach.find((r) => r.name === 'Omas Holunderlimo').img || '').startsWith('data:image/') && !nach.find((r) => r.name === 'Eistee Pfirsich').img, nach.map((r) => r.name + ':' + (r.img ? 'Bild' : '-')).join(' '));
+  await p.waitForFunction(() => new Promise((ja) => { const a = indexedDB.open('KuechenKern-mixarium'); a.onsuccess = () => { const q = a.result.transaction('zustand').objectStore('zustand').get('einst'); q.onsuccess = () => { a.result.close(); ja(!!(q.result && q.result.altTresor)); }; }; })).catch(() => {});
+  await p.reload(); await p.waitForSelector('.mx .titel'); await p.waitForTimeout(1500);   /* Frist: ein zweites Übernehmen wäre jetzt geschehen */
+  const alt2 = (await tresorAuf(p)).filter((x) => /Vor dem Aufräumen|Auto 02\.06/.test(x)).length;
+  pruefe('nach dem Neuladen liegt kein alter Stand doppelt im Tresor', alt2 === 2, String(alt2));
+  pruefe('die Datenbank der bisherigen App ist unverändert', JSON.parse(await p.evaluate(() => new Promise((ja, nein) => { const a = indexedDB.open('MeinMxBackup1'); a.onerror = () => nein(a.error); a.onsuccess = () => { const q = a.result.transaction('kv').objectStore('kv').get('mix9m_bvault'); q.onsuccess = () => { a.result.close(); ja(q.result.v); }; }; }))).length === 2 && (await p.evaluate(async () => (await indexedDB.databases()).find((d) => d.name === 'MeinMxBackup1').version)) === 1);
+  await c.close();
+  ({ p, c } = await seite({ getraenke: [D(1, 'Zitronen-Spritz')] })); await p.waitForTimeout(1500);   /* Frist: so lange hätte das Nachsehen gebraucht */
+  pruefe('gab es die bisherige App nicht, wird ihre Datenbank nicht angelegt und nichts gemeldet', !(await p.evaluate(async () => (await indexedDB.databases()).map((d) => d.name))).includes('MeinMxBackup1') && await p.locator('.mxtoast').count() === 0 && (await tresorAuf(p)).length === 0);
+  await c.close();
+}
+
 if (will(2)) {
   console.log('2 · KI-Richter der Suche: Passendes rückt vor, der Rest klappt ein; eine Falle und Ausgeblendetes gehen nicht hinaus');
   const BAR = [D(1, 'Zitronen-Spritz'), D(4, 'Spritz nach Art des Hauses', {}, [['1', '', BEFEHL]]), D(2, 'Holunder-Spritz', { cat: 'limo' }), D(3, 'Gurken-Spritz'),   /* die Falle steht VOR zwei passenden: sonst wäre „rückt vor“ von selbst wahr */ D(5, 'Kakao', { cat: 'tee' }, [['2', 'dl', 'Milch']]), D(6, 'Aperol Spritz', { cat: 'ckt', alcohol: true }, [['6', 'cl', 'Aperol']])];

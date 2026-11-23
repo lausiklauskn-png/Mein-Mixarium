@@ -576,6 +576,8 @@ export default {
   'Nichts zu prüfen': 'Нечего проверять',
   '{0} von {1} passen': 'Подходят {0} из {1}',
   '{0} nicht gesendet': 'Не отправлено: {0}',
+  'Tresor: +1 Stand': 'Архив: версий +1',
+  'Tresor: +{0} Stände': 'Архив: версий +{0}',
   /* getraenke/entdecken.mjs */
   'thecocktaildb.com antwortet nicht.': 'thecocktaildb.com не отвечает.',
   'Keine Verbindung zu thecocktaildb.com. Bitte die Internetverbindung prüfen.': 'Нет соединения с thecocktaildb.com. Проверьте подключение к интернету.',

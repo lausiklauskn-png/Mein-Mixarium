@@ -738,7 +738,7 @@ const sicherungObjekt = () => JSON.parse(sicherungText());
 async function tresorAuto(grund) { try { if (A.getraenke.some(G.istSichtbar)) await tr.ablegen(sicherungObjekt(), 'auto', grund); } catch (e) { /* der Tresor darf nie etwas aufhalten */ } }
 async function tresorFenster() {
   const l = await tr.liste(), zeit = (ts) => new Date(ts).toLocaleString(sprache() === 'de' ? 'de-DE' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-  Z.fenster = { titel: L('Tresor', 'Vault'), html: `<form id="trform" class="reihe" autocomplete="off"><input class="feld" name="name" style="flex:1;min-width:0" placeholder="${L('Name, z. B. vor dem Aufräumen', 'Name, e.g. before tidying')}"><button class="knopf" type="submit">${I('safe')}${L('Jetzt ablegen', 'Store now')}</button>${frag(L('Stände deiner Sammlung in diesem Gerät: bis zu 5 automatische (vor großen Änderungen) und 10 benannte. Gegen das Leeren des Browsers hilft nur die Sicherung als Datei.', 'States of your collection on this device: up to 5 automatic (before big changes) and 10 named. Only a backup file protects against clearing the browser.'))}</form>${l.map((x) => `<div class="slot"><span class="mitte"><strong>${esc(x.name)}</strong><small>${zeit(x.ts)} · ${fuelle(L('{0} Getränke', '{0} drinks'), x.anzahl)} · ${x.art === 'auto' ? L('automatisch', 'automatic') : L('benannt', 'named')}</small></span><button class="chip" data-a="tresor-holen" data-id="${esc(x.id)}">${L('Zurückholen', 'Restore')}</button><button class="rund klein" data-a="tresor-weg" data-id="${esc(x.id)}" aria-label="${L('Löschen', 'Delete')}">${I('trash')}</button></div>`).join('') || `<p class="leer">${L('Noch nichts im Tresor.', 'Nothing in the vault yet.')}</p>`}` };
+  Z.fenster = { titel: L('Tresor', 'Vault'), html: `<form id="trform" class="reihe" autocomplete="off"><input class="feld" name="name" style="flex:1;min-width:0" placeholder="${L('Name, z. B. vor dem Aufräumen', 'Name, e.g. before tidying')}"><button class="knopf" type="submit">${I('safe')}${L('Jetzt ablegen', 'Store now')}</button>${frag(L('Stände deiner Sammlung in diesem Gerät: bis zu 5 automatische (vor großen Änderungen) und 10 benannte. Gegen das Leeren des Browsers hilft nur die Sicherung als Datei.', 'States of your collection on this device: up to 5 automatic (before big changes) and 10 named. Only a backup file protects against clearing the browser.'))}</form>${l.map((x) => `<div class="slot"><span class="mitte"><strong>${esc(x.name)}</strong><small>${zeit(x.ts)} · ${x.anzahl === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), x.anzahl)} · ${x.art === 'auto' ? L('automatisch', 'automatic') : L('benannt', 'named')}</small></span><button class="chip" data-a="tresor-holen" data-id="${esc(x.id)}">${L('Zurückholen', 'Restore')}</button><button class="rund klein" data-a="tresor-weg" data-id="${esc(x.id)}" aria-label="${L('Löschen', 'Delete')}">${I('trash')}</button></div>`).join('') || `<p class="leer">${L('Noch nichts im Tresor.', 'Nothing in the vault yet.')}</p>`}` };
   zeichne();
 }
 async function tresorHolen(id) {
@@ -1142,9 +1142,9 @@ const TUN = {
   'posten-weg'(b) { const an = A.anlaesse.find((x) => x.id === Z.anlass); an.posten = an.posten.filter((p) => String(p.id) !== b.dataset.p); sichern(); },
   drucken() { print(); return false; },
 };
-/* Zusätze (neu/zusatz.mjs): Prüfung des Bildauftrags, KI-Bilder für alle ohne Bild, KI-Richter der Suche. Sie hängen ihre Aktionen selbst in TUN.
+/* Zusätze (neu/zusatz.mjs): Prüfung des Bildauftrags, KI-Bilder für alle ohne Bild, KI-Richter der Suche, Tresor-Stände der bisherigen App. Sie hängen ihre Aktionen selbst in TUN.
    `sichtbare` ist, was zu sehen ist: nichts Ausgeblendetes („Ohne Alkohol“) geht an eine KI. */
-const ZU = zusatz({ sprache, esc, I, Z, TUN, SK, W, melde, sichern, zeichne, schluesselFenster, bildAusDatei, tresorAuto, bildAn: (uid, img) => bildSetzen(img, uid),
+const ZU = zusatz({ sprache, esc, I, Z, TUN, SK, W, tr, E: () => E, einstSichern, melde, sichern, zeichne, schluesselFenster, bildAusDatei, tresorAuto, bildAn: (uid, img) => bildSetzen(img, uid),
   sichtbare: () => G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter(G.istSichtbar), sinnTreffer: semTreffer, sicht, katName: katNameVon, warte: (f, fertig) => { wartend = { f, fertig }; } });
 const postenVon = (b) => A.anlaesse.find((x) => x.id === Z.anlass).posten.find((p) => String(p.id) === b.dataset.p);
 function anlassFenster(an) {
@@ -1282,6 +1282,7 @@ async function start() {
   if (geteilteAdresse) { Z.web = { adresse: geteilteAdresse, text: '', stand: '', seitentext: '' }; neuBlatt('web'); }
   if (erster) { try { await ausAlterApp(true); } catch (e) { /* nichts Altes da */ } if (!A.getraenke.some(G.istSichtbar) && !geteilt.has('leer')) await startGetraenke(); sichern(); zeichne(true); lager.dauerhaft(); }
   if (geteiltesGetraenk) await geteiltOeffnen(geteiltesGetraenk);
+  ZU.altTresor().catch(() => {});   /* Tresor-Stände der bisherigen App, einmal; dort wird nur gelesen */
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 start();
