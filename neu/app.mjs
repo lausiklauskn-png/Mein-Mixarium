@@ -7,7 +7,7 @@ import { sym as I } from './vorlaeufig/symbole.mjs';
 import { platzbild } from './vorlaeufig/platzbild.mjs';
 import * as Sp from './vorlaeufig/speicher.mjs';
 
-export const FASSUNG = '10.0.0-vor2';
+export const FASSUNG = '10.0.0-vor4';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -28,6 +28,20 @@ const dunkel = () => E.ton === 'dunkel' || (E.ton === 'system' && matchMedia('(p
 const breit = () => innerWidth >= 1000;
 const ohneAlk = () => !!(A.einstellungen && A.einstellungen.ohneAlkohol);
 const lage = () => ({ getraenke: G.filterOhneAlkohol(A.getraenke, ohneAlk()), ordner: A.ordner, kategorien: A.kategorien, sprache: sprache() });
+/* Freie Glas-Angaben (TheCocktailDB schreibt „Collins glass“, „Highball glass“) lesbar und in der Sprache zeigen. */
+const GLAS_FREI = [[/highball/i, 'highball'], [/martini|cocktail|coupe/i, 'martini'], [/wine|wein/i, 'wine'], [/shot/i, 'shot'], [/mug|cup|tasse|becher/i, 'mug'], [/old.fashioned|tumbler|rocks|whiskey/i, 'tumbler']];
+const glasText = (g) => { const n = G.glasName(g, sprache()); if (n !== g) return n; const t = String(g); const m = GLAS_FREI.find(([re]) => re.test(t)); if (m) return G.glasName(m[1], sprache()); if (/collins/i.test(t)) return L('Collins-Glas', 'Collins glass'); if (/^jar$/i.test(t)) return L('Einmachglas', 'Jar'); return t.charAt(0).toUpperCase() + t.slice(1); };
+/* Liegt am Getränk eine Übersetzung in der App-Sprache (`translations[sprache]`), wird SIE gezeigt – auch für Deutsch.
+   Die alte App zeigte `translations.de` nie an (`rTr`: nur wenn die Sprache nicht Deutsch ist); bei Getränken aus
+   TheCocktailDB blieb deshalb der englische Text stehen, obwohl die deutsche Fassung dabei lag. Gespeichert wird nichts. */
+function sicht(r) {
+  const t = r && r.translations && typeof r.translations === 'object' ? r.translations[sprache()] : null;
+  if (!t) return r;
+  const zn = Array.isArray(t.ingredients) ? t.ingredients : [], za = Array.isArray(t.amounts) ? t.amounts : [], st = Array.isArray(t.steps) ? t.steps : [];
+  return { ...r, name: t.name || r.name, notes: t.notes || r.notes,
+    ings: (r.ings || []).map((z, i) => ({ ...z, name: typeof zn[i] === 'string' && zn[i] ? zn[i] : z.name, unit: za[i] && typeof za[i] === 'object' && za[i].unit ? za[i].unit : z.unit })),
+    steps: st.length === (r.steps || []).length ? (r.steps || []).map((x, i) => ({ ...x, txt: typeof st[i] === 'string' && st[i] ? st[i] : x.txt })) : r.steps };
+}
 const getr = (uid) => A.getraenke.find((r) => r.uid === uid) || null;
 const zahl = (t) => (sprache() === 'de' ? String(t).replace('.', ',') : String(t));
 
@@ -83,9 +97,9 @@ function menue() {
 }
 function leiste() {
   const l = lage(), alle = l.getraenke.filter(G.istSichtbar).length;
-  return `<div class="leiste"><button class="chip" data-kat="all" aria-pressed="${Z.kat === 'all'}">${I('drinks')}${L('Alle', 'All')}<span class="zahl">${alle}</span></button>${kats().map(({ c, n }) => `<button class="chip" data-kat="${esc(c.id)}" aria-pressed="${Z.kat === c.id}">${I(KAT_SYM[c.id] || 'box')}${esc(katText(c))}<span class="zahl">${n}</span></button>`).join('')}</div>`;
+  return `<div class="leiste"><button class="chip" data-kat="all" aria-pressed="${Z.kat === 'all'}">${I('book')}${L('Alle', 'All')}<span class="zahl">${alle}</span></button>${kats().map(({ c, n }) => `<button class="chip" data-kat="${esc(c.id)}" aria-pressed="${Z.kat === c.id}">${I(KAT_SYM[c.id] || 'box')}${esc(katText(c))}<span class="zahl">${n}</span></button>`).join('')}</div>`;
 }
-function karte(r, i) { return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.beispiel ? `<span class="marke rechts">${L('Beispiel', 'Example')}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? G.glasName(r.glass, sprache()) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
+function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.beispiel ? `<span class="marke rechts">${L('Beispiel', 'Example')}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
 function kartenHtml() {
   const l = sichtbar();
   if (!l.length) return `<p class="leer">${Z.suche ? L('Nichts gefunden. Anderes Wort versuchen oder die Kategorie „Alle“ wählen.', 'Nothing found. Try another word or choose “All”.') : L('In dieser Kategorie ist noch nichts.', 'Nothing in this category yet.')}</p>`;
@@ -110,22 +124,22 @@ function zutatenVon(r) {
 const mengeText = (z) => [zahl(z.amt || ''), z.unit || ''].filter(Boolean).join(' ');
 function zutatenListe(r) { return `<ul class="zutaten">${zutatenVon(r).map((z) => `<li><span class="menge">${esc(mengeText(z))}</span><span>${esc(z.name)}${z.note ? ` <small class="leise">${esc(z.note)}</small>` : ''}</span></li>`).join('') || `<li><span>${L('Noch keine Zutaten.', 'No ingredients yet.')}</span></li>`}</ul>`; }
 function schritteListe(r) { return `<ol class="schritte">${(r.steps || []).map((s) => `<li><span>${esc(s.txt)}</span></li>`).join('') || `<li><span>${L('Noch keine Schritte.', 'No steps yet.')}</span></li>`}</ol>`; }
-function fakten(r) { return `<div class="fakten">${r.glass ? `<span class="fakt">${I('glass')}${esc(G.glasName(r.glass, sprache()))}</span>` : ''}${r.temp ? `<span class="fakt">${I(r.temp === 'warm' || r.temp === 'hot' ? 'coffee' : 'snow')}${esc(G.tempName(r.temp, sprache()))}</span>` : ''}${r.prepTime ? `<span class="fakt">${I('timer')}${Number(r.prepTime)} min</span>` : ''}${G.hatAlkohol(r) ? `<span class="fakt alk">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : `<span class="fakt ok">${I('noalc')}${L('ohne Alkohol', 'alcohol-free')}</span>`}</div>`; }
+function fakten(r) { return `<div class="fakten">${r.glass ? `<span class="fakt">${I('glass')}${esc(glasText(r.glass))}</span>` : ''}${r.temp ? `<span class="fakt">${I(r.temp === 'warm' || r.temp === 'hot' ? 'coffee' : 'snow')}${esc(G.tempName(r.temp, sprache()))}</span>` : ''}${r.prepTime ? `<span class="fakt">${I('timer')}${Number(r.prepTime)} min</span>` : ''}${G.hatAlkohol(r) ? `<span class="fakt alk">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : `<span class="fakt ok">${I('noalc')}${L('ohne Alkohol', 'alcohol-free')}</span>`}</div>`; }
 function portion(r) {
   const e = einheitWahl(), was = r.servings === 1 || Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings');
   return `<div class="portion"><b>${Z.port} ${Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings')}<small>${L('Mengen werden umgerechnet', 'Amounts are recalculated')}</small></b><div class="stepper"><button data-a="minus" aria-label="${L('Weniger', 'Fewer')}">${I('minus')}</button><output>${Z.port}</output><button data-a="plus" aria-label="${L('Mehr', 'More')}">${I('plus')}</button></div></div><div class="einheiten" role="group" aria-label="${L('Einheit', 'Unit')}">${[['orig', L('wie notiert', 'as written')], ['ml', 'ml'], ['cl', 'cl'], ['oz', 'oz']].map(([k, n]) => `<button data-e="${k}" aria-pressed="${e === k}">${n}</button>`).join('')}</div>`;
 }
 function geraeteKacheln(liste, hell) { return liste.length ? `<div class="geraete ${hell ? 'hell' : ''}">${liste.map((g) => `<span class="gk">${G.geraetSvg(g)}<small>${esc(G.geraetName(g, sprache()))}</small></span>`).join('')}</div>` : ''; }
-function aktionen(r, br) { return `<div class="reihe" style="margin-top:14px"><button class="knopf" data-go="mix">${I('drinks')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu">${I('cart')}${L('Auf die Einkaufsliste', 'Add to shopping list')}</button><button class="knopf hell" data-a="teilen">${I('share')}${L('Teilen', 'Share')}</button><button class="knopf hell" data-a="bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button></div>`; }
+function aktionen(r, br) { return `<div class="reihe" style="margin-top:14px"><button class="knopf" data-go="mix">${I('shaker')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu">${I('cart')}${L('Auf die Einkaufsliste', 'Add to shopping list')}</button><button class="knopf hell" data-a="teilen">${I('share')}${L('Teilen', 'Share')}</button><button class="knopf hell" data-a="bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button></div>`; }
 function vGetraenk(br) {
-  const r = getr(Z.uid); if (!r) { Z.view = 'start'; return vStart(br); }
+  const r = sicht(getr(Z.uid)); if (!r) { Z.view = 'start'; return vStart(br); }
   const ger = G.geraeteFuerGetraenk(r);
   const gerAbs = ger.length ? `<div class="abschnitt"><h3>${L('Gerätschaften', 'Equipment')}</h3>${geraeteKacheln(ger, true)}</div>` : '';
   const notiz = r.notes ? `<div class="abschnitt"><h3>${L('Notizen', 'Notes')}</h3><p class="notiz">${esc(r.notes)}</p></div>` : '';
-  if (!br) return `<div class="held">${bild(r)}<button class="zurueck" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${I('left')}</button><button class="vollbild" data-a="bildvoll" aria-label="${L('Bild im Vollbild', 'Picture full screen')}">${I('full')}</button><div class="ueber"><h2>${esc(r.name)}</h2><p>${esc(katNameVon(r))}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}</div>`;
+  if (!br) return `<div class="held" data-a="bildvoll">${bild(r)}<div class="bildwerk ${Z.bildWerk ? 'auf' : ''}">${Z.bildWerk ? `<button class="zurueck" data-a="zurueck">${I('left')}${L('Zurück', 'Back')}</button><button class="vollbild" data-a="bildvoll">${I('full')}${L('Bild groß', 'Enlarge')}</button>` : ''}<button class="bildpfeil" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${Z.bildWerk ? L('Funktionen einklappen', 'Collapse actions') : L('Funktionen: Zurück, Bild groß', 'Actions: back, enlarge')}">${I(Z.bildWerk ? 'right' : 'left')}</button></div><div class="ueber"><h2>${esc(r.name)}</h2><p>${esc(katNameVon(r))}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}</div>`;
   const fk = Z.fokus;
   const liste = fk ? '' : `<div class="liste">${leiste()}${sichtbar().map((x) => `<button class="zeile" data-d="${esc(x.uid)}" ${x.uid === r.uid ? 'aria-current="true"' : ''}><span class="mini">${bild(x)}</span><span><strong>${esc(x.name)}</strong><small>${esc(katNameVon(x))}${x.prepTime ? ` · ${Number(x.prepTime)} min` : ''}</small></span></button>`).join('')}</div>`;
-  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held">${bild(r)}<button class="vollbild" data-a="bildvoll" aria-label="${L('Bild im Vollbild', 'Picture full screen')}">${I('full')}</button><button class="fokusknopf" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button></div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><h2>${esc(r.name)}</h2>${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}</div></div></div></div>`;
+  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held" data-a="bildvoll" title="${L('Bild groß zeigen', 'Show picture large')}">${bild(r)}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><h2>${esc(r.name)}</h2>${fakten(r)}${aktionen(r, true)}<div class="reihe ansicht"><button class="knopf hell" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button><button class="knopf hell" data-a="bildvoll">${I('full')}${L('Bild vergrößern', 'Enlarge picture')}</button></div></div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}</div></div></div></div>`;
 }
 
 /* ── Mix-Ansicht ── Welche Zutaten nennt der Schritt? Über den Namen (Wortanfang, mindestens 4 Buchstaben). */
@@ -136,7 +150,7 @@ function zutatenImSchritt(r, text) {
   return zutatenVon(r).filter((z) => String(z.name).toLowerCase().split(/[^\p{L}]+/u).some((w) => w.length >= 4 && !FUELLWORT.has(w) && (staemme.some((st) => w.includes(st)) || woerter.some((sw) => sw.includes(w.slice(0, 5))))));
 }
 function vMix(br) {
-  const r = getr(Z.uid); if (!r) return '';
+  const r = sicht(getr(Z.uid)); if (!r) return '';
   const schritte = r.steps && r.steps.length ? r.steps : [{ txt: L('Für dieses Getränk sind noch keine Schritte notiert.', 'No steps written for this drink yet.') }];
   const st = Math.min(Z.step, schritte.length - 1), s = schritte[st], braucht = zutatenImSchritt(r, s.txt), ger = G.geraeteFuerSchritt(s.txt);
   const letzter = st === schritte.length - 1, gr = 'mittel', kz = !br && !Z.mixKopf;
@@ -197,6 +211,9 @@ function vMehr() {
   <h3 class="eh">${L('Sammlung', 'Collection')}</h3><div class="eliste">${z(I('download'), L('Sicherung speichern', 'Save a backup'), L(`${alle} Getränke als Datei`, `${alle} drinks as a file`), 'data-a="sichern"')}${z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), L('fügt hinzu, Doppelte werden erkannt', 'adds; duplicates are detected'), 'data-a="einspielen"')}${z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), L('liest die alten Daten, ändert sie nicht', 'reads the old data, does not change it'), 'data-a="uebernehmen"')}${z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('alle Getränke, Karten und die Einkaufsliste entfernen', 'remove all drinks, lists and the shopping list'), 'data-a="leeren"')}</div>
   <h3 class="eh">${L('Über', 'About')}</h3><div class="eliste">${z(I('info'), 'Mein Mixarium', L(`Fassung ${FASSUNG} · neue Gestaltung, Vorab`, `Version ${FASSUNG} · new design, preview`), 'data-a="ueber"')}<a class="ezeile" href="../index.html">${I('back')}<span><b>${L('Bisherige App öffnen', 'Open the previous app')}</b><small>${L('bleibt unverändert, mit Labor, Scan und KI', 'unchanged, with lab, scan and AI')}</small></span>${I('right')}</a><a class="ezeile" href="../impressum.html">${I('book')}<span><b>${L('Impressum', 'Legal notice')}</b><small></small></span>${I('right')}</a></div></div>`;
 }
+
+/* Bild im Vollbild: füllt den ganzen Schirm, das Bild ganz sichtbar (nicht beschnitten); Tipp, × oder Esc schließt. */
+function bildVoll() { const r = Z.bildVoll && getr(Z.uid); if (!r) return ''; return `<div class="bildvoll" data-a="bildvoll-zu" role="dialog" aria-modal="true" aria-label="${esc(r.name)}">${r.img ? `<img src="${esc(r.img)}" alt="${esc(r.name)}">` : platzbild(r)}<span class="bvname">${esc(r.name)}</span><button class="bvzu" data-a="bildvoll-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div>`; }
 
 /* ── Fenster (Dialoge) ── */
 function fenster() {
@@ -314,7 +331,7 @@ function zeichne(frisch) {
   const ohneKopf = !br && basis === 'getraenk', fokus = br && Z.fokus && basis === 'getraenk';
   const alt = $('.haupt'), roll = alt && zeichne.letzte === basis + '|' + Z.uid + '|' + Z.anlass ? alt.scrollTop : 0;
   const such = document.activeElement && document.activeElement.id === 'suche' ? document.activeElement.selectionStart : null;
-  $('#app').innerHTML = `<div style="${farbStil()}" class="mx ${br ? 'breit' : 'handy'} fl-${E.fl.seite} ${frisch ? 'frisch' : ''} ${dunkel() ? 'dunkel' : ''} ${E.navZu ? 'navzu' : ''} ${fokus ? 'fokus' : ''}">${ohneKopf ? '<div></div>' : kopf(br)}${br && !fokus ? navLinks() : ''}<main class="haupt" id="haupt">${h}</main>${br || mix ? '' : flLeiste()}${mix ? vMix(br) : ''}${menue()}${fenster()}${Z.toast ? `<div class="mxtoast" role="status">${I('check')}${esc(Z.toast)}</div>` : ''}</div>`;
+  $('#app').innerHTML = `<div style="${farbStil()}" class="mx ${br ? 'breit' : 'handy'} fl-${E.fl.seite} ${frisch ? 'frisch' : ''} ${dunkel() ? 'dunkel' : ''} ${E.navZu ? 'navzu' : ''} ${fokus ? 'fokus' : ''}">${ohneKopf ? '<div></div>' : kopf(br)}${br && !fokus ? navLinks() : ''}<main class="haupt" id="haupt">${h}</main>${br || mix ? '' : flLeiste()}${mix ? vMix(br) : ''}${menue()}${fenster()}${bildVoll()}${Z.toast ? `<div class="mxtoast" role="status">${I('check')}${esc(Z.toast)}</div>` : ''}</div>`;
   zeichne.letzte = basis + '|' + Z.uid + '|' + Z.anlass;
   if (roll) $('.haupt').scrollTop = roll;
   if (such !== null) { const s = $('#suche'); if (s) { s.focus(); s.setSelectionRange(such, such); } }
@@ -327,8 +344,8 @@ function setze(f, frisch) {
   if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
 }
 function geh(v) { history.pushState({ v }, ''); setze(() => { Z.view = v; Z.flAuf = false; Z.menue = null; if (v === 'mix') { Z.step = 0; Z.richt = 'vor'; wachAn(); } if (v !== 'karte') Z.anlass = null; }, true); }
-function zurueck() { if (Z.fenster) return fZu(); if (Z.menue) { Z.menue = null; return zeichne(); } if (Z.view === 'mix') return mixZu(); if (Z.view === 'karte' && Z.anlass) return setze(() => { Z.anlass = null; }, true); if (Z.view !== 'start') return setze(() => { Z.view = Z.view === 'getraenk' ? 'start' : 'start'; Z.fokus = false; }, true); }
-function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; }, true); }
+function zurueck() { if (Z.bildVoll) { Z.bildVoll = false; return zeichne(); } if (Z.fenster) return fZu(); if (Z.menue) { Z.menue = null; return zeichne(); } if (Z.view === 'mix') return mixZu(); if (Z.view === 'karte' && Z.anlass) return setze(() => { Z.anlass = null; }, true); if (Z.view !== 'start') return setze(() => { Z.view = Z.view === 'getraenk' ? 'start' : 'start'; Z.fokus = false; }, true); }
+function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; Z.bildWerk = false; }, true); }
 
 /* Bildschirm wach halten, solange die Mix-Ansicht offen ist (wo das Gerät es erlaubt). */
 let wachSperre = null;
@@ -349,6 +366,7 @@ const TUN = {
   oben() { Z.flAuf = false; setTimeout(() => $('.haupt').scrollTo({ top: 0, behavior: 'smooth' })); },
   zurueck() { Z.flAuf = false; history.back(); return false; },
   fokus() { Z.fokus = !Z.fokus; },
+  bildwerk() { Z.bildWerk = !Z.bildWerk; },
   mixkopf() { Z.mixKopf = !Z.mixKopf; },
   'mix-zu'() { history.back(); return false; },
   sv() { schritt(1); return false; }, sz() { schritt(-1); return false; },
@@ -361,12 +379,13 @@ const TUN = {
   'ed-bildweg'() { Z.fenster.img = ''; $('#edbild').innerHTML = platzbild({ name: 'x' }); return false; },
   'ed-loeschen'() { const r = getr(Z.fenster.uid); frage(L('Getränk löschen', 'Delete drink'), L(`„${esc(r.name)}“ wird aus deiner Sammlung entfernt.`, `“${esc(r.name)}” will be removed from your collection.`), L('Löschen', 'Delete'), () => { A.getraenke = A.getraenke.filter((x) => x.uid !== r.uid); (A.anlaesse || []).forEach((a) => { a.posten = a.posten.filter((p) => p.uid !== r.uid); }); sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L('Gelöscht.', 'Deleted.')); }, true); return false; },
   'fenster-zu'() { Z.fenster = null; }, 'fenster-ja'() { const f = Z.fenster; if (f && f.ja) f.ja(); return false; },
-  'einkauf-dazu'() { const r = getr(Z.uid); einkaufDazu(r, Z.port, r.name); sichern(); melde(L('Zutaten stehen auf der Einkaufsliste.', 'Ingredients are on the shopping list.')); return false; },
+  'einkauf-dazu'() { const r = sicht(getr(Z.uid)); einkaufDazu(r, Z.port, r.name); sichern(); melde(L('Zutaten stehen auf der Einkaufsliste.', 'Ingredients are on the shopping list.')); return false; },
   'einkauf-erledigt'() { A.einkauf = A.einkauf.filter((p) => !p.ok); sichern(); },
   'einkauf-leeren'() { frage(L('Liste leeren', 'Clear list'), L('Alle Posten werden entfernt.', 'All items will be removed.'), L('Leeren', 'Clear'), () => { A.einkauf = []; sichern(); fZu(); }, true); return false; },
   'einkauf-teilen'() { teilen(L('Einkaufsliste', 'Shopping list'), GRP.map(([g, n]) => { const l = A.einkauf.filter((p) => !p.ok && gruppeVon(p.name) === g); return l.length ? L(...n) + '\n' + l.map((p) => '– ' + (p.wert !== null ? zahl(G.zahlFormatieren(p.wert)) + (p.unit ? ' ' + p.unit : '') : [p.text, p.unit].filter(Boolean).join(' ')) + ' ' + p.name).join('\n') : ''; }).filter(Boolean).join('\n\n')); return false; },
-  teilen() { const r = getr(Z.uid); teilen(r.name, r.name + '\n\n' + zutatenVon(r).map((z) => '– ' + [mengeText(z), z.name].filter(Boolean).join(' ')).join('\n') + '\n\n' + (r.steps || []).map((s, i) => `${i + 1}. ${s.txt}`).join('\n')); return false; },
-  bildvoll() { const r = getr(Z.uid); Z.fenster = { titel: r.name, html: `<div class="bildgross">${bild(r)}</div>` }; },
+  teilen() { const r = sicht(getr(Z.uid)); teilen(r.name, r.name + '\n\n' + zutatenVon(r).map((z) => '– ' + [mengeText(z), z.name].filter(Boolean).join(' ')).join('\n') + '\n\n' + (r.steps || []).map((s, i) => `${i + 1}. ${s.txt}`).join('\n')); return false; },
+  bildvoll() { Z.bildVoll = true; history.pushState({ v: 'bild' }, ''); },
+  'bildvoll-zu'() { history.back(); return false; },
   beispiele() { beispieleFenster(); return false; }, 'beispiele-weg'() { beispieleWeg(); return false; },
   sichern() { sichernDatei(); return false; },
   einspielen() { $('#datei').click(); return false; },
@@ -429,7 +448,7 @@ document.addEventListener('change', async (ev) => {
   if (ev.target.id === 'datei' && ev.target.files[0]) { await einspielenDatei(ev.target.files[0]); ev.target.value = ''; zeichne(true); }
 });
 document.addEventListener('keydown', (ev) => {
-  if (ev.key === 'Escape') { if (Z.fenster || Z.menue) return zurueck(); if (Z.view === 'mix') return history.back(); if (Z.flAuf) { Z.flAuf = false; return zeichne(); } }
+  if (ev.key === 'Escape') { if (Z.bildVoll) return history.back(); if (Z.fenster || Z.menue) return zurueck(); if (Z.view === 'mix') return history.back(); if (Z.flAuf) { Z.flAuf = false; return zeichne(); } }
   if (Z.view === 'mix' && !Z.fenster) { if (ev.key === 'ArrowRight') schritt(1); if (ev.key === 'ArrowLeft') schritt(-1); }
 });
 addEventListener('popstate', () => zurueck());

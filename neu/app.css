@@ -562,3 +562,20 @@ h1,h2,h3,p{margin:0}
 /* Hell: der Grund trägt die Farbe ebenfalls, nicht nur der Kopf */
 .mx:not(.dunkel){--bg:color-mix(in srgb,var(--k3) 38%,#fafbfd);--fl2:color-mix(in srgb,var(--k2) 55%,#fff)}
 .mx.handy .kopf{min-height:56px}
+/* Bild im Vollbild (Klaus 23.11.: war nur ein kleines Fenster) */
+.mx .bildvoll{position:absolute;inset:0;z-index:80;background:#0b0b0d;display:grid;place-items:center;animation:mx-auf .16s ease both;touch-action:pinch-zoom;cursor:zoom-out}
+.mx .bildvoll img,.mx .bildvoll svg{width:100%;height:100%;object-fit:contain;display:block}
+.mx .bvzu{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.92);color:#0f1d3a;display:grid;place-items:center}
+.mx .bvname{position:absolute;left:0;right:0;bottom:0;padding:26px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,rgba(0,0,0,.7),transparent);color:#fff;font-weight:600;font-size:16px;pointer-events:none}
+.mx .detail-kopf .seite{justify-content:center}
+/* Das Bild bleibt frei (Klaus 23.11.): am Monitor stehen „Nur dieses Getränk“ und „Bild vergrößern“ rechts bei den Knöpfen,
+   am Handy steckt alles hinter einem kleinen Pfeil. Ein Tipp aufs Bild zeigt es groß. */
+.mx .held[data-a]{cursor:zoom-in}
+.mx .reihe.ansicht{margin-top:8px}
+.mx .detail-kopf .held{min-height:400px}
+.mx .md.fokus .detail-kopf .held{min-height:460px}
+.mx .bildwerk{position:absolute;right:8px;top:8px;z-index:2;display:flex;gap:6px;align-items:center}
+.mx .bildpfeil{width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,.72);color:#0f1d3a;display:grid;place-items:center}
+.mx .bildpfeil .ico{width:16px;height:16px}
+.mx .bildwerk .zurueck,.mx .bildwerk .vollbild{position:static;width:auto;height:30px;border-radius:9px;padding:0 10px;display:inline-flex;gap:6px;align-items:center;background:rgba(255,255,255,.94);color:#0f1d3a;font-size:13px;font-weight:600;animation:mx-vor .16s ease both}
+.mx .bildwerk .ico{width:16px;height:16px}

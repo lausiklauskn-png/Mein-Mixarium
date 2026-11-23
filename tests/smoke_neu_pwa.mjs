@@ -44,6 +44,9 @@ const nach = await p.locator('.zutaten .menge').allTextContents();
 pruefe('Portionen 1 → 3 rechnet die Mengen um', vor[1] === '2 cl' && nach[1] === '6 cl', vor[1] + ' → ' + nach[1]);
 await p.click('[data-e=ml]'); await ruhe(p);
 pruefe('Umschalten auf ml: 6 cl → 60 ml', (await p.locator('.zutaten .menge').allTextContents())[1] === '60 ml');
+{ const sy = await Zs(p, async () => (await import('./vorlaeufig/symbole.mjs')).SYMBOLE);
+  const mix = await p.locator('.reihe [data-go=mix] svg').innerHTML();
+  pruefe('„Mixen“ trägt den Shaker, nicht das Zeichen von „Getränke“ oder „Alle“', mix.includes('M84 104h88') && !sy.drinks.includes('M84 104h88') && new Set([sy.shaker, sy.drinks, sy.book]).size === 3); }
 pruefe('Gerätschaften stehen am Getränk', await p.locator('.geraete.hell .gk').count() >= 3);
 await p.click('.reihe [data-go=mix]'); await p.waitForSelector('.mix'); await ruhe(p);
 pruefe('Mix-Ansicht deckt den ganzen Bildschirm', await Zs(p, () => { const r = document.querySelector('.mix').getBoundingClientRect(); return r.top === 0 && Math.round(r.height) === innerHeight; }));
@@ -68,7 +71,8 @@ await p.waitForTimeout(300); await p.reload(); await p.waitForSelector('.karte')
 pruefe('nach dem Neuladen ist alles noch da', await p.locator('.karte').count() === 7 && await Zs(p, () => __mixarium.sammlung.einkauf.length === 6));
 await p.click('.kopf [data-a=neu]'); await p.fill('[name=name]', 'Testlimo'); await p.fill('[name=ings]', '4 cl Zitronensaft\n1/2 Stück Limette\nEis'); await p.fill('[name=steps]', 'Alles schütteln.\nAbseihen.'); await p.click('#ed [type=submit]'); await ruhe(p);
 pruefe('neues Getränk: Menge, Einheit und Name getrennt, eigene Kennung, kein Beispiel', await Zs(p, () => { const r = __mixarium.sammlung.getraenke[0]; return r.name === 'Testlimo' && r.ings[0].amt === '4' && r.ings[0].unit === 'cl' && r.ings[2].name === 'Eis' && r.uid && !r.beispiel; }));
-await p.click('.zurueck'); await ruhe(p);
+pruefe('am Handy liegt auf dem Bild nur der kleine Pfeil', await p.locator('.held button').count() === 1 && await Zs(p, () => document.querySelector('.bildpfeil').getBoundingClientRect().width <= 30));
+await p.click('.bildpfeil'); await ruhe(p); await p.click('.zurueck'); await ruhe(p);
 await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p);
 await p.click('[data-a=beispiele-weg]'); await ruhe(p); await p.click('[data-a=fenster-ja]'); await ruhe(p);
 pruefe('„Alle Beispiele löschen“ lässt nur das eigene Getränk stehen', await Zs(p, () => __mixarium.sammlung.getraenke.map((r) => r.name).join() === 'Testlimo'));
@@ -91,10 +95,28 @@ pruefe('die alte Datenbank ist beim Nachsehen nicht entstanden', await Zs(p, asy
 pruefe('am Monitor steht die Leiste links', await p.locator('.mx.breit .nav').count() === 1 && await p.locator('.fl-griff').count() === 0);
 await p.click('.karte >> nth=0'); await ruhe(p);
 pruefe('Liste links, Getränk rechts', await p.locator('.md .liste').count() === 1 && await p.locator('.md .detail').count() === 1);
+pruefe('am Monitor liegt kein Knopf auf dem Bild; „Nur dieses Getränk“ und „Bild vergrößern“ stehen rechts daneben', await p.locator('.held button').count() === 0 && await p.locator('.seite [data-a=fokus]').count() === 1 && await p.locator('.seite [data-a=bildvoll]').count() === 1);
+await p.click('.detail .held'); await ruhe(p);
+pruefe('Bild im Vollbild füllt den ganzen Schirm', await Zs(p, () => { const r = document.querySelector('.bildvoll').getBoundingClientRect(); return r.left === 0 && r.top === 0 && Math.round(r.width) === innerWidth && Math.round(r.height) === innerHeight; }));
+await p.keyboard.press('Escape'); await ruhe(p);
+pruefe('Esc schließt das Vollbild, das Getränk bleibt offen', await p.locator('.bildvoll').count() === 0 && await Zs(p, () => __mixarium.zustand.view === 'getraenk'));
 await p.click('[data-a=fokus]'); await ruhe(p);
 pruefe('„Nur dieses Getränk“ blendet Liste und Leiste aus', await p.locator('.md .liste').count() === 0 && await p.locator('.nav').count() === 0);
 pruefe('die App füllt den Bildschirm genau', await Zs(p, () => Math.round(document.querySelector('.mx').getBoundingClientRect().height) === innerHeight));
 await p.context().close();
+console.log('Sprache der Inhalte');
+{
+  const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE' }); p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message));
+  await p.goto(U + 'neu/'); await p.waitForSelector('.mx'); await ruhe(p);
+  await p.click('[data-a=beispiele]'); await p.click('[data-paket=getraenke-mit-alkohol-fuer-mixarium]'); await p.waitForSelector('.karte'); await ruhe(p);
+  const engl = await Zs(p, () => __mixarium.sammlung.getraenke.flatMap((r) => r.ings.map((z) => z.name).concat(r.steps.map((x) => x.txt))).filter((t) => /\b(juice|wine|with|glass|pour|together|garnish|lime|milk|peel)\b/i.test(t)));
+  pruefe('im Beispielpaket steht keine englische Zutat und kein englischer Schritt mehr', engl.length === 0, engl.join(' · '));
+  await Zs(p, () => { const r = __mixarium.sammlung.getraenke[0]; r.ings = [{ id: 0, amt: '2', unit: 'oz', name: 'Red wine' }]; r.steps = [{ id: 0, txt: 'Pour.' }]; r.translations = { de: { name: r.name, ingredients: ['Rotwein'], steps: ['Eingießen.'] } }; });
+  await p.click('.karte >> nth=0'); await ruhe(p);
+  pruefe('liegt eine deutsche Übersetzung am Getränk, wird sie gezeigt (Zutat und Schritt)', /Rotwein/.test(await p.locator('.zutaten').textContent()) && /Eingießen/.test(await p.locator('.schritte').textContent()));
+  pruefe('freie Glas-Angabe „Collins glass“ steht nicht roh da', !/Collins glass|Highball glass/.test(await p.locator('.haupt').textContent()));
+  await c.close();
+}
 console.log('Handy dunkel: Kopf, Schrift-Regler, Farben');
 {
   const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', colorScheme: 'dark' }); p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message));
