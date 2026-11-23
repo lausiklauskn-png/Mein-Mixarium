@@ -516,3 +516,49 @@ h1,h2,h3,p{margin:0}
 }
 #app{height:100dvh}
 .mx{height:100%}
+/* Runde nach dem ersten Ansehen (Klaus 23.11.): Kopf bleibt eine Zeile; Schrift-Regler; Symbole im Dunkeln hell */
+.mx.handy .kopf{flex-wrap:nowrap}
+.mx.handy .kopf.auf{gap:6px;padding-left:10px;padding-right:10px}
+.mx .kopf .name:empty{flex:1;min-width:0;margin:0}
+.mx .alkmini{flex:none}
+.mx .alkmini.aus{background:var(--fl);color:var(--muted);border-color:var(--linie)}
+.mx .schriftknopf span{font-weight:650;font-size:11px;letter-spacing:.02em;line-height:1}
+.mx .schriftknopf b{font-size:16px;font-weight:700}
+.mx .schriftfeld{padding:10px 12px 12px}
+.mx .schriftfeld h3{display:flex;justify-content:space-between;align-items:baseline;padding:2px 0 8px;font-size:13px}
+.mx .schriftzahl{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;font-size:15px}
+.mx .reglerzeile{display:flex;align-items:center;gap:10px}
+.mx .reglerzeile span{font-weight:650;font-size:12px}.mx .reglerzeile .gross{font-size:21px}
+.mx .reglerzeile input{flex:1;min-width:0;height:32px;accent-color:var(--akz)}
+.mx .schriftfeld p{border-top:0;padding:8px 0 4px;margin:0}
+.mx .schriftfeld>button{justify-content:center;border:1px solid var(--linie);min-height:34px;padding:4px 10px;font-size:13.5px}
+.mx .haupt{zoom:var(--z,1)}
+.mx .mix .mitte{zoom:var(--z,1)}
+/* Im Dunkeln nimmt jedes Symbol die helle Schriftfarbe, wo es sonst die dunkle Palettenschrift erbte */
+.mx.dunkel{--schrift:#e9eeff;--knt:#eef2ff}
+.mx.dunkel .kopf,.mx.dunkel .klapp,.mx.dunkel .rund,.mx.dunkel .nav button,.mx.dunkel .fl-griff span{color:#e9eeff}
+.mx.dunkel .rund{background:#1a2546;border-color:rgba(233,238,255,.18)}
+.mx.dunkel .nav button[aria-current=page],.mx.dunkel .chip[aria-pressed=true],.mx.dunkel .chip[aria-pressed=true] .ico{color:#eef2ff}
+.mx.dunkel .fl-griff span{background:#e9eeff}
+.mx.dunkel .held .zurueck,.mx.dunkel .held .vollbild,.mx.dunkel .fokusknopf{color:#0f1d3a}
+/* Dunkel folgt der gewählten Farbe ÜBERALL (Klaus 23.11.: „was ist das für ein Dunkeleffekt, wenn nur die Leiste oben wechselt“):
+   Grund, Flächen, Linien, Knöpfe, Menüs und die Mix-Ansicht sind aus der Palettenfarbe gemischt, nicht mehr festes Nachtblau. */
+.mx.dunkel{--bg:color-mix(in srgb,var(--pa) 15%,#05080e);--fl:color-mix(in srgb,var(--pa) 27%,#0a0e17);--fl2:color-mix(in srgb,var(--pa) 38%,#0c111c);
+ --linie:color-mix(in srgb,var(--pa) 55%,rgba(255,255,255,.14));--muted:color-mix(in srgb,var(--pa) 16%,#c6cee2);--ink:#eef1fa;
+ --akz:color-mix(in srgb,var(--pa) 38%,#fff);--akz2:color-mix(in srgb,var(--pa) 38%,#fff);--akzsoft:color-mix(in srgb,var(--pa) 42%,#0a0e17);
+ --kn1:color-mix(in srgb,var(--pa) 62%,#0a0e17);--kn2:color-mix(in srgb,var(--pa) 30%,#0a0e17);--knr:color-mix(in srgb,var(--pa) 70%,rgba(255,255,255,.2));
+ background:radial-gradient(70% 45% at 6% -8%,color-mix(in srgb,var(--pa) 46%,transparent),transparent 62%),radial-gradient(60% 45% at 104% 108%,color-mix(in srgb,var(--pa) 30%,transparent),transparent 60%),var(--bg)}
+.mx.dunkel .kopf{background:radial-gradient(1.5px 1.5px at 22% 30%,#fff9,transparent),radial-gradient(1px 1px at 64% 22%,#fff8,transparent),radial-gradient(1.5px 1.5px at 84% 64%,#fff7,transparent),linear-gradient(90deg,color-mix(in srgb,var(--pa) 70%,#0a0e17),color-mix(in srgb,var(--pa) 40%,#0a0e17) 60%,color-mix(in srgb,var(--pa) 22%,#0a0e17))}
+.mx.dunkel .rund{background:var(--fl2);border-color:var(--linie)}
+.mx.dunkel .sprachmenue,.mx.dunkel .farbmenue,.mx.dunkel .fl-knoepfe,.mx.dunkel .fenster{background:var(--fl)}
+.mx.dunkel .feld{background:var(--bg)}
+.mx.dunkel .willkommen{background:linear-gradient(120deg,var(--fl2),var(--fl))}
+.mx.breit.dunkel .nav{background:linear-gradient(180deg,var(--fl),var(--bg))}
+.mx.dunkel .klapp{background:color-mix(in srgb,var(--pa) 30%,rgba(255,255,255,.06))}
+.mx .mix{background:radial-gradient(120% 80% at 20% 0%,color-mix(in srgb,var(--pa) 62%,#070b14),transparent 60%),radial-gradient(90% 70% at 100% 100%,color-mix(in srgb,var(--pa) 36%,#070b14),transparent 60%),#070b14}
+.mx .mix .nr,.mx .mixnr{color:#fff}
+.mx .mix .braucht span{background:color-mix(in srgb,var(--pa) 30%,rgba(255,255,255,.06));border-color:color-mix(in srgb,var(--pa) 60%,rgba(255,255,255,.25))}
+.mx .mix .braucht span b,.mx.breit .mix .seitlich li b{color:color-mix(in srgb,var(--pa) 30%,#fff)}
+/* Hell: der Grund trägt die Farbe ebenfalls, nicht nur der Kopf */
+.mx:not(.dunkel){--bg:color-mix(in srgb,var(--k3) 38%,#fafbfd);--fl2:color-mix(in srgb,var(--k2) 55%,#fff)}
+.mx.handy .kopf{min-height:56px}

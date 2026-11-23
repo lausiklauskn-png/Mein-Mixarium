@@ -1,7 +1,7 @@
 # Küchen-Kern
 
 Gemeinsamer Code für Mein Rezeptbuch, Muttis Rezeptbuch (Ausgabe) und Mein Mixarium (übernimmt den Kern byte-gleich mit Pin).
-Stand 2026-11-23: erst der **Ausgaben-Schalter** ist angelegt. Alles Weitere folgt nach der Vorschau (`docs/vorschau/rezeptbuch-neu.html`).
+Stand 2026-11-23: **Ausgaben-Schalter** und die **Logik ohne Oberfläche** (Rezeptmodell, Kategorien, Suche, Sicherung, Übernahme). Die Oberfläche der PWA folgt; APK und Windows erst nach Klaus' Go.
 
 ## Ausgaben-Schalter (`kern/ausgabe/ausgabe.mjs`)
 
@@ -34,7 +34,34 @@ node --test test/ausgabe.test.js                                  # Probe mit Ge
 `ausgaben/mixarium-voll/ausgabe.json`: `"store": false, "alkoholErlaubt": true, "beispiele": [..., "getraenke-mit-alkohol-fuer-mixarium"]`
 Das Alkohol-Paket aus `beispiele/` ist im Katalog nur für `mixarium-voll` freigegeben.
 
+## Logik (ohne Oberfläche, läuft im Browser und in Node)
+
+| Datei | Aufgabe |
+|---|---|
+| `modell/rezept.mjs` | `normalisiere()` bringt jedes Rezept einmal in Form: `blank` nur ohne Namen, Kategorie getrimmt, `fld_…` zieht in `folder`, feste `uid`. `istInhalt()` ist die eine Frage, die Suche, „Alle“, Kategorien und Zähler stellen. |
+| `modell/kategorien.mjs` | `alleKategorien()`: feste, eigene, unbekannte und „Ohne Kategorie“, jede Kennung einmal. Anlegen, umbenennen, löschen mit Ziel, umsortieren. |
+| `modell/kategorien-fest.mjs` | die 18 festen Kategorien in 8 Sprachen, aus der alten App übernommen |
+| `modell/suche.mjs` | Wortsuche, auch über den Kategorienamen |
+| `sicherung/sicherung.mjs` | liest Fassung 9/10 der alten Apps, schreibt Fassung 11 mit Block `kategorien`; Zusammenführen an `uid` |
+| `modell/mengen.mjs` | Mengen für andere Portionen umrechnen (Brüche, Bereiche) |
+| `modell/kochen.mjs` | Kochansicht: Zutaten eines Schritts und Zeitangabe, aus dem Schritttext, ohne KI |
+| `oberflaeche/geraete.mjs` | gezeichnete Gerätschaften, erkannt aus dem Text, erweiterbar je Ausgabe (`erweitern()`) |
+| `modell/einkauf.mjs`, `modell/warengruppen.mjs` | Einkaufsliste: zusammenzählen (Einzahl/Mehrzahl, Einheiten), Warengruppen aus der alten App, Reihenfolge je Laden |
+| `modell/plan.mjs` | Wochenplan: Woche Mo–So mit Kalenderwoche, planen, altes Menü übernehmen |
+| `import/text.mjs` | Rezept aus eingefügtem Text ohne KI (Überschriften, Mengen, Einheiten, Portionen, Zeit) |
+| `oberflaeche/diktat.mjs` | Spracheingabe für Textfelder (Web Speech im Browser) |
+| `speicher/speicher.mjs` | Zustand im Gerät (IndexedDB), eine Datenbank je Ausgabe |
+| `oberflaeche/` | Symbole (Phosphor Duotone, nur die genutzten), Farbpaletten, Bild aus Datei verkleinern |
+| `speicher/uebernahme.mjs` | liest den alten localStorage nur mit der Endung der eigenen Ausgabe, löscht nichts |
+
+Probe: `node --test test/kern.test.js` (13 Fälle). Wächter für den Sushi-Fehler: **alles, was die Suche findet, steht in genau einer Gruppe von „Alle“**.
+
 ## Pin (`KERN.json`)
 
 `node kern/kern-stand.mjs` schreibt `KERN.json` mit Fassung und SHA-256 jeder Datei unter `kern/`. Das Mixarium übernimmt `kern/`
 byte-gleich und prüft gegen diese Liste; `node --test` hier besteht darauf, dass `KERN.json` zum Stand passt.
+
+## Die neue PWA (`neu/`)
+
+Erste sichtbare Fassung der Ausgabe „rezeptbuch“, ohne Bauschritt (ES-Module direkt). Läuft neben der alten App unter `/neu/`.
+Probe im echten Browser: `node tests/smoke_neu.mjs` (80 Prüfpunkte: leerer Start, Beispielbuch, Sushi-Kategorie, Suche, Portionen, Anlegen, Neuladen, Sicherung hin und zurück, Beispiele entfernen, Übernahme aus der alten App, Leiste, Farbe, Kochansicht, Monitor-Aufteilung, Einkaufsliste, Wochenplan, Kategorien verwalten, Bilder-Ordner, Bildausschnitt, Text-Import, Neuladen ohne Netz).

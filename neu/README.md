@@ -25,7 +25,7 @@ dafür kein eigener Kern aufgebaut; der Ordner `vorlaeufig/` ist die Liste desse
 Getränke ansehen, suchen, nach Kategorie filtern, „Ohne Alkohol“; Getränk mit Foto, Glas, Temperatur, Portionen umrechnen,
 ml/cl/oz; anlegen, bearbeiten (mit Foto, verkleinert auf 1600 px), löschen; Mix-Ansicht im Vollbild mit Bild, Zutaten und
 Gerätschaften je Schritt, Wischen/Pfeiltasten/Esc, Bildschirm bleibt an; Einkaufsliste (zusammengerechnet, nach Gruppen,
-abhaken, teilen); Getränkekarten für einen Anlass; Farbe, hell/dunkel, Sprache, Einheiten, Schriftgröße; Beispiele laden und
+abhaken, teilen); Getränkekarten für einen Anlass; Farbe (im Dunkeln durchgehend getönt), hell/dunkel, Sprache, Einheiten, Schriftgröße als Schieberegler (85–150 %, wirkt sofort); Beispiele laden und
 mit einem Tipp löschen; Sicherung speichern und einspielen (Format der alten App, `version: 10`); Sammlung leeren;
 Übernahme aus der bisherigen App beim ersten Start (nur lesen); offline nach dem ersten Laden; fliegende Leiste am Handy,
 Leiste links am Monitor, „Nur dieses Getränk“.
@@ -52,5 +52,5 @@ npm test                                  # Getränke-Schicht
 node tools/kern-nachziehen.mjs --pruefen  # Kern stimmt mit dem Pin überein
 ```
 
-Zuletzt gemessen (23.11.2026): `smoke_neu_pwa` 35 grün · 0 ROT; Getränke-Schicht 74 von 74; von Hand nachgestellt:
+Zuletzt gemessen (23.11.2026): `smoke_neu_pwa` 42 grün · 0 ROT; Getränke-Schicht 74 von 74; von Hand nachgestellt:
 Alkohol-Paket trotz Schalter angeboten → 1 ROT; App füllt den Schirm nicht → 3 ROT.

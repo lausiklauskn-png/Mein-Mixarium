@@ -7,18 +7,18 @@ import { sym as I } from './vorlaeufig/symbole.mjs';
 import { platzbild } from './vorlaeufig/platzbild.mjs';
 import * as Sp from './vorlaeufig/speicher.mjs';
 
-export const FASSUNG = '10.0.0-vor1';
+export const FASSUNG = '10.0.0-vor2';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* Wasserfarben des Familienbüros, wie in der Private Akte. */
-const FARBEN = { blau: { n: ['Wasserblau', 'Water blue'], k: ['#a9cff2', '#c9e2f7', '#dcedf5'], schrift: '#0b3154', akz: '#2f6ea8', fl: '#e4eef7' }, gruen: { n: ['Wassergrün', 'Water green'], k: ['#aee2cc', '#cdeede', '#e4f3d6'], schrift: '#0f4a43', akz: '#087f7a', fl: '#e4f1eb' }, see: { n: ['See', 'Lake'], k: ['#a8dde0', '#c8ebec', '#e0f3f0'], schrift: '#0b3154', akz: '#0b6f7a', fl: '#e2f1f1' }, flieder: { n: ['Flieder', 'Lilac'], k: ['#cfc4f0', '#e0d8f6', '#eee9fa'], schrift: '#35215f', akz: '#6a45a8', fl: '#ece7f8' }, gelb: { n: ['Helles Gelb', 'Light yellow'], k: ['#f7e3a0', '#fbeec4', '#fdf5dc'], schrift: '#5a4310', akz: '#916612', fl: '#f5efdc' }, koralle: { n: ['Koralle', 'Coral'], k: ['#f9c9ad', '#fbdcc8', '#fdebd9'], schrift: '#6b2a12', akz: '#ad4a22', fl: '#f6e9e1' }, kraeftig: { n: ['Kräftig', 'Strong'], k: ['#0b3154', '#164f7d', '#087f7a'], schrift: '#ffffff', akz: '#0b3154', fl: '#dfeaf3' } };
+const FARBEN = { blau: { n: ['Wasserblau', 'Water blue'], k: ['#a9cff2', '#c9e2f7', '#dcedf5'], schrift: '#0b3154', akz: '#2f6ea8', fl: '#e4eef7' }, gruen: { n: ['Wassergrün', 'Water green'], k: ['#aee2cc', '#cdeede', '#e4f3d6'], schrift: '#0f4a43', akz: '#087f7a', fl: '#e4f1eb' }, see: { n: ['See', 'Lake'], k: ['#a8dde0', '#c8ebec', '#e0f3f0'], schrift: '#0b3154', akz: '#0b6f7a', fl: '#e2f1f1' }, flieder: { n: ['Flieder', 'Lilac'], k: ['#cfc4f0', '#e0d8f6', '#eee9fa'], schrift: '#35215f', akz: '#6a45a8', fl: '#ece7f8' }, gelb: { n: ['Helles Gelb', 'Light yellow'], k: ['#f7e3a0', '#fbeec4', '#fdf5dc'], schrift: '#5a4310', akz: '#916612', fl: '#f5efdc' }, koralle: { n: ['Koralle', 'Coral'], k: ['#f9c9ad', '#fbdcc8', '#fdebd9'], schrift: '#6b2a12', akz: '#c2562b', fl: '#f6e9e1' }, kraeftig: { n: ['Kräftig', 'Strong'], k: ['#0b3154', '#164f7d', '#087f7a'], schrift: '#ffffff', akz: '#0b3154', fl: '#dfeaf3' } };
 const SPRACHEN = [['de', 'Deutsch'], ['en', 'English'], ['es', 'Español'], ['fr', 'Français'], ['it', 'Italiano'], ['pt', 'Português'], ['ru', 'Русский'], ['zh', '中文']];
 const NAV = [['start', ['Getränke', 'Drinks'], 'drinks'], ['karte', ['Karte', 'Drinks list'], 'plan'], ['einkauf', ['Einkauf', 'Shopping'], 'cart'], ['labor', ['Labor', 'Lab'], 'lab'], ['mehr', ['Einstellungen', 'Settings'], 'settings']];
 const KAT_SYM = { all: 'drinks', mock: 'drinks', afckt: 'drinks', ckt: 'wine', smooth: 'glass', limo: 'citrus', tee: 'coffee', sirup: 'drop', bowle: 'users', knab: 'box', finger: 'box' };
 
 /* ── Zustand ── E: Einstellungen des Geräts · A: die Sammlung · Z: was gerade zu sehen ist (flüchtig) */
-let E = { sprache: null, farbe: 'blau', ton: 'system', mixGr: 1, einheit: 'auto', fl: { seite: 'r', oben: 64 }, navZu: true };
+let E = { sprache: null, farbe: 'blau', ton: 'system', schrift: 100, einheit: 'auto', fl: { seite: 'r', oben: 64 }, navZu: true };
 let A = null;
 const Z = { view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
 
@@ -56,9 +56,12 @@ function logo() { return `<svg class="logo" viewBox="0 0 64 64" aria-hidden="tru
 function suchfeld(voll) { return `<label class="suchfeld" ${voll ? 'style="width:100%;margin-top:12px"' : ''}>${I('search')}<input id="suche" type="search" value="${esc(Z.suche)}" placeholder="${L('Getränk oder Zutat suchen', 'Search drink or ingredient')}" aria-label="${L('Suchen', 'Search')}" autocomplete="off"></label>`; }
 function kopf(br) {
   const auf = Z.kopfAuf, n = sichtbar().length;
-  const werk = `<button class="schalter ${ohneAlk() ? '' : 'aus'}" data-a="alk" aria-pressed="${ohneAlk()}">${I('noalc')}${ohneAlk() ? L('Ohne Alkohol', 'Alcohol-free') : L('Alkohol an', 'Alcohol on')}</button><button class="rund" data-a="menue" data-m="sprache" aria-label="${L('Sprache', 'Language')}">${I('lang')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}"></button><button class="rund" data-go="mehr" aria-label="${L('Einstellungen', 'Settings')}">${I('settings')}</button>`;
-  const mini = ohneAlk() ? `<button class="alkmini" data-a="alk" aria-label="${L('Ohne Alkohol ist an', 'Alcohol-free is on')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>` : '';
-  return `<header class="kopf">${logo()}<div class="name">Mein Mixarium<small>${n} ${n === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}</small></div>${br ? suchfeld(false) : ''}<button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button>${auf ? '' : mini}<button class="klapp" data-a="kopf" aria-expanded="${auf}" aria-label="${auf ? L('Werkzeuge einklappen', 'Collapse tools') : L('Werkzeuge aufklappen', 'Expand tools')}">${I(auf ? 'right' : 'left')}</button>${auf ? `<div class="kopfwerk">${werk}</div>` : ''}</header>`;
+  /* Aufgeklappt bleibt der Kopf EINE Zeile (Klaus 23.11.): am Handy weicht der Name, die Werkzeuge sind nur Symbole. */
+  const alk = br ? `<button class="schalter ${ohneAlk() ? '' : 'aus'}" data-a="alk" aria-pressed="${ohneAlk()}">${I('noalc')}${ohneAlk() ? L('Ohne Alkohol', 'Alcohol-free') : L('Alkohol an', 'Alcohol on')}</button>` : `<button class="alkmini ${ohneAlk() ? '' : 'aus'}" data-a="alk" aria-pressed="${ohneAlk()}" aria-label="${L('Ohne Alkohol', 'Alcohol-free')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>`;
+  const werk = `${alk}<button class="rund schriftknopf" data-a="menue" data-m="schrift" aria-label="${L('Schriftgröße', 'Text size')}" title="${L('Schriftgröße', 'Text size')}"><span aria-hidden="true">A<b>A</b></span></button><button class="rund" data-a="menue" data-m="sprache" aria-label="${L('Sprache', 'Language')}" title="${L('Sprache', 'Language')}">${I('lang')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund" data-go="mehr" aria-label="${L('Einstellungen', 'Settings')}" title="${L('Einstellungen', 'Settings')}">${I('settings')}</button>`;
+  const mini = ohneAlk() ? `<button class="alkmini" data-a="alk" aria-pressed="true" aria-label="${L('Ohne Alkohol ist an', 'Alcohol-free is on')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>` : '';
+  const name = !br && auf ? '<span class="name"></span>' : `<div class="name">Mein Mixarium<small>${n} ${n === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}</small></div>`;
+  return `<header class="kopf ${auf ? 'auf' : ''}">${logo()}${name}${br ? suchfeld(false) : ''}${auf ? werk : mini}<button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button><button class="klapp" data-a="kopf" aria-expanded="${auf}" aria-label="${auf ? L('Werkzeuge einklappen', 'Collapse tools') : L('Werkzeuge aufklappen', 'Expand tools')}">${I(auf ? 'right' : 'left')}</button></header>`;
 }
 function navLinks() {
   const akt = Z.view === 'getraenk' ? 'start' : Z.view, zu = E.navZu;
@@ -74,6 +77,7 @@ function flLeiste() {
 }
 function menue() {
   if (Z.menue === 'sprache') return `<div class="sprachmenue" role="menu"><h3>${L('Sprache der App', 'App language')}</h3><button role="menuitemradio" aria-checked="${!E.sprache}" data-lang="">${L('Wie das Gerät', 'Same as device')}${!E.sprache ? I('check') : ''}</button>${SPRACHEN.map(([k, n]) => `<button role="menuitemradio" aria-checked="${E.sprache === k}" data-lang="${k}">${n}${E.sprache === k ? I('check') : ''}</button>`).join('')}<p>${L('Vollständig sind Deutsch und Englisch. In den anderen Sprachen sind Kategorien und Gläser übersetzt, die übrige Oberfläche erscheint vorerst auf Englisch.', 'German and English are complete. In the other languages categories and glasses are translated; the rest of the interface is in English for now.')}</p></div>`;
+  if (Z.menue === 'schrift') return `<div class="farbmenue schriftfeld" role="dialog" aria-label="${L('Schriftgröße', 'Text size')}"><h3>${L('Schriftgröße', 'Text size')} <output class="schriftzahl" id="schriftzahl">${E.schrift} %</output></h3><div class="reglerzeile"><span aria-hidden="true">A</span><input type="range" id="schriftregler" min="85" max="150" step="5" value="${E.schrift}" aria-label="${L('Schriftgröße in Prozent', 'Text size in percent')}"><span class="gross" aria-hidden="true">A</span></div><p>${L('Die Schrift ändert sich sofort, während du schiebst. Gilt für die ganze App, auch für die Mix-Ansicht.', 'The text changes right away while you slide. Applies to the whole app, including the mix view.')}</p><button data-a="schrift-100">${L('Zurück auf 100 %', 'Back to 100 %')}</button></div>`;
   if (Z.menue === 'farbe') return `<div class="farbmenue" role="menu"><h3>${L('Farbe der App', 'App colour')}</h3>${Object.entries(FARBEN).map(([k, f]) => `<button role="menuitemradio" aria-checked="${E.farbe === k}" data-farbe="${k}"><span class="fleck" style="background:linear-gradient(135deg,${f.k[0]},${f.k[2]})"></span>${L(...f.n)}</button>`).join('')}<hr><h3>${L('Hell oder dunkel', 'Light or dark')}</h3>${[['system', L('Wie das Gerät', 'Same as device')], ['hell', L('Hell', 'Light')], ['dunkel', L('Dunkel', 'Dark')]].map(([k, n]) => `<button role="menuitemradio" aria-checked="${E.ton === k}" data-ton="${k}">${I(k === 'dunkel' ? 'moon' : 'sun')}${n}</button>`).join('')}</div>`;
   return '';
 }
@@ -135,7 +139,7 @@ function vMix(br) {
   const r = getr(Z.uid); if (!r) return '';
   const schritte = r.steps && r.steps.length ? r.steps : [{ txt: L('Für dieses Getränk sind noch keine Schritte notiert.', 'No steps written for this drink yet.') }];
   const st = Math.min(Z.step, schritte.length - 1), s = schritte[st], braucht = zutatenImSchritt(r, s.txt), ger = G.geraeteFuerSchritt(s.txt);
-  const letzter = st === schritte.length - 1, gr = ['klein', 'mittel', 'gross'][E.mixGr] || 'mittel', kz = !br && !Z.mixKopf;
+  const letzter = st === schritte.length - 1, gr = 'mittel', kz = !br && !Z.mixKopf;
   const zut = braucht.length ? braucht.map((z) => `<span><b>${esc(mengeText(z))}</b>${esc(z.name)}</span>`).join('') : '';
   const kopfz = `<div class="mixkopf"><div class="fort">${schritte.map((_, i) => `<i class="${i < st ? 'an' : i === st ? 'jetzt' : ''}"></i>`).join('')}</div><div class="oben">${kz ? '' : `<b>${esc(r.name)} · ${Z.port} ${Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings')}</b>`}${br ? '' : `<button data-a="mixkopf" aria-expanded="${!kz}" aria-label="${kz ? L('Kopfzeile aufklappen', 'Expand header') : L('Kopfzeile einklappen', 'Collapse header')}">${I(kz ? 'down' : 'up')}</button>`}<button data-a="mix-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div></div>`;
   const b = `<div class="mixbild">${bild(r)}<span class="mixnr">${L(`Schritt ${st + 1} von ${schritte.length}`, `Step ${st + 1} of ${schritte.length}`)}</span></div>`;
@@ -188,7 +192,7 @@ function vMehr() {
   const z = (i, t, w, attr = '') => `<button class="ezeile" ${attr}>${i}<span><b>${t}</b><small>${w}</small></span>${I('right')}</button>`;
   const bsp = A.getraenke.filter((r) => r.beispiel).length, alle = A.getraenke.filter(G.istSichtbar).length;
   return `<div class="innen-p"><h2 class="titel">${L('Einstellungen', 'Settings')}</h2>
-  <div class="eliste">${z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"')}${z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch nach Land', 'automatic by country'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"')}${z(I('aa'), L('Schriftgröße in der Mix-Ansicht', 'Text size in mix view'), [L('klein', 'small'), L('mittel', 'medium'), L('groß', 'large')][E.mixGr], 'data-a="mixgr"')}${z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), L(...FARBEN[E.farbe].n) + ' · ' + { system: L('wie das Gerät', 'same as device'), hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"')}${z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an: Getränke mit Alkohol sind ausgeblendet', 'on: drinks with alcohol are hidden') : L('aus', 'off'), 'data-a="alk"')}</div>
+  <div class="eliste">${z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"')}${z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch nach Land', 'automatic by country'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"')}${z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' % · ' + L('Schieberegler, ändert sich sofort', 'slider, changes right away'), 'data-a="menue" data-m="schrift"')}${z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), L(...FARBEN[E.farbe].n) + ' · ' + { system: L('wie das Gerät', 'same as device'), hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"')}${z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an: Getränke mit Alkohol sind ausgeblendet', 'on: drinks with alcohol are hidden') : L('aus', 'off'), 'data-a="alk"')}</div>
   <h3 class="eh">${L('Beispiele', 'Examples')}</h3><div class="eliste">${z(I('box'), L('Beispiele laden', 'Load examples'), L('Pakete mit Getränken zum Ausprobieren', 'Packages of drinks to try'), 'data-a="beispiele"')}${z(I('trash'), L('Alle Beispiele löschen', 'Delete all examples'), bsp ? L(`${bsp} Beispiele in deiner Sammlung`, `${bsp} examples in your collection`) : L('keine Beispiele in deiner Sammlung', 'no examples in your collection'), 'data-a="beispiele-weg"')}</div>
   <h3 class="eh">${L('Sammlung', 'Collection')}</h3><div class="eliste">${z(I('download'), L('Sicherung speichern', 'Save a backup'), L(`${alle} Getränke als Datei`, `${alle} drinks as a file`), 'data-a="sichern"')}${z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), L('fügt hinzu, Doppelte werden erkannt', 'adds; duplicates are detected'), 'data-a="einspielen"')}${z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), L('liest die alten Daten, ändert sie nicht', 'reads the old data, does not change it'), 'data-a="uebernehmen"')}${z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('alle Getränke, Karten und die Einkaufsliste entfernen', 'remove all drinks, lists and the shopping list'), 'data-a="leeren"')}</div>
   <h3 class="eh">${L('Über', 'About')}</h3><div class="eliste">${z(I('info'), 'Mein Mixarium', L(`Fassung ${FASSUNG} · neue Gestaltung, Vorab`, `Version ${FASSUNG} · new design, preview`), 'data-a="ueber"')}<a class="ezeile" href="../index.html">${I('back')}<span><b>${L('Bisherige App öffnen', 'Open the previous app')}</b><small>${L('bleibt unverändert, mit Labor, Scan und KI', 'unchanged, with lab, scan and AI')}</small></span>${I('right')}</a><a class="ezeile" href="../impressum.html">${I('book')}<span><b>${L('Impressum', 'Legal notice')}</b><small></small></span>${I('right')}</a></div></div>`;
@@ -302,7 +306,7 @@ async function ausAlterApp(still) {
 }
 
 /* ── Zeichnen ── */
-function farbStil() { const f = FARBEN[E.farbe] || FARBEN.blau; return `--k1:${f.k[0]};--k2:${f.k[1]};--k3:${f.k[2]};--schrift:${f.schrift};--pa:${f.akz};--pfl:${f.fl}`; }
+function farbStil() { const f = FARBEN[E.farbe] || FARBEN.blau; return `--z:${(Number(E.schrift) || 100) / 100};--k1:${f.k[0]};--k2:${f.k[1]};--k3:${f.k[2]};--schrift:${f.schrift};--pa:${f.akz};--pfl:${f.fl}`; }
 function zeichne(frisch) {
   const br = breit(), v = Z.view, mix = v === 'mix';
   const basis = mix ? 'getraenk' : v;
@@ -315,8 +319,8 @@ function zeichne(frisch) {
   if (roll) $('.haupt').scrollTop = roll;
   if (such !== null) { const s = $('#suche'); if (s) { s.focus(); s.setSelectionRange(such, such); } }
   document.documentElement.lang = sprache();
-  const tc = $('meta[name=theme-color]'); if (tc) tc.content = dunkel() ? '#0a1124' : (FARBEN[E.farbe] || FARBEN.blau).k[1];
-  document.body.style.background = dunkel() ? '#0a1124' : '#f3f6fb';
+  const tc = $('meta[name=theme-color]'); if (tc) tc.content = dunkel() ? '#0b101b' : (FARBEN[E.farbe] || FARBEN.blau).k[1];
+  document.body.style.background = getComputedStyle($('.mx')).getPropertyValue('--bg').trim() || (dunkel() ? '#0a1124' : '#f3f6fb');
 }
 function setze(f, frisch) {
   const go = () => { f(); zeichne(frisch); };
@@ -350,7 +354,7 @@ const TUN = {
   sv() { schritt(1); return false; }, sz() { schritt(-1); return false; },
   fertig() { history.back(); setTimeout(() => melde(L('Fertig. Zum Wohl!', 'Done. Cheers!')), 60); return false; },
   plus() { Z.port = Math.min(99, Z.port + 1); }, minus() { Z.port = Math.max(1, Z.port - 1); },
-  mixgr() { E.mixGr = (E.mixGr + 1) % 3; einstSichern(); },
+  'schrift-100'() { E.schrift = 100; einstSichern(); },
   einheit() { const f = ['auto', 'orig', 'ml', 'cl', 'oz']; E.einheit = f[(f.indexOf(E.einheit) + 1) % f.length]; Z.einheit = null; einstSichern(); },
   neu() { Z.flAuf = false; editor(null); return false; },
   bearbeiten() { editor(getr(Z.uid)); return false; },
@@ -417,7 +421,9 @@ document.addEventListener('submit', (ev) => {
   if (ev.target.id === 'ed') return editorSpeichern(ev.target);
   if (ev.target.id === 'anform') { const d = new FormData(ev.target), titel = String(d.get('titel') || '').trim(); if (!titel) return; A.anlaesse = A.anlaesse || []; let an = A.anlaesse.find((x) => x.id === Z.fenster.anlass); if (!an) { an = { id: Date.now(), posten: [] }; A.anlaesse.unshift(an); } Object.assign(an, { titel, datum: String(d.get('datum') || '').trim(), gaeste: Number(d.get('gaeste')) || 0 }); Z.anlass = an.id; Z.fenster = null; sichern(); zeichne(true); }
 });
-document.addEventListener('input', (ev) => { if (ev.target.id === 'suche') { Z.suche = ev.target.value; const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = `${z} ${z === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}`; } } });
+document.addEventListener('input', (ev) => {
+  if (ev.target.id === 'schriftregler') { E.schrift = Math.min(150, Math.max(85, Number(ev.target.value) || 100)); $('.mx').style.setProperty('--z', E.schrift / 100); $('#schriftzahl').textContent = E.schrift + ' %'; clearTimeout(einstSichern.uhr); einstSichern.uhr = setTimeout(einstSichern, 300); return; }
+  if (ev.target.id === 'suche') { Z.suche = ev.target.value; const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = `${z} ${z === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}`; } } });
 document.addEventListener('change', async (ev) => {
   if (ev.target.id === 'edfoto' && ev.target.files[0]) { try { Z.fenster.img = await fotoLesen(ev.target.files[0]); $('#edbild').innerHTML = `<img class="foto" src="${Z.fenster.img}" alt="">`; } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
   if (ev.target.id === 'datei' && ev.target.files[0]) { await einspielenDatei(ev.target.files[0]); ev.target.value = ''; zeichne(true); }
