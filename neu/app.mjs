@@ -17,6 +17,7 @@ import { diktat, diktatAus, diktatMoeglich } from '../kern/oberflaeche/diktat.mj
 import { kategorienMit, beschriftung as katBeschr, anzahl as katZahl, anlegen as katAnlegen, umbenennen as katUmbenennen, KATEGORIEN_FEST, katBild, bildWaehlen } from '../kern/modell/kategorien.mjs';
 import { katVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
 import { einkaufMit } from '../kern/modell/einkauf.mjs';
+import { rezeptAusText } from '../kern/import/text.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -26,7 +27,7 @@ const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENK
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor11';
+export const FASSUNG = '10.0.0-vor12';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -264,7 +265,7 @@ function vMehr() {
   return `<div class="innen-p"><h2 class="titel">${L('Einstellungen', 'Settings')}</h2>
   <div class="eliste">${z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"')}${z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch nach Land', 'automatic by country'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"')}${z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' % · ' + L('Schieberegler, ändert sich sofort', 'slider, changes right away'), 'data-a="menue" data-m="schrift"')}${z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { geraet: L('wie das Gerät', 'same as device'), hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"')}${z(I('image'), L('Bilder', 'Pictures'), L('alle Bilder sehen, auswählen und löschen', 'see, select and delete all pictures'), 'data-go="bilder"')}${z(I('box'), L('Kategorien', 'Categories'), L('umbenennen, Zeichen, ordnen, löschen, neu', 'rename, symbol, order, delete, new'), 'data-a="kategorien"')}${z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an: Getränke mit Alkohol sind ausgeblendet', 'on: drinks with alcohol are hidden') : L('aus', 'off'), 'data-a="alk"')}</div>
   <h3 class="eh">${L('Beispiele', 'Examples')}</h3><div class="eliste">${z(I('box'), L('Beispiele laden', 'Load examples'), L('Pakete mit Getränken zum Ausprobieren', 'Packages of drinks to try'), 'data-a="beispiele"')}${z(I('trash'), L('Alle Beispiele löschen', 'Delete all examples'), bsp ? L(`${bsp} Beispiele in deiner Sammlung`, `${bsp} examples in your collection`) : L('keine Beispiele in deiner Sammlung', 'no examples in your collection'), 'data-a="beispiele-weg"')}</div>
-  <h3 class="eh">${L('Sammlung', 'Collection')}</h3><div class="eliste">${z(I('download'), L('Sicherung speichern', 'Save a backup'), L(`${alle} Getränke als Datei`, `${alle} drinks as a file`), 'data-a="sichern"')}${z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), L('fügt hinzu, Doppelte werden erkannt', 'adds; duplicates are detected'), 'data-a="einspielen"')}${z(I('safe'), L('Tresor', 'Vault'), L('Stände im Gerät: ablegen und zurückholen', 'states on this device: store and restore'), 'data-a="tresor"')}${z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), L('liest die alten Daten, ändert sie nicht', 'reads the old data, does not change it'), 'data-a="uebernehmen"')}${z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('alle Getränke, Karten und die Einkaufsliste entfernen', 'remove all drinks, lists and the shopping list'), 'data-a="leeren"')}</div>
+  <h3 class="eh">${L('Sammlung', 'Collection')}</h3><div class="eliste">${z(I('download'), L('Sicherung speichern', 'Save a backup'), L(`${alle} Getränke als Datei`, `${alle} drinks as a file`), 'data-a="sichern"')}${z(I('pencil'), L('Getränk aus Text', 'Drink from text'), L('Rezepttext einfügen, ohne KI aufteilen', 'paste a recipe text, split without AI'), 'data-a="text-import"')}${z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), L('fügt hinzu, Doppelte werden erkannt', 'adds; duplicates are detected'), 'data-a="einspielen"')}${z(I('safe'), L('Tresor', 'Vault'), L('Stände im Gerät: ablegen und zurückholen', 'states on this device: store and restore'), 'data-a="tresor"')}${z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), L('liest die alten Daten, ändert sie nicht', 'reads the old data, does not change it'), 'data-a="uebernehmen"')}${z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('alle Getränke, Karten und die Einkaufsliste entfernen', 'remove all drinks, lists and the shopping list'), 'data-a="leeren"')}</div>
   <h3 class="eh">${L('KI', 'AI')}</h3><div class="eliste">${z(I('sparkle'), L('OpenAI-Schlüssel für KI-Bilder', 'OpenAI key for AI pictures'), L('eigener Schlüssel, bleibt auf diesem Gerät', 'your own key, stays on this device'), 'data-a="schluessel"')}</div>
   <h3 class="eh">${L('Über', 'About')}</h3><div class="eliste">${z(I('info'), 'Mein Mixarium', L(`Fassung ${FASSUNG} · neue Gestaltung, Vorab`, `Version ${FASSUNG} · new design, preview`), 'data-a="ueber"')}<a class="ezeile" href="../index.html">${I('back')}<span><b>${L('Bisherige App öffnen', 'Open the previous app')}</b><small>${L('bleibt unverändert, mit Labor, Scan und KI', 'unchanged, with lab, scan and AI')}</small></span>${I('right')}</a><a class="ezeile" href="../impressum.html">${I('book')}<span><b>${L('Impressum', 'Legal notice')}</b><small></small></span>${I('right')}</a></div></div>`;
 }
@@ -280,12 +281,13 @@ function fenster() {
 const fZu = () => { diktatAus(); Z.fenster = null; zeichne(); };
 function frage(titel, text, jaText, ja, gefahr) { Z.fenster = { titel, html: `<p class="ftext">${text}</p><div class="reihe ende"><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf ${gefahr ? 'rot' : ''}" data-a="fenster-ja">${jaText}</button></div>`, ja }; zeichne(); }
 
-function editor(r) {
-  const neu = !r; r = r || { name: '', cat: Z.kat !== 'all' ? Z.kat : 'mock', glass: 'highball', temp: 'kalt', servings: 1, prepTime: 5, ings: [], steps: [], notes: '', img: '' };
+function editor(r, vorlage = false) {
+  const LEER = { name: '', cat: Z.kat !== 'all' ? Z.kat : 'mock', glass: 'highball', temp: 'kalt', servings: 1, prepTime: 5, ings: [], steps: [], notes: '', img: '' };
+  const neu = !r || vorlage; r = r ? (vorlage ? { ...LEER, ...r } : r) : LEER;   // vorlage: neues Getränk, vorausgefüllt (Text-Import)
   const katListe = K.alleKategorien(A.getraenke, A.kategorien).filter((c) => c.art !== 'ohne');
   const opt = (l, wert, name) => l.map((x) => `<option value="${esc(x.id)}" ${x.id === wert ? 'selected' : ''}>${esc(name(x))}</option>`).join('');
   const glasBekannt = !r.glass || G.istBekanntesGlas(r.glass);
-  Z.fenster = { titel: neu ? L('Neues Getränk', 'New drink') : L('Getränk bearbeiten', 'Edit drink'), uid: r.uid || null, img: r.img || '', html: `<form id="ed" class="felder" autocomplete="off">
+  Z.fenster = { titel: neu ? L('Neues Getränk', 'New drink') : L('Getränk bearbeiten', 'Edit drink'), uid: r.uid || null, img: r.img || '', html: `<form id="ed" class="felder" autocomplete="off">${r.hinweis ? `<p class="hinweis">${I('info')}${esc(r.hinweis)}</p>` : ''}
    <label>${L('Name', 'Name')}<input class="feld" name="name" required value="${esc(r.name)}"></label>
    <div class="zweier"><label>${L('Kategorie', 'Category')}<select class="feld" name="cat">${opt(katListe, r.cat, katText)}<option value="" ${!r.cat ? 'selected' : ''}>${L('ohne Kategorie', 'no category')}</option></select></label>
    <label>${L('Glas', 'Glass')}<select class="feld" name="glass">${glasBekannt ? '' : `<option value="${esc(r.glass)}" selected>${esc(r.glass)}</option>`}${opt(G.GLAESER, r.glass, (g) => g[sprache()] || g.de)}</select></label></div>
@@ -487,6 +489,17 @@ function katLoeschenMit(id, ziel) {
 /* ── Bedienung ── */
 const TUN = {
   kategorien() { katFenster(); },
+  /* Text-Import ohne KI (Kern: import/text.mjs, kennt seit 0.15 auch oz, Barlöffel, Dash …). Das Ergebnis steht im Formular
+     zum Prüfen; gespeichert wird erst dort. Nichts geht ins Netz. */
+  'text-import'() { Z.flAuf = false; Z.fenster = { titel: L('Getränk aus Text', 'Drink from text'), html: `<p class="ftext">${L('Rezepttext einfügen, etwa aus einer Mail, einer Notiz oder von einer Webseite. Die erste Zeile ist der Name. Die App teilt ohne KI in Zutaten und Schritte; du siehst das Ergebnis im Formular und speicherst dort.', 'Paste a recipe text, e.g. from an e-mail, a note or a web page. The first line is the name. The app splits it into ingredients and steps without AI; you check the result in the form and save there.')}</p><label class="felder">${mikro('#imptext')}<textarea class="feld" id="imptext" rows="10" placeholder="${L('Virgin Mojito\n\nZutaten\n2 cl Limettensaft\n…\n\nZubereitung\n1. Minze andrücken …', 'Virgin Mojito\n\nIngredients\n2 cl lime juice\n…\n\nMethod\n1. Muddle the mint …')}"></textarea></label><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button type="button" class="knopf" data-a="text-aufteilen">${I('check')}${L('Aufteilen', 'Split')}</button></div>` }; },
+  'text-aufteilen'() {
+    const t = $('#imptext') && $('#imptext').value, r = rezeptAusText(t); if (!r) { melde(L('Bitte zuerst einen Text einfügen.', 'Please paste a text first.')); return false; }
+    diktatAus();
+    const ings = r.ings.map((z) => ({ amt: z.amt, unit: z.unit, name: z.note ? `${z.name} (${z.note})` : z.name }));
+    const alk = G.alkoholBefund({ ings }).alkohol;
+    editor({ name: r.name || '', servings: r.servings || 1, prepTime: r.prepTime || null, ings, steps: r.steps, alcohol: alk, cat: alk ? 'ckt' : (Z.kat !== 'all' ? Z.kat : 'mock'),
+      hinweis: r.sicher ? L('Aus dem Text übernommen. Bitte prüfen und speichern.', 'Taken from the text. Please check and save.') : L('Ohne Überschriften „Zutaten“/„Zubereitung“ geraten. Bitte genau prüfen.', 'Guessed without “Ingredients”/“Method” headings. Please check carefully.') }, true);
+    return false; },
   'bilder-filter'(b) { Z.bilder.filter = b.dataset.f; }, 'bilder-gross'() { Z.bilder.gross = !Z.bilder.gross; },
   'bild-wahl'(b) { const w = Z.bilder.wahl, u = b.dataset.uid; if (w.has(u)) w.delete(u); else w.add(u); },
   'bilder-alle-wahl'() { const w = Z.bilder.wahl, alle = [...document.querySelectorAll('.bildkachel')].map((x) => x.dataset.uid); if (w.size === alle.length) w.clear(); else alle.forEach((u) => w.add(u)); },

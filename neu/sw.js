@@ -1,9 +1,9 @@
 /* Mein Mixarium (neu) – Offline-Speicher. Die Hülle liegt im Cache; geholt wird aus dem Cache und im Hintergrund erneuert.
    Beispielpakete (../beispiele/*.json) werden NICHT vorab geladen: Netz nur auf Knopfdruck. */
-const FASSUNG = 'mixarium-neu-10.0.0-vor11';
-const HUELLE = ['./', './index.html', './app.css?v=10.0.0-vor11', './app.mjs?v=10.0.0-vor11', './manifest.webmanifest',
+const FASSUNG = 'mixarium-neu-10.0.0-vor12';
+const HUELLE = ['./', './index.html', './app.css?v=10.0.0-vor12', './app.mjs?v=10.0.0-vor12', './manifest.webmanifest',
   './getraenke-symbole.mjs', './platzbild.mjs', './alt.mjs',
-  '../kern/speicher/speicher.mjs', '../kern/speicher/tresor.mjs', '../kern/oberflaeche/farben.mjs', '../kern/oberflaeche/schrift.mjs', '../kern/oberflaeche/bild.mjs', '../kern/oberflaeche/symbole.mjs', '../kern/ki/bild.mjs', '../kern/modell/rezept.mjs', '../kern/modell/kategorien.mjs', '../kern/modell/kategorien-fest.mjs', '../kern/modell/einkauf.mjs', '../kern/modell/warengruppen.mjs', '../kern/modell/mengen.mjs', '../kern/oberflaeche/diktat.mjs',
+  '../kern/speicher/speicher.mjs', '../kern/speicher/tresor.mjs', '../kern/oberflaeche/farben.mjs', '../kern/oberflaeche/schrift.mjs', '../kern/oberflaeche/bild.mjs', '../kern/oberflaeche/symbole.mjs', '../kern/ki/bild.mjs', '../kern/modell/rezept.mjs', '../kern/modell/kategorien.mjs', '../kern/modell/kategorien-fest.mjs', '../kern/modell/einkauf.mjs', '../kern/modell/warengruppen.mjs', '../kern/modell/mengen.mjs', '../kern/import/text.mjs', '../kern/oberflaeche/diktat.mjs',
   '../getraenke/index.mjs', '../getraenke/einheiten.mjs', '../getraenke/glaeser.mjs', '../getraenke/kategorien.mjs', '../getraenke/alkohol.mjs', '../getraenke/geraete.mjs', '../getraenke/uebernahme.mjs', '../getraenke/warengruppen.mjs',
   '../icons/mixarium-192.png?v=1'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(FASSUNG).then((c) => c.addAll(HUELLE)).then(() => self.skipWaiting())); });

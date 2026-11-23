@@ -163,6 +163,25 @@ await p.click(`.ezeile[data-a=bild-dazu][data-uid="${weg}"]`); await ruhe(p);
 pruefe('ein Getränk ohne Bild öffnet das Bild-Blatt (einfügen, KI-Bild, Gratis-Foto)', await p.locator('.fenster [data-a=bild-datei]').count() === 1 && await p.locator('.fenster [data-a=ki-bild]').count() === 1);
 await p.keyboard.press('Escape'); await ruhe(p);
 pruefe('am Handy läuft der Bilder-Ordner nicht quer', await Zs(p, () => document.documentElement.scrollWidth <= innerWidth));
+
+console.log('Getränk aus Text (ohne KI)');
+await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p); await p.click('[data-a=text-import]'); await ruhe(p);
+await p.fill('#imptext', 'Old Fashioned\nFür 1 Glas · 5 Minuten\n\nZutaten\n2 oz Bourbon Whiskey\n1 Barlöffel Zuckersirup\n2 Dashes Angostura\n1 Orangenzeste (zum Garnieren)\n\nZubereitung\n1. Sirup und Angostura ins Glas geben.\n2. Whiskey und Eis dazu, 30 Sekunden rühren.\n3. Mit der Orangenzeste garnieren.');
+await p.click('[data-a=text-aufteilen]'); await ruhe(p);
+const ed = await p.evaluate(() => { const f = document.querySelector('#ed'); return { name: f.name.value, ings: f.ings.value.split('\n'), steps: f.steps.value.split('\n').length, alk: f.alcohol.checked, cat: f.cat.value, titel: document.querySelector('.fenster h2').textContent, hin: document.querySelector('#ed .hinweis')?.textContent || '' }; });
+pruefe('Aufteilen füllt das Formular: Name, 4 Zutaten, 3 Schritte', ed.name === 'Old Fashioned' && ed.ings.length === 4 && ed.steps === 3, JSON.stringify(ed));
+pruefe('Bar-Einheiten bleiben getrennt lesbar (oz, Barlöffel, Dashes)', ed.ings[0] === '2 oz Bourbon Whiskey' && ed.ings[1] === '1 Barlöffel Zuckersirup' && ed.ings[2] === '2 Dashes Angostura', ed.ings.join(' | '));
+pruefe('Whiskey wird erkannt: „enthält Alkohol“ ist angehakt, Kategorie Cocktails', ed.alk && ed.cat === 'ckt');
+pruefe('es ist ein NEUES Getränk mit dem Hinweis „bitte prüfen“', /Neues Getränk/.test(ed.titel) && /prüfen/.test(ed.hin), ed.titel + ' / ' + ed.hin);
+const vorN = await p.evaluate(() => __mixarium.sammlung.getraenke.length);
+await p.click('#ed [type=submit]'); await ruhe(p);
+const neu = await p.evaluate(() => __mixarium.sammlung.getraenke.find((r) => r.name === 'Old Fashioned'));
+pruefe('erst Speichern legt es an; Einheit oz steht im Feld unit', !!neu && await p.evaluate(() => __mixarium.sammlung.getraenke.length) === vorN + 1 && neu.ings[0].unit === 'oz' && neu.ings[0].amt === '2' && neu.alcohol === true, JSON.stringify(neu && neu.ings[0]));
+await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p); await p.click('[data-a=text-import]'); await ruhe(p);
+await p.fill('#imptext', 'Zitronenwasser\n1 l Wasser\n2 Zitronen\nZitronen auspressen und mit Wasser mischen.'); await p.click('[data-a=text-aufteilen]'); await ruhe(p);
+pruefe('ohne Überschriften sagt das Formular, dass geraten wurde', /geraten/.test(await p.locator('#ed .hinweis').innerText()));
+await p.keyboard.press('Escape'); await ruhe(p);
+pruefe('Abbrechen legt nichts an', await p.evaluate(() => !__mixarium.sammlung.getraenke.some((r) => r.name === 'Zitronenwasser')));
 await c.close();
 
 pruefe('keine Fehler in der Konsole', fehler.length === 0, fehler.join(' | '));
