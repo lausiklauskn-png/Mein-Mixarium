@@ -32,7 +32,7 @@ import { vermerken, vermerkHtml, fundeZumEntscheiden, fundName } from '../kern/k
 import { dateiPruefen, pruefHtml, kiAnweisungen } from '../kern/pruefung/datei.mjs';
 import * as DB from '../getraenke/entdecken.mjs';
 import { webAdresse, holeSeite, ausEingefuegtem, ohneKi, fuerKi, mitKi, holeBild } from '../kern/import/web.mjs';
-import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, rechtschreibungAnwenden, uebersetze, uebersetzungAnRezept, uebersetzungPasst, kostenSchaetzung, wasGehtHinaus as helferHinaus } from '../kern/ki/helfer.mjs';
+import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, rechtschreibungAnwenden, uebersetze, uebersetzungAnRezept, uebersetzungPasst, kostenSchaetzung, wasGehtHinaus as helferHinaus, wasKurz } from '../kern/ki/helfer.mjs';
 import { druckRezept, drucke } from '../kern/ausgabe/druck.mjs';
 import { teilLink, ausTeilLink, qrSvg, passtInQr } from '../kern/teilen/qr.mjs';
 
@@ -48,7 +48,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor22';
+export const FASSUNG = '10.0.0-vor23';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -860,7 +860,7 @@ function katLoeschenMit(id, ziel) {
 
 /* ── Menü am Getränk (Vorbild: Mein Rezeptbuch): hinter dem Winkel → „Mehr“. Eine Liste, je Zeile ein Zeichen und ein Wort.
    KI-Zeilen sagen in der Zeile selbst, was an wen hinausgeht; gesendet wird erst beim Tipp. Die Einheiten stehen schon am Getränk. ── */
-const kiWas = (art, r) => helferHinaus(art, r, sprache()).replace(/^[^:]+:\s*/, '').replace(/\s+(an|to) Anthropic.*$/, '');
+const kiWas = (art, r) => wasKurz(art, r, sprache());   /* nur das Was, aus dem Kern – stimmt in jeder Sprache */
 const kiZeile = (a, i, t, art, r) => `<button class="ezeile" data-a="${a}" title="${esc(helferHinaus(art, r, sprache()))}">${I(i)}<span><b>${t}</b><small>Anthropic · ${esc(kiWas(art, r))}</small></span><i class="ki-marke">KI</i></button>`;
 function getraenkMenue() {
   const r = getr(Z.uid); if (!r) return; const z = (a, i, t) => `<button class="ezeile" data-a="${a}">${I(i)}<span><b>${t}</b></span>${I('right')}</button>`;
