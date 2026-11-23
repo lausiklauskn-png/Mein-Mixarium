@@ -2,7 +2,15 @@
 # und die rote Zeile muss den Namen der Zusicherung tragen. Aufruf: python3 -u tests/gegenprobe_neu_zusatz.py   (NUR_FALL=a,b · NUR_ANKER=1)
 # Ein Fall: (Name, alt, neu, Datei, erwartete rote Zeile[, alt2, neu2, Datei2]) – wo zwei Riegel einander decken, nimmt die Sabotage beide.
 import subprocess, shutil, os, tempfile, sys
-F=[('bild-ohne-halt', "    if (!st.length) return r;", "    if (st.length >= 0) return r;", 'neu/zusatz.mjs', 'vor dem Senden hält die App an und zeigt die Stelle markiert'),
+F=[('richter-ohne-schluessel', "    if (!SK.anthropic) { app.schluesselFenster('anthropic', 'richter'); return; }", "", 'neu/zusatz.mjs', 'ohne Anthropic-Schlüssel kommt das Schlüssel-Fenster'),
+   ('richter-nicht-weiter', "  const danach = ['sammel-bilder', 'richter'];", "  const danach = ['sammel-bilder'];", 'neu/zusatz.mjs', 'läuft die Prüfung von selbst weiter'),
+   ('richter-sendet-falle', "if ((await pruefe(k.text)).length) urteile.push({ uid: k.uid, passt: null, warum: '', ausgeschlossen: 'ki-anweisung' }); else zumRichter.push(k);", "zumRichter.push(k);", 'kern/suche/richter.mjs', 'das Getränk mit dem Befehl an eine KI geht nicht hinaus'),
+   ('richter-sendet-schritte', "zut && 'Zutaten: ' + kurz(zut, 300)]", "zut && 'Zutaten: ' + kurz(zut, 300), (r.steps || []).map((x) => x.txt).join(' ')]", 'kern/suche/richter.mjs', 'Schritte gehen nie hinaus'),
+   ('richter-frage-ungeprueft', "  if ((await pruefe(String(anfrage))).length) return ohne('frage');", "", 'kern/suche/richter.mjs', 'steht in der Suchfrage ein Befehl an eine KI, geht nichts hinaus'),
+   ('richter-ordnet-nicht', "const vorn = da ? sinn.filter((r) => !u(r) || u(r).passt !== false) : sinn, hinten = da ? sinn.filter((r) => u(r) && u(r).passt === false) : [];", "const vorn = sinn, hinten = [];", 'neu/zusatz.mjs', 'was nicht passt, steht eingeklappt'),
+   ('richter-reiht-nicht', "    if (da) vorn.sort((x, y) => ja(y) - ja(x));", "", 'neu/zusatz.mjs', 'die passenden rücken vor, das nicht geprüfte steht dahinter'),
+   ('richter-sendet-ausgeblendetes', " && !da.has(r.uid) && erlaubt.has(r.uid) && inWahl(r));", " && !da.has(r.uid) && inWahl(r));", 'neu/app.mjs', 'das ausgeblendete Getränk mit Alkohol'),
+   ('bild-ohne-halt', "    if (!st.length) return r;", "    if (st.length >= 0) return r;", 'neu/zusatz.mjs', 'vor dem Senden hält die App an und zeigt die Stelle markiert'),
    ('bild-ohne-sendet-doch', "    return w === 'a' ? p.sauber : w === 'b' ? r : null;", "    return w === 'a' ? r : w === 'b' ? r : null;", 'neu/zusatz.mjs', '„Ohne senden“: der Auftrag geht ohne die Stelle hinaus'),
    ('bild-kreuz-sendet', "    return w === 'a' ? p.sauber : w === 'b' ? r : null;", "    return w === 'a' ? p.sauber : r;", 'neu/zusatz.mjs', 'das Kreuz bricht ab: nichts geht hinaus'),
    ('bild-freigabe-uebergangen', "await gratisBild(frei, { art: 'getraenk' }) : await kiBild(schluessel, frei, { art: 'getraenk' });", "await gratisBild(sicht(r), { art: 'getraenk' }) : await kiBild(schluessel, sicht(r), { art: 'getraenk' });", 'neu/app.mjs', '„Ohne senden“: der Auftrag geht ohne die Stelle hinaus'),

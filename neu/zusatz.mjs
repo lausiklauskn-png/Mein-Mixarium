@@ -1,16 +1,18 @@
 // Mein Mixarium · Zusätze: Stücke, die für sich stehen, damit die Hauptdatei (app.mjs) nicht weiter wächst.
-// Prüfung des Bildauftrags · KI-Bilder für alle ohne Bild.
+// Prüfung des Bildauftrags · KI-Bilder für alle ohne Bild · KI-Richter der Suche.
 // app.mjs reicht ihre Werkzeuge herein und ruft die Stücke an wenigen, benannten Stellen (such dort nach „ZU.“).
 // Die Aktionen hängen sich selbst in TUN; Rückgabe false heißt wie dort: nicht neu zeichnen.
 import { pruefeBildAuftrag, sammelBilder, sammelKosten, ohneBild } from '../kern/ki/bild.mjs';
 import { kiAnweisungen } from '../kern/pruefung/datei.mjs';
+import { richte, kandidat, richterHinaus, RICHTER_MAX } from '../kern/suche/richter.mjs';
 import { text as spText, fuelle } from '../kern/oberflaeche/sprache.mjs';
 
 /** app: { sprache(), esc, I, Z, TUN, SK, W, melde, sichern, zeichne, schluesselFenster(a, danach), bildAusDatei(blob), tresorAuto(grund),
  *         bildAn(uid, img), sichtbare() → die Getränke, die zu sehen sind („Ohne Alkohol“ gilt: nichts Ausgeblendetes geht an eine KI),
- *         warte(fenster, fertig) → ruft fertig, sobald dieses Fenster nicht mehr offen ist } */
+ *         warte(fenster, fertig) → ruft fertig, sobald dieses Fenster nicht mehr offen ist,
+ *         sinnTreffer() → Treffer der Sinn-Suche (nur Sichtbares), sicht(r) → Fassung in der Sprache der Oberfläche, katName(r) } */
 export function zusatz(app) {
-  const { esc, I, Z, TUN, SK, melde, zeichne } = app;
+  const { esc, I, Z, TUN, SK, W, melde, zeichne } = app;
   const L = (de, en) => spText(app.sprache(), de, en);
 
   /* ── Eine Wahl mit zwei Antworten; das Kreuz des Fensters heißt „keine von beiden“. Für Funde, bei denen der Mensch entscheidet (raus oder rein). ── */
@@ -67,7 +69,37 @@ export function zusatz(app) {
     melde(e.grund === 'schluessel' ? L('Der OpenAI-Schlüssel wurde abgelehnt', 'The OpenAI key was rejected') : e.grund === 'limit' ? L('OpenAI meldet: Limit erreicht oder kein Guthaben', 'OpenAI reports: limit reached or no credit') : teile.join(' · '));
   }
 
+  /* ── KI-Richter der Suche: die Sinn-Suche schlägt vor, auf Knopfdruck urteilt Claude; Passendes rückt vor, der Rest klappt ein. ── */
+  const ri = { fuer: '', urteile: new Map(), laeuft: false };
+  /** Der Block „Nach Bedeutung“. sinn: die Treffer in der Reihenfolge der Sinn-Suche; karte(r, i) zeichnet eine Karte. */
+  function sinnBlock(sinn, karte) {
+    if (!sinn.length) return '';
+    const f = Z.suche.trim().toLowerCase(); if (ri.fuer !== f) { ri.fuer = f; ri.urteile = new Map(); }
+    const u = (r) => ri.urteile.get(r.uid), da = ri.urteile.size > 0, n = Math.min(sinn.length, RICHTER_MAX), ja = (r) => (u(r) && u(r).passt === true ? 1 : 0);
+    const vorn = da ? sinn.filter((r) => !u(r) || u(r).passt !== false) : sinn, hinten = da ? sinn.filter((r) => u(r) && u(r).passt === false) : [];
+    if (da) vorn.sort((x, y) => ja(y) - ja(x));   /* was passt, zuerst; was nicht geprüft ist, dahinter */
+    const knopf = da ? `<span class="chip ok" id="richter-fertig" title="${esc(L('Von der KI geprüft', 'Checked by the AI'))}">${I('check')}${esc(fuelle(L('{0} passen', '{0} fit'), sinn.filter(ja).length))}</span>`
+      : `<button class="chip ki" data-a="richter" title="${esc(richterHinaus(n, app.sprache()))}">${I('sparkle')}${L('KI prüft', 'AI check')}<small>Anthropic · ${n}</small></button>`;
+    return `<div class="eh-zeile"><h3 class="eh">${L('Nach Bedeutung', 'By meaning')} <small>${sinn.length}</small></h3>${knopf}</div><div class="karten" id="sinn-treffer">${vorn.map(karte).join('')}</div>`
+      + (hinten.length ? `<details class="mehr" id="sinn-rest"><summary>${I('right')}<span>${esc(fuelle(L('Passt weniger · {0}', 'Fits less · {0}'), hinten.length))}</span></summary><div class="karten">${hinten.map(karte).join('')}</div></details>` : '');
+  }
+  TUN.richter = () => { richterLauf(); return false; };
+  async function richterLauf() {
+    if (ri.laeuft) return;
+    if (!SK.anthropic) { app.schluesselFenster('anthropic', 'richter'); return; }
+    const frage = Z.suche.trim(), sinn = app.sinnTreffer(); if (!frage || !sinn.length) return;   /* sinnTreffer(): nur, was zu sehen ist */
+    ri.laeuft = true;
+    try {
+      const e = await W.mit(L('KI prüft die Treffer …', 'AI is checking the hits …'), () => richte(SK.anthropic, frage, sinn.map((r) => kandidat(app.sicht(r), app.katName(r))), { sprache: app.sprache() }));
+      if (Z.suche.trim() !== frage) return;   /* es wurde schon weitergetippt */
+      if (!e.gefragt) { melde({ 'pruefliste-fehlt': L('Prüfliste fehlt – nichts gesendet', 'Check list missing – nothing sent'), frage: L('Befehl in der Suchfrage – nichts gesendet', 'Instruction in the query – nothing sent') }[e.grund] || L('Nichts zu prüfen', 'Nothing to check')); return; }
+      ri.fuer = frage.toLowerCase(); ri.urteile = new Map(e.urteile.map((x) => [x.uid, x]));
+      const aus = e.urteile.filter((x) => x.ausgeschlossen).length;
+      melde(fuelle(L('{0} von {1} passen', '{0} of {1} fit'), e.urteile.filter((x) => x.passt === true).length, e.urteile.length) + (aus ? ' · ' + fuelle(L('{0} nicht gesendet', '{0} not sent'), aus) : ''));
+    } catch (f) { melde(f.message); } finally { ri.laeuft = false; }
+  }
+
   /* Was nach dem Speichern eines Schlüssels von selbst weitergeht (Kennung = Name der Aktion in TUN). */
-  const danach = ['sammel-bilder'];
-  return { bildFreigabe, sammelKnopf, danach, wahl, stellenHtml };
+  const danach = ['sammel-bilder', 'richter'];
+  return { bildFreigabe, sammelKnopf, sinnBlock, danach, wahl, stellenHtml };
 }

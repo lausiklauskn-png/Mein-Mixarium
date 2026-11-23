@@ -184,7 +184,7 @@ function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${
 function kartenHtml() {
   const l = sichtbar(), sinn = semTreffer(), an = E.sinn && Z.suche.trim();
   const status = an ? `<p class="sinn-status" id="sinn-status" role="status">${esc(sem.status)}</p>` : '';
-  const zusatz = sinn.length ? `<h3 class="eh">${L('Nach Bedeutung', 'By meaning')} <small>${sinn.length}</small></h3><div class="karten" id="sinn-treffer">${sinn.map(karte).join('')}</div>` : '';
+  const zusatz = ZU.sinnBlock(sinn, karte);   /* „Nach Bedeutung“ mit dem KI-Richter (neu/zusatz.mjs) */
   if (!l.length) return (sinn.length ? '' : `<p class="leer">${Z.suche ? L('Nichts gefunden. Anderes Wort versuchen oder die Kategorie „Alle“ wählen.', 'Nothing found. Try another word or choose “All”.') : L('In dieser Kategorie ist noch nichts.', 'Nothing in this category yet.')}</p>`) + status + zusatz;
   return `<div class="karten">${l.map(karte).join('')}</div>${status}${zusatz}`;
 }
@@ -1142,10 +1142,10 @@ const TUN = {
   'posten-weg'(b) { const an = A.anlaesse.find((x) => x.id === Z.anlass); an.posten = an.posten.filter((p) => String(p.id) !== b.dataset.p); sichern(); },
   drucken() { print(); return false; },
 };
-/* Zusätze (neu/zusatz.mjs): Prüfung des Bildauftrags, KI-Bilder für alle ohne Bild. Sie hängen ihre Aktionen selbst in TUN.
+/* Zusätze (neu/zusatz.mjs): Prüfung des Bildauftrags, KI-Bilder für alle ohne Bild, KI-Richter der Suche. Sie hängen ihre Aktionen selbst in TUN.
    `sichtbare` ist, was zu sehen ist: nichts Ausgeblendetes („Ohne Alkohol“) geht an eine KI. */
 const ZU = zusatz({ sprache, esc, I, Z, TUN, SK, W, melde, sichern, zeichne, schluesselFenster, bildAusDatei, tresorAuto, bildAn: (uid, img) => bildSetzen(img, uid),
-  sichtbare: () => G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter(G.istSichtbar), warte: (f, fertig) => { wartend = { f, fertig }; } });
+  sichtbare: () => G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter(G.istSichtbar), sinnTreffer: semTreffer, sicht, katName: katNameVon, warte: (f, fertig) => { wartend = { f, fertig }; } });
 const postenVon = (b) => A.anlaesse.find((x) => x.id === Z.anlass).posten.find((p) => String(p.id) === b.dataset.p);
 function anlassFenster(an) {
   Z.fenster = { titel: an ? L('Getränkekarte bearbeiten', 'Edit drinks list') : L('Neue Getränkekarte', 'New drinks list'), anlass: an ? an.id : null, html: `<form id="anform" class="felder" autocomplete="off"><label>${L('Anlass', 'Occasion')}<input class="feld" name="titel" required value="${esc(an ? an.titel : '')}" placeholder="${L('z. B. Sommerabend bei Oma', 'e.g. Summer evening at Grandma’s')}"></label><div class="zweier"><label>${L('Wann', 'When')}<input class="feld" name="datum" value="${esc(an ? an.datum || '' : '')}" placeholder="${L('z. B. Sa 29.11., 18 Uhr', 'e.g. Sat 29 Nov, 6 pm')}"></label><label>${L('Gäste', 'Guests')}<input class="feld" name="gaeste" type="number" min="0" max="999" value="${an && an.gaeste ? Number(an.gaeste) : ''}"></label></div><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Speichern', 'Save')}</button></div></form>` }; zeichne();
