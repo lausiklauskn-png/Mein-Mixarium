@@ -453,6 +453,46 @@ figure{margin:0}
 .mx .ezeile small{color:var(--muted);font-size:12.5px}
 .mx .ezeile>.ico:last-child{width:16px;height:16px;color:var(--muted)}
 .mx .ezeile .fleck{width:22px;height:22px;border-radius:50%;flex:none}
+/* Runde 5: Feinschliff. Nur transform und opacity, einmalig, 120–250 ms; nichts läuft dauerhaft. */
+.mx button{transition:transform .12s ease}
+.mx button:active{transform:scale(.97)}
+.mx .karte .bild svg,.mx .zeile .mini svg{transition:transform .25s ease}
+.mx .karte:hover .bild svg{transform:scale(1.04)}
+.mx .bild::after,.mx .held::before,.mx .mixbild::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.28),rgba(255,255,255,0) 38%),radial-gradient(120% 90% at 50% 120%,rgba(10,17,36,.22),transparent 60%)}
+.mx .held::before{z-index:1}.mx .held .ueber,.mx .held button{z-index:2}
+.mx .karte{box-shadow:var(--schatten),0 0 0 0 transparent}
+.mx .karte:hover{box-shadow:var(--schatten),0 14px 30px color-mix(in srgb,var(--pa) 22%,transparent)}
+@keyframes mx-auf{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes mx-vor{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:none}}
+@keyframes mx-zur{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:none}}
+@keyframes mx-pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes mx-fuell{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes mx-toast{0%{opacity:0;transform:translate(-50%,10px)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,0)}}
+.mx.frisch .karte,.mx.frisch .zutaten li,.mx.frisch .schritte li,.mx.frisch .gruppe-e,.mx.frisch .slot,.mx.frisch .laborkarte,.mx.frisch .eliste{animation:mx-auf .22s ease both;animation-delay:calc(var(--i,0)*28ms)}
+.mx.frisch .zutaten li:nth-child(2),.mx.frisch .schritte li:nth-child(2),.mx.frisch .gruppe-e:nth-child(2){--i:1}
+.mx.frisch .zutaten li:nth-child(3),.mx.frisch .schritte li:nth-child(3),.mx.frisch .gruppe-e:nth-child(3){--i:2}
+.mx.frisch .zutaten li:nth-child(n+4),.mx.frisch .schritte li:nth-child(n+4),.mx.frisch .gruppe-e:nth-child(n+4){--i:3}
+.mx.frisch .held svg{animation:mx-auf .25s ease both}
+.mx .mix.vor .satz,.mx .mix.vor .braucht,.mx .mix.vor .geraete,.mx .mix.vor .seitlich{animation:mx-vor .2s ease both}
+.mx .mix.zur .satz,.mx .mix.zur .braucht,.mx .mix.zur .geraete,.mx .mix.zur .seitlich{animation:mx-zur .2s ease both}
+.mx .mix .fort i{overflow:hidden;position:relative}
+.mx .mix .fort i.jetzt{background:rgba(255,255,255,.22)}
+.mx .mix .fort i.jetzt::after{content:"";position:absolute;inset:0;border-radius:2px;background:color-mix(in srgb,var(--pa) 45%,#fff);transform-origin:left;animation:mx-fuell .25s ease both}
+.mx .mix.zur .fort i.jetzt::after{animation:none}
+.mx .posten.pop .kasten,.mx .stepper output.pop{animation:mx-pop .2s ease}
+.mx .fl-knoepfe,.mx .sprachmenue,.mx .farbmenue{animation:mx-vor .16s ease both}
+.mx .fl-leiste.links .fl-knoepfe{animation-name:mx-zur}
+.mx .fl-leiste.unten .fl-knoepfe{animation-name:mx-auf}
+.mx .mxtoast{position:absolute;left:50%;bottom:74px;z-index:40;background:rgba(10,17,36,.9);color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;font-weight:600;display:inline-flex;gap:8px;align-items:center;white-space:nowrap;animation:mx-toast 2.4s ease both;pointer-events:none}
+.mx .mxtoast .ico{width:18px;height:18px;color:#8ee3b6}
+.mx .chip,.mx .fakt,.mx .knopf{transition:transform .12s ease,box-shadow .18s ease}
+.mx .knopf:not(.hell):hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 6px 16px color-mix(in srgb,var(--pa) 26%,transparent)}
+.mx .titel{letter-spacing:-.02em}
+.mx .nav button[aria-current=page]{box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.mx.dunkel .nav button[aria-current=page]{box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.mx.dunkel .karte,.mx.dunkel .laborkarte{border-color:color-mix(in srgb,var(--pa) 22%,var(--linie))}
+.mx .zeile[aria-current=true]{background:linear-gradient(120deg,var(--kn1),var(--kn2))}
+.mx .zeile[aria-current=true] strong,.mx .zeile[aria-current=true] small{color:var(--knt)}
 @media (prefers-reduced-motion:reduce){.mx *,.mx{transition:none!important;animation:none!important}}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.2s}
 </style>
@@ -490,6 +530,7 @@ figure{margin:0}
 <li class="ja"><b>SBKIM und Mycel</b><span>Bleiben funktionsfähig im Hintergrund, aber unsichtbar: kein Knopf, kein Fenster, kein Eintrag. Wie freigeschaltet wird, entscheiden wir später, wenn sich jemand dafür interessiert.</span></li>
 <li class="offen"><b>Beispielgetränke beim ersten Start <em class="neu">neu</em></b><span>Beim ersten Start füllt sich die App mit Beispielgetränken samt Bildern aus deinen bestehenden JSON-Sicherungen. Sie liegen als eigene Datei neben der App auf dem Server (z. B. <code>beispiele/getraenke.json</code> und Bilder), getrennt vom Programm, damit man sie austauschen kann. In der Android- und Windows-App liegen sie im Paket, damit der erste Start ohne Netz geht; für Google Play nur die alkoholfreien. Dazu brauche ich von dir die JSON-Dateien oder den Ort, wo sie liegen. Mein Rezeptbuch macht es genauso (dort als Pakete).</span></li>
 <li class="offen"><b>Intro nur beim ersten Start</b><span>Kolben-Intro nur beim allerersten Start, überspringbar, danach sofort Inhalt.</span></li>
+<li class="offen"><b>Feinschliff <em class="neu">neu</em></b><span>Kleine Effekte, die nichts kosten (nur Lage und Deckkraft, einmalig, 120–250 ms, bei „Bewegung reduzieren“ aus): Karten und Listen erscheinen leicht versetzt; Bilder haben eine feine Lichtkante wie Glas; Knöpfe geben beim Tippen nach; in der Mix-Ansicht gleitet der Schritt in Blätterrichtung herein und die Fortschrittslinie füllt sich; Häkchen und Portionszahl federn kurz; Leiste und Menüs gleiten heraus; nach dem letzten Schritt kurz „Fertig. Zum Wohl!“. Nichts läuft dauerhaft im Hintergrund.</span><button class="zeigen" data-zeig="mix">In der Mix-Ansicht ausprobieren</button></li>
  </ol>
 </section>
 
@@ -599,13 +640,13 @@ function flLeiste(){const f=S.fl;const akt=S.view==='getraenk'||S.view==='mix'?'
  const k=(attr,i,t,cur)=>`<button ${attr} ${cur?'aria-current="page"':''}>${i}<span>${t}</span></button>`;
  return `<aside class="${cls}" style="${lage}"><div class="fl-knoepfe" role="menu"><button class="fl-zu" data-a="fl-zu" aria-label="${L('Schließen','Close')}">${I('x')}</button>${k('data-a="fl-oben"',I('up'),L('Nach oben','To top'))}${S.view!=='start'?k('data-go="start"',I('left'),L('Zurück','Back')):''}${NAV.map(([v,n,i])=>k(`data-go="${v}"`,I(i),L(...n),akt===v)).join('')}<hr>${k('data-a="sprache"',I('lang'),L('Sprache','Language'))}${k('data-a="farbe"','<span class="fleck"></span>',L('Farbe','Colour'))}</div></aside>`;}
 function leiste(){const zaehl=k=>D.filter(d=>(!S.ohneAlk||!d.alk)&&(k==='alle'||d.kat===k)).length;return `<div class="leiste">${KATS.filter(k=>!(k.alk&&S.ohneAlk)).map(k=>`<button class="chip" data-kat="${k.id}" aria-pressed="${S.kat===k.id}">${I(k.i)}${katN(k.id)}<span class="zahl">${zaehl(k.id)}</span></button>`).join('')}</div>`;}
-function karte(d){return `<button class="karte" data-d="${d.id}"><div class="bild">${foto(d)}${d.alk?`<span class="marke">${I('wine')}${L('mit Alkohol','with alcohol')}</span>`:''}</div><div class="txt"><strong>${d.n}</strong><small><span class="nw">${I(d.temp==='warm'?'coffee':'glass')}${GLAS[d.glas]}</span><span class="nw">${I('timer')}${d.min} min</span></small></div></button>`;}
+function karte(d,i){return `<button class="karte" style="--i:${Math.min(i||0,7)}" data-d="${d.id}"><div class="bild">${foto(d)}${d.alk?`<span class="marke">${I('wine')}${L('mit Alkohol','with alcohol')}</span>`:''}</div><div class="txt"><strong>${d.n}</strong><small><span class="nw">${I(d.temp==='warm'?'coffee':'glass')}${GLAS[d.glas]}</span><span class="nw">${I('timer')}${d.min} min</span></small></div></button>`;}
 function vStart(br){const n=D.filter(d=>d.alk).length;return `<div class="innen-p"><h2 class="titel">${L('Was mixen wir heute?','What shall we mix today?')}</h2><p class="unter">${L('Deine Sammlung · zuletzt geändert: ','Your collection · last changed: ')}${byId('gurke').n}</p>${br?'':`<div class="suchfeld" style="width:100%;margin-top:12px">${I('search')}${L('Getränk oder Zutat suchen','Search drink or ingredient')}</div>`}${leiste()}<div class="karten">${sichtbar().map(karte).join('')}</div>${S.ohneAlk?`<p class="hinweis">${I('check')}${L(`Ohne Alkohol ist an: ${n} Getränk mit Alkohol ist ausgeblendet.`,`Alcohol-free is on: ${n} drink with alcohol is hidden.`)}</p>`:''}</div>`;}
 function zutatenListe(d){const f=S.port;return `<ul class="zutaten">${d.z.map(z=>`<li><span class="menge">${menge(z,f)}</span><span>${z[2]}</span></li>`).join('')}</ul>`;}
 function schritteListe(d){return `<ol class="schritte">${d.s.map(s=>`<li><span>${s[0]}</span></li>`).join('')}</ol>`;}
 function fakten(d){return `<div class="fakten"><span class="fakt">${I('glass')}${GLAS[d.glas]}</span><span class="fakt">${I(TEMP[d.temp][1])}${TEMP[d.temp][0]()}</span><span class="fakt">${I('timer')}${d.min} min</span>${d.alk?`<span class="fakt alk">${I('wine')}${L('mit Alkohol','with alcohol')}</span>`:`<span class="fakt ok">${I('noalc')}${L('ohne Alkohol','alcohol-free')}</span>`}</div>`;}
 function sprachZeile(){return S.lang==='de'?`<p class="sprachzeile">${I('lang')}Deutsch · Original<button data-a="sprache">${L('Sprache wechseln','Change language')}</button></p>`:`<p class="sprachzeile uebersetzt">${I('lang')}Translated from German · saved with the drink<button data-lang="de">Show original</button></p>`;}
-function portion(){return `<div class="portion"><b>${S.port} ${S.port===1?L('Glas','glass'):L('Gläser','glasses')}<small>${L('Mengen werden umgerechnet','Amounts are recalculated')}</small></b><div class="stepper"><button data-a="minus" aria-label="${L('Weniger','Fewer')}">${I('minus')}</button><output>${S.port}</output><button data-a="plus" aria-label="${L('Mehr','More')}">${I('plus')}</button></div></div><div class="einheiten" role="group" aria-label="${L('Einheit','Unit')}">${['ml','cl','oz'].map(e=>`<button data-e="${e}" aria-pressed="${S.einheit===e}">${e}</button>`).join('')}</div>`;}
+function portion(){return `<div class="portion"><b>${S.port} ${S.port===1?L('Glas','glass'):L('Gläser','glasses')}<small>${L('Mengen werden umgerechnet','Amounts are recalculated')}</small></b><div class="stepper"><button data-a="minus" aria-label="${L('Weniger','Fewer')}">${I('minus')}</button><output class="${S._pop==='port'?'pop':''}">${S.port}</output><button data-a="plus" aria-label="${L('Mehr','More')}">${I('plus')}</button></div></div><div class="einheiten" role="group" aria-label="${L('Einheit','Unit')}">${['ml','cl','oz'].map(e=>`<button data-e="${e}" aria-pressed="${S.einheit===e}">${e}</button>`).join('')}</div>`;}
 function vGetraenk(br){const d=byId(S.drink);
  if(!br)return `<div class="held">${foto(d)}<button class="zurueck" data-go="start" aria-label="${L('Zurück','Back')}">${I('left')}</button><button class="vollbild" data-go="mix" aria-label="${L('Mix-Ansicht im Vollbild','Mix view full screen')}">${I('full')}</button><div class="ueber"><h2>${d.n}</h2><p>${d.t}</p></div></div><div class="innen-p">${fakten(d)}${sprachZeile()}${portion()}<div class="abschnitt"><h3>${L('Zutaten','Ingredients')}</h3>${zutatenListe(d)}</div><div class="abschnitt"><h3>${L('Gerätschaften','Equipment')}</h3><div class="geraete hell">${geraeteFuer(d.id).map(g=>`<span class="gk">${gZ(g)}<small>${gN(g)}</small></span>`).join('')}</div></div><div class="abschnitt"><h3>${L('Schritte','Steps')}</h3>${schritteListe(d)}</div></div><div class="unten-fest"><button class="knopf voll" data-go="mix">${I('drinks')}${L('Mixen – Schritt für Schritt','Mix – step by step')}</button></div>`;
  const fk=S.fokus;
@@ -635,18 +676,18 @@ function vMix(br){const d=byId(S.drink),st=Math.min(S.step,d.s.length-1),s=d.s[s
  const zut=braucht.length?braucht.map(z=>`<span><b>${menge(z,S.port)}</b>${z[2]}</span>`).join(''):`<span class="leise">${L('Keine neuen Zutaten','No new ingredients')}</span>`;
  const gerHtml=ger.map(g=>`<span class="gk">${gZ(g)}<small>${gN(g)}</small></span>`).join('');
  const letzter=st===d.s.length-1;const gr=['klein','mittel','gross'][S.mixGr];const kz=!br&&!S.mixKopf;
- const kopfzeile=`<div class="mixkopf"><div class="fort">${d.s.map((_,i)=>`<i class="${i<=st?'an':''}"></i>`).join('')}</div><div class="oben">${kz?'':`<b>${d.n} · ${S.port} ${S.port===1?L('Glas','glass'):L('Gläser','glasses')}</b>`}${br?'':`<button data-a="mixkopf" aria-expanded="${!kz}" aria-label="${kz?L('Kopfzeile aufklappen','Expand header'):L('Kopfzeile einklappen','Collapse header')}">${I(kz?'down':'up')}</button>`}<button data-go="getraenk" aria-label="${L('Schließen','Close')}">${I('x')}</button></div></div>`;
+ const kopfzeile=`<div class="mixkopf"><div class="fort">${d.s.map((_,i)=>`<i class="${i<st?'an':i===st?'jetzt':''}"></i>`).join('')}</div><div class="oben">${kz?'':`<b>${d.n} · ${S.port} ${S.port===1?L('Glas','glass'):L('Gläser','glasses')}</b>`}${br?'':`<button data-a="mixkopf" aria-expanded="${!kz}" aria-label="${kz?L('Kopfzeile aufklappen','Expand header'):L('Kopfzeile einklappen','Collapse header')}">${I(kz?'down':'up')}</button>`}<button data-go="getraenk" aria-label="${L('Schließen','Close')}">${I('x')}</button></div></div>`;
  const bild=`<div class="mixbild">${foto(d)}<span class="mixnr">${L(`Schritt ${st+1} von ${d.s.length}`,`Step ${st+1} of ${d.s.length}`)}</span></div>`;
  const knoepfe=`<div><div class="knoepfe"><button class="zurueckk" data-a="sz" ${st===0?'disabled style="opacity:.4"':''}>${I('left')}${L('Zurück','Back')}</button><button class="weiter" data-a="${letzter?'fertig':'sv'}">${letzter?I('check')+L('Fertig','Done'):L('Weiter','Next')+I('right')}</button></div><p class="wach">${I('sun')}${L('Bildschirm bleibt an','Screen stays on')}${br?` · <span class="taste">←</span><span class="taste">→</span> ${L('blättern','page')} · <span class="taste">Esc</span> ${L('schließt','closes')}`:L(' · Wischen zum Blättern',' · swipe to page')}</p></div>`;
- if(!br)return `<div class="mix gr-${gr} ${kz?'kopfzu':''}" role="dialog" aria-label="${d.n}">${kopfzeile}<div class="mitte">${bild}<p class="satz">${s[0]}</p><div class="braucht">${zut}</div>${ger.length?`<div class="geraete">${gerHtml}</div>`:''}</div>${knoepfe}</div>`;
- return `<div class="mix gr-${gr}" role="dialog" aria-label="${d.n}">${kopfzeile}<div class="mitte"><div class="mixlinks">${bild}<p class="satz">${s[0]}</p></div><div class="seitlich"><h3>${L('Für diesen Schritt','For this step')}</h3><ul>${braucht.length?braucht.map(z=>`<li><b>${menge(z,S.port)}</b>${z[2]}</li>`).join(''):`<li class="leise">${L('Keine neuen Zutaten','No new ingredients')}</li>`}</ul>${ger.length?`<h3 style="margin-top:18px">${L('Dafür brauchst du','You need')}</h3><div class="geraete">${gerHtml}</div>`:''}</div></div>${knoepfe}</div>`;}
+ if(!br)return `<div class="mix ${S._richt||'vor'} gr-${gr} ${kz?'kopfzu':''}" role="dialog" aria-label="${d.n}">${kopfzeile}<div class="mitte">${bild}<p class="satz">${s[0]}</p><div class="braucht">${zut}</div>${ger.length?`<div class="geraete">${gerHtml}</div>`:''}</div>${knoepfe}</div>`;
+ return `<div class="mix ${S._richt||'vor'} gr-${gr}" role="dialog" aria-label="${d.n}">${kopfzeile}<div class="mitte"><div class="mixlinks">${bild}<p class="satz">${s[0]}</p></div><div class="seitlich"><h3>${L('Für diesen Schritt','For this step')}</h3><ul>${braucht.length?braucht.map(z=>`<li><b>${menge(z,S.port)}</b>${z[2]}</li>`).join(''):`<li class="leise">${L('Keine neuen Zutaten','No new ingredients')}</li>`}</ul>${ger.length?`<h3 style="margin-top:18px">${L('Dafür brauchst du','You need')}</h3><div class="geraete">${gerHtml}</div>`:''}</div></div>${knoepfe}</div>`;}
 function vMehr(br){const zeile=(i,t,w,attr='')=>`<button class="ezeile" ${attr}>${i}<span><b>${t}</b><small>${w}</small></span>${I('right')}</button>`;
  return `<div class="innen-p"><h2 class="titel">${L('Einstellungen','Settings')}</h2><p class="unter">${L('Was man selten braucht, wohnt hier.','What you rarely need lives here.')}</p><div class="eliste">${zeile(I('lang'),L('Sprache','Language'),SPRACHEN.find(x=>x[0]===S.lang)[1]+L(' · folgt dem Gerät',' · follows the device'),'data-a="sprache"')}${zeile(I('drop'),L('Einheiten','Units'),L('Automatisch nach Land: ml und cl (Deutschland)','Automatic by country: ml and cl (Germany)'))}${zeile(I('aa'),L('Schriftgröße in der Mix-Ansicht','Text size in mix view'),[L('klein','small'),L('mittel','medium'),L('groß','large')][S.mixGr],'data-a="mixgr"')}${zeile('<span class="fleck farbknopf"></span>',L('Farbe','Colour'),L(...FARBEN[S.farbe].n),'data-a="farbe"')}${zeile(I('noalc'),L('Ohne Alkohol','Alcohol-free'),S.ohneAlk?L('an','on'):L('aus','off'),'data-a="alk"')}</div><div class="eliste">${zeile(I('book'),L('Sicherung','Backup'),L('Sichern, wiederherstellen, Tresor','Back up, restore, vault'))}${zeile(I('sparkle'),L('KI-Schlüssel','AI key'),L('eigener Schlüssel, bleibt auf dem Gerät','your own key, stays on the device'))}${zeile(I('list'),L('Hilfe und Über','Help and about'),L('Fassung 10.0','Version 10.0'))}</div></div>`;}
 
 const GRP=[['obst',['Obst & Kräuter','Fruit & herbs'],'leaf'],['saft',['Säfte & Sirupe','Juices & syrups'],'drop'],['wasser',['Sprudel & Wasser','Sparkling & water'],'glass'],['kuehl',['Kühlregal & Eis','Chilled & ice'],'snow'],['vorrat',['Vorrat','Pantry'],'list']];
 const MENU={titel:['Sommerabend bei Oma','Summer evening at Grandma’s'],datum:['Sa 29.11. · 18 Uhr','Sat 29 Nov · 6 pm'],gaeste:10,kinder:3,gaenge:[[['Zum Ankommen','On arrival'],'gurke',10],[['Zum Essen','With dinner'],'ingwer',2,['Krüge','jugs']],[['Zum Nachtisch','With dessert'],'mango',6],[['Später, warm','Later, warm'],'punsch',2,['Töpfe','pots']]]};
 function einkaufsPosten(){const m={};for(const [,id,anz] of MENU.gaenge){const d=byId(id);for(const z of d.z){const k=z[2]+'|'+z[1];if(!m[k])m[k]={n:z[2],e:z[1],a:0,g:z[3],fuer:[]};m[k].a+=z[0]*anz;m[k].fuer.push(d.n)}}return Object.values(m);}
-function posten(p){const k=p.n+p.e;const an=!!S.haken[k];let a=p.a,e=p.e;if(e==='cl'&&a>=100){a=a/100;e='l';}return `<button class="posten" role="checkbox" aria-checked="${an}" data-h="${k}"><span class="kasten">${an?I('check'):''}</span><span class="was">${p.n}<small>${L('für','for')} ${[...new Set(p.fuer)].join(', ')}</small></span><span class="wieviel">${fmt(a)} ${e}</span></button>`;}
+function posten(p){const k=p.n+p.e;const an=!!S.haken[k];let a=p.a,e=p.e;if(e==='cl'&&a>=100){a=a/100;e='l';}return `<button class="posten ${S._pop===k?'pop':''}" role="checkbox" aria-checked="${an}" data-h="${k}"><span class="kasten">${an?I('check'):''}</span><span class="was">${p.n}<small>${L('für','for')} ${[...new Set(p.fuer)].join(', ')}</small></span><span class="wieviel">${fmt(a)} ${e}</span></button>`;}
 function vEinkauf(br){const ps=einkaufsPosten();const offen=ps.filter(p=>!S.haken[p.n+p.e]).length;
  const gruppen=GRP.map(([g,n,i])=>{const l=ps.filter(p=>p.g===g);return l.length?`<div class="gruppe-e"><h3>${I(i)}${L(...n)}</h3>${l.map(posten).join('')}</div>`:''}).join('');
  return `<div class="innen-p"><h2 class="titel">${L('Einkaufsliste','Shopping list')}</h2><p class="unter">${L(`${offen} von ${ps.length} offen · aus der Getränkekarte „${MENU.titel[0]}“`,`${offen} of ${ps.length} open · from the drinks list “${MENU.titel[1]}”`)}</p><div class="leiste" style="margin-bottom:2px"><button class="chip" aria-pressed="true">${I('list')}${L('Nach Gruppen','By group')}</button><button class="chip">${I('drinks')}${L('Nach Getränk','By drink')}</button><button class="chip">${I('share')}${L('Teilen','Share')}</button></div>${br?`<div class="einkauf-breit">${gruppen}</div>`:gruppen}</div>`;}
@@ -676,7 +717,7 @@ function app(br){const v=S.view;let h;
  const mixOv=v==='mix'?vMix(br):'';
  const ohneKopf=!br&&(v==='getraenk'||v==='mix');
  const fokus=br&&S.fokus&&v==='getraenk';
- return `<div style="${farbStil()}" class="mx ${br?'breit':'handy'} fl-${S.fl.seite} ${S.ton==='dunkel'?'dunkel':''} ${S.navZu?'navzu':''} ${fokus?'fokus':''}">${ohneKopf?'<div></div>':kopf(br)}${br&&!fokus?nav(br):''}<main class="haupt">${h}</main>${br||v==='mix'?'':flLeiste()}${mixOv}${v!=='mix'?sprachMenue():''}${farbMenue()}</div>`;}
+ return `<div style="${farbStil()}" class="mx ${br?'breit':'handy'} fl-${S.fl.seite} ${S._frisch?'frisch':''} ${S.ton==='dunkel'?'dunkel':''} ${S.navZu?'navzu':''} ${fokus?'fokus':''}">${ohneKopf?'<div></div>':kopf(br)}${br&&!fokus?nav(br):''}<main class="haupt">${h}</main>${br||v==='mix'?'':flLeiste()}${mixOv}${S._toast?`<div class="mxtoast" role="status">${I('check')}${S._toast}</div>`:''}${v!=='mix'?sprachMenue():''}${farbMenue()}</div>`;}
 const ANS=[['start','Startseite'],['getraenk','Getränk'],['mix','Mix-Ansicht'],['einkauf','Einkaufsliste'],['menue','Getränkekarte'],['labor','Labor'],['mehr','Einstellungen']];
 function zeichne(){
  document.getElementById('iHandy').innerHTML=app(false);
@@ -687,7 +728,7 @@ function zeichne(){
  const bu=document.getElementById('buehne');bu.classList.toggle('nur-handy',S.geraet==='handy');bu.classList.toggle('nur-monitor',S.geraet==='monitor');
  passe();}
 function passe(){for(const [r,i,w,h] of [['rHandy','iHandy',390,800],['rMonitor','iMonitor',1280,800]]){const R=document.getElementById(r),In=document.getElementById(i);const pl=R.parentElement;const verf=pl.clientWidth-(r==='rHandy'?22:18);if(verf<=0)continue;const s=Math.min(1,verf/w);In.style.transform=`scale(${s})`;R.style.width=(w*s)+'px';R.style.height=(h*s)+'px';}}
-function setze(f){const go=()=>{f();zeichne();};if(document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.startViewTransition(go);else go();}
+function setze(f){const go=()=>{const v=S.view+'|'+S.drink+'|'+S.kat+'|'+S.lang,st=S.step,po=S.port;S._toast='';f();S._frisch=v!==S.view+'|'+S.drink+'|'+S.kat+'|'+S.lang;S._richt=S.step<st?'zur':'vor';S._pop=po!==S.port?'port':'';zeichne();S._frisch=false;S._pop='';};if(document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.startViewTransition(go);else go();}
 document.addEventListener('click',e=>{const b=e.target.closest('button');
  if(S.sprachMenue&&(!b||!(b.closest('.sprachmenue')||b.dataset.a==='sprache'))){S.sprachMenue=false;zeichne();if(!b)return;}
  if(S.farbMenue&&(!b||!(b.closest('.farbmenue')||b.dataset.a==='farbe'))){S.farbMenue=false;zeichne();if(!b)return;}
@@ -703,7 +744,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');
  if(b.dataset.labkat){setze(()=>{S.labKat=b.dataset.labkat});return;}
  if(b.dataset.labges){const g=b.dataset.labges;setze(()=>{S.labGes=S.labGes.includes(g)?S.labGes.filter(x=>x!==g):[...S.labGes,g]});return;}
  if(b.dataset.e){setze(()=>{S.einheit=b.dataset.e});return;}
- if(b.dataset.h){const k=b.dataset.h;S.haken[k]=!S.haken[k];zeichne();return;}
+ if(b.dataset.h){const k=b.dataset.h;S.haken[k]=!S.haken[k];S._pop=S.haken[k]?k:'';zeichne();S._pop='';return;}
  const a=b.dataset.a;if(!a)return;
  if(a==='sprache'){S.sprachMenue=!S.sprachMenue;S.farbMenue=false;S.fl.auf=false;zeichne();return;}
  if(a==='farbe'){S.farbMenue=!S.farbMenue;S.sprachMenue=false;S.fl.auf=false;zeichne();return;}
@@ -718,7 +759,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');
   if(a==='fokus')S.fokus=!S.fokus;
   if(a==='mixgr')S.mixGr=(S.mixGr+1)%3;
   if(a==='plus')S.port=Math.min(20,S.port+1);if(a==='minus')S.port=Math.max(1,S.port-1);
-  if(a==='sv')S.step=Math.min(d.s.length-1,S.step+1);if(a==='sz')S.step=Math.max(0,S.step-1);if(a==='fertig'){S.view='getraenk';S.step=0;}});
+  if(a==='sv')S.step=Math.min(d.s.length-1,S.step+1);if(a==='sz')S.step=Math.max(0,S.step-1);if(a==='fertig'){S.view='getraenk';S.step=0;S._toast=L('Fertig. Zum Wohl!','Done. Cheers!');}});
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.sprachMenue){S.sprachMenue=false;zeichne();return;}if(S.view!=='mix')return;const d=byId(S.drink);if(e.key==='ArrowRight')setze(()=>{S.step=Math.min(d.s.length-1,S.step+1)});if(e.key==='ArrowLeft')setze(()=>{S.step=Math.max(0,S.step-1)});if(e.key==='Escape')setze(()=>{S.view='getraenk'});});
 let tx=null;document.addEventListener('touchstart',e=>{if(S.view==='mix'&&e.target.closest('.mix'))tx=e.touches[0].clientX;},{passive:true});
