@@ -934,3 +934,8 @@ h1,h2,h3,p{margin:0}
 .mx #alle-kosten{margin:10px 0 8px}
 .mx #alle-fertig{margin-top:12px}.mx #alle-fertig .ico{width:17px;height:17px;color:var(--ok)}
 .mx .ueb-lauf{min-height:46px}
+/* ── Zusätze (neu/zusatz.mjs) ── */
+/* KI-Bilder für alle: eine Zeile mit Anzahl, Kosten und Empfänger; beim Lauf ein Balken */
+.mx .fenster p.eine{margin:2px 0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx .fortschritt{height:6px;border-radius:3px;background:var(--fl2);overflow:hidden;margin:0 0 14px}
+.mx .fortschritt i{display:block;height:100%;width:0;background:var(--akz);transition:width .3s ease}

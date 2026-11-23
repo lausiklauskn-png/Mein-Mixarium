@@ -35,6 +35,7 @@ import { webAdresse, holeSeite, ausEingefuegtem, ohneKi, fuerKi, mitKi, holeBild
 import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, rechtschreibungAnwenden, uebersetze, uebersetzungAnRezept, uebersetzungPasst, kostenSchaetzung, wasGehtHinaus as helferHinaus, wasKurz } from '../kern/ki/helfer.mjs';
 import { druckRezept, drucke } from '../kern/ausgabe/druck.mjs';
 import { teilLink, ausTeilLink, qrSvg, passtInQr } from '../kern/teilen/qr.mjs';
+import { zusatz } from './zusatz.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -438,7 +439,7 @@ function vBilder() {
   const gez = mit.filter((r) => B.filter === 'alle' || (B.filter === 'beispiele' ? r.beispiel : !r.beispiel));
   for (const u of [...B.wahl]) if (!gez.some((r) => r.uid === u)) B.wahl.delete(u);
   return `<div class="innen-p"><button class="zurueckzeile" data-go="mehr">${I('left')}${L('Einstellungen', 'Settings')}</button><h2 class="titel">${L('Bilder', 'Pictures')}${frag(L('Tippe Bilder an, um sie auszuwählen. „Löschen“ entfernt nur das Bild; das Getränk mit seinem Text bleibt. Vorher wird der Stand im Tresor abgelegt.', 'Tap pictures to select them. “Delete” removes only the picture; the drink and its text stay. The current state is stored in the vault first.'))}</h2><p class="unter">${fuelle(L('{0} Bilder · {1} Getränke ohne Bild', '{0} pictures · {1} drinks without a picture'), mit.length, ohne.length)}</p>
-   <div class="laeden">${[['alle', L('Alle', 'All')], ['eigene', L('Eigene', 'Own')], ['beispiele', L('Beispiele', 'Examples')]].map(([f, t]) => `<button class="chip" data-a="bilder-filter" data-f="${f}" aria-pressed="${B.filter === f}">${t}</button>`).join('')}<button class="chip" data-a="bilder-gross" aria-pressed="${B.gross}">${I('full')}${B.gross ? L('Groß', 'Large') : L('Klein', 'Small')}</button></div>
+   <div class="laeden">${[['alle', L('Alle', 'All')], ['eigene', L('Eigene', 'Own')], ['beispiele', L('Beispiele', 'Examples')]].map(([f, t]) => `<button class="chip" data-a="bilder-filter" data-f="${f}" aria-pressed="${B.filter === f}">${t}</button>`).join('')}<button class="chip" data-a="bilder-gross" aria-pressed="${B.gross}">${I('full')}${B.gross ? L('Groß', 'Large') : L('Klein', 'Small')}</button>${ZU.sammelKnopf()}</div>
    <div class="reihe" style="margin:10px 0"><button class="knopf rot" data-a="bilder-weg" ${B.wahl.size ? '' : 'disabled'}>${I('trash')}${fuelle(L('Löschen ({0})', 'Delete ({0})'), B.wahl.size)}</button><button class="knopf hell" data-a="bilder-alle-wahl" ${gez.length ? '' : 'disabled'}>${B.wahl.size === gez.length && gez.length ? L('Auswahl aufheben', 'Clear selection') : L('Alle auswählen', 'Select all')}</button><button class="knopf hell rotschrift" data-a="bilder-alle-weg" ${mit.length ? '' : 'disabled'}>${L('Alle Bilder löschen', 'Delete all pictures')}</button></div>
    <div class="bildgitter ${B.gross ? 'gross' : ''}">${gez.map((r) => `<button class="bildkachel" data-a="bild-wahl" data-uid="${esc(r.uid)}" aria-pressed="${B.wahl.has(r.uid)}"><img src="${esc(r.img)}" alt="" loading="lazy"><span class="hk">${B.wahl.has(r.uid) ? I('check') : ''}</span><span class="bn">${esc(r.name)}</span></button>`).join('') || `<p class="leer">${L('Keine Bilder in dieser Auswahl.', 'No pictures in this selection.')}</p>`}</div>
    ${ohne.length ? `<h3 class="eh">${L('Getränke ohne Bild', 'Drinks without a picture')}</h3><div class="eliste">${ohne.map((r) => `<button class="ezeile" data-a="bild-dazu" data-uid="${esc(r.uid)}">${I('camera')}<span><b>${esc(r.name)}</b><small>${L('Bild einfügen, KI-Bild oder Gratis-Foto', 'Add picture, AI picture or free photo')}</small></span>${I('right')}</button>`).join('')}</div>` : ''}</div>`;
@@ -717,15 +718,16 @@ function ausschnittFenster() {
   Z.fenster = { titel: L('Ausschnitt anpassen', 'Adjust section'), html: `<div class="as-vor"><img id="asbild" src="${esc(r.img)}" alt="" style="object-position:${x}% ${y}%"></div><div class="felder"><label>${L('nach links / rechts', 'left / right')}<input type="range" id="asx" min="0" max="100" value="${x}"></label><label>${L('nach oben / unten', 'up / down')}<input type="range" id="asy" min="0" max="100" value="${y}"></label></div><div class="reihe ende"><button class="knopf hell" data-a="bildblatt">${L('Zurück', 'Back')}</button><button class="knopf" data-a="ausschnitt-ok">${I('check')}${L('Übernehmen', 'Apply')}</button></div>` };
   zeichne();
 }
-function bildSetzen(img) { const r = getr(Z.uid); if (!r) return; r.img = img; r.imgCrop = { x: 50, y: 50, scale: 1 }; r.modified = Date.now(); sichern(); }
+function bildSetzen(img, uid = Z.uid) { const r = getr(uid); if (!r) return; r.img = img; r.imgCrop = { x: 50, y: 50, scale: 1 }; r.modified = Date.now(); sichern(); }
 async function bildErzeugen(gratis) {
   const r = getr(Z.uid); if (!r) return;
   let schluessel = '';
   if (!gratis) { schluessel = await S.hol('openai'); if (!schluessel) return schluesselFenster('openai', 'bild'); }
+  const frei = await ZU.bildFreigabe(sicht(r), gratis); if (!frei) return;   /* steht im Auftrag ein Befehl an eine KI, entscheidet erst der Mensch (neu/zusatz.mjs) */
   Z.fenster = null; zeichne();
   try {
     const img = await W.mit(gratis ? L('Gratis-Foto wird erzeugt …', 'Creating free photo …') : L('KI-Bild wird erzeugt (etwa 20 s) …', 'Creating AI picture (about 20 s) …'), async (w) => {
-      const roh = gratis ? await gratisBild(sicht(r), { art: 'getraenk' }) : await kiBild(schluessel, sicht(r), { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
+      const roh = gratis ? await gratisBild(frei, { art: 'getraenk' }) : await kiBild(schluessel, frei, { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
       w.text(L('Bild wird gespeichert …', 'Saving the picture …')); return bildAusDatei(await (await fetch(roh)).blob()); });
     bildSetzen(img); melde(L('Das neue Bild ist da.', 'The new picture is there.'));
   } catch (f) { melde(L('Das hat nicht geklappt: ', 'That did not work: ') + (f && f.message ? f.message : L('unbekannter Fehler', 'unknown error'))); }
@@ -1140,6 +1142,10 @@ const TUN = {
   'posten-weg'(b) { const an = A.anlaesse.find((x) => x.id === Z.anlass); an.posten = an.posten.filter((p) => String(p.id) !== b.dataset.p); sichern(); },
   drucken() { print(); return false; },
 };
+/* Zusätze (neu/zusatz.mjs): Prüfung des Bildauftrags, KI-Bilder für alle ohne Bild. Sie hängen ihre Aktionen selbst in TUN.
+   `sichtbare` ist, was zu sehen ist: nichts Ausgeblendetes („Ohne Alkohol“) geht an eine KI. */
+const ZU = zusatz({ sprache, esc, I, Z, TUN, SK, W, melde, sichern, zeichne, schluesselFenster, bildAusDatei, tresorAuto, bildAn: (uid, img) => bildSetzen(img, uid),
+  sichtbare: () => G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter(G.istSichtbar), warte: (f, fertig) => { wartend = { f, fertig }; } });
 const postenVon = (b) => A.anlaesse.find((x) => x.id === Z.anlass).posten.find((p) => String(p.id) === b.dataset.p);
 function anlassFenster(an) {
   Z.fenster = { titel: an ? L('Getränkekarte bearbeiten', 'Edit drinks list') : L('Neue Getränkekarte', 'New drinks list'), anlass: an ? an.id : null, html: `<form id="anform" class="felder" autocomplete="off"><label>${L('Anlass', 'Occasion')}<input class="feld" name="titel" required value="${esc(an ? an.titel : '')}" placeholder="${L('z. B. Sommerabend bei Oma', 'e.g. Summer evening at Grandma’s')}"></label><div class="zweier"><label>${L('Wann', 'When')}<input class="feld" name="datum" value="${esc(an ? an.datum || '' : '')}" placeholder="${L('z. B. Sa 29.11., 18 Uhr', 'e.g. Sat 29 Nov, 6 pm')}"></label><label>${L('Gäste', 'Guests')}<input class="feld" name="gaeste" type="number" min="0" max="999" value="${an && an.gaeste ? Number(an.gaeste) : ''}"></label></div><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Speichern', 'Save')}</button></div></form>` }; zeichne();
@@ -1184,7 +1190,7 @@ document.addEventListener('submit', (ev) => {
     getraenkSetzen(rechtschreibungAnwenden(r, f.recht.aenderungen.filter((_, i) => wahl.includes(i)))); Z.fenster = null; return melde(wahl.length === 1 ? L('1 übernommen', '1 applied') : fuelle(L('{0} übernommen', '{0} applied'), wahl.length)); }
   if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
-    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } }); return; }
+    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } else if (ZU.danach.includes(danach)) { if (TUN[danach]() !== false) zeichne(); } }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
     const f = LAB.bewerten(r, { taste: d.get('taste'), practicality: d.get('practicality'), originality: d.get('originality'), description: d.get('description') }, String(d.get('fb') || ''), { solo: labSolo() });
     Z.fenster = null; sichern();
