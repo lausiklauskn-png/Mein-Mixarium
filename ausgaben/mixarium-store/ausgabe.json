@@ -38,5 +38,7 @@
  },
  "netzmodule": "eingebaut-nicht-geladen",
  "alkoholErlaubt": false,
- "beispiele": []
+ "beispiele": [
+  "getraenke-ohne-alkohol-start"
+ ]
 }

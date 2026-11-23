@@ -41,6 +41,7 @@
  "netzmodule": "eingebaut-nicht-geladen",
  "alkoholErlaubt": true,
  "beispiele": [
+  "getraenke-ohne-alkohol-start",
   "getraenke-mit-alkohol-fuer-mixarium"
  ]
 }

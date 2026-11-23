@@ -2,6 +2,20 @@
  "version": 1,
  "pakete": [
   {
+   "id": "getraenke-ohne-alkohol-start",
+   "titel": "Startpaket ohne Alkohol: 7 Getränke",
+   "datei": "getraenke-ohne-alkohol-start.json",
+   "art": "rezepte",
+   "alkohol": false,
+   "anzahl": 7,
+   "bytes": 9706,
+   "sha256": "a140c2e868b1ca1dae63d0c909883d4175e3d28b4f53c8fde5c988c0f4c280fe",
+   "fuer": [
+    "mixarium-store",
+    "mixarium-voll"
+   ]
+  },
+  {
    "id": "getraenke-mit-alkohol-fuer-mixarium",
    "titel": "Getränke mit Alkohol: 8 Rezepte",
    "datei": "getraenke-mit-alkohol-fuer-mixarium.json",

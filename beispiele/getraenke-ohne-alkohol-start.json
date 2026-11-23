@@ -1,0 +1,546 @@
+{
+ "version": 10,
+ "exported": "2026-11-23T12:00:00Z",
+ "quelle": "Startpaket ohne Alkohol für Mein Mixarium (gezeichnete Bilder, bis Klaus' Fotos da sind)",
+ "kategorien": [],
+ "menu": [],
+ "folders": [],
+ "recipes": [
+  {
+   "id": 1,
+   "uid": "mx-start-gurke",
+   "name": "Gurken-Limetten-Spritz",
+   "cat": "mock",
+   "glass": "highball",
+   "prepTime": 5,
+   "servings": 1,
+   "alcohol": false,
+   "notes": "Frisch, leicht salzig, mit Holunder. Für heiße Abende.",
+   "farben": [
+    "#e9fbe9",
+    "#6fb98a",
+    "#c9f0c4",
+    "#7cc68f"
+   ],
+   "ings": [
+    {
+     "id": 0,
+     "amt": "3",
+     "unit": "Scheiben",
+     "name": "Salatgurke",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 1,
+     "amt": "2",
+     "unit": "cl",
+     "name": "Limettensaft",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 2,
+     "amt": "2",
+     "unit": "cl",
+     "name": "Holunderblütensirup",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 3,
+     "amt": "1",
+     "unit": "Prise",
+     "name": "Meersalz",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 4,
+     "amt": "12",
+     "unit": "cl",
+     "name": "Sprudelwasser",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 5,
+     "amt": "6",
+     "unit": "Stück",
+     "name": "Eiswürfel",
+     "ck": false,
+     "note": ""
+    }
+   ],
+   "steps": [
+    {
+     "id": 0,
+     "txt": "Gurkenscheiben und Sirup ins Glas geben und mit dem Stößel andrücken."
+    },
+    {
+     "id": 1,
+     "txt": "Limettensaft und Salz dazugeben."
+    },
+    {
+     "id": 2,
+     "txt": "Das Glas bis oben mit Eiswürfeln füllen."
+    },
+    {
+     "id": 3,
+     "txt": "Mit Sprudelwasser aufgießen und einmal mit dem Barlöffel von unten nach oben umrühren."
+    },
+    {
+     "id": 4,
+     "txt": "Ein Gurkenband schneiden, an den Rand setzen und sofort servieren."
+    }
+   ],
+   "tags": [],
+   "flavors": [],
+   "img": "",
+   "folder": "",
+   "blank": false,
+   "temp": "kalt"
+  },
+  {
+   "id": 2,
+   "uid": "mx-start-mango",
+   "name": "Mango-Lassi",
+   "cat": "smooth",
+   "glass": "smoothie",
+   "prepTime": 5,
+   "servings": 1,
+   "alcohol": false,
+   "notes": "Cremig, mild, mit einem Hauch Kardamom.",
+   "farben": [
+    "#fff3d6",
+    "#f2a93b",
+    "#ffd36b",
+    "#f29a2e"
+   ],
+   "ings": [
+    {
+     "id": 0,
+     "amt": "150",
+     "unit": "g",
+     "name": "reife Mango",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 1,
+     "amt": "12",
+     "unit": "cl",
+     "name": "Naturjoghurt",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 2,
+     "amt": "6",
+     "unit": "cl",
+     "name": "Milch",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 3,
+     "amt": "1",
+     "unit": "TL",
+     "name": "Honig",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 4,
+     "amt": "1",
+     "unit": "Prise",
+     "name": "Kardamom",
+     "ck": false,
+     "note": ""
+    }
+   ],
+   "steps": [
+    {
+     "id": 0,
+     "txt": "Mango schälen und in Würfel schneiden."
+    },
+    {
+     "id": 1,
+     "txt": "Mango, Joghurt, Milch, Honig und Kardamom im Mixer 30 Sekunden fein mixen."
+    },
+    {
+     "id": 2,
+     "txt": "In ein gekühltes Glas gießen."
+    }
+   ],
+   "tags": [],
+   "flavors": [],
+   "img": "",
+   "folder": "",
+   "blank": false,
+   "temp": "kalt"
+  },
+  {
+   "id": 3,
+   "uid": "mx-start-ingwer",
+   "name": "Ingwer-Limonade",
+   "cat": "limo",
+   "glass": "",
+   "prepTime": 15,
+   "servings": 4,
+   "alcohol": false,
+   "notes": "Scharf und spritzig, für den Krug auf dem Tisch.",
+   "farben": [
+    "#fff8db",
+    "#d9b43a",
+    "#f6e27a",
+    "#e0b830"
+   ],
+   "ings": [
+    {
+     "id": 0,
+     "amt": "40",
+     "unit": "g",
+     "name": "frischer Ingwer",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 1,
+     "amt": "2",
+     "unit": "Stück",
+     "name": "Zitronen",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 2,
+     "amt": "6",
+     "unit": "cl",
+     "name": "Rohrzuckersirup",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 3,
+     "amt": "70",
+     "unit": "cl",
+     "name": "Sprudelwasser",
+     "ck": false,
+     "note": ""
+    }
+   ],
+   "steps": [
+    {
+     "id": 0,
+     "txt": "Ingwer fein reiben und mit dem Rohrzuckersirup verrühren."
+    },
+    {
+     "id": 1,
+     "txt": "Zitronen auspressen und den Saft dazugeben."
+    },
+    {
+     "id": 2,
+     "txt": "Durch ein Sieb in den Krug abseihen und mit Sprudelwasser auffüllen."
+    }
+   ],
+   "tags": [],
+   "flavors": [],
+   "img": "",
+   "folder": "",
+   "blank": false,
+   "temp": "kalt"
+  },
+  {
+   "id": 4,
+   "uid": "mx-start-pfirsich",
+   "name": "Pfirsich-Rosmarin-Eistee",
+   "cat": "tee",
+   "glass": "wine",
+   "prepTime": 20,
+   "servings": 4,
+   "alcohol": false,
+   "notes": "Schwarzer Tee, reifer Pfirsich, ein Zweig Rosmarin.",
+   "farben": [
+    "#ffeede",
+    "#e88a5a",
+    "#ffc49a",
+    "#d9774a"
+   ],
+   "ings": [
+    {
+     "id": 0,
+     "amt": "50",
+     "unit": "cl",
+     "name": "schwarzer Tee",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 1,
+     "amt": "2",
+     "unit": "Stück",
+     "name": "Pfirsiche",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 2,
+     "amt": "1",
+     "unit": "Zweig",
+     "name": "Rosmarin",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 3,
+     "amt": "3",
+     "unit": "cl",
+     "name": "Zuckersirup",
+     "ck": false,
+     "note": ""
+    }
+   ],
+   "steps": [
+    {
+     "id": 0,
+     "txt": "Tee kochen und abkühlen lassen."
+    },
+    {
+     "id": 1,
+     "txt": "Pfirsiche würfeln und mit Zuckersirup und Rosmarin ziehen lassen."
+    },
+    {
+     "id": 2,
+     "txt": "Mit dem Tee mischen und auf Eis servieren."
+    }
+   ],
+   "tags": [],
+   "flavors": [],
+   "img": "",
+   "folder": "",
+   "blank": false,
+   "temp": "kalt"
+  },
+  {
+   "id": 5,
+   "uid": "mx-start-holunder",
+   "name": "Holunderblütensirup",
+   "cat": "sirup",
+   "glass": "",
+   "prepTime": 30,
+   "servings": 20,
+   "alcohol": false,
+   "notes": "Der Vorrat für den ganzen Sommer. Zieht zwei Tage.",
+   "farben": [
+    "#fbfbe8",
+    "#c8c37a",
+    "#f1edb8",
+    "#bdb46a"
+   ],
+   "ings": [
+    {
+     "id": 0,
+     "amt": "20",
+     "unit": "Dolden",
+     "name": "Holunderblüten",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 1,
+     "amt": "1",
+     "unit": "l",
+     "name": "Wasser",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 2,
+     "amt": "1",
+     "unit": "kg",
+     "name": "Zucker",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 3,
+     "amt": "2",
+     "unit": "Stück",
+     "name": "Bio-Zitronen",
+     "ck": false,
+     "note": ""
+    }
+   ],
+   "steps": [
+    {
+     "id": 0,
+     "txt": "Wasser und Zucker im Topf aufkochen und abkühlen lassen."
+    },
+    {
+     "id": 1,
+     "txt": "Holunderblüten und Zitronen in Scheiben geschnitten zugeben, zwei Tage ziehen lassen."
+    },
+    {
+     "id": 2,
+     "txt": "Durch ein Sieb abseihen, erneut aufkochen und heiß abfüllen."
+    }
+   ],
+   "tags": [],
+   "flavors": [],
+   "img": "",
+   "folder": "",
+   "blank": false
+  },
+  {
+   "id": 6,
+   "uid": "mx-start-mojito",
+   "name": "Virgin Mojito",
+   "cat": "mock",
+   "glass": "highball",
+   "prepTime": 5,
+   "servings": 1,
+   "alcohol": false,
+   "notes": "Minze, Limette, Rohrzucker – ohne Rum.",
+   "farben": [
+    "#e6fbf1",
+    "#3fae84",
+    "#b9f0d6",
+    "#36a078"
+   ],
+   "ings": [
+    {
+     "id": 0,
+     "amt": "10",
+     "unit": "Blätter",
+     "name": "Minze",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 1,
+     "amt": "1/2",
+     "unit": "Stück",
+     "name": "Limette",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 2,
+     "amt": "2",
+     "unit": "Barlöffel",
+     "name": "Rohrzucker",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 3,
+     "amt": "15",
+     "unit": "cl",
+     "name": "Sprudelwasser",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 4,
+     "amt": "",
+     "unit": "",
+     "name": "Crushed Ice",
+     "ck": false,
+     "note": ""
+    }
+   ],
+   "steps": [
+    {
+     "id": 0,
+     "txt": "Limette vierteln und mit Rohrzucker und Minze im Glas andrücken."
+    },
+    {
+     "id": 1,
+     "txt": "Das Glas mit Crushed Ice füllen."
+    },
+    {
+     "id": 2,
+     "txt": "Mit Sprudelwasser aufgießen und umrühren."
+    }
+   ],
+   "tags": [],
+   "flavors": [],
+   "img": "",
+   "folder": "",
+   "blank": false,
+   "temp": "kalt"
+  },
+  {
+   "id": 7,
+   "uid": "mx-start-punsch",
+   "name": "Apfel-Zimt-Punsch",
+   "cat": "bowle",
+   "glass": "mug",
+   "prepTime": 15,
+   "servings": 4,
+   "alcohol": false,
+   "notes": "Warm, für Kinder und Große, mit Orange und Zimt.",
+   "farben": [
+    "#fde9dc",
+    "#b8562e",
+    "#e98a4e",
+    "#a54825"
+   ],
+   "ings": [
+    {
+     "id": 0,
+     "amt": "1",
+     "unit": "l",
+     "name": "naturtrüber Apfelsaft",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 1,
+     "amt": "1",
+     "unit": "Stück",
+     "name": "Orange",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 2,
+     "amt": "2",
+     "unit": "Stangen",
+     "name": "Zimt",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 3,
+     "amt": "3",
+     "unit": "Stück",
+     "name": "Nelken",
+     "ck": false,
+     "note": ""
+    }
+   ],
+   "steps": [
+    {
+     "id": 0,
+     "txt": "Apfelsaft mit Zimt und Nelken im Topf langsam erhitzen, nicht kochen."
+    },
+    {
+     "id": 1,
+     "txt": "Orange in Scheiben schneiden, zugeben und zehn Minuten ziehen lassen."
+    },
+    {
+     "id": 2,
+     "txt": "In Becher füllen."
+    }
+   ],
+   "tags": [],
+   "flavors": [],
+   "img": "",
+   "folder": "",
+   "blank": false,
+   "temp": "warm"
+  }
+ ]
+}

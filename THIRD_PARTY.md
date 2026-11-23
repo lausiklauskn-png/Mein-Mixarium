@@ -8,6 +8,7 @@ Lizenz-Hinweis beim Weitergeben erhalten bleibt.
 |---|---|---|---|
 | QR-Codes in der App | qrcode-generator, Kazuhiko Arase | MIT | eingebettet in `index.html`, Lizenz-Kopf erhalten |
 | Fehlersuche (nur auf Wunsch) | Eruda 3, liriliri | MIT | beim Gebrauch von jsDelivr geladen |
+| Symbole der neuen Fassung (`neu/`) | Phosphor Icons 2.1.1 (Duotone), Phosphor Icons | MIT | nur die genutzten Symbole, eingebettet in `neu/vorlaeufig/symbole.mjs` |
 
 **PDF erzeugen und drucken** (Karten, Menüplan, Einkaufsliste) läuft über die
 Druckfunktion des Browsers („Als PDF speichern"). Dafür wird keine fremde
