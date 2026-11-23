@@ -5,6 +5,16 @@ die Mixarium-Seite; die gemeinsame Seite (Arbeitsweise, Kern, Rezeptbuch, Fallen
 `Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SITZUNG.md`, der Auftrag für die Nacht in `Mein-Rezeptbuch/docs/NACHTAUFTRAG.md`.
 Halb Fertiges gibt es nicht: alles, was diese Sitzung angefangen hat, ist geprüft und auf `main`.
 
+## Nacht 23./24.11. (Nacht-Sitzung, laufend nachgeführt)
+
+Hier steht, was in der Nacht auf `main` gekommen ist; der Rest der Datei ist der Stand von 18:05. Entscheidungen und Gründe
+stehen auf der gemeinsamen Seite (`Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SITZUNG.md`, Abschnitt „Nacht“).
+
+| Fassung | Was | Proben |
+|---|---|---|
+| Kern 0.18.0 (Pin `9c97d27`) · PWA 10.0.0-vor20 | **Das Plus öffnet ein Blatt** „Getränk hinzufügen“ wie im Rezeptbuch (Selbst, Foto-Scan, Text, Datei, Pakete). **Foto-Scan** (Foto aufnehmen, Dateien wählen, PDF, Stapel; Claude oder Mistral OCR + Claude; drei Stufen) mit **Reinigung vor der KI** und **„Datei prüfen“**. **Drei Schlüssel** in den Einstellungen (Anthropic, OpenAI, Mistral; speichern, prüfen, löschen) aus dem Kern; ein Schlüssel der bisherigen App (`mxkey9m`, `mxoaiimg9m`, `mxmistralkey9m`) gilt jetzt weiter und wird nur gelesen. Vor einem Stapel kommt der Stand in den Tresor. | `tests/smoke_neu_scan.mjs` (52) · `tests/gegenprobe_neu_scan.py` (6 Fälle) |
+
+
 ## Stand Mixarium (main `859c911`, PWA **10.0.0-vor19**, Kern **0.17.0** per Pin `0b18345`)
 
 - **Die bisherige App ist unverändert**: `index.html` und `QC_Mixarium_20_04_26.html`, md5 beide `49ce4320795972269057083e4c189f48`.

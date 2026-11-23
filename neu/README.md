@@ -30,9 +30,8 @@ Leiste links am Monitor, „Nur dieses Getränk“.
 
 ## Was noch fehlt (benannte Grenzen)
 
-- **Mix-Labor, „Bekannte Drinks entdecken“, Foto-Scan, KI-Bild, Übersetzen, Rechtschreibung** – noch nicht eingebaut; der
-  Bereich „Labor“ sagt das und verweist auf die bisherige App. Klaus: alles soll wie vorher funktionieren – das ist der
-  nächste Schritt, jede Funktion mit Probe.
+- Stand der Nacht 23./24.11.: `../docs/UEBERGABE_GEMEINSAME_SITZUNG.md`, Abschnitt „Nacht“ (Labor, KI-Bild, Foto-Scan und die
+  Schlüssel sind eingebaut).
 - **Ordner, Kategorien umbenennen/anlegen/sortieren, Bewertung, Bildausschnitt wählen, Bücher/PDF, QR-Teilen, Tresor mit
   mehreren Sicherungen, Wochenplan** – Daten werden übernommen und bleiben erhalten, die Oberfläche dafür fehlt noch.
 - **Oberfläche nur Deutsch und Englisch.** Kategorien und Gläser sind in 8 Sprachen übersetzt.

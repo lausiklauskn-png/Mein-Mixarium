@@ -754,3 +754,37 @@ h1,h2,h3,p{margin:0}
 /* Meldungen kurz und schlank (Klaus 23.11.: „sowas Dickes … da macht man viel weniger Text rein“) */
 .mx .mxtoast{font-size:13px;padding:6px 14px;font-weight:600}
 .mx .kachelraster.messen .kachel{flex:0 0 auto}
+
+/* ── Blatt hinter „+“, Foto-Scan, Reinigung vor der KI, Datei prüfen, Schlüssel (wie im Rezeptbuch) ── */
+.mx .imp-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 12px;padding:0 16px;border-bottom:1px solid var(--linie)}
+.mx .imp-tabs::-webkit-scrollbar{display:none}
+.mx .imp-tabs button{flex:none;display:grid;justify-items:center;gap:1px;padding:5px 12px 6px;font-size:12px;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1px}
+.mx .imp-tabs button .ico{width:19px;height:19px}
+.mx .imp-tabs button[aria-selected=true]{color:var(--akz);border-bottom-color:var(--akz);font-weight:600}
+.mx .imp-p{display:grid;gap:10px;justify-items:start;min-width:0}
+.mx .imp-p>*{max-width:100%}
+.mx .scan-wahl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mx .scan-name{display:flex;align-items:center;gap:7px;font-size:14px;margin:0;color:var(--ink)}
+.mx .scan-name .ico{width:18px;height:18px;color:var(--akz)}
+.mx .scan-name b{overflow-wrap:anywhere}
+.mx .scan-liste{font-size:12.5px;overflow-wrap:anywhere;margin:0;color:var(--muted)}
+.mx .scan-vor{display:flex;gap:6px;overflow-x:auto}
+.mx .scan-vor img{height:120px;width:auto;border-radius:10px;border:1px solid var(--linie);background:#fff;flex:none}
+.mx .scan-vor span{align-self:center;color:var(--muted);font-size:13px;padding:0 6px}
+.mx .scan-was{font-size:12.5px;margin:0;color:var(--ink)}
+.mx [data-ki-halt] p{font-size:13px;margin:0 0 8px;color:var(--ink)}
+.mx .ki-liste{margin:0 0 10px;padding-left:20px;font-size:13px;display:grid;gap:5px;overflow-wrap:anywhere;list-style:disc;color:var(--ink)}
+.mx ol.ki-liste{list-style:decimal}
+.mx .ki-vermerk{margin-top:14px;font-size:12.5px;color:var(--muted)}
+.mx .ki-vermerk summary{cursor:pointer}
+.mx .ki-vermerk p{margin:6px 0}
+.mx .pruef-stand{padding:8px 10px;border-radius:10px;border:1px solid var(--linie);background:var(--fl);color:var(--ink);margin:8px 0}
+.mx .pruef-stand.warnung{border-color:#c0392b;box-shadow:inset 3px 0 0 #c0392b}
+.mx .pruef-stand.sauber{box-shadow:inset 3px 0 0 #2e8b57}
+.mx .pruef-bild{max-width:100%;border-radius:10px;margin-bottom:8px}
+.mx [data-pruef-dialog] p{font-size:13px;color:var(--ink)}
+.mx .schl-stand{min-height:18px;font-size:12.5px}
+.mx .schl-stand:empty{display:none}
+.mx .schl-stand[data-ok=true]{color:#2e8b57}
+.mx .schl-stand[data-ok=false]{color:#c0392b}
+.mx .mit-frag{display:flex;align-items:center;gap:8px}
