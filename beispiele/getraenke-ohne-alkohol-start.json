@@ -241,7 +241,7 @@
     },
     {
      "id": 2,
-     "txt": "Durch ein Sieb in den Krug abseihen und mit Sprudelwasser auffüllen."
+     "txt": "Durch ein Sieb in den Krug abseihen, mit Sprudelwasser auffüllen und kalt servieren."
     }
    ],
    "tags": [],
@@ -256,7 +256,7 @@
    "uid": "mx-start-pfirsich",
    "name": "Pfirsich-Rosmarin-Eistee",
    "cat": "tee",
-   "glass": "wine",
+   "glass": "highball",
    "prepTime": 20,
    "servings": 4,
    "alcohol": false,
@@ -272,20 +272,28 @@
      "id": 0,
      "amt": "50",
      "unit": "cl",
-     "name": "schwarzer Tee",
+     "name": "Wasser",
      "ck": false,
      "note": ""
     },
     {
      "id": 1,
      "amt": "2",
-     "unit": "Stück",
-     "name": "Pfirsiche",
+     "unit": "Beutel",
+     "name": "schwarzer Tee",
      "ck": false,
      "note": ""
     },
     {
      "id": 2,
+     "amt": "2",
+     "unit": "Stück",
+     "name": "reife Pfirsiche",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 3,
      "amt": "1",
      "unit": "Zweig",
      "name": "Rosmarin",
@@ -293,10 +301,18 @@
      "note": ""
     },
     {
-     "id": 3,
+     "id": 4,
      "amt": "3",
      "unit": "cl",
      "name": "Zuckersirup",
+     "ck": false,
+     "note": ""
+    },
+    {
+     "id": 5,
+     "amt": "",
+     "unit": "",
+     "name": "Eiswürfel",
      "ck": false,
      "note": ""
     }
@@ -304,15 +320,15 @@
    "steps": [
     {
      "id": 0,
-     "txt": "Tee kochen und abkühlen lassen."
+     "txt": "Wasser im Topf aufkochen, den Tee 4 Minuten ziehen lassen, Beutel herausnehmen und den Tee abkühlen lassen."
     },
     {
      "id": 1,
-     "txt": "Pfirsiche würfeln und mit Zuckersirup und Rosmarin ziehen lassen."
+     "txt": "Pfirsiche in Würfel schneiden und mit Zuckersirup und Rosmarin 10 Minuten ziehen lassen."
     },
     {
      "id": 2,
-     "txt": "Mit dem Tee mischen und auf Eis servieren."
+     "txt": "Mit dem Tee mischen und in Gläsern mit Eiswürfeln servieren."
     }
    ],
    "tags": [],
@@ -329,9 +345,9 @@
    "cat": "sirup",
    "glass": "",
    "prepTime": 30,
-   "servings": 20,
+   "servings": 1,
    "alcohol": false,
-   "notes": "Der Vorrat für den ganzen Sommer. Zieht zwei Tage.",
+   "notes": "Ergibt etwa 1,5 Liter Sirup, der Vorrat für den ganzen Sommer. Zieht zwei Tage.",
    "farben": [
     "#fbfbe8",
     "#c8c37a",
@@ -375,15 +391,15 @@
    "steps": [
     {
      "id": 0,
-     "txt": "Wasser und Zucker im Topf aufkochen und abkühlen lassen."
+     "txt": "Wasser und Zucker im Topf aufkochen, bis der Zucker gelöst ist, und abkühlen lassen."
     },
     {
      "id": 1,
-     "txt": "Holunderblüten und Zitronen in Scheiben geschnitten zugeben, zwei Tage ziehen lassen."
+     "txt": "Zitronen in Scheiben schneiden und mit den Holunderblüten in den Sirup geben. Zugedeckt zwei Tage kühl ziehen lassen."
     },
     {
      "id": 2,
-     "txt": "Durch ein Sieb abseihen, erneut aufkochen und heiß abfüllen."
+     "txt": "Durch ein Sieb abseihen, erneut aufkochen und heiß in saubere Flaschen füllen."
     }
    ],
    "tags": [],

@@ -8,8 +8,8 @@
    "art": "rezepte",
    "alkohol": false,
    "anzahl": 7,
-   "bytes": 9706,
-   "sha256": "a140c2e868b1ca1dae63d0c909883d4175e3d28b4f53c8fde5c988c0f4c280fe",
+   "bytes": 10204,
+   "sha256": "09714f6a1e6ae710d568d5690c53fcd2a4d1daab034d24d40a196c500a03229d",
    "fuer": [
     "mixarium-store",
     "mixarium-voll"
@@ -22,8 +22,8 @@
    "art": "rezepte",
    "alkohol": true,
    "anzahl": 8,
-   "bytes": 1564741,
-   "sha256": "9b03c0aea67dbd6f3cb258ca40a6fc31db16d9030eb76a926d7eb7728dab0f3e",
+   "bytes": 1565497,
+   "sha256": "8915c3231923c7072ac694c98fac6f42787b1bd57de3bd4218e76eb734151aee",
    "fuer": [
     "mixarium-voll"
    ]

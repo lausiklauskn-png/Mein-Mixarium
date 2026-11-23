@@ -1,7 +1,7 @@
 /* Mein Mixarium (neu) – Offline-Speicher. Die Hülle liegt im Cache; geholt wird aus dem Cache und im Hintergrund erneuert.
    Beispielpakete (../beispiele/*.json) werden NICHT vorab geladen: Netz nur auf Knopfdruck. */
-const FASSUNG = 'mixarium-neu-10.0.0-vor3';
-const HUELLE = ['./', './index.html', './app.css?v=10.0.0-vor3', './app.mjs?v=10.0.0-vor3', './manifest.webmanifest',
+const FASSUNG = 'mixarium-neu-10.0.0-vor4';
+const HUELLE = ['./', './index.html', './app.css?v=10.0.0-vor4', './app.mjs?v=10.0.0-vor4', './manifest.webmanifest',
   './vorlaeufig/symbole.mjs', './vorlaeufig/platzbild.mjs', './vorlaeufig/speicher.mjs',
   '../getraenke/index.mjs', '../getraenke/einheiten.mjs', '../getraenke/glaeser.mjs', '../getraenke/kategorien.mjs', '../getraenke/alkohol.mjs', '../getraenke/geraete.mjs', '../getraenke/uebernahme.mjs',
   '../icons/mixarium-192.png?v=1'];

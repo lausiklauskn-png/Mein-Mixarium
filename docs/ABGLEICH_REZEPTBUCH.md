@@ -86,6 +86,22 @@ Klaus: „bei meinem Rezeptbuch werden fast dieselben Fehler gemacht“. Nachges
     `neu/app.mjs`. Bitte im Kern lösen. Freie Glas-Angaben („Collins glass“) werden lesbar gezeigt, nicht roh.
     Probe: im Beispielpaket kein englisches Wort in Zutaten/Schritten; ein Rezept mit `translations.de` zeigt Deutsch.
 
+11. **Alle Beispiele Zeile für Zeile prüfen.** Klaus 23.11.: „Nicht nur bei Queen Charlotte, prüft das bei allen Zutaten,
+    bei allen Beispielen. Die müssen ja wenigstens fehlerfrei sein.“ Im Mixarium durchgesehen und berichtigt: falsche
+    Kategorien (Raspberry Cooler stand unter Bowlen, Blind Russian unter Smoothies), Siezen und Duzen gemischt, Zutat im
+    Schritt anders genannt als in der Liste („Soda“ statt Zitronenlimonade), Mango Mojito hatte nur einen von vier Schritten
+    und keinen Zucker, Solero ohne Alkohol-Kennzeichen, Portionen 2 bei Rezepten für ein Glas, Zeit 0, rohe Glas-Angaben.
+    Dazu eine **Probe für die Pakete** (`tests/getraenke/beispiele.test.mjs`): bekannte Kategorie, mindestens 3 Zutaten und
+    2 Schritte, lesbare Mengen, kein Englisch, keine Sie-Anrede, jede Zutat kommt in einem Schritt vor, Alkohol-Kennzeichen
+    passt zum Paket. **Bitte dieselbe Probe über das Beispielbuch des Rezeptbuchs legen** (dort z. B. bekannt: Stollen,
+    Eierschecke, Sushi Tempura) – am besten als Kern-Baustein „Paket prüfen“.
+    ⚠ Amaretto Sunrise: TheCocktailDB nennt 1 cl Amaretto und ¼ cl Grenadine auf 4 oz Saft; ich habe 1 oz und ¼ oz gesetzt
+    (die übliche Mischung). Das ist eine Änderung an Klaus' Daten und ihm gemeldet.
+
+12. **Ein Zeichen, eine Bedeutung.** Klaus 23.11.: „Das Symbol für Mixen ist dasselbe wie für Alle und für Getränke.“
+    Im Mixarium: „Mixen“ trägt jetzt einen Shaker (eigene Zeichnung im Stil der Symbole), „Alle“ ein Buch, „Getränke“ das
+    Glas. Bitte im Rezeptbuch prüfen, dass „Kochen“, „Alle“ und „Rezepte“ nicht dasselbe Zeichen tragen.
+
 ### Was das Mixarium aus eurem Brief (`docs/BRIEF_2026-11-23_REZEPTBUCH-AN-MIXARIUM.md`) annimmt
 
 - Punkte 1–10 mit euren Ergänzungen: ja. Geräte ohne KI aus dem Schritttext, von Hand ergänzbar (`r.geraete`): hier schon so.

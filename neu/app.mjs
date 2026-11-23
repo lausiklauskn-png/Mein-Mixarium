@@ -7,7 +7,7 @@ import { sym as I } from './vorlaeufig/symbole.mjs';
 import { platzbild } from './vorlaeufig/platzbild.mjs';
 import * as Sp from './vorlaeufig/speicher.mjs';
 
-export const FASSUNG = '10.0.0-vor3';
+export const FASSUNG = '10.0.0-vor4';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -97,7 +97,7 @@ function menue() {
 }
 function leiste() {
   const l = lage(), alle = l.getraenke.filter(G.istSichtbar).length;
-  return `<div class="leiste"><button class="chip" data-kat="all" aria-pressed="${Z.kat === 'all'}">${I('drinks')}${L('Alle', 'All')}<span class="zahl">${alle}</span></button>${kats().map(({ c, n }) => `<button class="chip" data-kat="${esc(c.id)}" aria-pressed="${Z.kat === c.id}">${I(KAT_SYM[c.id] || 'box')}${esc(katText(c))}<span class="zahl">${n}</span></button>`).join('')}</div>`;
+  return `<div class="leiste"><button class="chip" data-kat="all" aria-pressed="${Z.kat === 'all'}">${I('book')}${L('Alle', 'All')}<span class="zahl">${alle}</span></button>${kats().map(({ c, n }) => `<button class="chip" data-kat="${esc(c.id)}" aria-pressed="${Z.kat === c.id}">${I(KAT_SYM[c.id] || 'box')}${esc(katText(c))}<span class="zahl">${n}</span></button>`).join('')}</div>`;
 }
 function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.beispiel ? `<span class="marke rechts">${L('Beispiel', 'Example')}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
 function kartenHtml() {
@@ -130,7 +130,7 @@ function portion(r) {
   return `<div class="portion"><b>${Z.port} ${Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings')}<small>${L('Mengen werden umgerechnet', 'Amounts are recalculated')}</small></b><div class="stepper"><button data-a="minus" aria-label="${L('Weniger', 'Fewer')}">${I('minus')}</button><output>${Z.port}</output><button data-a="plus" aria-label="${L('Mehr', 'More')}">${I('plus')}</button></div></div><div class="einheiten" role="group" aria-label="${L('Einheit', 'Unit')}">${[['orig', L('wie notiert', 'as written')], ['ml', 'ml'], ['cl', 'cl'], ['oz', 'oz']].map(([k, n]) => `<button data-e="${k}" aria-pressed="${e === k}">${n}</button>`).join('')}</div>`;
 }
 function geraeteKacheln(liste, hell) { return liste.length ? `<div class="geraete ${hell ? 'hell' : ''}">${liste.map((g) => `<span class="gk">${G.geraetSvg(g)}<small>${esc(G.geraetName(g, sprache()))}</small></span>`).join('')}</div>` : ''; }
-function aktionen(r, br) { return `<div class="reihe" style="margin-top:14px"><button class="knopf" data-go="mix">${I('drinks')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu">${I('cart')}${L('Auf die Einkaufsliste', 'Add to shopping list')}</button><button class="knopf hell" data-a="teilen">${I('share')}${L('Teilen', 'Share')}</button><button class="knopf hell" data-a="bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button></div>`; }
+function aktionen(r, br) { return `<div class="reihe" style="margin-top:14px"><button class="knopf" data-go="mix">${I('shaker')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu">${I('cart')}${L('Auf die Einkaufsliste', 'Add to shopping list')}</button><button class="knopf hell" data-a="teilen">${I('share')}${L('Teilen', 'Share')}</button><button class="knopf hell" data-a="bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button></div>`; }
 function vGetraenk(br) {
   const r = sicht(getr(Z.uid)); if (!r) { Z.view = 'start'; return vStart(br); }
   const ger = G.geraeteFuerGetraenk(r);
