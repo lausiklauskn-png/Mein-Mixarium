@@ -5,7 +5,7 @@ zweimal sagen muss. Diese Datei ist die Übergabe der Mixarium-Seite; die Rezept
 `Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SITZUNG.md` (dort auch: wie die gemeinsame Sitzung arbeitet).
 Diese Sitzung arbeitet nach der Übergabe nicht weiter.
 
-## Stand Mixarium (main, PWA 10.0.0-vor7, Kern 0.12.0 per Pin `b5728db`)
+## Stand Mixarium (main, PWA 10.0.0-vor8, Kern 0.13.0 per Pin `666ac5d`)
 
 - **Die bisherige App ist unverändert**: `index.html` und `QC_Mixarium_20_04_26.html`, md5 beide `49ce4320795972269057083e4c189f48`.
   Sie bleibt online, bis Klaus die neue abgenommen hat. Die Pflicht-Checkliste aus `CLAUDE.md` gilt weiter für jede Änderung daran.
@@ -110,9 +110,16 @@ englischen Namen und eigenem Raster (`vb`). Die PWA behält trotzdem `getraenke/
 **Kern 0.12.0:** `kategorienMit(KATEGORIEN)` und `einkaufMit({ gruppen, einheiten })` – Kategorien, Warengruppen und Einheiten
 je Ausgabe; Mengen mit Achteln. `tests/getraenke/kern-abgleich.test.mjs` misst den Kern an allen Mengen der Beispielpakete gegen
 `getraenke/einheiten.mjs` (lesen gleich, Umrechnen bis auf die Rundung gleich) und an den Getränke-Kategorien.
-Noch nicht umgehängt: die PWA nutzt für Kategorien und Einkauf weiter ihren eigenen Code. Dafür braucht es noch Getränke-Warengruppen
-(Säfte, Sirup, Spirituosen …) und den Übergang vom alten Kategorie-Zustand (`eigen/neu/aus/ord`) zum Kern-Zustand
-(`eigene/namen/ausgeblendet/folge`).
+**PWA 10.0.0-vor8 (umgehängt):** Kategorien laufen über `kategorienMit(G.KATEGORIEN, { familie: KATEGORIEN_FEST })` (Kern 0.13:
+mitgebrachte Kennungen tragen den Familien-Namen), die Einkaufsliste über `einkaufMit` mit `getraenke/warengruppen.mjs`.
+Neu in der PWA: **Einstellungen → Kategorien** (umbenennen, Zeichen, neu, löschen mit Ziel, ausblenden/zurück, ziehen) und
+**Läden** in der Einkaufsliste (je Laden eigene Reihenfolge der Gruppen, ziehen). Der alte Kategorie-Zustand wird beim Start
+verlustfrei umgewandelt (`katZustandZuKern`); die Sicherung bleibt Fassung 10 und trägt zusätzlich `kategorienZustand` und
+`einkaufLaeden`. Benannte Änderungen: ein altes `cat: "fld_…"` zieht nach `folder` und erscheint unter „Ohne Kategorie“ (die PWA
+hat noch keine Ordner-Ansicht) · Säfte vor Obst („Limettensaft“ ist ein Saft) · neue Gruppe „Spirituosen & Wein“.
+Proben: `tests/smoke_neu_kategorien.mjs` (32, Monitor und Finger), Gegenprobe `tests/gegenprobe_neu_kategorien.py` (6 Fälle).
+Die Einkaufsliste behält ihr eigenes Posten-Modell (abhaken je Posten, zusammenzählen bei gleicher Einheit); nur Gruppen und
+Läden kommen aus dem Kern.
 
 - `ki/bild.mjs`: Bildauftrag je Ausgabe austauschbar (jetzt „beautifully plated … Food photography“, für Getränke unpassend).
 - `oberflaeche/geraete.mjs`: „shaker“/„schüttel“ nicht fest dem Mixer zuordnen; Bar-Geräte per `erweitern()` mit eigenen Wörtern.
