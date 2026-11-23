@@ -52,5 +52,5 @@ npm test                                  # Getränke-Schicht
 node tools/kern-nachziehen.mjs --pruefen  # Kern stimmt mit dem Pin überein
 ```
 
-Zuletzt gemessen (23.11.2026): `smoke_neu_pwa` 42 grün · 0 ROT; Getränke-Schicht 74 von 74; von Hand nachgestellt:
+Zuletzt gemessen (23.11.2026): `smoke_neu_pwa` 49 grün · 0 ROT; Getränke-Schicht 74 von 74; von Hand nachgestellt:
 Alkohol-Paket trotz Schalter angeboten → 1 ROT; App füllt den Schirm nicht → 3 ROT.

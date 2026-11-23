@@ -61,6 +61,31 @@ Klaus: „bei meinem Rezeptbuch werden fast dieselben Fehler gemacht“. Nachges
 6. **Zwei Ausgaben** (Klaus: „Ja, zwei Ausgaben, so machen“): `mixarium-store` nur Beispiele ohne Alkohol, `mixarium-voll`
    alle. Liegt bereits in `ausgaben/` hier und nutzt euren Ausgaben-Schalter; nichts zu tun, nur zur Kenntnis.
 
+7. **Bild im Vollbild füllt wirklich den ganzen Schirm** (Klaus 23.11., Bildschirmfoto vom Tablet: es ging nur ein kleines
+   Fenster auf). Schwarzer Grund über der ganzen App, Bild ganz sichtbar (`object-fit: contain`), Name unten, × oben rechts;
+   Tipp, × oder Esc schließt, die Zurück-Taste auch. Bitte im Rezeptbuch prüfen. Probe: das Vollbild ist so groß wie das Fenster.
+
+8. **Rohe Kennungen nie anzeigen.** Im Bildschirmfoto stand beim Glas „bowle“ (aus der Sicherung, keine bekannte Glas-Kennung).
+   Unbekannte Werte werden als Text mit großem Anfangsbuchstaben gezeigt, nicht geraten und nicht still verworfen.
+
+9. **Keine Knöpfe auf dem Bild.** Klaus 23.11.: „Nur dieses Getränk und größer machen kannst du rechts positionieren, neben
+   den Containern, nicht direkt im Bild. Oder einen kleinen Pfeil, wo man die Funktion drin hat, sodass nicht das Bild gestört
+   wird.“ Umsetzung Mixarium: am Monitor stehen „Nur dieses Getränk“ und „Bild vergrößern“ als Knöpfe rechts neben dem Bild
+   unter den anderen Aktionen; am Handy liegt auf dem Bild nur ein kleiner Pfeil (28 px), der „Zurück“ und „Bild groß“
+   ausklappt. Ein Tipp auf das Bild selbst zeigt es im Vollbild. Das Kopfbild am Monitor ist höher (400 px statt 330).
+   Gilt sinngemäß für „Nur dieses Rezept“ und das Bild-Vollbild im Rezeptbuch.
+
+10. **Englische Zutaten in den Beispielen.** Klaus 23.11. (Bildschirmfoto „Queen Charlotte“: Red wine, Grenadine,
+    Lemon-lime soda, Glas „Collins glass“): „es ist die englische Zutatenliste, die nicht übersetzt wurde.“ Zwei Ursachen:
+    (a) **Daten:** in `beispiele/getraenke-mit-alkohol-fuer-mixarium.json` sind bei fünf Getränken aus TheCocktailDB Zutaten
+    und teils Schritte englisch (Amaretto fizz, Mango Mojito, Blind Russian, Amaretto Sunrise, Queen Charlotte), dazu
+    Mengen wie „Garnish with“, „to fill“, „1 Fresh“. Im Mixarium ist die Datei jetzt durchgehend deutsch (eigene Prüfsumme
+    im Katalog). **Bitte eure Fassung genauso berichtigen** und das Beispielbuch auf dieselbe Mischung prüfen.
+    (b) **Anzeige:** liegt am Rezept `translations[<App-Sprache>]`, muss sie gezeigt werden – **auch für Deutsch**. Die alten
+    Apps zeigen `translations.de` nie (`rTr` greift nur, wenn die Sprache nicht Deutsch ist). Im Mixarium: `sicht(r)` in
+    `neu/app.mjs`. Bitte im Kern lösen. Freie Glas-Angaben („Collins glass“) werden lesbar gezeigt, nicht roh.
+    Probe: im Beispielpaket kein englisches Wort in Zutaten/Schritten; ein Rezept mit `translations.de` zeigt Deutsch.
+
 ### Was das Mixarium aus eurem Brief (`docs/BRIEF_2026-11-23_REZEPTBUCH-AN-MIXARIUM.md`) annimmt
 
 - Punkte 1–10 mit euren Ergänzungen: ja. Geräte ohne KI aus dem Schritttext, von Hand ergänzbar (`r.geraete`): hier schon so.
