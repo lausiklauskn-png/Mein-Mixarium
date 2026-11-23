@@ -51,8 +51,15 @@ Kostenhinweis, abbrechbar. KI-Zeilen sagen, was an wen geht; ohne Schlüssel kom
 
 Deutsch und Englisch stehen im Code: `L('Speichern', 'Save')`. Spanisch, Französisch, Italienisch, Portugiesisch, Russisch und
 Chinesisch kommen aus `sprachen/<code>.mjs` (`export default { 'Deutscher Text': 'Übersetzung', … }`, Reihenfolge wie im Code,
-ein Eintrag je Zeile); ohne Eintrag steht Englisch da. Geladen werden sie mit `ladeTabelle(code, [Adresse])` aus
-`../kern/oberflaeche/sprache.mjs` – das ist in `app.mjs` noch nicht verdrahtet. Die Texte des Kerns haben eigene Tabellen (`../kern/sprachen/`).
+ein Eintrag je Zeile); ohne Eintrag steht Englisch da. `tabellenLaden()` in `app.mjs` lädt sie beim Start und beim Sprachwechsel
+(erst die Tabelle des Kerns, dann die der App; bei gleichem Schlüssel gilt die der App).
+
+Neue Texte so schreiben, dass eine Tabelle sie trifft – die Probe `tests/getraenke/sprachen.test.mjs` wird sonst rot:
+
+- Zahlen und Namen über `fuelle`: `fuelle(L('{0} von {1} offen', '{0} of {1} open'), a, b)`, nie ``L(`${a} von ${b} offen`, …)``.
+- Einzahl und Mehrzahl als zwei ganze Sätze: `n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n)`.
+  Nicht Zahl + Wort zusammensetzen: Russisch braucht „Напитков: 7“.
+- Ein deutsches Wort mit zwei Bedeutungen braucht zwei Schlüssel („Ordner“ als Mehrzahl: `ordMehr()`, Schlüssel `'Ordner{0}'`).
 
 ```bash
 node tools/sprach-schluessel.mjs --pruefe              # fehlt ein Schlüssel, ist einer überzählig? (Rückgabewert 1, wenn etwas fehlt)
@@ -61,9 +68,8 @@ node tools/sprach-schluessel.mjs --trage-ein fr x.json # einsortieren; die Tabel
 node tools/sprach-schluessel.mjs --bericht             # was keine Tabelle treffen kann
 ```
 
-Benannte Grenzen (stehen im Bericht des Werkzeugs): ``L(`… ${n} …`)`` kann keine Tabelle treffen – dafür `fuelle(L('{0} …', '{0} …'), n)`;
-derselbe deutsche Text mit zwei Bedeutungen („Getränke“ als Bereich und hinter einer Zahl) hat nur eine Übersetzung; die Namen der
-Gerätschaften stehen schon in den Tabellen, laufen aber noch nicht über `text()`.
+Benannte Grenze (steht im Bericht des Werkzeugs): die Namen der Gerätschaften stehen schon in den Tabellen, laufen aber noch nicht
+über `text()`; dort steht in den sechs Sprachen Englisch.
 
 ## Prüfen
 

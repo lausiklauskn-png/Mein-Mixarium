@@ -22,7 +22,7 @@ const platz = (t) => (String(t).match(/\{\d\}/g) || []).sort().join(' ');
 const GLEICH_ERLAUBT = {
   Web: ['es', 'fr', 'it', 'pt'],   // Lehnwort, überall „Web“
   Foto: ['es', 'it', 'pt'],        // „foto“ heißt dort so
-  Portion: ['fr'],                 // französisch gleich geschrieben
+  Original: ['es', 'fr', 'pt'],    // dort gleich geschrieben
   Shaker: ['fr', 'it', 'pt'],      // so sagen die Barleute dort
 };
 /* Bleibt stehen, wie es ist: Eigennamen, Formate, Einheiten. */
@@ -33,6 +33,11 @@ test('das Werkzeug findet die Texte der App: viele Schlüssel, jeder mit englisc
   for (const k of SOLL) assert.ok(typeof S.schluessel[k] === 'string' && S.schluessel[k] !== '', `kein englischer Text zu ${JSON.stringify(k)}`);
   assert.deepEqual(S.unerklaert, [], 'L() bekommt Texte aus einer Liste, die das Werkzeug nicht kennt (LISTEN oder KERN_AUFRUFE ergänzen)');
   assert.deepEqual(S.unklar, [], 'ein Aufruf mit festem deutschem Text, dessen englischer Text nicht lesbar ist');
+});
+
+test('jeder Text ist tabellenfähig: kein L(`… ${x} …`) und kein deutscher Text mit zwei englischen Fassungen', () => {
+  assert.deepEqual(S.vorlagen.map((x) => `${x.datei}:${x.zeile} ${x.text}`), [], 'eine Vorlage mit ${…} kann keine Tabelle treffen – dafür fuelle(L(\'… {0} …\', \'… {0} …\'), x)');
+  assert.deepEqual(S.zwei.map((x) => `${x.de}: ${x.en.join(' / ')}`), [], 'ein Schlüssel hat nur eine Übersetzung – Zahl-Sätze als \'1 …\' und \'{0} …\' schreiben');
 });
 
 test('was das Labor zur Laufzeit an L() gibt, steht unter den Schlüsseln (Status, Bewertungs-Maße, Geschmäcker)', () => {
