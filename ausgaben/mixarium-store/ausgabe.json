@@ -1,0 +1,44 @@
+{
+ "name": "mixarium-store",
+ "titel": "Mein Mixarium",
+ "kurz": "Mixarium",
+ "store": true,
+ "speicher": {
+  "endung": "9m",
+  "indexedDb": "MeinMxBackup1",
+  "schluesselAlt": [
+   "mix9m",
+   "mxfd9m",
+   "mxms9m",
+   "mxNoAlc9",
+   "mxcats9m",
+   "mxcatsneu9m",
+   "mxcatsaus9m",
+   "mxcatord9m",
+   "mxlang9m",
+   "mxknoten9m"
+  ]
+ },
+ "farbe": "blau",
+ "zeichen": {
+  "web": "mixarium_icon.png",
+  "app": null
+ },
+ "begruessung": {
+  "de": "Was mixen wir heute?",
+  "en": "What shall we mix today?"
+ },
+ "ziele": [
+  "android",
+  "windows"
+ ],
+ "lieferung": {
+  "android": "im-paket",
+  "windows": "im-paket"
+ },
+ "netzmodule": "eingebaut-nicht-geladen",
+ "alkoholErlaubt": false,
+ "beispiele": [
+  "getraenke-ohne-alkohol-start"
+ ]
+}
