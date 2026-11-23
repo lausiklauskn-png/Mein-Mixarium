@@ -794,3 +794,98 @@ h1,h2,h3,p{margin:0}
 .mx .imp-p textarea.feld{width:100%}
 .mx .quelle{font-size:12.5px;color:var(--muted);margin-top:12px;overflow-wrap:anywhere}
 .mx a.knopf{text-decoration:none}
+
+/* ══ Klaus 23.11. abends: schlanke Blätter wie im Rezeptbuch. Kacheln und Farbfelder in Wasserfarben, Symbolreihe in der Kopfzeile,
+   Auskunft im Knopf statt in einer eigenen Zeile, Funde rot markiert, Einstellungen als einklappbare Themen. ══ */
+.mx .kfeld{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,var(--kc,var(--akz)) 20%,#fff);border:1px solid color-mix(in srgb,var(--kc,var(--akz)) 26%,transparent);color:color-mix(in srgb,var(--kc,var(--akz)) 78%,var(--ink))}
+.mx .kfeld .ico{width:21px;height:21px;color:inherit}
+.mx.dunkel .kfeld{background:color-mix(in srgb,var(--kc,var(--akz)) 28%,var(--fl));color:color-mix(in srgb,var(--kc,var(--akz)) 55%,#fff)}
+.mx .imp-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;overflow:visible;margin:2px 0 4px;padding:0;border-bottom:0}
+.mx .imp-tabs button{display:grid;justify-items:center;align-content:center;gap:6px;min-height:82px;padding:9px 2px;border-radius:15px;font-size:12.5px;font-weight:600;color:var(--ink);background:linear-gradient(100deg,var(--fl) 30%,color-mix(in srgb,var(--kc) 11%,var(--fl)));border:1px solid color-mix(in srgb,var(--kc) 20%,var(--linie));margin:0}
+.mx .imp-tabs button .kfeld{width:40px;height:40px;border-radius:13px}.mx .imp-tabs button .kfeld .ico{width:23px;height:23px}
+.mx .imp-tabs button:active{transform:scale(.97)}
+.mx .fkopf .imp-reihe{flex:1;min-width:0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.mx .fkopf .imp-reihe::-webkit-scrollbar{display:none}
+.mx .imp-reihe button{flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;min-width:32px;justify-content:center;padding:0 6px;border-radius:999px;color:var(--muted)}
+.mx .imp-reihe button .ico{width:19px;height:19px}
+.mx .imp-reihe button[aria-selected=true]{background:color-mix(in srgb,var(--kc) 16%,var(--fl));color:var(--ink);font-weight:650;font-size:14px;padding:0 13px 0 10px}
+.mx .imp-reihe button[aria-selected=true] .ico{color:color-mix(in srgb,var(--kc) 78%,var(--ink))}
+.mx .imp-p{justify-items:stretch}
+.mx .knopf.gross{min-height:44px;justify-content:center;flex:1;flex-wrap:wrap;column-gap:8px;row-gap:0;align-content:center}
+.mx .knopf.gross small{flex-basis:100%;text-align:center;font-size:11px;font-weight:500;opacity:.8;line-height:1.15;margin-top:-1px}
+.mx .knopf.gross:has(small){min-height:48px}
+.mx .zwei-gross{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mx .zwei-gross .knopf.gross{min-height:92px;flex-direction:column;gap:6px;font-weight:600;background:linear-gradient(100deg,var(--fl) 30%,color-mix(in srgb,var(--kc) 11%,var(--fl)));border:1px solid color-mix(in srgb,var(--kc) 20%,var(--linie));box-shadow:none;color:var(--ink)}
+.mx .zwei-gross .kfeld{width:44px;height:44px;border-radius:14px}.mx .zwei-gross .kfeld .ico{width:25px;height:25px}
+.mx .fenster .reihe .rund{flex:none}
+.mx .mehr summary{list-style:none;display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);cursor:pointer;padding:2px 0}
+.mx .mehr summary::-webkit-details-marker{display:none}
+.mx .mehr summary .ico{width:15px;height:15px}
+.mx .mehr[open] summary{margin-bottom:8px}
+.mx .mehr .scan-wahl+.scan-wahl{margin-top:6px}
+.mx .scan-vor{justify-content:center}
+.mx .scan-liste{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx .scan-was{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.mx .webzeile{display:flex;align-items:center;gap:6px;background:var(--fl);border:1px solid var(--linie);border-radius:999px;padding:4px 5px 4px 12px;box-shadow:var(--schatten)}
+.mx .webzeile>.ico{width:18px;height:18px;color:var(--muted);flex:none}
+.mx .webzeile input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:15px;color:var(--ink);outline:0;padding:6px 0}
+.mx .feldknopf{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.mx .feldknopf .ico{width:18px;height:18px}
+.mx .feldknopf.akz{background:linear-gradient(120deg,var(--kn1),var(--kn2));color:var(--knt);border:1px solid var(--knr)}
+.mx .scan-fund{display:grid;gap:10px}
+.mx .fund-bilder{position:relative;display:grid;gap:6px;max-height:46svh;overflow:auto;border-radius:12px;border:1px solid var(--linie);background:#fff;cursor:zoom-in}
+.mx .fund-bilder.gross{max-height:none;cursor:zoom-out}
+.mx .fund-bilder img{display:block;width:100%;height:auto}
+.mx .fund-name{position:sticky;left:8px;bottom:8px;justify-self:start;margin:-38px 0 8px 8px;display:inline-flex;align-items:center;gap:6px;background:#d61e1e;color:#fff;font-size:12.5px;font-weight:650;padding:5px 11px 5px 8px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.mx .fund-name .ico{width:15px;height:15px;color:#fff}
+.mx .ki-liste.rot{list-style:none;padding:0;display:grid;gap:6px}
+.mx .ki-liste.rot mark{background:#d61e1e;color:#fff;padding:2px 6px;border-radius:6px;-webkit-box-decoration-break:clone;box-decoration-break:clone;font-size:13px}
+.mx .schl-stand{min-height:0;margin:0;font-size:12.5px}.mx .schl-stand:empty{display:none}
+.mx .fkopf h2.mit-frag{display:flex;align-items:center;gap:8px;flex:1;min-width:0}.mx .fkopf h2.mit-frag>.ico{width:20px;height:20px;color:var(--akz)}.mx .fkopf h2.mit-frag>span{flex:1;min-width:0}
+.mx .rund.rotschrift{color:var(--rot)}
+.mx .entd-gitter{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52svh;overflow:auto}
+.mx .entd-k{position:relative;display:grid;gap:4px;text-align:left;font-size:12.5px;font-weight:600;line-height:1.2;color:var(--ink)}
+.mx .entd-k img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;background:var(--fl2)}
+.mx .entd-k span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mx .entd-k i{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center}.mx .entd-k i .ico{width:14px;height:14px;color:#fff}
+.mx .entd-k[data-da] img{opacity:.6}
+/* Einstellungen: Themen */
+.mx .themen{display:grid;gap:8px;max-width:720px;margin-top:12px}
+.mx .thema{background:linear-gradient(100deg,var(--fl) 45%,color-mix(in srgb,var(--kc) 9%,var(--fl)));border:1px solid color-mix(in srgb,var(--kc) 16%,var(--linie));border-radius:14px}
+.mx .gkopf-zeile{display:flex;align-items:center;gap:6px;padding-right:8px}
+.mx .gkopf{flex:1;display:flex;align-items:center;gap:12px;min-height:50px;padding:0 12px;font-size:15px;font-weight:600;text-align:left;color:var(--ink)}
+.mx .gkopf>span:not(.kfeld){flex:1}
+.mx .gkopf .kfeld{width:32px;height:32px;border-radius:10px}.mx .gkopf .kfeld .ico{width:19px;height:19px}
+.mx .gkopf>.ico:last-child{width:15px;height:15px;color:var(--muted)}
+.mx .thema .eliste{margin:0;border:0;border-top:1px solid var(--linie);border-radius:0 0 14px 14px;background:none;max-width:none}
+.mx .thema .ezeile b{display:inline}.mx .thema .ezeile small{margin-left:8px}
+.mx .thema .frag p{left:auto;right:0}
+/* Werkzeuge am Getränk: am Handy kleine runde Symbole in einer Reihe (kein „Button-Kino“), am Monitor mit Wort */
+.mx .rwerk:not(.mon){flex-direction:row;align-items:center;gap:8px;right:46px;bottom:calc(100% - 40px)}
+.mx .rwerk:not(.mon) .chip{width:36px;height:36px;min-height:0;padding:0;justify-content:center;border-radius:50%;background:rgba(20,26,40,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+.mx .rwerk:not(.mon) .chip .ico{width:18px;height:18px;color:#fff}
+.mx .rwerk:not(.mon) .chip.rot .ico{color:#ffb4a8}
+.mx .rwerk:not(.mon) .wk-t{display:none}
+.mx .reihe.akt{flex-wrap:nowrap}.mx .reihe.akt .knopf{flex:1}.mx .reihe.akt .knopf.nursym{flex:none;padding:6px 12px}
+.mx .sterne{display:inline-flex;gap:1px;margin-left:auto}
+.mx .stern{width:26px;height:28px;display:grid;place-items:center;color:var(--muted);opacity:.45}
+.mx .stern .ico{width:18px;height:18px}
+.mx .stern.an{color:#e0a020;opacity:1}
+.mx .willkommen.einladung{justify-items:center;text-align:center;padding:0 0 16px;overflow:hidden;max-width:520px}
+.mx .willkommen.einladung .leer-bild{width:100%;aspect-ratio:3/2;object-fit:cover}
+.mx .willkommen.einladung .reihe{justify-content:center}
+.mx .mxtoast{white-space:nowrap;max-width:calc(100% - 96px);overflow:hidden;text-overflow:ellipsis}
+/* Kategorie-Sticker: so breit wie ihr Name, Name und Zahl auf einer Zeile (wie im Rezeptbuch; Klaus' Fund: Namen liefen ineinander) */
+.mx .leiste.stickers .chip.stk{width:auto;min-width:58px}
+.mx .stk-name{display:block;max-width:none;overflow:visible;white-space:nowrap;-webkit-line-clamp:unset}
+/* Fliegende Leiste: Werkzeuge aus dem Kopf, zwei je Zeile; „Sichern“ über die ganze Breite */
+.mx .fl-werk{display:grid;grid-template-columns:1fr 1fr;gap:1px}
+.mx .fl-werk button{min-width:0}
+.mx .fl-werk button.breit{grid-column:1/-1}
+.mx .fl-werk .aa{font-size:11px;font-weight:700;width:18px;text-align:center;letter-spacing:-.5px}.mx .fl-werk .aa b{font-size:14px}
+.mx .fl-werk .fleck{width:17px;height:17px;border-radius:50%;flex:none}
+.mx .fl-werk button[aria-pressed=true]{background:color-mix(in srgb,var(--akz) 16%,var(--fl));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--akz) 35%,transparent)}
+.mx .fl-leiste.unten .fl-werk{grid-column:1/-1;grid-template-columns:repeat(4,1fr)}
+.mx .fl-werk button{padding:4px 7px;gap:6px;font-size:13px;min-height:34px}
+.mx .fl-werk button .ico{width:17px;height:17px}
+.mx .fl-knoepfe:has(.fl-werk){min-width:218px}

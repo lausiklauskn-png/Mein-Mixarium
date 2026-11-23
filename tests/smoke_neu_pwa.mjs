@@ -1,6 +1,7 @@
 // Probe der neuen PWA (neu/) im echten Browser. Startet einen kleinen Server im Repo-Ordner.
 //   node tests/smoke_neu_pwa.mjs        Schlusszeile: „N grün · M ROT“, Rückgabewert 1 bei ROT
 import { createServer } from 'node:http';
+import { mitThemen, themenAuf } from './neu-hilfe.mjs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createRequire } from 'node:module';
@@ -18,14 +19,14 @@ let gruen = 0, rot = 0;
 const pruefe = (name, ok, mehr = '') => { if (ok) { gruen++; console.log('  ✓ ' + name); } else { rot++; console.log('  ✗ ROT ' + name + (mehr ? ' — ' + mehr : '')); } };
 const b = await chromium.launch();
 const fehler = [];
-const seite = async (w, h) => { const c = await b.newContext({ viewport: { width: w, height: h }, locale: 'de-DE' }); const p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') fehler.push(m.text()); }); return p; };
+const seite = async (w, h) => { const c = await b.newContext({ viewport: { width: w, height: h }, locale: 'de-DE' }); const p = mitThemen(await c.newPage()); p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') fehler.push(m.text()); }); return p; };
 const ruhe = (p) => p.waitForTimeout(350);
 const Zs = (p, f) => p.evaluate(f);
 
 console.log('Handy 390 px, leere App');
 let p = await seite(390, 800);
-await p.goto(U + 'neu/'); await p.waitForSelector('.mx'); await ruhe(p);
-pruefe('leere App zeigt das Willkommen mit drei Wegen', await p.locator('.willkommen .knopf').count() === 3);
+await p.goto(U + 'neu/?leer'); await p.waitForSelector('.mx'); await ruhe(p);
+pruefe('leere App: ein Bild, eine Zeile, zwei Knöpfe; kein Lesetext', await p.locator('.willkommen .knopf').count() === 2 && await p.locator('.willkommen img').count() === 1 && await p.locator('.willkommen p').count() === 0);
 pruefe('unten gibt es keine Leiste, am Rand den Griff', await p.locator('.nav').count() === 0 && await p.locator('.fl-griff').count() === 1);
 pruefe('die App füllt den Bildschirm genau', await Zs(p, () => Math.round(document.querySelector('.mx').getBoundingClientRect().height) === innerHeight));
 await p.click('[data-a=beispiele]'); await p.waitForSelector('[data-paket]');
@@ -68,14 +69,15 @@ pruefe('Abhaken wird gemerkt', await Zs(p, () => __mixarium.sammlung.einkauf.fil
 await p.waitForTimeout(300); await p.reload(); await p.waitForSelector('.karte');
 pruefe('nach dem Neuladen ist alles noch da', await p.locator('.karte').count() === 7 && await Zs(p, () => __mixarium.sammlung.einkauf.length === 6));
 await p.click('.kopf [data-a=neu]'); await ruhe(p);
-pruefe('das Plus öffnet das Blatt mit allen Wegen (wie im Rezeptbuch)', await p.locator('.imp-tabs button').count() === 6 && await p.locator('[data-a=neu-form]').count() === 1);
+pruefe('das Plus öffnet das Blatt mit allen Wegen: acht Kacheln mit Farbfeld, kein Erklärtext', await p.locator('.imp-tabs button').count() === 8 && await p.locator('.imp-tabs .kfeld').count() === 8 && await p.locator('[data-a=neu-form]').count() === 1 && await p.locator('.fenster p').count() === 0);
 await p.click('[data-a=neu-form]'); await p.fill('[name=name]', 'Testlimo'); await p.fill('[name=ings]', '4 cl Zitronensaft\n1/2 Stück Limette\nEis'); await p.fill('[name=steps]', 'Alles schütteln.\nAbseihen.'); await p.click('#ed [type=submit]'); await ruhe(p);
 pruefe('neues Getränk: Menge, Einheit und Name getrennt, eigene Kennung, kein Beispiel', await Zs(p, () => { const r = __mixarium.sammlung.getraenke[0]; return r.name === 'Testlimo' && r.ings[0].amt === '4' && r.ings[0].unit === 'cl' && r.ings[2].name === 'Eis' && r.uid && !r.beispiel; }));
 pruefe('auf dem Foto liegt kein Knopf: nur die zwei Winkel in der Namenszeile', await p.locator('.held .wk-pf').count() === 2 && await p.locator('.held .chip, .held .rund').count() === 0);
 const lageHeld = () => Zs(p, () => { const r = document.querySelector('.held').getBoundingClientRect(), n = document.querySelector('.held h2').getBoundingClientRect(); return [Math.round(r.height), Math.round(n.top)].join(); });
 const heldVor = await lageHeld();
 await p.click('.wk-pf:not(.zur)'); await ruhe(p);
-pruefe('der Winkel klappt die Werkzeuge über dem Bild auf, ohne etwas zu verschieben', await p.locator('.rwerk .chip').count() === 3 && await lageHeld() === heldVor);
+pruefe('der Winkel klappt die Werkzeuge über dem Bild auf, ohne etwas zu verschieben', await p.locator('.rwerk .chip').count() === 4 && await lageHeld() === heldVor);
+pruefe('die Werkzeuge sind kleine runde Symbole in EINER Reihe (kein „Button-Kino“), jedes mit Namen als Hinweis', await Zs(p, () => { const l = [...document.querySelectorAll('.rwerk .chip')].map((c) => c.getBoundingClientRect()); return l.every((r) => r.width <= 40 && r.height <= 40) && new Set(l.map((r) => Math.round(r.top))).size === 1 && [...document.querySelectorAll('.rwerk .chip')].every((c) => c.title && c.getAttribute('aria-label')); }));
 await p.click('.wk-pf:not(.zur)'); await ruhe(p);
 await p.click('.held h2'); await ruhe(p);
 pruefe('Tipp aufs Bild öffnet das Bild-Blatt (ohne Bild: einfügen, KI-Bild, Gratis-Foto)', await p.locator('.fenster .ezeile').count() === 3 && await p.locator('.fenster [data-a=ki-bild]').count() === 1);
@@ -96,7 +98,7 @@ p = await seite(1280, 800);
 await p.goto(U + 'impressum.html');
 await Zs(p, () => { localStorage.setItem('mix9m', JSON.stringify([{ id: 1, name: 'Alter Mojito', cat: 'ckt', ings: [{ amt: '4 cl', unit: '', name: 'Rum' }], steps: [{ txt: 'Rühren.' }], servings: 2 }, { id: 2, name: 'Alte Limo', cat: 'limo', ings: [], steps: [] }])); localStorage.setItem('mxNoAlc9', '1'); localStorage.setItem('mxkey9m', 'sk-geheim-123'); });
 const altVorher = await Zs(p, () => localStorage.getItem('mix9m'));
-await p.goto(U + 'neu/'); await p.waitForSelector('.karte'); await ruhe(p);
+await p.goto(U + 'neu/?leer'); await p.waitForSelector('.karte'); await ruhe(p);
 pruefe('beide alten Getränke sind übernommen, „4 cl“ ist getrennt', await Zs(p, () => { const g = __mixarium.sammlung.getraenke; return g.length === 2 && g.find((r) => r.name === 'Alter Mojito').ings[0].unit === 'cl'; }));
 pruefe('der Schalter „Ohne Alkohol“ kommt mit: nur 1 Karte sichtbar', await p.locator('.karte').count() === 1 && await Zs(p, () => __mixarium.sammlung.einstellungen.ohneAlkohol === true));
 pruefe('der KI-Schlüssel ist NICHT übernommen', await Zs(p, () => !JSON.stringify(__mixarium.sammlung).includes('geheim')));
@@ -163,8 +165,8 @@ pruefe('Zurückholen bringt beide Getränke wieder', await Zs(p, () => __mixariu
 await p.context().close();
 console.log('Sprache der Inhalte');
 {
-  const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE' }); p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message));
-  await p.goto(U + 'neu/'); await p.waitForSelector('.mx'); await ruhe(p);
+  const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE' }); p = mitThemen(await c.newPage()); p.on('pageerror', (e) => fehler.push(e.message));
+  await p.goto(U + 'neu/?leer'); await p.waitForSelector('.mx'); await ruhe(p);
   await p.click('[data-a=beispiele]'); await p.click('[data-paket=getraenke-mit-alkohol-fuer-mixarium]'); await p.waitForSelector('.karte'); await ruhe(p);
   const engl = await Zs(p, () => __mixarium.sammlung.getraenke.flatMap((r) => r.ings.map((z) => z.name).concat(r.steps.map((x) => x.txt))).filter((t) => /\b(juice|wine|with|glass|pour|together|garnish|lime|milk|peel)\b/i.test(t)));
   pruefe('im Beispielpaket steht keine englische Zutat und kein englischer Schritt mehr', engl.length === 0, engl.join(' · '));
@@ -180,22 +182,28 @@ console.log('Sprache der Inhalte');
 }
 console.log('Handy dunkel: Kopf, Schrift-Regler, Farben');
 {
-  const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', colorScheme: 'dark' }); p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message));
-  await p.goto(U + 'neu/'); await p.waitForSelector('.mx'); await ruhe(p);
+  const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', colorScheme: 'dark' }); p = mitThemen(await c.newPage()); p.on('pageerror', (e) => fehler.push(e.message));
+  await p.goto(U + 'neu/?leer'); await p.waitForSelector('.mx'); await ruhe(p);
   await p.click('[data-a=beispiele]'); await p.click('[data-paket=getraenke-ohne-alkohol-start]'); await p.waitForSelector('.karte'); await ruhe(p);
-  const hZu = await Zs(p, () => Math.round(document.querySelector('.kopf').getBoundingClientRect().height));
-  await p.click('.klapp'); await ruhe(p);
-  const k = await Zs(p, () => { const o = document.querySelector('.kopf'); return { h: Math.round(o.getBoundingClientRect().height), ueber: o.scrollWidth - o.clientWidth, knoepfe: o.querySelectorAll('button').length, zeilen: new Set([...o.querySelectorAll('button')].map((x) => Math.round(x.getBoundingClientRect().top + x.getBoundingClientRect().height / 2))).size }; });
-  pruefe('aufgeklappter Kopf bleibt EINE Zeile und wird nicht höher', k.h === hZu && k.zeilen === 1 && k.ueber <= 0 && k.knoepfe >= 6, JSON.stringify({ hZu, ...k }));
+  /* Klaus 23.11. abends: am schmalen Schirm bleiben oben Suche, Farbpalette und das Plus; alles andere steht in der fliegenden Leiste. */
+  const k = await Zs(p, () => { const o = document.querySelector('.kopf'); return { ueber: o.scrollWidth - o.clientWidth, knoepfe: [...o.querySelectorAll('button')].map((x) => x.dataset.m || x.dataset.a).join(' '), zeilen: new Set([...o.querySelectorAll('button')].map((x) => Math.round(x.getBoundingClientRect().top + x.getBoundingClientRect().height / 2))).size, klapp: o.querySelectorAll('.klapp').length }; });
+  pruefe('Kopf am Handy: Suche, Farbpalette und das Plus in EINER Zeile; kein Pfeil zum Aufklappen', k.knoepfe === 'zur-suche farbe neu' && k.zeilen === 1 && k.ueber <= 0 && k.klapp === 0, JSON.stringify(k));
+  await p.click('.fl-griff'); await ruhe(p);
+  const fw = await Zs(p, () => [...document.querySelectorAll('.fl-werk button')].map((x) => (x.dataset.ton || x.dataset.m || x.dataset.a)).join(' '));
+  pruefe('fliegende Leiste: Sonne und Mond, Farbe, Schrift, Sprache, Ohne Alkohol, Sichern; kein „Neues Getränk“', fw === 'hell dunkel farbe schrift sprache alk sichern' && await p.locator('.fl-knoepfe [data-a=neu]').count() === 0 && await p.locator('.fl-werk [data-ton] svg').count() === 2, fw);
+  pruefe('die aufgeklappte Leiste passt ganz auf den Schirm, kein Wort ist abgeschnitten', await Zs(p, () => { const o = document.querySelector('.fl-knoepfe').getBoundingClientRect(); return o.right <= innerWidth + 1 && o.bottom <= innerHeight && o.top >= 0 && [...document.querySelectorAll('.fl-werk button')].every((x) => x.scrollWidth <= x.clientWidth + 1 && x.getBoundingClientRect().right <= innerWidth + 1); }));
+  await p.click('.fl-werk [data-ton=hell]'); await ruhe(p); pruefe('die Sonne schaltet auf Hell, die Leiste klappt zu', await Zs(p, () => !document.querySelector('.mx').classList.contains('dunkel') && !document.querySelector('.fl-knoepfe')));
+  await p.click('.fl-griff'); await p.click('.fl-werk [data-ton=dunkel]'); await ruhe(p); pruefe('der Mond schaltet auf Dunkel', await Zs(p, () => document.querySelector('.mx').classList.contains('dunkel')));
+  { await p.click('.fl-griff'); const [dl] = await Promise.all([p.waitForEvent('download'), p.click('.fl-werk [data-a=sichern]')]); pruefe('„Sichern“ in der Leiste speichert die Sicherung sofort', /\.json$/.test(dl.suggestedFilename())); await ruhe(p); }
   const weiss = (f) => { const m = f.match(/[\d.]+/g).map(Number); return f.startsWith('color(') ? m[0] > 0.6 && m[1] > 0.6 && m[2] > 0.6 : m[0] > 150 && m[1] > 150 && m[2] > 150; };
-  pruefe('Symbole im Kopf sind im Dunkeln hell', weiss(await Zs(p, () => getComputedStyle(document.querySelector('.kopf [data-m=sprache] .ico')).fill)));
+  pruefe('Symbole im Kopf sind im Dunkeln hell', weiss(await Zs(p, () => getComputedStyle(document.querySelector('.kopf [data-a=zur-suche] .ico')).fill)));
   const schriftVor = await Zs(p, () => document.querySelector('.karte strong').getBoundingClientRect().height);
-  await p.click('[data-m=schrift]'); await p.waitForSelector('#schriftregler');
+  await p.click('.fl-griff'); await p.click('.fl-werk [data-m=schrift]'); await p.waitForSelector('#schriftregler');
   await p.locator('#schriftregler').evaluate((e) => { e.value = '130'; e.dispatchEvent(new Event('input', { bubbles: true })); }); await ruhe(p);
   pruefe('Schrift-Regler: die Schrift wächst sofort, der Regler bleibt offen, Anzeige „130 %“', await Zs(p, () => document.querySelector('.karte strong').getBoundingClientRect().height) > schriftVor * 1.2 && await p.locator('#schriftregler').count() === 1 && (await p.locator('#schriftzahl').textContent()).trim() === '130 %');
   await p.waitForTimeout(500); await p.reload(); await p.waitForSelector('.karte'); await ruhe(p);
   pruefe('130 % bleibt nach dem Neuladen', await Zs(p, () => __mixarium.einstellungen.schrift === 130));
-  await p.click('.klapp'); await p.click('[data-m=schrift]'); await p.click('[data-a=schrift-100]'); await ruhe(p);
+  await p.click('.fl-griff'); await p.click('.fl-werk [data-m=schrift]'); await p.click('[data-a=schrift-100]'); await ruhe(p);
   pruefe('„Zurück auf 100 %“ setzt zurück', await Zs(p, () => __mixarium.einstellungen.schrift === 100));
   await p.keyboard.press('Escape');
   const ton = async (f) => { await p.click('[data-m=farbe]'); await p.click(`[data-farbe=${f}]`); await p.keyboard.press('Escape'); await ruhe(p); return Zs(p, () => [getComputedStyle(document.querySelector('.karte')).backgroundColor, getComputedStyle(document.querySelector('.haupt')).color, getComputedStyle(document.querySelector('.mx')).backgroundColor].join('|')); };
@@ -205,6 +213,42 @@ console.log('Handy dunkel: Kopf, Schrift-Regler, Farben');
   pruefe('Symbole in den Einstellungen sind im Dunkeln hell', weiss(await Zs(p, () => getComputedStyle(document.querySelector('.ezeile .ico')).fill)));
   await c.close();
 }
+console.log('Erster Start mit Startgetränken; Einstellungen als Themen; Sterne; Entdecken');
+{
+  const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', serviceWorkers: 'block' }); const q = await c.newPage(); /* ohne mitThemen: hier wird das Einklappen selbst gemessen */ q.on('pageerror', (e) => fehler.push(e.message));
+  const db = []; const MARG = { idDrink: '11007', strDrink: 'Margarita', strCategory: 'Ordinary Drink', strAlcoholic: 'Alcoholic', strGlass: 'Cocktail glass', strInstructions: 'Shake with ice. Strain into glass.', strInstructionsDE: 'Mit Eis schütteln. In das Glas abseihen.', strDrinkThumb: 'https://www.thecocktaildb.com/images/media/drink/5noda61589575158.jpg', strIngredient1: 'Tequila', strMeasure1: '1 1/2 oz ', strIngredient2: 'Triple sec', strMeasure2: '1/2 oz ', strIngredient3: 'Lime juice', strMeasure3: '1 oz ' };
+  const LIMO = { ...MARG, idDrink: '12702', strDrink: 'Lemonade', strAlcoholic: 'Non alcoholic', strCategory: 'Soft Drink', strIngredient1: 'Lemon', strMeasure1: '2 ', strIngredient2: 'Sugar', strMeasure2: '1 tblsp ', strIngredient3: 'Water', strMeasure3: '25 cl ', strInstructionsDE: 'Zitronen auspressen. Mit Zucker und Wasser verrühren.' };
+  await q.route(/^https?:\/\/(?!localhost)/, (r) => { const u = r.request().url(); db.push(u); if (/thecocktaildb\.com\/api/.test(u)) return r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ drinks: [MARG, LIMO] }) }); return r.abort(); });
+  await q.goto(U + 'neu/'); await q.waitForSelector('.karte', { timeout: 20000 }); await ruhe(q);
+  pruefe('der erste Start zeigt die sieben Startgetränke, ohne Frage und ohne Meldung', await q.locator('.karte').count() === 7 && await q.locator('.willkommen').count() === 0 && await q.locator('.mxtoast').count() === 0 && await q.locator('.fenster').count() === 0, String(await q.locator('.karte').count()));
+  pruefe('sie sind als Beispiele markiert, ohne Alkohol; das Wort „Beispiel“ steht nicht auf jeder Karte', await Zs(q, () => __mixarium.sammlung.getraenke.length === 7 && __mixarium.sammlung.getraenke.every((r) => r.beispiel && !r.alcohol)) && !/Beispiel/.test(await q.locator('.karten').innerText()));
+  pruefe('Kategorie-Sticker: Name und Zahl auf einer Zeile, keiner läuft in den nächsten, keiner ist abgeschnitten', await Zs(q, () => { const l = [...document.querySelectorAll('.stk-name')].map((e) => ({ r: e.getBoundingClientRect(), ab: e.scrollWidth > e.clientWidth + 1 })); return l.length >= 4 && l.every((x) => x.r.height < 20 && !x.ab) && l.slice(1).every((x, i) => x.r.left >= l[i].r.right - 0.5); }));
+  await q.locator('.karte').first().click(); await ruhe(q);
+  pruefe('am Getränk: drei Knöpfe in EINER Zeile (Mixen, Einkaufen, Plan), fünf Sterne', await Zs(q, () => { const k = [...document.querySelectorAll('.reihe.akt .knopf')].map((x) => Math.round(x.getBoundingClientRect().top)); return k.length === 3 && new Set(k).size === 1 && document.querySelectorAll('.sterne .stern').length === 5 && !document.querySelector('.portion small'); }));
+  await q.click('.stern[data-n="4"]'); await ruhe(q);
+  pruefe('ein Tipp auf den vierten Stern bewertet mit 4; derselbe Tipp nimmt es zurück', await Zs(q, () => __mixarium.sammlung.getraenke.find((r) => r.uid === __mixarium.zustand.uid).rating.stars === 4) && await q.locator('.stern.an').count() === 4);
+  await q.click('.stern[data-n="4"]'); await ruhe(q); pruefe('zurückgenommen: 0 Sterne', await q.locator('.stern.an').count() === 0);
+  await q.click('.wk-pf.zur'); await ruhe(q); await q.click('.fl-griff'); await q.click('.fl-knoepfe [data-go=mehr]'); await q.waitForSelector('.themen');
+  pruefe('Einstellungen: sieben Themen mit Farbfeld, alle eingeklappt, kein Erklärtext, kein Verweis auf die bisherige App', await q.locator('.themen .thema').count() === 7 && await q.locator('.themen .kfeld').count() === 7 && await q.locator('.themen .ezeile').count() === 0 && await q.locator('.haupt .frag').count() === 0 && await q.locator('.haupt a[href*="index.html"]').count() === 0);
+  await q.click('[data-a=einst-auf][data-g=sichern]'); await ruhe(q);
+  pruefe('ein Tipp klappt ein Thema auf; seine Erklärung steht hinter „?“ in der Kopfzeile', await q.locator('.thema.auf').count() === 1 && await q.locator('.thema.auf .ezeile').count() === 4 && await q.locator('.thema.auf .gkopf-zeile .frag').count() === 1 && (await q.locator('.thema.auf .gkopf-zeile').boundingBox()).height < 60);
+  await q.click('[data-a=einst-auf][data-g=ueber]'); await ruhe(q); pruefe('unter „Über“ steht die Fassung und das Impressum, kein Verweis auf die bisherige App', await q.locator('.thema[data-g=ueber] .ezeile').count() === 2 && await q.locator('.thema[data-g=ueber] a[href*="index.html"]').count() === 0);
+  db.length = 0; await q.click('.fl-griff'); await q.click('.fl-knoepfe [data-go=start]'); await ruhe(q); await q.click('.kopf [data-a=neu]'); await q.click('.imp-tabs [data-t=entdecken]'); await q.waitForSelector('#entd-frage');
+  pruefe('Entdecken: eine Zeile (Suche, Zufall, Los), kein Erklärtext; bis hierher kein Abruf', await q.locator('.imp-p p').count() === 0 && db.length === 0 && (await q.locator('[data-a=entd-suchen]').getAttribute('title')).includes('thecocktaildb.com'));
+  await q.fill('#entd-frage', 'marg'); await q.keyboard.press('Enter'); await q.waitForSelector('.entd-k', { timeout: 20000 });
+  pruefe('die Suche fragt thecocktaildb.com nach dem Suchtext und zeigt die Treffer als Bilder mit Namen', db.some((u) => /search\.php\?s=marg/.test(u)) && await q.locator('.entd-k').count() === 2 && (await q.locator('.entd-k').first().innerText()).includes('Margarita'), db[0]);
+  await q.locator('.entd-k', { hasText: 'Margarita' }).click(); await q.waitForSelector('#ed', { timeout: 20000 });
+  const ed = await Zs(q, () => { const f = document.querySelector('#ed'); return { name: f.name.value, ings: f.ings.value.split('\n'), alk: f.alcohol.checked, steps: f.steps.value }; });
+  pruefe('ein Tipp holt den Drink ins Formular: Name, Zutaten mit Menge und Einheit, deutsche Anleitung, Alkohol erkannt', ed.name === 'Margarita' && ed.ings.length === 3 && /^1 ?1\/2 oz |^1½ oz /.test(ed.ings[0]) && ed.alk && /schütteln/.test(ed.steps), JSON.stringify(ed));
+  await q.click('#ed [type=submit]'); await ruhe(q);
+  pruefe('gespeichert: mit der Nummer bei TheCocktailDB und der Quelle', await Zs(q, () => { const r = __mixarium.sammlung.getraenke[0]; return r.name === 'Margarita' && r.dbId === '11007' && /thecocktaildb/.test(r.source || ''); }));
+  await q.click('.wk-pf.zur'); await ruhe(q); await q.click('.kopf [data-a=neu]'); await q.click('.imp-tabs [data-t=entdecken]'); await q.fill('#entd-frage', 'marg'); await q.click('[data-a=entd-suchen]'); await q.waitForSelector('.entd-k');
+  pruefe('derselbe Drink trägt jetzt einen Haken: schon da', await q.locator('.entd-k[data-da]').count() === 1);
+  await q.keyboard.press('Escape'); await ruhe(q); await q.click('.fl-griff'); await q.click('.fl-werk [data-a=alk]'); await ruhe(q); await q.click('.kopf [data-a=neu]'); await q.click('.imp-tabs [data-t=entdecken]'); await q.fill('#entd-frage', 'marg'); await q.click('[data-a=entd-suchen]'); await q.waitForSelector('.entd-k');
+  pruefe('„Ohne Alkohol“ gilt auch beim Entdecken: nur der alkoholfreie Treffer bleibt', await q.locator('.entd-k').count() === 1 && (await q.locator('.entd-k').first().innerText()).includes('Lemonade'), JSON.stringify(await Zs(q, () => ({ n: document.querySelectorAll('.entd-k').length, alk: __mixarium.sammlung.einstellungen.ohneAlkohol, t: document.querySelector('.entd-gitter')?.innerText }))));
+  await c.close();
+}
+{ const sw = await readFile(join(WURZEL, 'Mein-Mixarium', 'neu', 'sw.js'), 'utf8').catch(() => readFile(join(WURZEL, 'neu', 'sw.js'), 'utf8')); pruefe('der neue Baustein liegt im Offline-Vorrat', sw.includes("'../getraenke/entdecken.mjs'")); }
 pruefe('keine Fehler in der Konsole', fehler.length === 0, fehler.join(' | '));
 await b.close(); server.close();
 console.log(`\n${gruen} grün · ${rot} ROT`);

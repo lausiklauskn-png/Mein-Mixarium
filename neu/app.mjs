@@ -24,11 +24,12 @@ import * as LAB from '../getraenke/labor.mjs';
 import { hinweiseEinrichten } from '../kern/oberflaeche/hinweis.mjs';
 import { wartenEinrichten, modellFortschritt, bytesMitAnteil } from '../kern/oberflaeche/warten.mjs';
 import { text as spText, fuelle } from '../kern/oberflaeche/sprache.mjs';
-import { schluessel as schluesselLager, ANBIETER, erklaerung as schlErklaerung, formPasst, pruefeSchluessel } from '../kern/ki/schluessel.mjs';
+import { schluessel as schluesselLager, ANBIETER, erklaerung as schlErklaerung, formPasst, pruefeSchluessel, schluesselAdresse } from '../kern/ki/schluessel.mjs';
 import { STUFEN } from '../kern/ki/claude.mjs';
-import { vorbereiten, erkennen, rezeptAusScan, wasGehtHinaus, istPdf, istBild } from '../kern/import/scan.mjs';
-import { reiniger, vermerken, vermerkHtml, haltHtml, HALT_JA, HALT_TITEL, meldung as kiMeldung } from '../kern/ki/reinigung.mjs';
-import { dateiPruefen, pruefHtml, PRUEF_ERKLAERUNG, kiAnweisungen } from '../kern/pruefung/datei.mjs';
+import { vorbereiten, erkennen, rezeptAusScan, wasGehtHinaus, wohinKurz, istPdf, istBild } from '../kern/import/scan.mjs';
+import { vermerken, vermerkHtml, fundeZumEntscheiden, fundName } from '../kern/ki/reinigung.mjs';
+import { dateiPruefen, pruefHtml, kiAnweisungen } from '../kern/pruefung/datei.mjs';
+import * as DB from '../getraenke/entdecken.mjs';
 import { webAdresse, holeSeite, ausEingefuegtem, ohneKi, fuerKi, mitKi, holeBild } from '../kern/import/web.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
@@ -43,7 +44,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor21';
+export const FASSUNG = '10.0.0-vor22';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -57,7 +58,7 @@ const KAT_SYM = { all: 'drinks', mock: 'drinks', afckt: 'drinks', ckt: 'wine', s
 /* ── Zustand ── E: Einstellungen des Geräts · A: die Sammlung · Z: was gerade zu sehen ist (flüchtig) */
 let E = { sprache: null, farbe: 'blau', ton: 'geraet', schrift: 100, einheit: 'auto', fl: { seite: 'r', oben: 64 }, navZu: true, scan: { anbieter: 'anthropic', stufe: 'schnell' } };
 let A = null;
-const Z = { scan: null, web: null, lab: { kat: 'mock', geschmack: [], zutaten: '', entwurf: null, laeuft: false, fehler: '', entfernteAuf: false }, planTag: new Date(), bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
+const Z = { einstAuf: new Set(), entd: null, scanMehr: false, scan: null, web: null, lab: { kat: 'mock', geschmack: [], zutaten: '', entwurf: null, laeuft: false, fehler: '', entfernteAuf: false }, planTag: new Date(), bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
 
 const sprache = () => E.sprache || (A && A.einstellungen && A.einstellungen.sprache) || ((navigator.language || 'de').slice(0, 2));
 const L = (de, en) => spText(sprache(), de, en);   /* Deutsch und Englisch im Code; die übrigen Sprachen über Tabellen des Kerns, sonst Englisch */
@@ -128,6 +129,7 @@ function kopf(br) {
   const werk = `${alk}<button class="rund schriftknopf" data-a="menue" data-m="schrift" aria-label="${L('Schriftgröße', 'Text size')}" title="${L('Schriftgröße', 'Text size')}"><span aria-hidden="true">A<b>A</b></span></button><button class="rund" data-a="menue" data-m="sprache" aria-label="${L('Sprache', 'Language')}" title="${L('Sprache', 'Language')}">${I('lang')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund" data-go="mehr" aria-label="${L('Einstellungen', 'Settings')}" title="${L('Einstellungen', 'Settings')}">${I('settings')}</button>`;
   const mini = ohneAlk() ? `<button class="alkmini" data-a="alk" aria-pressed="true" aria-label="${L('Ohne Alkohol ist an', 'Alcohol-free is on')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>` : '';
   const name = !br && auf ? '<span class="name"></span>' : `<div class="name">Mein Mixarium<small>${n} ${n === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}</small></div>`;
+  if (!br) return `<header class="kopf">${logo()}<div class="name">Mein Mixarium<small>${n} ${n === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}</small></div>${mini}<button class="rund" data-a="zur-suche" aria-label="${L('Suchen', 'Search')}" title="${L('Suchen', 'Search')}">${I('search')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button></header>`;
   return `<header class="kopf ${auf ? 'auf' : ''}">${logo()}${name}${br ? suchfeld(false) : ''}${auf ? werk : mini}<button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button><button class="klapp" data-a="kopf" aria-expanded="${auf}" aria-label="${auf ? L('Werkzeuge einklappen', 'Collapse tools') : L('Werkzeuge aufklappen', 'Expand tools')}">${I(auf ? 'right' : 'left')}</button></header>`;
 }
 function navLinks() {
@@ -140,12 +142,13 @@ function flLeiste() {
   const ort = f.seite === 'u' ? `left:${Z.flAuf ? 50 : f.oben}%` : `top:${Z.flAuf ? Math.min(66, Math.max(34, f.oben)) : f.oben}%`;
   if (!Z.flAuf) return `<aside class="${cls}" style="${ort}"><button class="fl-griff" data-a="fl-auf" aria-label="${L('Leiste öffnen. Ziehen verschiebt sie.', 'Open bar. Drag to move it.')}"><span aria-hidden="true"></span></button></aside>`;
   const k = (attr, i, t, cur) => `<button ${attr} ${cur ? 'aria-current="page"' : ''}>${i}<span>${t}</span></button>`;
-  return `<aside class="${cls}" style="${ort}"><div class="fl-knoepfe" role="menu"><button class="fl-zu" data-a="fl-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button>${k('data-a="oben"', I('up'), L('Nach oben', 'To top'))}${Z.view !== 'start' ? k('data-a="zurueck"', I('left'), L('Zurück', 'Back')) : ''}${NAV.map(([v, n, i]) => k(`data-go="${v}"`, I(i), L(...n), akt === v)).join('')}<hr>${k('data-a="neu"', I('plus'), L('Neues Getränk', 'New drink'))}</div></aside>`;
+  const w = (attr, i, t, an) => `<button ${attr} ${an == null ? '' : `aria-pressed="${an}"`}>${i}<span>${t}</span></button>`;
+  return `<aside class="${cls}" style="${ort}"><div class="fl-knoepfe" role="menu"><button class="fl-zu" data-a="fl-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button>${k('data-a="oben"', I('up'), L('Nach oben', 'To top'))}${Z.view !== 'start' ? k('data-a="zurueck"', I('left'), L('Zurück', 'Back')) : ''}${NAV.map(([v, n, i]) => k(`data-go="${v}"`, I(i), L(...n), akt === v)).join('')}<hr><div class="fl-werk" role="group" aria-label="${L('Werkzeuge', 'Tools')}">${w('data-ton="hell"', I('sun'), L('Hell', 'Light'), !dunkel())}${w('data-ton="dunkel"', I('moon'), L('Dunkel', 'Dark'), dunkel())}${w('data-a="menue" data-m="farbe"', '<span class="fleck farbknopf"></span>', L('Farbe', 'Colour'))}${w('data-a="menue" data-m="schrift"', '<span class="aa" aria-hidden="true">A<b>A</b></span>', L('Schrift', 'Text'))}${w('data-a="menue" data-m="sprache"', I('lang'), L('Sprache', 'Language'))}${w(`data-a="alk" title="${L('Ohne Alkohol: Getränke mit Alkohol ausblenden', 'Alcohol-free: hide drinks with alcohol')}"`, I('noalc'), L('Ohne Alk.', 'No alc.'), ohneAlk())}${w(`data-a="sichern" class="breit" title="${L('Sicherung als Datei speichern', 'Save a backup file')}"`, I('download'), L('Sichern', 'Backup'))}</div></div></aside>`;
 }
 function menue() {
   if (Z.menue === 'sprache') return `<div class="sprachmenue" role="menu"><h3>${L('Sprache der App', 'App language')}</h3><button role="menuitemradio" aria-checked="${!E.sprache}" data-lang="">${L('Wie das Gerät', 'Same as device')}${!E.sprache ? I('check') : ''}</button>${SPRACHEN.map(([k, n]) => `<button role="menuitemradio" aria-checked="${E.sprache === k}" data-lang="${k}">${n}${E.sprache === k ? I('check') : ''}</button>`).join('')}<p>${L('Vollständig sind Deutsch und Englisch. In den anderen Sprachen sind Kategorien und Gläser übersetzt, die übrige Oberfläche erscheint vorerst auf Englisch.', 'German and English are complete. In the other languages categories and glasses are translated; the rest of the interface is in English for now.')}</p></div>`;
   if (Z.menue === 'schrift') return `<div class="farbmenue schriftfeld" role="dialog" aria-label="${L('Schriftgröße', 'Text size')}"><h3>${L('Schriftgröße', 'Text size')}</h3>${schriftRegler(E.schrift, sprache())}<p>${L('Die Schrift ändert sich sofort, während du schiebst. Gilt für die ganze App, auch für die Mix-Ansicht.', 'The text changes right away while you slide. Applies to the whole app, including the mix view.')}</p><button data-a="schrift-100">${L('Zurück auf 100 %', 'Back to 100 %')}</button></div>`;
-  if (Z.menue === 'farbe') return `<div class="farbmenue" role="menu"><h3>${L('Farbe der App', 'App colour')}</h3>${Object.entries(FARBEN).map(([k, f]) => `<button role="menuitemradio" aria-checked="${E.farbe === k}" data-farbe="${k}"><span class="fleck" style="background:linear-gradient(135deg,${f.k[0]},${f.k[2]})"></span>${farbName(k)}</button>`).join('')}<hr><h3>${L('Hell oder dunkel', 'Light or dark')}</h3>${Object.keys(TOENE).map((k) => `<button role="menuitemradio" aria-checked="${E.ton === k}" data-ton="${k}">${I(k === 'dunkel' ? 'moon' : 'sun')}${tonName(k, sprache())}</button>`).join('')}</div>`;
+  if (Z.menue === 'farbe') return `<div class="farbmenue" role="menu"><h3>${L('Farbe der App', 'App colour')}</h3>${Object.entries(FARBEN).map(([k, f]) => `<button role="menuitemradio" aria-checked="${E.farbe === k}" data-farbe="${k}"><span class="fleck" style="background:linear-gradient(135deg,${f.k[0]},${f.k[2]})"></span>${farbName(k)}</button>`).join('')}<hr><h3>${L('Hell oder dunkel', 'Light or dark')}</h3>${['hell', 'dunkel'].map((k) => `<button role="menuitemradio" aria-checked="${E.ton === k}" data-ton="${k}">${I(k === 'dunkel' ? 'moon' : 'sun')}${tonName(k, sprache())}</button>`).join('')}</div>`;
   return '';
 }
 function leiste() {
@@ -154,7 +157,7 @@ function leiste() {
   const stk = (id, bildHtml, name, n) => `<button class="chip stk" data-kat="${esc(id)}" aria-pressed="${Z.kat === id}"><span class="stk-bild">${bildHtml}</span><span class="stk-name">${esc(name)} <span class="zahl">${n}</span></span></button>`;
   return `<div class="leiste stickers" role="group" aria-label="${L('Kategorien', 'Categories')}">${stk('all', alleBild ? `<img class="sticker" src="${esc(alleBild.img)}" alt="" loading="lazy">` : I('book'), L('Alle', 'All'), alle)}${kats().map(({ c, n }) => stk(c.id, katSticker(c, gl), katText(c), n)).join('')}</div>`;
 }
-function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.beispiel ? `<span class="marke rechts">${L('Beispiel', 'Example')}</span>` : r.labGen && r.labStatus && r.labStatus !== 'accepted' ? `<span class="marke rechts">${I('lab')}${L('Labor', 'Lab')}${r.labScore ? ' · ' + zahl(r.labScore.toFixed(1)) : ''}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
+function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.labGen && r.labStatus && r.labStatus !== 'accepted' ? `<span class="marke rechts">${I('lab')}${L('Labor', 'Lab')}${r.labScore ? ' · ' + zahl(r.labScore.toFixed(1)) : ''}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
 function kartenHtml() {
   const l = sichtbar(), sinn = semTreffer(), an = E.sinn && Z.suche.trim();
   const status = an ? `<p class="sinn-status" id="sinn-status" role="status">${esc(sem.status)}</p>` : '';
@@ -197,7 +200,7 @@ async function semLauf(f) {
   } catch (e) { console.warn('Sinn-Suche:', (e && e.message) || e); semStatus(L('Die Sinn-Suche ist gerade nicht verfügbar. Die Wortsuche läuft weiter.', 'Meaning search is not available right now. Word search keeps working.')); } finally { sem.laeuft = false; }
 }
 function willkommen() {
-  return `<div class="willkommen"><h3>${L('Willkommen im neuen Mixarium', 'Welcome to the new Mixarium')}</h3><p>${L('Deine Sammlung ist noch leer. So kommst du zu Getränken:', 'Your collection is still empty. Here is how to get drinks:')}</p><div class="reihe"><button class="knopf" data-a="beispiele">${I('box')}${L('Beispiele laden', 'Load examples')}</button><button class="knopf hell" data-a="neu">${I('plus')}${L('Getränk anlegen', 'Add a drink')}</button><button class="knopf hell" data-a="einspielen">${I('upload')}${L('Sicherung einspielen', 'Restore a backup')}</button></div></div>`;
+  return `<div class="willkommen einladung"><img class="leer-bild" src="../icons/mixarium-leerkarte.jpg" alt="" loading="lazy"><h3>${L('Noch keine Getränke', 'No drinks yet')}</h3><div class="reihe"><button class="knopf" data-a="neu">${I('plus')}${L('Getränk', 'Drink')}</button><button class="knopf hell" data-a="beispiele">${I('box')}${L('Beispiele', 'Examples')}</button></div></div>`;
 }
 function vStart(br) {
   const leer = !A.getraenke.some(G.istSichtbar), versteckt = A.getraenke.filter((r) => G.istSichtbar(r) && G.hatAlkohol(r)).length;
@@ -215,13 +218,16 @@ function zutatenVon(r) {
 const mengeText = (z) => [zahl(z.amt || ''), z.unit || ''].filter(Boolean).join(' ');
 function zutatenListe(r) { return `<ul class="zutaten">${zutatenVon(r).map((z) => `<li><span class="menge">${esc(mengeText(z))}</span><span>${esc(z.name)}${z.note ? ` <small class="leise">${esc(z.note)}</small>` : ''}</span></li>`).join('') || `<li><span>${L('Noch keine Zutaten.', 'No ingredients yet.')}</span></li>`}</ul>`; }
 function schritteListe(r) { return `<ol class="schritte">${(r.steps || []).map((s) => `<li><span>${esc(s.txt)}</span></li>`).join('') || `<li><span>${L('Noch keine Schritte.', 'No steps yet.')}</span></li>`}</ol>`; }
-function fakten(r) { return `<div class="fakten">${r.glass ? `<span class="fakt">${I('glass')}${esc(glasText(r.glass))}</span>` : ''}${r.temp ? `<span class="fakt">${I(r.temp === 'warm' || r.temp === 'hot' ? 'coffee' : 'snow')}${esc(G.tempName(r.temp, sprache()))}</span>` : ''}${r.prepTime ? `<span class="fakt">${I('timer')}${Number(r.prepTime)} min</span>` : ''}${G.hatAlkohol(r) ? `<span class="fakt alk">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : `<span class="fakt ok">${I('noalc')}${L('ohne Alkohol', 'alcohol-free')}</span>`}</div>`; }
+function fakten(r) { return `<div class="fakten">${r.glass ? `<span class="fakt">${I('glass')}${esc(glasText(r.glass))}</span>` : ''}${r.temp ? `<span class="fakt">${I(r.temp === 'warm' || r.temp === 'hot' ? 'coffee' : 'snow')}${esc(G.tempName(r.temp, sprache()))}</span>` : ''}${r.prepTime ? `<span class="fakt">${I('timer')}${Number(r.prepTime)} min</span>` : ''}${G.hatAlkohol(r) ? `<span class="fakt alk">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : `<span class="fakt ok">${I('noalc')}${L('ohne Alkohol', 'alcohol-free')}</span>`}${sterne(r)}</div>`; }
 function portion(r) {
   const e = einheitWahl(), was = r.servings === 1 || Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings');
-  return `<div class="portion"><b>${Z.port} ${Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings')}<small>${L('Mengen werden umgerechnet', 'Amounts are recalculated')}</small></b><div class="stepper"><button data-a="minus" aria-label="${L('Weniger', 'Fewer')}">${I('minus')}</button><output>${Z.port}</output><button data-a="plus" aria-label="${L('Mehr', 'More')}">${I('plus')}</button></div></div><div class="einheiten" role="group" aria-label="${L('Einheit', 'Unit')}">${[['orig', L('wie notiert', 'as written')], ['ml', 'ml'], ['cl', 'cl'], ['oz', 'oz']].map(([k, n]) => `<button data-e="${k}" aria-pressed="${e === k}">${n}</button>`).join('')}</div>`;
+  return `<div class="portion"><b>${Z.port} ${Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings')}</b><div class="stepper"><button data-a="minus" aria-label="${L('Weniger', 'Fewer')}">${I('minus')}</button><output>${Z.port}</output><button data-a="plus" aria-label="${L('Mehr', 'More')}">${I('plus')}</button></div></div><div class="einheiten" role="group" aria-label="${L('Einheit', 'Unit')}">${[['orig', L('wie notiert', 'as written')], ['ml', 'ml'], ['cl', 'cl'], ['oz', 'oz']].map(([k, n]) => `<button data-e="${k}" aria-pressed="${e === k}">${n}</button>`).join('')}</div>`;
 }
 function geraeteKacheln(liste, hell) { return liste.length ? `<div class="geraete ${hell ? 'hell' : ''}">${liste.map((g) => `<span class="gk">${G.geraetSvg(g)}<small>${esc(G.geraetName(g, sprache()))}</small></span>`).join('')}</div>` : ''; }
-function aktionen(r, br) { return `<div class="reihe" style="margin-top:14px"><button class="knopf" data-go="mix">${I('shaker')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu">${I('cart')}${L('Auf die Einkaufsliste', 'Add to shopping list')}</button><button class="knopf hell" data-a="planen">${I('plan')}${L('Planen', 'Plan')}</button><button class="knopf hell" data-a="teilen">${I('share')}${L('Teilen', 'Share')}</button><button class="knopf hell" data-a="bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button></div>`; }
+/* Klaus 23.11.: kurze Knöpfe, eine Zeile. „Teilen“ und „Bearbeiten“ stehen hinter dem Winkel. */
+function aktionen(r, br) { return `<div class="reihe akt" style="margin-top:14px"><button class="knopf" data-go="mix">${I('shaker')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu" title="${L('Auf die Einkaufsliste', 'Add to shopping list')}">${I('cart')}${L('Einkaufen', 'Shop')}</button><button class="knopf hell nursym" data-a="planen" aria-label="${L('In den Wochenplan', 'Into the week plan')}" title="${L('In den Wochenplan', 'Into the week plan')}">${I('plan')}</button></div>`; }
+/* Bewertung am Getränk (wie in der alten App: r.rating.stars). Ein Tipp auf denselben Stern nimmt sie zurück. */
+function sterne(r) { const n = (r.rating && Number(r.rating.stars)) || 0; return `<span class="sterne" role="group" aria-label="${L('Bewertung', 'Rating')}: ${n} ${L('von 5', 'of 5')}">${[1, 2, 3, 4, 5].map((i) => `<button class="stern ${i <= n ? 'an' : ''}" data-a="stern" data-n="${i}" aria-pressed="${i <= n}" aria-label="${i} ${i === 1 ? L('Stern', 'star') : L('Sterne', 'stars')}">${I('star')}</button>`).join('')}</span>`; }
 function vGetraenk(br) {
   const r = sicht(getr(Z.uid)); if (!r) { Z.view = 'start'; return vStart(br); }
   const ger = G.geraeteFuerGetraenk(r);
@@ -229,14 +235,14 @@ function vGetraenk(br) {
   const notiz = r.notes ? `<div class="abschnitt"><h3>${L('Notizen', 'Notes')}</h3><p class="notiz">${esc(r.notes)}</p></div>` : '';
   const quelle = r.source ? `<p class="quelle">${L('Quelle', 'Source')}: ${esc(r.source)}</p>` : '';
   const winkel = (d) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
-  const wk = (akt, i, t, kl = '') => `<button class="chip ${kl}" data-a="${akt}">${I(i)}${t}</button>`;
+  const wk = (akt, i, t, kl = '') => `<button class="chip ${kl}" data-a="${akt}" aria-label="${esc(t)}" title="${esc(t)}">${I(i)}<span class="wk-t">${t}</span></button>`;   /* am Handy nur das Symbol (Klaus 23.11.: „kein Button-Kino“), am Monitor mit Wort */
   /* Kein Knopf auf dem Foto (Klaus 23.11., wie im Rezeptbuch): rechts in der Namenszeile ein weißer Winkel, der die Werkzeuge
      über dem Bild aufklappt, ohne neue Zeile und ohne etwas zu verschieben; „Zurück“ als Winkel links vom Namen. */
-  const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
+  const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
   if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div>`;
   const fk = Z.fokus;
   const liste = fk ? '' : `<div class="liste">${leiste()}${sichtbar().map((x) => `<button class="zeile" data-d="${esc(x.uid)}" ${x.uid === r.uid ? 'aria-current="true"' : ''}><span class="mini">${bild(x)}</span><span><strong>${esc(x.name)}</strong><small>${esc(katNameVon(x))}${x.prepTime ? ` · ${Number(x.prepTime)} min` : ''}</small></span></button>`).join('')}</div>`;
-  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bildblatt', 'image', L('Bild', 'Picture'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div></div></div></div>`;
+  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div></div></div></div>`;
 }
 
 /* ── Mix-Ansicht ── Welche Zutaten nennt der Schritt? Über den Namen (Wortanfang, mindestens 4 Buchstaben). */
@@ -327,13 +333,13 @@ const labSolo = () => !!(A.einstellungen && A.einstellungen.labSolo);
 function vLabor() {
   const br = breit(), lb = Z.lab, kats = G.KATEGORIEN.filter((k) => !(k.alcohol && ohneAlk()));
   if (!kats.some((k) => k.id === lb.kat)) lb.kat = kats[0].id;
-  const form = `<div class="laborform"><h3>${I('wand')}${L('Neues Getränk erfinden', 'Invent a new drink')}${frag(L('Braucht Internet und deinen eigenen Anthropic-Schlüssel. Das Ergebnis landet erst im Labor; ins Buch kommt es, wenn es gut bewertet oder angenommen ist.', 'Needs internet and your own Anthropic key. The result goes to the lab first; it enters the book once it is rated well or accepted.'))}</h3>
+  const form = `<div class="laborform"><h3 title="${esc(L('Braucht Internet und deinen eigenen Anthropic-Schlüssel. Das Ergebnis landet erst im Labor; ins Buch kommt es, wenn es gut bewertet oder angenommen ist.', 'Needs internet and your own Anthropic key. The result goes to the lab first; it enters the book once it is rated well or accepted.'))}">${I('wand')}${L('Neues Getränk erfinden', 'Invent a new drink')}</h3>
    <p class="feldname">${L('Kategorie', 'Category')}</p><div class="kachelraster">${kats.map((k) => `<button class="kachel" style="--kc:${esc(k.col || '#5a7ab0')}" data-a="lab-kat" data-k="${k.id}" aria-pressed="${lb.kat === k.id}"><span class="kfeld">${I(KAT_SYM[k.id] || 'drinks')}</span><span>${esc(katText(k))}</span></button>`).join('')}</div>
    <p class="feldname">${L('Geschmack', 'Taste')}</p><div class="kachelraster drei">${LAB.GESCHMAECKER.map((g) => `<button class="kachel" style="--kc:${GESCHMACK_FARBE[g.id]}" data-a="lab-geschmack" data-g="${esc(g.id)}" aria-pressed="${lb.geschmack.includes(g.id)}"><span class="kfeld punkt"></span><span>${L(g.de, g.en)}</span></button>`).join('')}</div>
    <p class="feldname">${L('Das habe ich da (optional)', 'What I have (optional)')}</p><label class="suchfeld" style="width:100%;margin-top:6px">${I('drop')}<input id="labzutaten" value="${esc(lb.zutaten)}" placeholder="${L('z. B. Gurke, Basilikum, Tonic', 'e.g. cucumber, basil, tonic')}" autocomplete="off">${mikro('#labzutaten')}</label>
    <button class="knopf voll" data-a="lab-erfinden" style="margin-top:14px" ${lb.laeuft ? 'disabled' : ''}>${I('sparkle')}${lb.laeuft ? L('Die KI mixt …', 'The AI is mixing …') : L('Getränk erfinden', 'Invent drink')}</button>
    ${lb.fehler ? `<p class="hinweis rotschrift" role="alert">${I('info')}${esc(lb.fehler)}</p>` : ''}
-   <div class="reihe" style="margin-top:10px;align-items:center"><label class="haken"><input type="checkbox" data-a="lab-solo" ${labSolo() ? 'checked' : ''}> ${L('Einzelpersonen-Modus', 'Single-person mode')}</label>${frag(L('Eine Bewertung genügt, um ein Getränk anzunehmen oder unter Beobachtung zu stellen. Sonst braucht es drei.', 'One rating is enough to accept a drink or put it under watch. Otherwise it takes three.'))}</div></div>`;
+   <div class="reihe" style="margin-top:10px;align-items:center"><label class="haken" title="${esc(L('Eine Bewertung genügt, um ein Getränk anzunehmen oder unter Beobachtung zu stellen. Sonst braucht es drei.', 'One rating is enough to accept a drink or put it under watch. Otherwise it takes three.'))}"><input type="checkbox" data-a="lab-solo" ${labSolo() ? 'checked' : ''}> ${L('Einzelpersonen-Modus', 'Single-person mode')}</label></div></div>`;
   const e = lb.entwurf;
   const vorschau = e ? `<div class="laborform entwurf"><h3>${I('lab')}${esc(e.titel)}<span class="status">${L('Vorschau', 'Preview')}</span></h3>${e.beschreibung ? `<p class="ftext">${esc(e.beschreibung)}</p>` : ''}
    <p class="klein">${[e.zubereitungszeit_min ? `${Number(e.zubereitungszeit_min)} min` : '', e.portionen ? L(`${Number(e.portionen)} Portionen`, `${Number(e.portionen)} servings`) : '', e.glastyp ? glasText(e.glastyp) : '', e.alkohol ? L('mit Alkohol', 'with alcohol') : L('alkoholfrei', 'alcohol-free')].filter(Boolean).map(esc).join(' · ')}</p>
@@ -349,7 +355,7 @@ function vLabor() {
      ${r.labRevisionDraft ? `<div class="entwurfbox"><b>${L('Überarbeiteter Entwurf', 'Revised draft')}: ${esc(r.labRevisionDraft.titel)}</b><small>${esc(r.labRevisionDraft.zutaten.map((z) => [z.menge, z.name].filter(Boolean).join(' ')).join(', '))}</small><div class="laborknoepfe"><button class="chip" data-a="lab-rev-ja" data-u="${esc(r.uid)}">${I('check')}${L('Annehmen', 'Accept')}</button><button class="chip" data-a="lab-rev-nein" data-u="${esc(r.uid)}">${I('x')}${L('Ablehnen', 'Reject')}</button></div></div>` : ''}
      <div class="laborknoepfe"><button class="chip" data-a="lab-bewerten" data-u="${esc(r.uid)}">${I('star')}${L('Bewerten', 'Rate')}</button><button class="chip" data-a="lab-annehmen" data-u="${esc(r.uid)}">${I('check')}${L('Ins Buch', 'To the book')}</button><button class="chip" data-a="lab-ueberarbeiten" data-u="${esc(r.uid)}" ${r.labRevisionPending || r.labRevisionDraft ? 'disabled' : ''}>${I('wand')}${L('Überarbeiten', 'Revise')}</button><button class="chip" data-a="lab-favorit" data-u="${esc(r.uid)}" aria-pressed="${!!r.labFavorite}" title="${L('Vor dem Rauswurf schützen', 'Protect from removal')}">${I('star')}${r.labFavorite ? L('Geschützt', 'Protected') : L('Schützen', 'Protect')}</button><button class="chip" data-a="lab-entfernen" data-u="${esc(r.uid)}">${I('trash')}${L('Verwerfen', 'Discard')}</button></div>
      ${(r.labLog || []).length ? `<details class="protokoll"><summary>${L('Protokoll', 'Log')}</summary>${r.labLog.slice(-6).reverse().map((l) => `<p>${esc(new Date(l.ts).toLocaleDateString(sprache() === 'de' ? 'de-DE' : 'en-GB'))}: ${esc(l.detail)}</p>`).join('')}</details>` : ''}</div></div>`; };
-  const poolHtml = `<div class="abschnitt" style="${br ? 'margin-top:0' : ''}"><h3>${L('Im Labor', 'In the lab')} · ${pool.length}${frag(L('Ab 3,5 Punkten kommt ein Getränk ins Buch, unter 2,5 unter Beobachtung. Bleibt es schlecht, überarbeitet die KI es; fällt auch die neue Fassung durch, wird es verworfen, außer es ist geschützt. Gewichtung: Geschmack 40 %, Zubereitung 25 %, Originalität 20 %, Beschreibung 15 %.', 'From 3.5 points a drink enters the book, below 2.5 it goes under watch. If it stays poor, the AI revises it; if the new version fails too, it is discarded unless protected. Weights: taste 40 %, practicality 25 %, originality 20 %, description 15 %.'))}</h3>${pool.map(karteLab).join('') || `<p class="leer">${A.getraenke.some((r) => r.labLog) ? L('Alle Labor-Getränke sind angenommen oder verworfen. Angenommene stehen im Buch.', 'All lab drinks are accepted or discarded. Accepted ones are in the book.') : L('Noch nichts im Labor. Erfinde oben dein erstes Getränk.', 'Nothing in the lab yet. Invent your first drink above.')}</p>`}
+  const poolHtml = `<div class="abschnitt" style="${br ? 'margin-top:0' : ''}"><h3 title="${esc(L('Ab 3,5 Punkten kommt ein Getränk ins Buch, unter 2,5 unter Beobachtung. Bleibt es schlecht, überarbeitet die KI es; fällt auch die neue Fassung durch, wird es verworfen, außer es ist geschützt. Gewichtung: Geschmack 40 %, Zubereitung 25 %, Originalität 20 %, Beschreibung 15 %.', 'From 3.5 points a drink enters the book, below 2.5 it goes under watch. If it stays poor, the AI revises it; if the new version fails too, it is discarded unless protected. Weights: taste 40 %, practicality 25 %, originality 20 %, description 15 %.'))}">${L('Im Labor', 'In the lab')} · ${pool.length}</h3>${pool.map(karteLab).join('') || `<p class="leer">${A.getraenke.some((r) => r.labLog) ? L('Alle Labor-Getränke sind angenommen oder verworfen. Angenommene stehen im Buch.', 'All lab drinks are accepted or discarded. Accepted ones are in the book.') : L('Noch nichts im Labor. Erfinde oben dein erstes Getränk.', 'Nothing in the lab yet. Invent your first drink above.')}</p>`}
    ${weg.length ? `<button class="chip" data-a="lab-entfernte" aria-expanded="${lb.entfernteAuf}" style="margin-top:10px">${I(lb.entfernteAuf ? 'down' : 'right')}${L(`Entfernte Getränke (${weg.length})`, `Removed drinks (${weg.length})`)}</button>${lb.entfernteAuf ? weg.map((r) => { const s2 = (r.labLog || []).filter((l) => l.type === 'status').slice(-1)[0]; return `<div class="laborkarte entfernt"><div class="mitte"><strong>${esc(r.name)}</strong><small>${esc(katNameVon(r))}${s2 ? ' · ' + esc(s2.detail) : ''}</small><div class="laborknoepfe"><button class="chip" data-a="lab-zurueck" data-u="${esc(r.uid)}">${I('back')}${L('Wiederherstellen', 'Restore')}</button></div></div></div>`; }).join('') : ''}` : ''}</div>`;
   const kopfz = `<h2 class="titel">${L('Mix-Labor', 'Mix lab')}${frag(L('Hier erfindet die KI neue Getränke. Du bewertest sie; gut bewertete kommen ins Buch, schwache überarbeitet die KI.', 'Here the AI invents new drinks. You rate them; good ones go into the book, weak ones are revised by the AI.'))}</h2>`;
   if (!br) return `<div class="innen-p">${kopfz}${form}${vorschau}${poolHtml}</div>`;
@@ -389,8 +395,9 @@ function labBewertenFenster(r) {
 /* Ein Fenster für alle drei Schlüssel (Anthropic, OpenAI, Mistral). danach: 'labor' | 'bild' | 'scan' – was nach dem Speichern weitergeht. */
 const SCHL_FORM = { anthropic: 'akform', openai: 'skform', mistral: 'mkform' };
 function schluesselFenster(a = 'openai', danach = '') {
-  const B = ANBIETER[a] || ANBIETER.openai;
-  Z.fenster = { titel: B.name + '-' + L('Schlüssel', 'key'), danach, html: `<p class="ftext schl-stand" id="schl-stand" role="status">${SK[a] ? L('Es ist ein Schlüssel gespeichert.', 'A key is saved.') : ''}</p><form id="${SCHL_FORM[a]}" class="felder schlform" data-anbieter="${a}" autocomplete="off"><label><span class="mit-frag">${L('Schlüssel', 'Key')}${B.beginn ? ` (${L('beginnt mit', 'starts with')} ${B.beginn})` : ''}${frag(schlErklaerung(a, sprache()))}</span><input class="feld" name="k" type="password" autocomplete="off" placeholder="${esc(B.beginn)}…"></label><div class="reihe ende">${SK[a] ? `<button type="button" class="knopf hell rotschrift" data-a="schluessel-weg" data-anbieter="${a}">${I('trash')}${L('Schlüssel löschen', 'Delete key')}</button>` : ''}<button type="button" class="knopf hell" data-a="schluessel-pruefen" data-anbieter="${a}" title="${esc(fuelle(L('Schickt eine kleinste Anfrage an {0} und sagt, ob der Schlüssel funktioniert', 'Sends a minimal request to {0} and tells whether the key works'), B.name))}">${I('schild')}${L('Prüfen', 'Check')}</button><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Speichern', 'Save')}</button></div></form>` };
+  const B = ANBIETER[a] || ANBIETER.openai, tP = fuelle(L('Prüfen: schickt eine kleinste Anfrage an {0} und sagt, ob der Schlüssel funktioniert', 'Check: sends a minimal request to {0} and tells whether the key works'), B.name);
+  Z.fenster = { titel: B.name, danach, kopfHtml: `<h2 class="mit-frag">${I('schluessel')}<span>${esc(B.name)}</span>${frag(schlErklaerung(a, sprache()))}</h2>`,
+    html: `<form id="${SCHL_FORM[a]}" class="felder schlform" data-anbieter="${a}" autocomplete="off"><input class="feld" name="k" type="password" autocomplete="off" placeholder="${SK[a] ? L('gespeichert · ein neuer ersetzt ihn', 'saved · a new one replaces it') : esc(B.beginn) + '…'}" aria-label="${esc(B.name)}-${L('Schlüssel', 'key')}"><p class="schl-stand" id="schl-stand" role="status"></p><div class="reihe"><button class="knopf gross" type="submit">${I('check')}${L('Speichern', 'Save')}</button><a class="knopf hell" id="schl-holen" href="${esc(schluesselAdresse(a))}" target="_blank" rel="noopener noreferrer" title="${esc(fuelle(L('Öffnet die Seite von {0}, auf der du einen Schlüssel erstellst', 'Opens the page of {0} where you create a key'), B.name))}">${I('link')}${L('Schlüssel holen', 'Get a key')}</a><button type="button" class="rund" data-a="schluessel-pruefen" data-anbieter="${a}" aria-label="${esc(tP)}" title="${esc(tP)}">${I('schild')}</button>${SK[a] ? `<button type="button" class="rund rotschrift" data-a="schluessel-weg" data-anbieter="${a}" aria-label="${L('Schlüssel löschen', 'Delete key')}" title="${L('Schlüssel löschen', 'Delete key')}">${I('trash')}</button>` : ''}</div></form>` };
   zeichne();
 }
 
@@ -408,15 +415,28 @@ function vBilder() {
 async function bilderLoeschen(uids, grund) { await tresorAuto(grund); const w = new Set(uids); for (const r of A.getraenke) if (w.has(r.uid)) { r.img = ''; delete r.imgCrop; r.modified = Date.now(); } Z.bilder.wahl.clear(); sichern(); melde(L(`${w.size} Bilder gelöscht, die Getränke bleiben. Der vorige Stand liegt im Tresor.`, `${w.size} pictures deleted, the drinks stay. The previous state is in the vault.`)); }
 
 /* ── Einstellungen ── */
+/* Klaus 23.11. abends: keine langen Scroll-Listen, einfache Links zu den Themen. Sieben Themen mit Farbfeld; ein Tipp klappt eines auf.
+   Unter einer Zeile steht nur ihr Wert (kurz), keine Beschreibung; eine Erklärung steht hinter „?“ in der Kopfzeile des Themas. */
 function vMehr() {
-  const z = (i, t, w, attr = '') => `<button class="ezeile" ${attr}>${i}<span><b>${t}</b><small>${w}</small></span>${I('right')}</button>`;
-  const bsp = A.getraenke.filter((r) => r.beispiel).length, alle = A.getraenke.filter(G.istSichtbar).length;
-  return `<div class="innen-p"><h2 class="titel">${L('Einstellungen', 'Settings')}</h2>
-  <div class="eliste">${z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"')}${z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch nach Land', 'automatic by country'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"')}${z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' % · ' + L('Schieberegler, ändert sich sofort', 'slider, changes right away'), 'data-a="menue" data-m="schrift"')}${z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { geraet: L('wie das Gerät', 'same as device'), hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"')}${z(I('image'), L('Bilder', 'Pictures'), L('alle Bilder sehen, auswählen und löschen', 'see, select and delete all pictures'), 'data-go="bilder"')}${z(I('info'), L('Hinweis-Blasen', 'Tooltips'), E.hinweiseAus ? L('aus', 'off') : L('an: kurze Erklärung, wenn man auf ein Symbol zeigt oder es antippt', 'on: a short explanation when you point at or tap a symbol'), `data-a="hinweise" aria-pressed="${!E.hinweiseAus}"`)}${z(I('box'), L('Kategorien', 'Categories'), L('umbenennen, Zeichen, ordnen, löschen, neu', 'rename, symbol, order, delete, new'), 'data-a="kategorien"')}${z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an: Getränke mit Alkohol sind ausgeblendet', 'on: drinks with alcohol are hidden') : L('aus', 'off'), 'data-a="alk"')}</div>
-  <h3 class="eh">${L('Beispiele', 'Examples')}</h3><div class="eliste">${z(I('box'), L('Beispiele laden', 'Load examples'), L('Pakete mit Getränken zum Ausprobieren', 'Packages of drinks to try'), 'data-a="beispiele"')}${z(I('trash'), L('Alle Beispiele löschen', 'Delete all examples'), bsp ? L(`${bsp} Beispiele in deiner Sammlung`, `${bsp} examples in your collection`) : L('keine Beispiele in deiner Sammlung', 'no examples in your collection'), 'data-a="beispiele-weg"')}</div>
-  <h3 class="eh">${L('Sammlung', 'Collection')}</h3><div class="eliste">${z(I('download'), L('Sicherung speichern', 'Save a backup'), L(`${alle} Getränke als Datei`, `${alle} drinks as a file`), 'data-a="sichern"')}${z(I('pencil'), L('Getränk aus Text', 'Drink from text'), L('Rezepttext einfügen, ohne KI aufteilen', 'paste a recipe text, split without AI'), 'data-a="text-import"')}${z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), L('fügt hinzu, Doppelte werden erkannt', 'adds; duplicates are detected'), 'data-a="einspielen"')}${z(I('safe'), L('Tresor', 'Vault'), L('Stände im Gerät: ablegen und zurückholen', 'states on this device: store and restore'), 'data-a="tresor"')}${z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), L('liest die alten Daten, ändert sie nicht', 'reads the old data, does not change it'), 'data-a="uebernehmen"')}${z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('alle Getränke, Karten und die Einkaufsliste entfernen', 'remove all drinks, lists and the shopping list'), 'data-a="leeren"')}</div>
-  <h3 class="eh">${L('KI', 'AI')}</h3><div class="eliste" id="schl-liste">${Object.keys(ANBIETER).map((a) => z(I('schluessel'), ANBIETER[a].name + '-' + L('Schlüssel', 'key'), (SK[a] ? L('gespeichert', 'saved') : L('noch keiner', 'none yet')) + ' · ' + (a === 'anthropic' ? L('Labor, Foto-Scan und die übrigen KI-Helfer (Claude)', 'Lab, photo scan and the other AI helpers (Claude)') : L(ANBIETER[a].wofuer[0], ANBIETER[a].wofuer[1])), `data-a="schluessel" data-anbieter="${a}"`)).join('')}</div>
-  <h3 class="eh">${L('Über', 'About')}</h3><div class="eliste">${z(I('info'), 'Mein Mixarium', L(`Fassung ${FASSUNG} · neue Gestaltung, Vorab`, `Version ${FASSUNG} · new design, preview`), 'data-a="ueber"')}<a class="ezeile" href="../index.html">${I('back')}<span><b>${L('Bisherige App öffnen', 'Open the previous app')}</b><small>${L('bleibt unverändert, mit Labor, Scan und KI', 'unchanged, with lab, scan and AI')}</small></span>${I('right')}</a><a class="ezeile" href="../impressum.html">${I('book')}<span><b>${L('Impressum', 'Legal notice')}</b><small></small></span>${I('right')}</a></div></div>`;
+  const z = (i, t, w, attr = '') => `<button class="ezeile" ${attr}>${i}<span><b>${t}</b>${w ? `<small>${w}</small>` : ''}</span>${I('right')}</button>`;
+  const bsp = A.getraenke.filter((r) => r.beispiel).length, alle = A.getraenke.filter(G.istSichtbar).length, bilder = A.getraenke.filter((r) => G.istSichtbar(r) && r.img).length;
+  const themen = [
+    ['aussehen', 'auge', WF.blau, L('Darstellung', 'Appearance'), '',
+      z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"') + z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch', 'automatic'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"') + z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' %', 'data-a="menue" data-m="schrift"') + z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"') + z(I('info'), L('Hinweis-Blasen', 'Tooltips'), E.hinweiseAus ? L('aus', 'off') : L('an', 'on'), `data-a="hinweise" aria-pressed="${!E.hinweiseAus}"`)],
+    ['ordnung', 'folder', WF.gelb, L('Ordnung', 'Order'), '',
+      z(I('box'), L('Kategorien', 'Categories'), String(kats().length), 'data-a="kategorien"') + z(I('image'), L('Bilder', 'Pictures'), String(bilder), 'data-go="bilder"') + z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an', 'on') : L('aus', 'off'), `data-a="alk" aria-pressed="${ohneAlk()}"`)],
+    ['sichern', 'safe', WF.gruen, L('Sichern', 'Backup'), L('Die Getränke liegen nur in diesem Gerät. Eine Sicherung als Datei schützt sie und bringt sie auf ein anderes Gerät; beim Einspielen werden Doppelte erkannt. Der Tresor hält dazu mehrere Stände im Gerät und hilft, wenn etwas falsch gelöscht wurde. KI-Schlüssel kommen nie in eine Sicherung.', 'The drinks are stored on this device only. A backup file protects them and takes them to another device; duplicates are detected when restoring. The vault additionally keeps several states on the device and helps when something was deleted by mistake. AI keys never go into a backup.'),
+      z(I('download'), L('Sicherung speichern', 'Save a backup'), `${alle}`, 'data-a="sichern"') + z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), '', 'data-a="einspielen"') + z(I('safe'), L('Tresor', 'Vault'), '', 'data-a="tresor"') + z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), '', 'data-a="uebernehmen"')],
+    ['ki', 'sparkle', WF.violett, L('KI-Schlüssel', 'AI keys'), L('KI läuft nur mit deinem eigenen Schlüssel und nur, wenn du es auslöst. Anthropic (Claude) arbeitet im Labor und liest Fotos und Webseiten, OpenAI malt Bilder, Mistral liest Text (EU). Ein Schlüssel bleibt in diesem Gerät und kommt in keine Sicherung; die Kosten rechnet der Anbieter direkt mit dir ab.', 'AI runs only with your own key and only when you start it. Anthropic (Claude) works in the lab and reads photos and web pages, OpenAI draws pictures, Mistral reads text (EU). A key stays on this device and is in no backup; the provider bills you directly.'),
+      `<div id="schl-liste">${Object.keys(ANBIETER).map((a) => z(I('schluessel'), ANBIETER[a].name, SK[a] ? L('gespeichert', 'saved') : L('noch keiner', 'none yet'), `data-a="schluessel" data-anbieter="${a}"`)).join('')}</div>`],
+    ['beispiele', 'box', WF.petrol, L('Beispiele', 'Examples'), '',
+      z(I('box'), L('Beispiele laden', 'Load examples'), '', 'data-a="beispiele"') + (bsp ? z(I('trash'), L('Beispiele löschen', 'Delete examples'), String(bsp), 'data-a="beispiele-weg"') : '')],
+    ['aufraeumen', 'trash', WF.koralle, L('Aufräumen', 'Clean up'), '', z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('mit Rückfrage', 'asks first'), 'data-a="leeren"')],
+    ['ueber', 'info', WF.grau, L('Über', 'About'), '',
+      z(I('info'), 'Mein Mixarium', FASSUNG, 'data-a="ueber"') + `<a class="ezeile" href="../impressum.html">${I('book')}<span><b>${L('Impressum', 'Legal notice')}</b></span>${I('right')}</a>`],
+  ];
+  return `<div class="innen-p"><h2 class="titel">${L('Einstellungen', 'Settings')}</h2><div class="themen">${themen.map(([id, i, kc, titel, hilfe, zeilen]) => { const auf = Z.einstAuf.has(id);
+    return `<div class="thema ${auf ? 'auf' : ''}" data-g="${id}" style="--kc:${kc}"><div class="gkopf-zeile"><button class="gkopf" data-a="einst-auf" data-g="${id}" aria-expanded="${auf}">${kfeld(i)}<span>${titel}</span>${I(auf ? 'up' : 'right')}</button>${auf && hilfe ? frag(hilfe) : ''}</div>${auf ? `<div class="eliste">${zeilen}</div>` : ''}</div>`; }).join('')}</div></div>`;
 }
 
 /* Bild im Vollbild: füllt den ganzen Schirm, das Bild ganz sichtbar (nicht beschnitten); Tipp, × oder Esc schließt. */
@@ -425,7 +445,7 @@ function bildVoll() { const r = Z.bildVoll && getr(Z.uid); if (!r) return ''; re
 /* ── Fenster (Dialoge) ── */
 function fenster() {
   const f = Z.fenster; if (!f) return '';
-  return `<div class="schleier" data-a="fenster-zu-aussen"><div class="fenster" role="dialog" aria-modal="true" aria-label="${esc(f.titel)}"><div class="fkopf"><h2>${esc(f.titel)}</h2><button class="rund" data-a="fenster-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div>${f.html}</div></div>`;
+  return `<div class="schleier" data-a="fenster-zu-aussen"><div class="fenster" role="dialog" aria-modal="true" aria-label="${esc(f.titel)}"><div class="fkopf">${f.kopfHtml || `<h2>${esc(f.titel)}</h2>`}<button class="rund" data-a="fenster-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div>${f.html}</div></div>`;
 }
 const fZu = () => { diktatAus(); Z.fenster = null; zeichne(); };
 /* Frage mit Antwort als Zusage (für Abläufe, die warten): Ja → true; schließt oder wechselt das Fenster, gilt das als Nein. */
@@ -463,42 +483,80 @@ function editorSpeichern(form) {
   if (r) Object.assign(r, felder);
   else { r = G.getraenkNormalisieren({ ...felder, id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, created: Date.now(), uid: G.neueUid(A.knoten) }); A.getraenke.unshift(r); }
   if (f.quelle && !f.uid) r.source = f.quelle;
+  if (f.db && !f.uid) Object.assign(r, f.db);   /* aus „Entdecken“: die Nummer bei TheCocktailDB, damit derselbe Drink nicht zweimal kommt */
   if (f.kiEntfernt && f.kiEntfernt.length) vermerken(r, f.kiEntfernt, 'scan');   /* was vor der KI herausgenommen wurde, steht am Getränk */
-  sichern(); Z.fenster = null; Z.uid = r.uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; melde(L('Gespeichert.', 'Saved.'));
+  sichern(); Z.fenster = null; Z.uid = r.uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; melde(L('Gespeichert', 'Saved'));
 }
-/* ── Blatt hinter „+“ (wie im Rezeptbuch): jeder Weg zu einem neuen Getränk an einem Ort ── */
-const NEU_TABS = [['selbst', 'pencil', ['Selbst', 'Write']], ['scan', 'scan', ['Foto-Scan', 'Photo scan']], ['web', 'welt', ['Web', 'Web']], ['text', 'datei', ['Text', 'Text']], ['datei', 'folder', ['Datei', 'File']], ['pakete', 'box', ['Pakete', 'Packages']]];
-function neuBlatt(tab = 'selbst') {
-  const inhalt = {
-    selbst: () => `<p class="ftext">${L('Name, Zutaten und Schritte selbst eintragen, mit Foto.', 'Enter name, ingredients and steps yourself, with a photo.')}</p><div class="reihe"><button class="knopf" data-a="neu-form">${I('pencil')}${L('Getränk schreiben', 'Write a drink')}</button></div>`,
-    scan: scanInhalt,
-    web: webInhalt,
-    text: () => `<div class="reihe"><button class="knopf" data-a="text-import">${I('pencil')}${L('Text einfügen', 'Paste text')}</button>${frag(L('Rezepttext einfügen, etwa aus einer Mail, einer Notiz oder von einer Webseite. Die App teilt ohne KI in Zutaten und Schritte; du siehst das Ergebnis im Formular und speicherst dort.', 'Paste a recipe text, e.g. from an e-mail, a note or a web page. The app splits it into ingredients and steps without AI; you check the result in the form and save there.'))}</div>`,
-    datei: () => `<div class="reihe"><button class="knopf" data-a="einspielen">${I('upload')}${L('Datei wählen', 'Choose file')}</button>${frag(L('Eine Sicherung oder Getränkedatei (JSON) einspielen. Doppelte werden erkannt, eigene Kategorien kommen mit.', 'Restore a backup or drinks file (JSON). Duplicates are detected, your own categories come along.'))}</div>`,
-    pakete: () => `<div class="reihe"><button class="knopf" data-a="beispiele">${I('box')}${L('Beispiele laden', 'Load examples')}</button>${frag(L('Pakete mit fertigen Getränken zum Ausprobieren. Sie lassen sich in den Einstellungen mit einem Tipp wieder löschen.', 'Packages of ready-made drinks to try. They can be deleted again with one tap in the settings.'))}</div>`,
-  };
-  Z.fenster = { titel: L('Getränk hinzufügen', 'Add a drink'), neuTab: tab, html: `<div class="imp-tabs" role="tablist">${NEU_TABS.map(([t, i, n]) => `<button role="tab" aria-selected="${t === tab}" data-a="neu-tab" data-t="${t}">${I(i)}${L(n[0], n[1])}</button>`).join('')}</div><div class="imp-p">${(inhalt[tab] || inhalt.selbst)()}</div>` };
+/* ── Blatt hinter „+“ (wie im Rezeptbuch): jeder Weg zu einem neuen Getränk an einem Ort ──
+   Klaus 23.11. abends: Bilder und Symbole sprechen, kein Erklärtext. Das Plus zeigt acht Kacheln mit je einem Wort (Farbfelder in
+   Wasserfarben); ein Tipp führt in den Weg. Dort bleiben die Wege als schmale Symbolreihe in der Kopfzeile stehen, darunter nur,
+   was der Weg braucht. Was ein Knopf tut, sagt sein Hinweis (Tooltip). */
+const WF = { gelb: '#d39a2e', koralle: '#e0695a', blau: '#4b86d6', petrol: '#2f9d9a', violett: '#8a6bd0', gruen: '#48a878', rosa: '#c964a2', grau: '#6f7f9a' };
+const kfeld = (i) => `<span class="kfeld">${I(i)}</span>`;
+const NEU_TABS = [['selbst', 'pencil', ['Schreiben', 'Write'], WF.gelb], ['scan', 'camera', ['Foto', 'Photo'], WF.koralle], ['web', 'welt', ['Web', 'Web'], WF.blau], ['text', 'datei', ['Text', 'Text'], WF.petrol],
+  ['entdecken', 'search', ['Entdecken', 'Discover'], WF.rosa], ['labor', 'lab', ['Labor', 'Lab'], WF.violett], ['datei', 'folder', ['Datei', 'File'], WF.grau], ['pakete', 'box', ['Beispiele', 'Examples'], WF.gruen]];
+const NEU_DIREKT = { selbst: 'data-a="neu-form"', labor: 'data-a="neu-labor"', datei: 'data-a="einspielen"', pakete: 'data-a="beispiele"' };
+const neuKnopf = ([t, i, n, kc], gewaehlt) => `<button style="--kc:${kc}" ${NEU_DIREKT[t] || `data-a="neu-tab" data-t="${t}"`} ${gewaehlt == null ? '' : `role="tab" aria-selected="${gewaehlt}" aria-label="${L(n[0], n[1])}" title="${L(n[0], n[1])}"`}>${gewaehlt == null ? kfeld(i) : I(i)}${gewaehlt === false ? '' : `<span>${L(n[0], n[1])}</span>`}</button>`;
+function neuBlatt(tab = '') {
+  const inhalt = { scan: scanInhalt, web: webInhalt, entdecken: entdeckenInhalt,
+    text: () => `<label class="felder mitmik">${mikro('#imptext')}<textarea class="feld" id="imptext" rows="7" placeholder="${L('Rezepttext einfügen', 'Paste the recipe text')}" aria-label="${L('Rezepttext', 'Recipe text')}"></textarea></label><button class="knopf gross" data-a="text-aufteilen" title="${L('Teilt den Text ohne KI in Name, Zutaten und Schritte; die erste Zeile ist der Name', 'Splits the text into name, ingredients and steps without AI; the first line is the name')}">${I('check')}${L('Aufteilen', 'Split')}</button>` };
+  if (!inhalt[tab]) Z.fenster = { titel: L('Neues Getränk', 'New drink'), neuTab: '', html: `<div class="imp-tabs" role="group" aria-label="${L('Wege zu einem neuen Getränk', 'Ways to a new drink')}">${NEU_TABS.map((x) => neuKnopf(x)).join('')}</div>` };
+  else Z.fenster = { titel: L(...NEU_TABS.find((x) => x[0] === tab)[2]), neuTab: tab, kopfHtml: `<div class="imp-reihe" role="tablist" aria-label="${L('Wege zu einem neuen Getränk', 'Ways to a new drink')}">${NEU_TABS.map((x) => neuKnopf(x, x[0] === tab)).join('')}</div>`, html: `<div class="imp-p" data-weg="${tab}">${inhalt[tab]()}</div>` };
   zeichne();
 }
-/* ── Foto-Scan (Kern: import/scan.mjs, ki/reinigung.mjs, pruefung/datei.mjs). Vor dem Senden steht, was hinausgeht. ── */
+/* ── Bekannte Drinks entdecken (getraenke/entdecken.mjs, TheCocktailDB). Netz nur auf Knopfdruck: hinaus geht der Suchtext, sonst nichts.
+   Eine Zeile zum Suchen; die Treffer als Bilder. Ein Tipp holt das Getränk ins Formular (prüfen, dann speichern); „schon da“ trägt einen Haken. ── */
+function entdeckenInhalt() {
+  const e = Z.entd || (Z.entd = { frage: '', treffer: null });
+  const feld = `<form id="entdform" class="webzeile">${I('search')}<input id="entd-frage" name="q" value="${esc(e.frage)}" placeholder="Margarita, Mojito …" aria-label="${L('Name eines bekannten Drinks', 'Name of a well-known drink')}" autocomplete="off" enterkeyhint="search"><button type="button" class="feldknopf" data-a="entd-zufall" aria-label="${L('Zufällige Auswahl', 'Random selection')}" title="${L('Zufällige Auswahl', 'Random selection')}">${I('sparkle')}</button><button type="button" class="feldknopf akz" data-a="entd-suchen" aria-label="${L('Suchen', 'Search')}" title="${esc(DB.wasGehtHinaus(sprache()))}">${I('right')}</button></form>`;
+  if (!e.treffer) return feld;
+  const liste = ohneAlk() ? e.treffer.filter(DB.sicherOhneAlkohol) : e.treffer;   /* „Ohne Alkohol“ gilt auch hier, und zwar beim Zeigen: ein Umschalten wirkt sofort auf die schon geholten Treffer */
+  if (!liste.length) return feld + `<p class="scan-was" id="entd-leer">${L('Nichts gefunden', 'Nothing found')}</p>`;
+  return feld + `<div class="entd-gitter" id="entd-treffer">${liste.map((d) => { const k = DB.kurz(d, { sprache: sprache(), kategorien: scanKats() }), da = !!DB.schonDa(A.getraenke, d);
+    return `<button class="entd-k" data-a="entd-nimm" data-id="${esc(k.id)}" ${da ? `data-da title="${L('Schon in deiner Sammlung', 'Already in your collection')}"` : ''}><img src="${esc(k.bild)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span>${esc(k.name)}</span>${da ? `<i>${I('check')}</i>` : ''}</button>`; }).join('')}</div>`;
+}
+async function entdeckenHolen(zufall) {
+  const e = Z.entd; if (!e) return; const f = $('#entd-frage'); if (f) e.frage = f.value.trim();
+  if (!zufall && !e.frage) return melde(L('Bitte einen Namen eintragen.', 'Please enter a name.'));
+  try { const t = await W.mit(L('thecocktaildb.com wird gefragt …', 'Asking thecocktaildb.com …'), () => (zufall ? DB.zufall({ sprache: sprache() }) : DB.suche(e.frage, { sprache: sprache() })));
+    e.treffer = t; } catch (x) { melde(x.message); }
+  if (Z.fenster && Z.fenster.neuTab === 'entdecken') neuBlatt('entdecken');
+}
+async function entdeckenNimm(id) {
+  const e = Z.entd; if (!e) return; let d = (e.treffer || []).find((x) => String(DB.dbNummer(x)) === String(id)); if (!d) return;
+  const da = DB.schonDa(A.getraenke, d); if (da) { Z.fenster = null; return oeffne(da.uid); }
+  try {
+    const g = await W.mit(L('Getränk wird geholt …', 'Getting the drink …'), async () => { if (!DB.istVoll(d)) d = await DB.nachschlagen(d, { sprache: sprache() }); let bild = ''; const b = await DB.holeBild(d, { alsBlob: true }); if (b) { try { bild = await bildAusDatei(b); } catch (x) { bild = ''; } } return DB.getraenkAusDb(d, { sprache: sprache(), kategorien: scanKats(), bild }); });
+    editor({ ...g, hinweis: L('Von thecocktaildb.com. Bitte prüfen.', 'From thecocktaildb.com. Please check.') + (g.img ? '' : ' ' + L('Das Bild ließ sich nicht übernehmen.', 'The picture could not be taken over.')) }, true); Z.fenster.quelle = g.source; Z.fenster.db = { dbId: g.dbId, dbSource: g.dbSource };
+  } catch (x) { melde(x.message); }
+}
+/* ── Foto-Scan (Kern: import/scan.mjs, ki/reinigung.mjs, pruefung/datei.mjs). Im Knopf steht, wohin und wie viel hinausgeht. ── */
 const scanKats = () => K.alleKategorien(A.getraenke, A.kategorien).filter((c) => c.art !== 'ohne').map((c) => ({ id: c.id, name: katText(c) }));
+/* Klaus 23.11.: markieren und entscheiden, raus oder rein – kein Lesetext. Die Fundstellen stehen rot hinterlegt; gefragt wird einmal. */
+const befehlFrage = (stellen) => frageP(L('Befehl an eine KI im Text', 'Instruction to an AI in the text'), `<ul class="ki-liste rot" data-ki-halt>${stellen.slice(0, 3).map((x) => `<li><mark>${esc(String(x.text || x.satz || '').slice(0, 160))}</mark></li>`).join('')}</ul>`, L('Trotzdem senden', 'Send anyway'));
 function scanInhalt() {
-  const sc = Z.scan, an = E.scan.anbieter, st = E.scan.stufe, n = sc ? sc.dateien.length : 0;
-  const wahl = `<div class="scan-wahl">${[['anthropic', L('Claude liest', 'Claude reads')], ['mistral', L('Mistral liest (EU)', 'Mistral reads (EU)')]].map(([a, t]) => `<button class="chip" data-a="scan-anbieter" data-w="${a}" aria-pressed="${an === a}">${esc(t)}</button>`).join('')}${frag(L('Claude (Anthropic) liest das Foto direkt. Oder Mistral OCR (Rechenzentrum in der EU) liest zuerst den Text, und Claude sortiert nur noch den Text in Zutaten und Schritte. Dafür brauchst du zusätzlich einen Mistral-Schlüssel.', 'Claude (Anthropic) reads the photo directly. Or Mistral OCR (data centre in the EU) reads the text first, and Claude only sorts the text into ingredients and steps. That also needs a Mistral key.'))}</div>
-   <div class="scan-wahl">${Object.entries(STUFEN).map(([k, x]) => `<button class="chip" data-a="scan-stufe" data-w="${k}" aria-pressed="${st === k}" title="${esc(L(x.dazu[0], x.dazu[1]))}">${esc(L(x.name[0], x.name[1]))}</button>`).join('')}${frag(L('Schnell ist günstig und reicht für gut lesbare Vorlagen. Standard und Profi lesen Handschrift und schwierige Fotos genauer und kosten mehr. Abgerechnet wird direkt bei Anthropic.', 'Fast is low cost and enough for clear originals. Standard and Pro read handwriting and difficult photos more accurately and cost more. Anthropic bills you directly.'))}</div>`;
-  if (!n) return `<div class="reihe"><button class="knopf" data-a="scan-kamera">${I('camera')}${L('Foto aufnehmen', 'Take a photo')}</button><button class="knopf hell" data-a="scan-datei">${I('folder')}${L('Datei wählen', 'Choose file')}</button>${frag(L('Fotografiere ein Rezept oder wähle Fotos und PDFs. Die KI liest daraus Name, Zutaten und Schritte. Mehrere Dateien werden nacheinander gelesen und gleich eingetragen. Ein Foto geht verkleinert und ohne Aufnahmedaten hinaus, ein PDF als gereinigte Seitenbilder. Vor dem Senden siehst du, was hinausgeht.', 'Photograph a recipe or choose photos and PDFs. The AI reads name, ingredients and steps. Several files are read one after another and added right away. A photo is sent reduced and without capture data, a PDF as cleaned page images. Before sending you see what goes out.'))}</div>${wahl}`;
+  const sc = Z.scan, an = E.scan.anbieter, st = E.scan.stufe, n = sc ? sc.dateien.length : 0, rund = (a, i, t) => `<button class="rund" data-a="${a}" aria-label="${esc(t)}" title="${esc(t)}">${I(i)}</button>`;
+  const tip = { anthropic: L('Claude (Anthropic) liest das Foto direkt', 'Claude (Anthropic) reads the photo directly'), mistral: L('Mistral OCR (EU) liest den Text, Claude sortiert ihn; braucht zusätzlich einen Mistral-Schlüssel', 'Mistral OCR (EU) reads the text, Claude sorts it; also needs a Mistral key'),
+    schnell: L('Günstig; reicht für gut lesbare Vorlagen', 'Low cost; enough for clear originals'), standard: L('Genauer bei Handschrift und schwierigen Fotos; kostet mehr', 'More accurate with handwriting and difficult photos; costs more'), profi: L('Am genauesten und am teuersten', 'Most accurate and most expensive') };
+  /* Wer liest und wie gründlich: eingeklappt hinter einer Zeile, die die Wahl nennt. Was eine Wahl bedeutet, sagt ihr Hinweis. */
+  const wahl = `<details class="mehr" id="scan-mehr" ${Z.scanMehr ? 'open' : ''}><summary>${I('sparkle')}<span>${an === 'mistral' ? 'Mistral + Claude' : 'Claude'} · ${esc(L(STUFEN[st].name[0], STUFEN[st].name[1]))}</span></summary>
+   <div class="scan-wahl">${[['anthropic', 'Claude'], ['mistral', 'Mistral (EU)']].map(([a, t]) => `<button class="chip" data-a="scan-anbieter" data-w="${a}" aria-pressed="${an === a}" title="${esc(tip[a])}">${esc(t)}</button>`).join('')}</div>
+   <div class="scan-wahl">${Object.entries(STUFEN).map(([k, x]) => `<button class="chip" data-a="scan-stufe" data-w="${k}" aria-pressed="${st === k}" title="${esc(tip[k] || '')}">${esc(L(x.name[0], x.name[1]))}</button>`).join('')}</div></details>`;
+  if (!n) return `<div class="zwei-gross"><button class="knopf hell gross" style="--kc:${WF.koralle}" data-a="scan-kamera">${kfeld('camera')}${L('Kamera', 'Camera')}</button><button class="knopf hell gross" style="--kc:${WF.violett}" data-a="scan-datei" title="${L('Fotos oder PDFs wählen; mehrere werden nacheinander gelesen', 'Choose photos or PDFs; several are read one after another')}">${kfeld('folder')}${L('Datei', 'File')}</button></div>${wahl}`;
+  const weg = rund('scan-neu', 'x', n === 1 ? L('Andere Datei', 'Other file') : L('Andere Dateien', 'Other files'));
   if (n === 1) { const v = sc.v, d = sc.dateien[0];
-    return `<p class="scan-name">${I(v.art === 'pdf' ? 'datei' : 'image')}<b>${esc(d.name || L('Foto', 'Photo'))}</b></p><div class="scan-vor">${v.bilder.slice(0, 6).map((b) => `<img src="${esc(b)}" alt="">`).join('')}${v.bilder.length > 6 ? `<span>+${v.bilder.length - 6}</span>` : ''}</div>
-     <p class="scan-was" id="scan-was">${esc(wasGehtHinaus(v, an, sprache()))}</p>${v.liste.length ? haltHtml(d.name, v.liste, sprache()) : ''}
-     <div class="reihe"><button class="knopf" data-a="scan-senden">${I('scan')}${v.liste.length ? L(HALT_JA[0], HALT_JA[1]) : L('Getränk erkennen', 'Read drink')}</button><button class="knopf hell" data-a="scan-pruefen">${I('schild')}${L('Datei prüfen', 'Check file')}</button>${frag(L(PRUEF_ERKLAERUNG[0], PRUEF_ERKLAERUNG[1]))}<button class="knopf hell" data-a="scan-neu">${L('Andere Datei', 'Other file')}</button></div>${wahl}`; }
-  return `<p class="scan-name">${I('datei')}<b>${fuelle(L('{0} Dateien', '{0} files'), n)}</b></p><p class="scan-liste">${sc.dateien.slice(0, 8).map((d) => esc(d.name)).join(' · ')}${n > 8 ? ' …' : ''}</p>
-   <p class="scan-was" id="scan-was">${esc(L('Hinaus geht je Foto die verkleinerte Fassung ohne Aufnahmedaten, je PDF die gereinigten Seitenbilder (höchstens 10 Seiten): ', 'Sent per photo: the reduced version without capture data; per PDF: the cleaned page images (10 pages at most): ') + (an === 'mistral' ? L('an Mistral, der gelesene Text danach an Anthropic.', 'to Mistral, the recognised text then to Anthropic.') : L('an Anthropic (Claude).', 'to Anthropic (Claude).')))}</p>
-   <div class="reihe"><button class="knopf" data-a="scan-senden">${I('scan')}${fuelle(L('{0} Dateien erkennen', 'Read {0} files'), n)}</button><button class="knopf hell" data-a="scan-neu">${L('Andere Dateien', 'Other files')}</button>${frag(L('Jede gelesene Datei wird gleich als Getränk eingetragen; du kannst es danach prüfen und ändern. Vorher kommt der jetzige Stand in den Tresor.', 'Each file that was read is added as a drink right away; you can check and change it afterwards. Before that the current state goes into the vault.'))}</div>${wahl}`;
+    if (fundeZumEntscheiden(v.liste).length && !sc.entschieden) return `<div class="scan-fund" data-ki-halt><div class="fund-bilder ${sc.gross ? 'gross' : ''}" data-a="fund-gross" role="button" tabindex="0" aria-label="${L('Fundstellen größer oder kleiner zeigen', 'Show the marked passages larger or smaller')}">${v.marken.map((m) => `<img src="${esc(m.bild)}" alt="${esc(fundName(v.liste, sprache()))}, ${L('Seite', 'page')} ${m.seite}">`).join('')}<span class="fund-name">${I('schild')}${esc(fundName(v.liste, sprache()))}</span></div>
+      <div class="reihe"><button class="knopf gross" data-a="scan-raus" title="${L('Die markierten Stellen gehen nicht mit an die KI; die Datei bleibt, wie sie ist', 'The marked passages are not sent to the AI; the file stays as it is')}">${I('check')}${L('Entfernen', 'Remove')}</button><button class="knopf hell gross" data-a="scan-rein" title="${L('Die Seiten gehen so an die KI, wie sie sind', 'The pages go to the AI as they are')}">${L('Drin lassen', 'Keep')}</button>${weg}</div></div>`;
+    return `<div class="scan-vor" title="${esc(d.name || '')}">${v.bilder.slice(0, 6).map((b) => `<img src="${esc(b)}" alt="">`).join('')}${v.bilder.length > 6 ? `<span>+${v.bilder.length - 6}</span>` : ''}</div>
+     <div class="reihe"><button class="knopf gross" data-a="scan-senden" title="${esc(wasGehtHinaus(v, an, sprache()))}">${I('scan')}<span>${L('Getränk lesen', 'Read drink')}</span><small id="scan-was">${esc(wohinKurz(v, an, sprache()))}</small></button>${rund('scan-pruefen', 'schild', L('Datei gründlich prüfen (im Gerät, auch Text im Bild)', 'Check the file thoroughly (on this device, including text in the picture)'))}${weg}</div>${wahl}`; }
+  const lang = L('Je Foto geht die verkleinerte Fassung ohne Aufnahmedaten hinaus, je PDF die gereinigten Seitenbilder (höchstens 10 Seiten). Versteckter Text geht nicht mit. Jede gelesene Datei wird gleich eingetragen; vorher kommt der jetzige Stand in den Tresor.', 'Per photo the reduced version without capture data is sent, per PDF the cleaned page images (10 pages at most). Hidden text is not sent. Each file that was read is added right away; before that the current state goes into the vault.');
+  return `<p class="scan-liste" title="${esc(sc.dateien.map((d) => d.name).join(', '))}">${sc.dateien.slice(0, 4).map((d) => esc(d.name)).join(' · ')}${n > 4 ? ' …' : ''}</p>
+   <div class="reihe"><button class="knopf gross" data-a="scan-senden" title="${esc(lang)}">${I('scan')}<span>${fuelle(L('{0} Dateien lesen', 'Read {0} files'), n)}</span><small id="scan-was">${an === 'mistral' ? L('Mistral, dann Anthropic', 'Mistral, then Anthropic') : 'Anthropic'}</small></button>${weg}</div>${wahl}`;
 }
 async function scanGewaehlt(dateien) {
   dateien = dateien.filter((d) => istPdf(d) || istBild(d)); if (!dateien.length) return melde(L('Bitte Fotos oder PDFs wählen.', 'Please choose photos or PDFs.'));
-  Z.scan = { dateien, v: null };
-  if (dateien.length === 1) { try { Z.scan.v = await W.mit(L('Datei wird für das Senden vorbereitet …', 'Preparing the file for sending …'), (w) => vorbereiten(dateien[0], { sprache: sprache(), fortschritt: (i, n) => { w.anteil(n ? (i - 1) / n : null); w.text(fuelle(L('Seite {0} von {1} wird gezeichnet …', 'Drawing page {0} of {1} …'), i, n)); } })); } catch (f) { Z.scan = null; melde(f.message); } }
+  Z.scan = { dateien, v: null, entschieden: '', gross: false };
+  if (dateien.length === 1) { try { Z.scan.v = await W.mit(L('Datei wird vorbereitet …', 'Preparing the file …'), (w) => vorbereiten(dateien[0], { sprache: sprache(), fortschritt: (i, n) => { w.anteil(n ? (i - 1) / n : null); w.text(fuelle(L('Seite {0} von {1} wird gezeichnet …', 'Drawing page {0} of {1} …'), i, n)); } })); } catch (f) { Z.scan = null; melde(f.message); } }
   neuBlatt('scan');
 }
 /* Aus dem gelesenen Rezept wird ein Getränk: Alkohol aus den Zutaten erkannt, Kategorie aus der Antwort oder nach dem Alkohol. */
@@ -510,13 +568,14 @@ const getraenkAusScan = (roh, bild) => getraenkAusRezept(rezeptAusScan(roh, { ka
 /* ── Web-Import (Kern: import/web.mjs). Direkt von der Seite, ohne Dienst dazwischen; im Browser hilft sonst Kopieren und Einfügen. ── */
 function webInhalt() {
   const w = Z.web || (Z.web = { adresse: '', text: '', stand: '', seitentext: '' });
-  let h = `<form id="webform" class="webzeile"><input class="feld" id="web-adresse" name="u" inputmode="url" value="${esc(w.adresse)}" placeholder="${L('Adresse der Seite, https://…', 'Address of the page, https://…')}" aria-label="${L('Adresse der Seite', 'Address of the page')}" autocomplete="off" autocapitalize="off" enterkeyhint="go"></form>
-   <div class="reihe"><button class="knopf" data-a="web-holen">${I('download')}${L('Getränk holen', 'Get drink')}</button>${frag(L('Die App ruft die Seite direkt ab und liest die Rezeptdaten, die viele Seiten mitliefern, ohne KI. Die Adresse geht nur an die Seite selbst, an keinen Dienst dazwischen. Im Browser lassen manche Seiten das nicht zu; dann hilft Kopieren und Einfügen.', 'The app fetches the page directly and reads the recipe data many pages provide, without AI. The address goes only to the page itself, to no service in between. In the browser some pages do not allow this; then copy and paste helps.'))}</div>`;
-  if (w.stand === 'gesperrt') h += `<p class="web-hin" id="web-gesperrt">${L('Diese Seite lässt sich im Browser nicht direkt lesen. Öffne sie, markiere alles, kopiere und füge es unten ein.', 'This page cannot be read directly in the browser. Open it, select everything, copy and paste it below.')}</p><div class="reihe"><a class="knopf hell" href="${esc(w.adresse)}" target="_blank" rel="noopener noreferrer">${I('link')}${L('Seite öffnen', 'Open page')}</a></div>`;
-  if (w.stand === 'ohneDaten') return h + `<p class="web-hin" id="web-ohne">${L('Die Seite liefert keine Rezeptdaten mit. Ihr Text lässt sich ohne KI aufteilen oder von Claude lesen.', 'The page provides no recipe data. Its text can be split without AI or read by Claude.')}</p><p class="scan-was" id="web-was">${esc(fuerKi(w.seitentext, sprache()).satz)}</p>
-     <div class="reihe"><button class="knopf hell" data-a="web-ohne-ki">${L('Ohne KI aufteilen', 'Split without AI')}</button><button class="knopf" data-a="web-mit-ki">${I('sparkle')}${L('Mit Claude lesen', 'Read with Claude')}</button>${frag(L('„Ohne KI“ erkennt die Überschriften „Zutaten“ und „Zubereitung“. „Mit Claude“ schickt den sichtbaren Text der Seite an Anthropic; verborgene Teile der Seite gehen nicht mit. Es gilt die Stufe aus dem Foto-Scan.', '“Without AI” recognises the headings “Ingredients” and “Method”. “With Claude” sends the visible text of the page to Anthropic; hidden parts of the page are not sent. The level from the photo scan applies.'))}</div>`;
-  return h + `<textarea class="feld" id="web-text" rows="4" placeholder="${L('Oder die Seite im Browser öffnen, alles markieren, kopieren und hier einfügen.', 'Or open the page in the browser, select everything, copy and paste it here.')}" aria-label="${L('Eingefügter Seitentext', 'Pasted page text')}">${esc(w.text)}</textarea>
-   <div class="reihe"><button class="knopf hell" data-a="web-eingefuegt">${L('Eingefügtes lesen', 'Read pasted text')}</button></div>`;
+  const einfuegen = w.stand === 'gesperrt' || w.stand === 'einfuegen', tE = L('Seitentext einfügen statt Adresse', 'Paste page text instead of an address'), tH = L('Getränk von dieser Adresse holen (ohne KI, direkt von der Seite)', 'Get the drink from this address (without AI, straight from the page)');
+  const feld = `<form id="webform" class="webzeile">${I('welt')}<input id="web-adresse" name="u" inputmode="url" value="${esc(w.adresse)}" placeholder="https://…" aria-label="${L('Adresse der Seite', 'Address of the page')}" autocomplete="off" autocapitalize="off" enterkeyhint="go">${einfuegen ? '' : `<button type="button" class="feldknopf" data-a="web-einfuegen" aria-label="${tE}" title="${tE}">${I('datei')}</button>`}<button type="button" class="feldknopf akz" data-a="web-holen" aria-label="${L('Getränk holen', 'Get drink')}" title="${tH}">${I('right')}</button></form>`;
+  if (w.stand === 'ohneDaten') { const k = fuerKi(w.seitentext, sprache());
+    return feld + `<p class="scan-was" id="web-ohne">${L('Keine Rezeptdaten auf der Seite', 'No recipe data on the page')}</p>
+     <div class="reihe"><button class="knopf gross" data-a="web-mit-ki" title="${esc(k.satz)}">${I('sparkle')}<span>${L('Mit Claude lesen', 'Read with Claude')}</span><small id="web-was">Anthropic · ${fuelle(L('{0} Zeichen', '{0} characters'), k.text.length)}</small></button><button class="knopf hell gross" data-a="web-ohne-ki" title="${L('Erkennt die Überschriften „Zutaten“ und „Zubereitung“', 'Recognises the headings “Ingredients” and “Method”')}">${L('Ohne KI', 'Without AI')}</button></div>`; }
+  return feld
+    + (w.stand === 'gesperrt' ? `<p class="scan-was" id="web-gesperrt"><span>${L('Die Seite lässt sich nicht direkt lesen: öffnen, alles kopieren, hier einfügen', 'The page cannot be read directly: open it, copy everything, paste here')}</span><a class="rund" href="${esc(w.adresse)}" target="_blank" rel="noopener noreferrer" aria-label="${L('Seite öffnen', 'Open page')}" title="${L('Seite öffnen', 'Open page')}">${I('link')}</a></p>` : '')
+    + (einfuegen ? `<textarea class="feld" id="web-text" rows="4" placeholder="${L('Seitentext einfügen', 'Paste the page text')}" aria-label="${L('Eingefügter Seitentext', 'Pasted page text')}">${esc(w.text)}</textarea><button class="knopf gross" data-a="web-eingefuegt">${I('check')}${L('Lesen', 'Read')}</button>` : '');
 }
 function webLesen() { const w = Z.web; if (!w) return; const a = $('#web-adresse'), t = $('#web-text'); if (a) w.adresse = a.value; if (t) w.text = t.value; }
 async function webHolen() {
@@ -528,7 +587,7 @@ async function webHolen() {
 }
 function webAuswerten(roh) {
   const w = Z.web, e = ausEingefuegtem(roh, webAdresse(w.adresse), { kategorien: scanKats() });
-  if (e.rezept) return webInsFormular(e.rezept, L('Aus den Rezeptdaten der Seite gelesen. Bitte prüfen und speichern.', 'Read from the recipe data of the page. Please check and save.'));
+  if (e.rezept) return webInsFormular(e.rezept, L('Aus den Rezeptdaten der Seite gelesen. Bitte prüfen.', 'Read from the recipe data of the page. Please check.'));
   if (!e.text) return melde(L('Bitte zuerst etwas einfügen.', 'Please paste something first.'));
   w.seitentext = e.text; w.stand = 'ohneDaten'; neuBlatt('web');
 }
@@ -542,10 +601,10 @@ async function webMitKi() {
   const w = Z.web; if (!w || !w.seitentext) return;
   await schlLaden(); if (!SK.anthropic) return schluesselFenster('anthropic', 'web');
   const stellen = await kiAnweisungen(fuerKi(w.seitentext, sprache()).text);
-  if (stellen.length && !(await frageP(L('Anweisung an eine KI auf der Seite', 'Instruction to an AI on the page'), `<div data-web-halt><p class="ftext">${L('Im Text der Seite steht etwas, das sich an eine KI richtet, nicht an dich:', 'The text of the page contains something addressed to an AI, not to you:')}</p><ul class="ki-liste">${stellen.slice(0, 5).map((x) => `<li>${esc(x.satz || '')}</li>`).join('')}</ul></div>`, L('Trotzdem senden', 'Send anyway')))) { melde(kiMeldung('abgebrochen', sprache())); return neuBlatt('web'); }
+  if (stellen.length && !(await befehlFrage(stellen))) return neuBlatt('web');
   Z.fenster = null; zeichne();
   try { const kats = scanKats(), roh = await W.mit(L('Claude liest die Seite …', 'Claude is reading the page …'), () => mitKi(w.seitentext, { schluessel: SK.anthropic, stufe: E.scan.stufe, kategorien: kats, sprache: sprache() }));
-    await webInsFormular({ ...rezeptAusScan(roh, { kategorien: kats, sprache: sprache() }), source: webAdresse(w.adresse) || '' }, L('Von Claude gelesen. Bitte prüfen und speichern.', 'Read by Claude. Please check and save.')); }
+    await webInsFormular({ ...rezeptAusScan(roh, { kategorien: kats, sprache: sprache() }), source: webAdresse(w.adresse) || '' }, L('Von Claude gelesen. Bitte prüfen.', 'Read by Claude. Please check.')); }
   catch (f) { melde(f.message); neuBlatt('web'); }
 }
 async function scanSenden() {
@@ -557,29 +616,28 @@ async function scanSenden() {
   Z.fenster = null; zeichne();
   if (n === 1) {
     try {
-      const roh = await W.mit(L('Getränk wird erkannt …', 'Reading the drink …'), (w) => erkennen(sc.v, { ...opt, fortschritt: (t) => w.text(t) })), g = getraenkAusScan(roh, sc.v.store);
-      Z.scan = null; editor({ ...g, hinweis: fuelle(L('{0} Zutaten und {1} Schritte erkannt. Bitte prüfen und speichern.', '{0} ingredients and {1} steps found. Please check and save.'), g.ings.length, g.steps.length) }, true); Z.fenster.kiEntfernt = sc.v.liste;
-    } catch (f) { melde(f.message); neuBlatt('scan'); }
+      const roh = await W.mit(L('Getränk wird gelesen …', 'Reading the drink …'), (w) => erkennen(sc.v, { ...opt, fortschritt: (t) => w.text(t), beiAnweisung: befehlFrage })), g = getraenkAusScan(roh, sc.v.store);
+      Z.scan = null; editor({ ...g, hinweis: L('Gelesen. Bitte prüfen.', 'Read. Please check.') }, true); Z.fenster.kiEntfernt = sc.v.liste.filter((e) => e.grund === 'meta' || sc.v.zugedeckt);
+    } catch (f) { if (!f.abgebrochen) melde(f.message); neuBlatt('scan'); }
     return;
   }
+  /* Stapel: versteckter Text geht nie mit (ohne Rückfrage, am Getränk vermerkt); ein Befehl an eine KI im gelesenen Text → die Datei wird nicht gesendet. */
   await tresorAuto(L('vor dem Foto-Scan', 'before the photo scan'));
-  const rein = reiniger((name, liste) => frageP(L(HALT_TITEL[0], HALT_TITEL[1]), haltHtml(name, liste, sprache()), L(HALT_JA[0], HALT_JA[1]))), fehler = []; let ok = 0;
+  const fehler = []; let ok = 0, entfernt = 0;
   await W.mit(L('Dateien werden gelesen …', 'Reading the files …'), async (w) => {
     for (let i = 0; i < n; i++) { const d = sc.dateien[i]; w.anteil(i / n); w.text(fuelle(L('Datei {0} von {1}: {2}', 'File {0} of {1}: {2}'), i + 1, n, d.name));
       try {
-        const v = await vorbereiten(d, { sprache: sprache() }); if (!(await rein.halt(d.name, v.liste))) { fehler.push([d.name, kiMeldung('abgebrochen', sprache())]); break; }
-        const g = getraenkAusScan(await erkennen(v, opt), v.store), r = G.getraenkNormalisieren({ ...g, ings: g.ings.map((z, x) => ({ id: x, ck: false, note: '', ...z })), steps: g.steps.map((s, x) => ({ id: x, txt: s.txt })), id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, created: Date.now(), modified: Date.now(), uid: G.neueUid(A.knoten) });
-        if (v.liste.length) vermerken(r, v.liste, 'scan');
+        const v = await vorbereiten(d, { sprache: sprache() });
+        const g = getraenkAusScan(await erkennen(v, { ...opt, beiAnweisung: async () => false }), v.store), r = G.getraenkNormalisieren({ ...g, ings: g.ings.map((z, x) => ({ id: x, ck: false, note: '', ...z })), steps: g.steps.map((s, x) => ({ id: x, txt: s.txt })), id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, created: Date.now(), modified: Date.now(), uid: G.neueUid(A.knoten) });
+        if (v.liste.length) vermerken(r, v.liste, 'scan'); entfernt += fundeZumEntscheiden(v.liste).length;
         A.getraenke.unshift(r); ok++;
-      } catch (f) { fehler.push([d.name, f.message]); if (f.schluesselAbgelehnt || f.keinSchluessel) break; }
+      } catch (f) { fehler.push([d.name, f.abgebrochen ? L('Befehl an eine KI im Text. Nicht gesendet.', 'Instruction to an AI in the text. Not sent.') : f.message]); if (f.schluesselAbgelehnt || f.keinSchluessel) break; }
     }
   });
   sichern(); Z.scan = null; Z.view = 'start'; Z.kat = 'all'; Z.suche = '';
   if (fehler.length) Z.fenster = { titel: L('Nicht gelesen', 'Not read'), html: `<ul class="ki-liste" id="scan-fehler">${fehler.map(([name, grund]) => `<li><b>${esc(name)}</b><br>${esc(grund)}</li>`).join('')}</ul>` };
-  melde(fuelle(L('{0} von {1} Getränken eingetragen', '{0} of {1} drinks added'), ok, n));
+  melde(fuelle(L('{0} von {1} gelesen', '{0} of {1} read'), ok, n) + (entfernt ? ' · ' + fuelle(L('{0} versteckt entfernt', '{0} hidden removed'), entfernt) : ''));
 }
-
-
 /* ── Beispiele ── Welche Pakete es gibt, sagt die Ausgabe (Küchen-Kern: ausgaben/<name>/ausgabe.json + KATALOG.json). */
 const AUSGABE = 'mixarium-voll'; // die Web-Fassung; die Store-Fassung wird beim Bauen der App mit `mixarium-store` erzeugt
 async function paketeLaden() {
@@ -592,7 +650,7 @@ async function beispieleFenster() {
   try { ps = await W.mit(L('Pakete werden gesucht …', 'Looking for packages …'), paketeLaden); } catch (e) { Z.fenster.html = `<p class="ftext">${L('Die Paketliste ließ sich nicht laden. Bist du online?', 'The package list could not be loaded. Are you online?')}</p>`; return zeichne(); }
   Z.pakete = ps;
   const zeigbar = ps.filter((p) => !(p.alkohol && ohneAlk())), versteckt = ps.length - zeigbar.length;
-  Z.fenster.html = `<p class="ftext klein">${L('Pakete', 'Packages')}${frag(L('Ein Paket ist eine Sammlung fertiger Getränke. Es wird erst beim Antippen geladen. Beispiele lassen sich in den Einstellungen mit einem Tipp wieder löschen.', 'A package is a set of ready-made drinks. It loads only when you tap it. Examples can be deleted again with one tap in the settings.'))}</p>${zeigbar.map((p) => `<button class="slot" data-paket="${esc(p.id)}"><span class="mitte"><strong>${esc(p.titel)}</strong><small>${(p.bytes / 1048576).toFixed(1).replace('.', sprache() === 'de' ? ',' : '.')} MB${p.alkohol ? ' · ' + L('mit Alkohol', 'with alcohol') : ' · ' + L('ohne Alkohol', 'alcohol-free')}</small></span>${I('download')}</button>`).join('') || `<p class="leer">${L('Zurzeit gibt es kein Paket für diese Einstellung.', 'There is no package for this setting at the moment.')}</p>`}${versteckt ? `<p class="hinweis">${I('noalc')}${L(`„Ohne Alkohol“ ist an: ${versteckt} Paket mit Alkohol wird nicht angeboten.`, `“Alcohol-free” is on: ${versteckt} package with alcohol is not offered.`)}</p>` : ''}`;
+  Z.fenster.html = `${zeigbar.map((p) => `<button class="slot" data-paket="${esc(p.id)}" title="${L('Wird erst beim Antippen geladen; in den Einstellungen wieder löschbar', 'Loads only when tapped; can be deleted again in the settings')}"><span class="mitte"><strong>${esc(p.titel)}</strong><small>${(p.bytes / 1048576).toFixed(1).replace('.', sprache() === 'de' ? ',' : '.')} MB${p.alkohol ? ' · ' + L('mit Alkohol', 'with alcohol') : ' · ' + L('ohne Alkohol', 'alcohol-free')}</small></span>${I('download')}</button>`).join('') || `<p class="leer">${L('Zurzeit gibt es kein Paket für diese Einstellung.', 'There is no package for this setting at the moment.')}</p>`}${versteckt ? `<p class="hinweis">${I('noalc')}${L(`„Ohne Alkohol“ ist an: ${versteckt} Paket mit Alkohol wird nicht angeboten.`, `“Alcohol-free” is on: ${versteckt} package with alcohol is not offered.`)}</p>` : ''}`;
   zeichne();
 }
 async function paketEinspielen(id) {
@@ -602,14 +660,14 @@ async function paketEinspielen(id) {
     const roh = await W.mit(L(`„${p.titel}“ wird geladen …`, `Loading “${p.titel}” …`), async (w) => { const ant = await fetch('../beispiele/' + p.datei); if (!ant.ok) throw new Error(String(ant.status)); return new TextDecoder().decode(await bytesMitAnteil(ant, (a) => w.anteil(a))); });
     const e = G.beispielPaketEinspielen(A, roh, p.id, { knoten: A.knoten });
     A = { ...A, ...e.sammlung }; sichern(); Z.fenster = null; Z.view = 'start'; Z.kat = 'all';
-    melde(e.neu.length ? L(`${e.neu.length} Beispiele hinzugefügt.`, `${e.neu.length} examples added.`) : L('Diese Beispiele sind schon in deiner Sammlung.', 'These examples are already in your collection.'));
+    melde(e.neu.length ? L(`+${e.neu.length} Getränke`, `+${e.neu.length} drinks`) : L('Schon in deiner Sammlung', 'Already in your collection'));
   } catch (err) { Z.fenster.html = `<p class="ftext">${L('Das Paket ließ sich nicht laden.', 'The package could not be loaded.')}</p>`; zeichne(); }
 }
 function beispieleWeg() {
   const p = G.beispielePruefen(A);
   if (!p.unveraendert.length && !p.veraendert.length) return melde(L('Es sind keine Beispiele in deiner Sammlung.', 'There are no examples in your collection.'));
   const text = L(`${p.unveraendert.length} Beispiele werden gelöscht.`, `${p.unveraendert.length} examples will be deleted.`) + (p.veraendert.length ? ' ' + L(`${p.veraendert.length} hast du verändert (${p.veraendert.map((r) => esc(r.name)).join(', ')}). Sie bleiben stehen und gehören jetzt dir.`, `You changed ${p.veraendert.length} (${p.veraendert.map((r) => esc(r.name)).join(', ')}). They stay and are yours now.`) : '');
-  frage(L('Alle Beispiele löschen', 'Delete all examples'), text, L('Löschen', 'Delete'), async () => { await tresorAuto(L('vor „Beispiele löschen“', 'before deleting examples')); const e = G.beispieleLoeschen(A, {}); A = { ...A, ...e.sammlung }; sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L(`${e.entfernt.length} Beispiele gelöscht.`, `${e.entfernt.length} examples deleted.`)); }, true);
+  frage(L('Alle Beispiele löschen', 'Delete all examples'), text, L('Löschen', 'Delete'), async () => { await tresorAuto(L('vor „Beispiele löschen“', 'before deleting examples')); const e = G.beispieleLoeschen(A, {}); A = { ...A, ...e.sammlung }; sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L(`−${e.entfernt.length} Beispiele`, `−${e.entfernt.length} examples`)); }, true);
 }
 
 /* ── Bild-Blatt (wie im Rezeptbuch): ganzes Bild, Ausschnitt, ersetzen, KI-Bild, Gratis-Foto. Gelöscht wird ein Bild hier nicht. */
@@ -765,6 +823,7 @@ function katLoeschenMit(id, ziel) {
 /* ── Bedienung ── */
 const TUN = {
   kategorien() { katFenster(); },
+  'einst-auf'(b) { const g = b.dataset.g; if (Z.einstAuf.has(g)) Z.einstAuf.delete(g); else Z.einstAuf.add(g); },
   hinweise() { E.hinweiseAus = !E.hinweiseAus; einstSichern(); melde(E.hinweiseAus ? L('Hinweis-Blasen aus', 'Tooltips off') : L('Hinweis-Blasen an', 'Tooltips on')); },
   'lab-kat'(b) { Z.lab.zutaten = ($('#labzutaten') && $('#labzutaten').value) || Z.lab.zutaten; Z.lab.kat = b.dataset.k; },
   'lab-geschmack'(b) { Z.lab.zutaten = ($('#labzutaten') && $('#labzutaten').value) || Z.lab.zutaten; const g = Z.lab.geschmack, x = b.dataset.g; Z.lab.geschmack = g.includes(x) ? g.filter((y) => y !== x) : [...g, x]; },
@@ -789,17 +848,23 @@ const TUN = {
     W.mit(L('Schlüssel wird geprüft …', 'Checking the key …'), () => pruefeSchluessel(a, wert, { sprache: sprache() })).then((p) => { const st = $('#schl-stand'); if (st) { st.textContent = p.text; st.dataset.ok = String(p.ok); } }); return false; },
   'neu-tab'(b) { diktatAus(); neuBlatt(b.dataset.t); return false; },
   'neu-form'() { editor(null); return false; },
+  'neu-labor'() { Z.fenster = null; geh('labor'); return false; },
+  'entd-suchen'() { entdeckenHolen(false); return false; }, 'entd-zufall'() { entdeckenHolen(true); return false; }, 'entd-nimm'(b) { entdeckenNimm(b.dataset.id); return false; },
+  'web-einfuegen'() { const w = Z.web; if (!w) return false; webLesen(); w.stand = 'einfuegen'; neuBlatt('web'); const t = $('#web-text'); if (t) t.focus(); return false; },
+  'scan-raus'() { if (Z.scan) { Z.scan.entschieden = 'raus'; neuBlatt('scan'); } return false; },
+  'scan-rein'() { const sc = Z.scan; if (!sc) return false; W.mit(L('Datei wird vorbereitet …', 'Preparing the file …'), () => vorbereiten(sc.dateien[0], { sprache: sprache(), zudecken: false })).then((v) => { sc.v = v; sc.entschieden = 'rein'; }, (f) => melde(f.message)).then(() => neuBlatt('scan')); return false; },
+  'fund-gross'() { if (Z.scan) { Z.scan.gross = !Z.scan.gross; neuBlatt('scan'); } return false; },
   'web-holen'() { webHolen(); return false; },
   'web-eingefuegt'() { webLesen(); if (Z.web) webAuswerten(Z.web.text); return false; },
   'web-ohne-ki'() { const w = Z.web, r = w && ohneKi(w.seitentext, webAdresse(w.adresse)); if (!r) { melde(L('Ohne KI ließ sich kein Getränk erkennen.', 'No drink could be recognised without AI.')); return false; } webInsFormular({ ...r, cat: '' }, r.sicher ? L('Ohne KI aufgeteilt. Bitte prüfen und speichern.', 'Split without AI. Please check and save.') : L('Ohne Überschriften aufgeteilt. Bitte genau prüfen.', 'Split without headings. Please check carefully.')); return false; },
   'web-mit-ki'() { webMitKi(); return false; },
   'scan-kamera'() { $('#datei-kamera').click(); return false; }, 'scan-datei'() { $('#datei-scan').click(); return false; },
-  'scan-anbieter'(b) { E.scan = { ...E.scan, anbieter: b.dataset.w }; einstSichern(); neuBlatt('scan'); return false; },
-  'scan-stufe'(b) { E.scan = { ...E.scan, stufe: b.dataset.w }; einstSichern(); neuBlatt('scan'); return false; },
+  'scan-anbieter'(b) { E.scan = { ...E.scan, anbieter: b.dataset.w }; Z.scanMehr = true; einstSichern(); neuBlatt('scan'); return false; },
+  'scan-stufe'(b) { E.scan = { ...E.scan, stufe: b.dataset.w }; Z.scanMehr = true; einstSichern(); neuBlatt('scan'); return false; },
   'scan-neu'() { Z.scan = null; neuBlatt('scan'); return false; },
   'scan-senden'() { scanSenden(); return false; },
   'scan-pruefen'() { const d = Z.scan && Z.scan.dateien[0]; if (!d) return false;
-    W.mit(L('Datei wird im Gerät geprüft …', 'Checking the file on this device …'), () => dateiPruefen(d.name, d)).then((p) => { Z.fenster = { titel: L('Prüfung der Datei', 'File check'), html: `<p class="scan-name">${I('datei')}<b>${esc(d.name)}</b>${frag(L(PRUEF_ERKLAERUNG[0], PRUEF_ERKLAERUNG[1]))}</p>${pruefHtml(p, sprache())}<div class="reihe ende"><button class="knopf" data-a="neu-tab" data-t="scan">${L('Zurück zum Scan', 'Back to the scan')}</button></div>` }; zeichne(); }); return false; },
+    W.mit(L('Datei wird im Gerät geprüft …', 'Checking the file on this device …'), () => dateiPruefen(d.name, d)).then((p) => { Z.fenster = { titel: L('Prüfung', 'Check'), html: `${pruefHtml(p, sprache())}<div class="reihe ende"><button class="knopf hell" data-a="neu-tab" data-t="scan">${I('left')}${L('Zurück', 'Back')}</button></div>` }; zeichne(); }); return false; },
   sinn() { if (E.sinn) { E.sinn = false; sem.ids = []; sem.fuer = ''; einstSichern(); melde(L('Sinn-Suche aus', 'Meaning search off')); return; }
     frage(L('Sinn-Suche einschalten?', 'Turn on meaning search?'), L('Sie findet Getränke auch nach Bedeutung, zum Beispiel „etwas Erfrischendes“ oder „für den Winter“. Dafür lädt die App einmalig ein Sprachmodell aus dem Netz (etwa 120 MB). Danach rechnet sie im Gerät; deine Getränke gehen nirgendwohin.', 'It also finds drinks by meaning, e.g. “something refreshing” or “for winter”. For this the app loads a language model from the internet once (about 120 MB). After that it works on the device; your drinks go nowhere.'), L('Einschalten', 'Turn on'), () => { E.sinn = true; sem.status = ''; einstSichern(); Z.fenster = null; zeichne(); if (Z.suche.trim()) semPlanen(); else semBereit().then(() => melde(L('Sinn-Suche bereit', 'Meaning search ready'))).catch(() => melde(L('Die Sinn-Suche ließ sich nicht laden.', 'The meaning search could not be loaded.'))); }); return false; },
   'plan-waehlen'(b) { planWahl(b.dataset.tag); }, planen() { planWahl(null, Z.uid); },
@@ -812,7 +877,7 @@ const TUN = {
     sichern(); melde(n ? L(`${n} Getränke auf die Einkaufsliste gesetzt.`, `${n} drinks added to the shopping list.`) : L('Alle Getränke der Woche stehen schon auf der Liste.', 'All drinks of the week are already on the list.')); },
   /* Text-Import ohne KI (Kern: import/text.mjs, kennt seit 0.15 auch oz, Barlöffel, Dash …). Das Ergebnis steht im Formular
      zum Prüfen; gespeichert wird erst dort. Nichts geht ins Netz. */
-  'text-import'() { Z.flAuf = false; Z.fenster = { titel: L('Getränk aus Text', 'Drink from text'), html: `<p class="ftext klein">${L('Erste Zeile = Name', 'First line = name')}${frag(L('Rezepttext einfügen, etwa aus einer Mail, einer Notiz oder von einer Webseite. Die erste Zeile ist der Name. Die App teilt ohne KI in Zutaten und Schritte; du siehst das Ergebnis im Formular und speicherst dort.', 'Paste a recipe text, e.g. from an e-mail, a note or a web page. The first line is the name. The app splits it into ingredients and steps without AI; you check the result in the form and save there.'))}</p><label class="felder">${mikro('#imptext')}<textarea class="feld" id="imptext" rows="10" placeholder="${L('Virgin Mojito\n\nZutaten\n2 cl Limettensaft\n…\n\nZubereitung\n1. Minze andrücken …', 'Virgin Mojito\n\nIngredients\n2 cl lime juice\n…\n\nMethod\n1. Muddle the mint …')}"></textarea></label><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button type="button" class="knopf" data-a="text-aufteilen">${I('check')}${L('Aufteilen', 'Split')}</button></div>` }; },
+  'text-import'() { Z.flAuf = false; neuBlatt('text'); return false; },
   'text-aufteilen'() {
     const t = $('#imptext') && $('#imptext').value, r = rezeptAusText(t); if (!r) { melde(L('Bitte zuerst einen Text einfügen.', 'Please paste a text first.')); return false; }
     diktatAus();
@@ -844,10 +909,12 @@ const TUN = {
   menue(b) { Z.menue = Z.menue === b.dataset.m ? null : b.dataset.m; Z.flAuf = false; },
   'fl-auf'() { if (Date.now() - flGezogen < 500) return; Z.flAuf = true; },
   'fl-zu'() { Z.flAuf = false; },
+  'zur-suche'() { Z.view = 'start'; Z.uid = null; zeichne(); const s = $('#suche'); if (s) s.focus(); return false; },
   oben() { Z.flAuf = false; setTimeout(() => $('.haupt').scrollTo({ top: 0, behavior: 'smooth' })); },
   zurueck() { Z.flAuf = false; history.back(); return false; },
   fokus() { Z.fokus = !Z.fokus; },
   bildwerk() { Z.bildWerk = !Z.bildWerk; },
+  stern(b) { const r = getr(Z.uid), n = Number(b.dataset.n); if (!r) return; const alt = (r.rating && Number(r.rating.stars)) || 0; r.rating = { comment: '', imps: [], ...(r.rating || {}), stars: alt === n ? 0 : n }; r.modified = Date.now(); sichern(); },
   diktat(b) { const feld = $(b.dataset.ziel); diktat(feld, { de: 'de-DE', en: 'en-US', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-PT', ru: 'ru-RU', zh: 'zh-CN' }[sprache()] || 'de-DE', (an) => { const k = document.querySelector(`.mikro[data-ziel="${b.dataset.ziel}"]`); if (k) { k.setAttribute('aria-pressed', String(an)); k.classList.toggle('an', an); } }); return false; },
   bildblatt() { Z.bildWerk = false; bildBlatt(); return false; },
   ausschnitt() { ausschnittFenster(); return false; },
@@ -867,7 +934,7 @@ const TUN = {
   plus() { Z.port = Math.min(99, Z.port + 1); }, minus() { Z.port = Math.max(1, Z.port - 1); },
   'schrift-100'() { E.schrift = 100; einstSichern(); },
   einheit() { const f = ['auto', 'orig', 'ml', 'cl', 'oz']; E.einheit = f[(f.indexOf(E.einheit) + 1) % f.length]; Z.einheit = null; einstSichern(); },
-  neu() { Z.flAuf = false; neuBlatt('selbst'); return false; },
+  neu() { Z.flAuf = false; neuBlatt(''); return false; },
   bearbeiten() { editor(getr(Z.uid)); return false; },
   'ed-bildweg'() { Z.fenster.img = ''; $('#edbild').innerHTML = platzbild({ name: 'x' }); return false; },
   'ed-loeschen'() { const r = getr(Z.fenster.uid); frage(L('Getränk löschen', 'Delete drink'), L(`„${esc(r.name)}“ wird aus deiner Sammlung entfernt.`, `“${esc(r.name)}” will be removed from your collection.`), L('Löschen', 'Delete'), () => { A.getraenke = A.getraenke.filter((x) => x.uid !== r.uid); (A.anlaesse || []).forEach((a) => { a.posten = a.posten.filter((p) => p.uid !== r.uid); }); sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L('Gelöscht.', 'Deleted.')); }, true); return false; },
@@ -919,6 +986,7 @@ document.addEventListener('click', (ev) => {
   if (d.a === 'fenster-zu-aussen') { if (ev.target === b) fZu(); return; }
   if (d.lang !== undefined) { E.sprache = d.lang || null; Z.menue = null; einstSichern(); return zeichne(true); }
   if (d.farbe) { E.farbe = d.farbe; einstSichern(); return zeichne(); }
+  if (b.closest('.fl-werk')) Z.flAuf = false;   /* ein Werkzeug aus der Leiste gewählt: Leiste zu */
   if (d.ton) { E.ton = d.ton; einstSichern(); return zeichne(); }
   if (d.go) return geh(d.go);
   if (d.d) { if (Z.fenster) Z.fenster = null; return oeffne(d.d); }
@@ -935,6 +1003,7 @@ document.addEventListener('submit', (ev) => {
   ev.preventDefault();
   if (ev.target.id === 'ed') return editorSpeichern(ev.target);
   if (ev.target.id === 'webform') return webHolen();
+  if (ev.target.id === 'entdform') return entdeckenHolen(false);
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
     S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert.', 'Key saved.') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
@@ -995,12 +1064,19 @@ const gzLos = () => { if (!gz) return; const g = gz; gz = null; clearTimeout(g.u
 document.addEventListener('pointerup', gzLos); document.addEventListener('pointercancel', gzLos);
 
 /* ── Start ── */
+/* Klaus 23.11.: „Man kann doch schon ein paar kleine Beispielrezepte mit reinnehmen. Man muss ja nicht erst fragen.“ Nur beim
+   allerersten Start (leerer Speicher, nichts aus der bisherigen App): das Startpaket ohne Alkohol der Ausgabe, als Beispiele markiert
+   und mit einem Tipp löschbar. Ohne Netz oder mit …/neu/?leer beginnt die App leer. */
+async function startGetraenke() {
+  try { const p = (await paketeLaden()).find((x) => !x.alkohol); if (!p) return; const ant = await fetch('../beispiele/' + p.datei); if (!ant.ok) return;
+    A = { ...A, ...G.beispielPaketEinspielen(A, await ant.text(), p.id, { knoten: A.knoten }).sammlung }; } catch (e) { /* ohne Startgetränke beginnt die App leer */ }
+}
 async function start() {
   try {
     A = await lager.lies(); let e = await lager.hol('einst');
     if (!A) { const v = await vorabLesen(); if (v) { A = v.sammlung; e = e || v.einst; await lager.schreibe(A); if (e) await lager.setz('einst', e); } }   // Umzug aus der ersten Vorab-Fassung
     if (e) E = { ...E, ...e, fl: { ...E.fl, ...(e.fl || {}) } };
-    if (E.ton === 'system') E.ton = 'geraet';
+    if (E.ton !== 'hell' && E.ton !== 'dunkel') E.ton = matchMedia('(prefers-color-scheme: dark)').matches ? 'dunkel' : 'hell';   /* „wie das Gerät“ gibt es als Wahl nicht mehr (Klaus 23.11.): einmal das Gerät, danach Sonne oder Mond */
     if (!FARBEN[E.farbe]) E.farbe = 'blau';
     E.schrift = schriftWert(E.schrift); E.scan = { anbieter: 'anthropic', stufe: 'schnell', ...(E.scan || {}) };
     await schlLaden();
@@ -1015,7 +1091,7 @@ async function start() {
   zeichne(true);
   $('#start').remove();
   if (geteilteAdresse) { Z.web = { adresse: geteilteAdresse, text: '', stand: '', seitentext: '' }; neuBlatt('web'); }
-  if (erster) { try { await ausAlterApp(true); } catch (e) { /* nichts Altes da */ } sichern(); zeichne(true); lager.dauerhaft(); }
+  if (erster) { try { await ausAlterApp(true); } catch (e) { /* nichts Altes da */ } if (!A.getraenke.some(G.istSichtbar) && !geteilt.has('leer')) await startGetraenke(); sichern(); zeichne(true); lager.dauerhaft(); }
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 start();
