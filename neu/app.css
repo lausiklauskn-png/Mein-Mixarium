@@ -909,3 +909,28 @@ h1,h2,h3,p{margin:0}
 .mx .mxtoast.mit span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .mx .mxtoast.mit button{flex:none;color:#fff;font-weight:700;border-left:1px solid rgba(255,255,255,.35);padding-left:10px}
 .mx:has(.schleier) .mxtoast.mit{bottom:auto;top:calc(14px + env(safe-area-inset-top,0px))}   /* über einem offenen Fenster steht sie oben: unten liegen dessen Knöpfe */
+/* Menü am Getränk (wie im Rezeptbuch): KI-Marke, Nährwerte als eingeklappte Zeile, QR-Code, Vorschläge der Rechtschreibung */
+.mx .ki-marke{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--akz);border:1px solid color-mix(in srgb,var(--akz) 45%,transparent);border-radius:6px;padding:1px 5px;flex:none}
+.mx .naehr{margin-top:10px;border:1px solid var(--linie);border-radius:12px;background:var(--fl);font-size:13.5px}
+.mx .naehr summary{list-style:none;display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-weight:600}
+.mx .naehr summary::-webkit-details-marker{display:none}
+.mx .naehr summary .ico{width:17px;height:17px;color:var(--akz)}
+.mx .naehr ul{list-style:none;margin:0;padding:0 12px 8px}
+.mx .naehr li{display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--linie);color:var(--muted)}
+.mx .naehr li b{color:var(--ink);font-variant-numeric:tabular-nums}
+.mx .qr-bild{display:grid;place-items:center;background:#fff;border-radius:14px;padding:10px;border:1px solid var(--linie)}
+.mx .qr-bild svg{width:min(100%,300px);height:auto;display:block}
+.mx .recht-liste{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px;max-height:50svh;overflow:auto}
+.mx .recht-liste label{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.mx .recht-liste input{width:20px;height:20px;flex:none;accent-color:var(--akz)}
+.mx .recht-liste s{color:var(--muted)}.mx .recht-liste b{color:var(--ink)}
+/* Umschalter aufs Original: klein, in der Zeile der Kategorie */
+.mx .umsch{display:inline-flex;align-items:center;gap:4px;margin:-4px 0 -4px 6px;padding:4px 7px;border-radius:9px;font:inherit;color:inherit;vertical-align:bottom}
+.mx .umsch .ico{width:14px;height:14px}
+.mx .held .umsch[aria-pressed=true]{background:rgba(255,255,255,.24);font-weight:650}
+.mx .unter .umsch[aria-pressed=true]{background:var(--akzsoft);color:var(--ink);font-weight:650}
+/* Übersetzen: Sprachen als Chips; „Alle übersetzen“ lässt beim Lauf eine Zeile frei, in der am Handy der Ladebalken steht */
+.mx .tagwahl .chip[data-da] .ico{width:14px;height:14px;color:var(--ok)}
+.mx #alle-kosten{margin:10px 0 8px}
+.mx #alle-fertig{margin-top:12px}.mx #alle-fertig .ico{width:17px;height:17px;color:var(--ok)}
+.mx .ueb-lauf{min-height:46px}

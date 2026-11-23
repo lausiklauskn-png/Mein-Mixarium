@@ -32,6 +32,9 @@ import { vermerken, vermerkHtml, fundeZumEntscheiden, fundName } from '../kern/k
 import { dateiPruefen, pruefHtml, kiAnweisungen } from '../kern/pruefung/datei.mjs';
 import * as DB from '../getraenke/entdecken.mjs';
 import { webAdresse, holeSeite, ausEingefuegtem, ohneKi, fuerKi, mitKi, holeBild } from '../kern/import/web.mjs';
+import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, rechtschreibungAnwenden, uebersetze, uebersetzungAnRezept, uebersetzungPasst, kostenSchaetzung, wasGehtHinaus as helferHinaus } from '../kern/ki/helfer.mjs';
+import { druckRezept, drucke } from '../kern/ausgabe/druck.mjs';
+import { teilLink, ausTeilLink, qrSvg, passtInQr } from '../kern/teilen/qr.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -73,6 +76,9 @@ const glasText = (g) => { const n = G.glasName(g, sprache()); if (n !== g) retur
 /* Übersetzung am Getränk zeigen (auch Deutsch): aus dem Küchen-Kern, `sicht(r, sprache)`. Ersetzt wird nur, wenn die Zahl der
    Zutaten und Schritte passt; bearbeitet wird immer das Original. */
 const sicht = (r) => (r ? kernSicht(r, sprache()) : r);
+/* Am offenen Getränk lässt sich aufs Original umschalten (Z.original); Liste, Karte und Plan zeigen immer die Fassung der Sprache. */
+const zeig = (r) => (r && !Z.original ? sicht(r) : r);
+const sprName = (k) => (SPRACHEN.find((x) => x[0] === k) || [k, k])[1];
 const getr = (uid) => A.getraenke.find((r) => r.uid === uid) || null;
 const zahl = (t) => (sprache() === 'de' ? String(t).replace('.', ',') : String(t));
 
@@ -239,8 +245,14 @@ function geraeteKacheln(liste, hell) { return liste.length ? `<div class="geraet
 function aktionen(r, br) { return `<div class="reihe akt" style="margin-top:14px"><button class="knopf" data-go="mix">${I('shaker')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu" title="${L('Auf die Einkaufsliste', 'Add to shopping list')}">${I('cart')}${L('Einkaufen', 'Shop')}</button><button class="knopf hell nursym" data-a="planen" aria-label="${L('In den Wochenplan', 'Into the week plan')}" title="${L('In den Wochenplan', 'Into the week plan')}">${I('plan')}</button></div>`; }
 /* Bewertung am Getränk (wie in der alten App: r.rating.stars). Ein Tipp auf denselben Stern nimmt sie zurück. */
 function sterne(r) { const n = (r.rating && Number(r.rating.stars)) || 0; return `<span class="sterne" role="group" aria-label="${L('Bewertung', 'Rating')}: ${n} ${L('von 5', 'of 5')}">${[1, 2, 3, 4, 5].map((i) => `<button class="stern ${i <= n ? 'an' : ''}" data-a="stern" data-n="${i}" aria-pressed="${i <= n}" aria-label="${i} ${i === 1 ? L('Stern', 'star') : L('Sterne', 'stars')}">${I('star')}</button>`).join('')}</span>`; }
+/* Nährwerte je Portion (r.nutrition wie in der bisherigen App): eine eingeklappte Zeile, aufgeklappt die Werte. „geschätzt“, wenn sie von der KI kommen. */
+function naehrHtml(r) {
+  const z = naehrwertZeilen(r.nutrition, sprache()); if (!z.length) return '';
+  return `<details class="naehr" data-naehr><summary>${I('flamme')}<span>${z[0].wert} kcal ${L('je Portion', 'per serving')}${r.nutrition.quelle === 'ki' ? ' · ' + L('geschätzt', 'estimated') : ''}</span></summary><ul>${z.slice(1).map((x) => `<li><span>${esc(x.name)}</span><b>${x.wert} ${esc(x.einheit)}</b></li>`).join('')}</ul></details>`;
+}
 function vGetraenk(br) {
-  const r = sicht(getr(Z.uid)); if (!r) { Z.view = 'start'; return vStart(br); }
+  const roh = getr(Z.uid); if (!roh) { Z.view = 'start'; return vStart(br); }
+  const r = zeig(roh);
   const ger = G.geraeteFuerGetraenk(r);
   const gerAbs = ger.length ? `<div class="abschnitt"><h3>${L('Gerätschaften', 'Equipment')}</h3>${geraeteKacheln(ger, true)}</div>` : '';
   const notiz = r.notes ? `<div class="abschnitt"><h3>${L('Notizen', 'Notes')}</h3><p class="notiz">${esc(r.notes)}</p></div>` : '';
@@ -250,11 +262,13 @@ function vGetraenk(br) {
   /* Kein Knopf auf dem Foto (Klaus 23.11., wie im Rezeptbuch): rechts in der Namenszeile ein weißer Winkel, der die Werkzeuge
      über dem Bild aufklappt, ohne neue Zeile und ohne etwas zu verschieben; „Zurück“ als Winkel links vom Namen. */
   const imOrd = findeOrdner(A.ordner, ordnerVonRezept(r, A.ordner)), ordHtml = imOrd ? ` <span class="im-ordner">${I('folder')}${esc(ordTitel(imOrd))}</span>` : '';
-  const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('ordner-zuordnen', 'folder', L('Ordner', 'Folder'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
-  if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}${ordHtml}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div>`;
+  /* Liegt eine Übersetzung in der Sprache der Oberfläche am Getränk, steht neben der Kategorie ein kleiner Umschalter aufs Original. */
+  const umsch = kernSicht(roh, sprache()) !== roh ? ` <button class="umsch" data-a="original" aria-pressed="${!!Z.original}" title="${Z.original ? L('Übersetzung zeigen', 'Show translation') : L('Original zeigen', 'Show original')}">${I('uebersetzen')}${L('Original', 'Original')}</button>` : '';
+  const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('ordner-zuordnen', 'folder', L('Ordner', 'Folder'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}${wk('gmenue', 'mehr', L('Mehr: Drucken, QR-Code, Übersetzen …', 'More: print, QR code, translate …'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
+  if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}${ordHtml}${umsch}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}${naehrHtml(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div>`;
   const fk = Z.fokus;
   const liste = fk ? '' : `<div class="liste">${leiste()}${sichtbar().map((x) => `<button class="zeile" data-d="${esc(x.uid)}" ${x.uid === r.uid ? 'aria-current="true"' : ''}><span class="mini">${bild(x)}</span><span><strong>${esc(x.name)}</strong><small>${esc(katNameVon(x))}${x.prepTime ? ` · ${Number(x.prepTime)} min` : ''}</small></span></button>`).join('')}</div>`;
-  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}${ordHtml}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('ordner-zuordnen', 'folder', L('Ordner', 'Folder'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div></div></div></div>`;
+  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}${ordHtml}${umsch}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('ordner-zuordnen', 'folder', L('Ordner', 'Folder'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('gmenue', 'mehr', L('Mehr: Drucken, QR-Code, Übersetzen …', 'More: print, QR code, translate …'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div>${naehrHtml(r)}</div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div></div></div></div>`;
 }
 
 /* ── Mix-Ansicht ── Welche Zutaten nennt der Schritt? Über den Namen (Wortanfang, mindestens 4 Buchstaben). */
@@ -265,7 +279,7 @@ function zutatenImSchritt(r, text) {
   return zutatenVon(r).filter((z) => String(z.name).toLowerCase().split(/[^\p{L}]+/u).some((w) => w.length >= 4 && !FUELLWORT.has(w) && (staemme.some((st) => w.includes(st)) || woerter.some((sw) => sw.includes(w.slice(0, 5))))));
 }
 function vMix(br) {
-  const r = sicht(getr(Z.uid)); if (!r) return '';
+  const r = zeig(getr(Z.uid)); if (!r) return '';
   const schritte = r.steps && r.steps.length ? r.steps : [{ txt: L('Für dieses Getränk sind noch keine Schritte notiert.', 'No steps written for this drink yet.') }];
   const st = Math.min(Z.step, schritte.length - 1), s = schritte[st], braucht = zutatenImSchritt(r, s.txt), ger = G.geraeteFuerSchritt(s.txt);
   const letzter = st === schritte.length - 1, gr = 'mittel', kz = !br && !Z.mixKopf;
@@ -440,7 +454,7 @@ function vMehr() {
     ['sichern', 'safe', WF.gruen, L('Sichern', 'Backup'), L('Die Getränke liegen nur in diesem Gerät. Eine Sicherung als Datei schützt sie und bringt sie auf ein anderes Gerät; beim Einspielen werden Doppelte erkannt. Der Tresor hält dazu mehrere Stände im Gerät und hilft, wenn etwas falsch gelöscht wurde. KI-Schlüssel kommen nie in eine Sicherung.', 'The drinks are stored on this device only. A backup file protects them and takes them to another device; duplicates are detected when restoring. The vault additionally keeps several states on the device and helps when something was deleted by mistake. AI keys never go into a backup.'),
       z(I('download'), L('Sicherung speichern', 'Save a backup'), `${alle}`, 'data-a="sichern"') + z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), '', 'data-a="einspielen"') + z(I('safe'), L('Tresor', 'Vault'), '', 'data-a="tresor"') + z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), '', 'data-a="uebernehmen"')],
     ['ki', 'sparkle', WF.violett, L('KI-Schlüssel', 'AI keys'), L('KI läuft nur mit deinem eigenen Schlüssel und nur, wenn du es auslöst. Anthropic (Claude) arbeitet im Labor und liest Fotos und Webseiten, OpenAI malt Bilder, Mistral liest Text (EU). Ein Schlüssel bleibt in diesem Gerät und kommt in keine Sicherung; die Kosten rechnet der Anbieter direkt mit dir ab.', 'AI runs only with your own key and only when you start it. Anthropic (Claude) works in the lab and reads photos and web pages, OpenAI draws pictures, Mistral reads text (EU). A key stays on this device and is in no backup; the provider bills you directly.'),
-      `<div id="schl-liste">${Object.keys(ANBIETER).map((a) => z(I('schluessel'), ANBIETER[a].name, SK[a] ? L('gespeichert', 'saved') : L('noch keiner', 'none yet'), `data-a="schluessel" data-anbieter="${a}"`)).join('')}</div>`],
+      `<div id="schl-liste">${Object.keys(ANBIETER).map((a) => z(I('schluessel'), ANBIETER[a].name, SK[a] ? L('gespeichert', 'saved') : L('noch keiner', 'none yet'), `data-a="schluessel" data-anbieter="${a}"`)).join('')}</div>` + z(I('uebersetzen'), L('Alle übersetzen', 'Translate all'), '', 'data-a="alle-ueb"')],
     ['beispiele', 'box', WF.petrol, L('Beispiele', 'Examples'), '',
       z(I('box'), L('Beispiele laden', 'Load examples'), '', 'data-a="beispiele"') + (bsp ? z(I('trash'), L('Beispiele löschen', 'Delete examples'), String(bsp), 'data-a="beispiele-weg"') : '')],
     ['aufraeumen', 'trash', WF.koralle, L('Aufräumen', 'Clean up'), '', z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('mit Rückfrage', 'asks first'), 'data-a="leeren"')],
@@ -782,6 +796,7 @@ function kachelnPacken() {
 function zeichne(frisch) {
   if (wartend && Z.fenster !== wartend.f) { const w = wartend; wartend = null; w.fertig(false); }
   inForm();
+  if (uebLauf && !(Z.fenster && Z.fenster.uebLauf === uebLauf)) { uebLauf.stopp = true; uebLauf.ab.abort(); }   /* Fenster zu = abbrechen */
   if (ordWahl() && !ordListe().some((o) => o.id === ordWahl() && o.anzahl > 0)) Z.kat = 'all';   /* der gewählte Ordner ist leer oder weg */
   const br = breit(), v = Z.view, mix = v === 'mix';
   const basis = mix ? 'getraenk' : v;
@@ -804,7 +819,7 @@ function setze(f, frisch) {
 }
 function geh(v) { history.pushState({ v }, ''); setze(() => { Z.view = v; Z.flAuf = false; Z.menue = null; if (v === 'mix') { Z.step = 0; Z.richt = 'vor'; wachAn(); } if (v !== 'karte') Z.anlass = null; }, true); }
 function zurueck() { if (Z.bildVoll) { Z.bildVoll = false; if (Z.nachBild) { Z.nachBild = false; Z.bildWerk = false; return bildBlatt(); } return zeichne(); } if (Z.fenster) return fZu(); if (Z.menue) { Z.menue = null; return zeichne(); } if (Z.view === 'mix') return mixZu(); if (Z.view === 'karte' && Z.anlass) return setze(() => { Z.anlass = null; }, true); if (Z.view !== 'start') return setze(() => { Z.view = Z.view === 'getraenk' ? 'start' : 'start'; Z.fokus = false; }, true); }
-function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; Z.bildWerk = false; }, true); }
+function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; Z.bildWerk = false; Z.original = false; }, true); }
 
 /* Bildschirm wach halten, solange die Mix-Ansicht offen ist (wo das Gerät es erlaubt). */
 let wachSperre = null;
@@ -833,6 +848,98 @@ function katLoeschenMit(id, ziel) {
   const c = K.alleKategorien(A.getraenke, A.kategorien).find((x) => x.id === id), name = c ? katText(c) : id;
   const l = K.loeschen(A.getraenke, A.kategorien, id, ziel); A.getraenke = l.rezepte; A.kategorien = l.kat; if (Z.kat === id) Z.kat = 'all'; sichern(); katFenster();
   melde(l.verschoben ? L(`„${name}“ gelöscht, ${l.verschoben} Getränke umgehängt.`, `“${name}” deleted, ${l.verschoben} drinks moved.`) : L(`„${name}“ gelöscht.`, `“${name}” deleted.`));
+}
+
+/* ── Menü am Getränk (Vorbild: Mein Rezeptbuch): hinter dem Winkel → „Mehr“. Eine Liste, je Zeile ein Zeichen und ein Wort.
+   KI-Zeilen sagen in der Zeile selbst, was an wen hinausgeht; gesendet wird erst beim Tipp. Die Einheiten stehen schon am Getränk. ── */
+const kiWas = (art, r) => helferHinaus(art, r, sprache()).replace(/^[^:]+:\s*/, '').replace(/\s+(an|to) Anthropic.*$/, '');
+const kiZeile = (a, i, t, art, r) => `<button class="ezeile" data-a="${a}" title="${esc(helferHinaus(art, r, sprache()))}">${I(i)}<span><b>${t}</b><small>Anthropic · ${esc(kiWas(art, r))}</small></span><i class="ki-marke">KI</i></button>`;
+function getraenkMenue() {
+  const r = getr(Z.uid); if (!r) return; const z = (a, i, t) => `<button class="ezeile" data-a="${a}">${I(i)}<span><b>${t}</b></span>${I('right')}</button>`;
+  Z.fenster = { titel: zeig(r).name, html: `<div class="eliste menue" id="gmenue">${z('gm-drucken', 'print', L('Drucken', 'Print'))}${z('gm-qr', 'qr', L('Teilen per QR-Code', 'Share by QR code'))}${kiZeile('gm-uebersetzen', 'uebersetzen', L('Übersetzen', 'Translate'), 'uebersetzung', r)}${kiZeile('gm-recht', 'abc', L('Rechtschreibung prüfen', 'Check spelling'), 'rechtschreibung', r)}${kiZeile('gm-naehr', 'flamme', L('Nährwerte schätzen', 'Estimate nutrition'), 'naehrwerte', r)}</div>` };
+}
+const getraenkSetzen = (neu) => { A.getraenke = A.getraenke.map((x) => (x.uid === neu.uid ? { ...neu, modified: Date.now() } : x)); sichern(); };
+/* Druckblatt (Kern: ausgabe/druck.mjs). Gedruckt wird, was am Bildschirm steht: Portionen und Einheiten wie gewählt, Übersetzung oder Original.
+   Glas, Temperatur und „mit/ohne Alkohol“ stehen als Schilder in der Kopfzeile (der Kern hat dafür nur das Feld `flavors`). */
+function druckGetraenk(roh) {
+  const r = zeig(roh), schilder = [r.glass ? glasText(r.glass) : '', r.temp ? G.tempName(r.temp, sprache()) : '', G.hatAlkohol(r) ? L('mit Alkohol', 'with alcohol') : L('ohne Alkohol', 'alcohol-free')].filter(Boolean);
+  return druckRezept({ ...r, translations: undefined, servings: Z.port, ings: zutatenVon(r).map((x) => ({ ...x, amt: zahl(x.amt || '') })), flavors: schilder }, { portionen: Z.port, sprache: sprache(), kategorieName: katNameVon(roh), fuss: 'Mein Mixarium' });
+}
+/* Teilen per QR-Code (Kern: teilen/qr.mjs): der Link im Format der bisherigen App, ohne Bild. Wer ihn öffnet, bekommt das Getränk im Formular. */
+async function qrFenster() {
+  const r = getr(Z.uid); if (!r) return; const v = zeig(r);
+  let link = ''; try { link = await teilLink(v, location.origin + location.pathname); } catch (e) { link = ''; }
+  if (!link || !passtInQr(link, 'L')) return melde(L('Zu lang für einen QR-Code', 'Too long for a QR code'));
+  Z.teil = link;
+  Z.fenster = { titel: v.name, kopfHtml: `<h2 class="mit-frag">${I('qr')}<span>${esc(v.name)}</span></h2>`,
+    html: `<div class="qr-bild" id="qr-bild" title="${L('Mit der Kamera eines anderen Geräts scannen: das Getränk öffnet sich dort im Mixarium. Ohne Bild.', 'Scan with the camera of another device: the drink opens there in the Mixarium. Without picture.')}">${qrSvg(link, { stufe: 'L', groesse: 300, titel: v.name })}</div><div class="reihe" style="margin-top:12px">${navigator.share ? `<button class="knopf gross" data-a="qr-teilen">${I('share')}${L('Link teilen', 'Share link')}</button>` : ''}<button class="knopf hell gross" data-a="qr-kopieren">${I('kopieren')}${L('Link kopieren', 'Copy link')}</button></div>` };
+  zeichne();
+}
+async function geteiltOeffnen(adresse) {
+  let r = null; try { r = await ausTeilLink(adresse); } catch (e) { r = null; }
+  if (!r || !r.name) return melde(L('Der geteilte Link ließ sich nicht lesen', 'The shared link could not be read'));
+  editor({ ...getraenkAusRezept({ ...r, cat: scanKats().some((c) => c.id === r.cat) ? r.cat : '' }), hinweis: L('Geteiltes Getränk. Bitte prüfen.', 'Shared drink. Please check.') }, true);
+}
+/* Nährwerte und Rechtschreibung: je ein Aufruf an Claude (Kern: ki/helfer.mjs). Die KI schlägt vor, übernommen wird, was angehakt ist. */
+async function kiAmGetraenk(art) {
+  const r = getr(Z.uid); if (!r) return;
+  await schlLaden(); if (!SK.anthropic) return schluesselFenster('anthropic', 'gmenue');
+  Z.fenster = null; zeichne();
+  const opt = { schluessel: SK.anthropic, stufe: E.scan.stufe, sprache: sprache() };
+  try {
+    if (art === 'naehrwerte') { const w = await W.mit(L('Nährwerte werden geschätzt …', 'Estimating nutrition …'), () => naehrwerte(r, opt)); getraenkSetzen(naehrwerteAnRezept(getr(r.uid) || r, w)); return melde(L('Nährwerte geschätzt', 'Nutrition estimated')); }
+    const e = await W.mit(L('Rechtschreibung wird geprüft …', 'Checking spelling …'), () => rechtschreibung(r, opt)), n = e.aenderungen.length;
+    if (!n) return melde(L('Keine Fehler gefunden', 'No mistakes found'));
+    Z.fenster = { titel: L('Rechtschreibung', 'Spelling'), recht: e, uid: r.uid, kopfHtml: `<h2 class="mit-frag">${I('abc')}<span>${n === 1 ? L('1 Vorschlag', '1 suggestion') : fuelle(L('{0} Vorschläge', '{0} suggestions'), n)}</span></h2>`,
+      html: `<form id="rechtform"><ul class="recht-liste">${e.aenderungen.map((x, i) => `<li><label><input type="checkbox" name="n" value="${i}" checked><span><s>${esc(x.alt)}</s> <b>${esc(x.neu)}</b></span></label></li>`).join('')}</ul><div class="reihe"><button class="knopf gross" type="submit">${I('check')}${L('Übernehmen', 'Apply')}</button></div></form>` };
+    zeichne();
+  } catch (f) { melde(f.message); }
+}
+/* Übersetzen, einzeln: Ziel ist eine der acht Sprachen; das Ergebnis liegt in translations[ziel]. Die Ansicht zeigt die Fassung der Oberflächensprache. */
+function uebersetzFenster() {
+  const r = getr(Z.uid); if (!r) return; const was = helferHinaus('uebersetzung', r, sprache()), folge = [...SPRACHEN].sort((a, b) => (b[0] === sprache()) - (a[0] === sprache()));
+  Z.fenster = { titel: L('Übersetzen', 'Translate'), kopfHtml: `<h2 class="mit-frag">${I('uebersetzen')}<span>${L('Übersetzen', 'Translate')}</span><i class="ki-marke">KI</i></h2>`,
+    html: `<div class="tagwahl" id="ueb-wahl" role="group" aria-label="${L('Zielsprache', 'Target language')}">${folge.map(([k, n]) => { const da = uebersetzungPasst(r, (r.translations || {})[k]); return `<button class="chip" data-a="gm-ueb-los" data-ziel="${k}" ${da ? 'data-da' : ''} title="${esc(da ? L('Schon übersetzt; ein Tipp übersetzt neu.', 'Already translated; a tap translates again.') + ' ' + was : was)}">${esc(n)}${da ? I('check') : ''}</button>`; }).join('')}</div>` };
+}
+async function uebersetzeEins(ziel) {
+  const r = getr(Z.uid); if (!r) return;
+  await schlLaden(); if (!SK.anthropic) return schluesselFenster('anthropic', 'gmenue');
+  Z.fenster = null; zeichne();
+  try { const t = await W.mit(fuelle(L('Wird übersetzt: {0} …', 'Translating: {0} …'), sprName(ziel)), () => uebersetze(r, ziel, { schluessel: SK.anthropic, stufe: E.scan.stufe, sprache: sprache() }));
+    getraenkSetzen(uebersetzungAnRezept(getr(r.uid) || r, ziel, t, sprache())); Z.original = false; melde(fuelle(L('Übersetzt: {0}', 'Translated: {0}'), sprName(ziel))); }
+  catch (f) { melde(f.message); }
+}
+/* ── Alle übersetzen (Einstellungen → KI): EIN Fenster. Ziel wählen; es nennt, wie viele Getränke diese Übersetzung noch nicht haben, und die
+   geschätzten Kosten (Kern: kostenSchaetzung). Der Ladebalken zeigt den Stand. Schon Übersetzte werden übersprungen, ein Fehlschlag hält den
+   Rest nicht auf; „Abbrechen“ oder das Schließen des Fensters hört sofort auf (auch der laufende Aufruf). „Ohne Alkohol“ gilt auch hier. ── */
+const uebOffen = (ziel) => G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter((r) => G.istSichtbar(r) && !uebersetzungPasst(r, (r.translations || {})[ziel]));
+const UEB_KOPF = () => `<h2 class="mit-frag">${I('uebersetzen')}<span>${L('Alle übersetzen', 'Translate all')}</span><i class="ki-marke">KI</i></h2>`;
+let uebLauf = null;
+function alleUebFenster(ziel) {
+  ziel = Z.uebZiel = SPRACHEN.some((x) => x[0] === ziel) ? ziel : (Z.uebZiel || (SPRACHEN.some((x) => x[0] === sprache()) ? sprache() : 'en'));
+  const offen = uebOffen(ziel), n = offen.length, k = kostenSchaetzung(offen, [ziel], E.scan.stufe, sprache()), ort = sprache() === 'de' ? 'de-DE' : 'en-GB';
+  const preis = k.usd == null ? '' : ' · ' + (k.usd < 0.01 ? L('unter 0,01 $', 'under $0.01') : fuelle(L('rund {0} $', 'around ${0}'), k.usd.toLocaleString(ort, { minimumFractionDigits: 2, maximumFractionDigits: 2 })));
+  Z.fenster = { titel: L('Alle übersetzen', 'Translate all'), alleUeb: true, kopfHtml: UEB_KOPF(),
+    html: `<div class="tagwahl" id="alle-ziel" role="group" aria-label="${L('Zielsprache', 'Target language')}">${SPRACHEN.map(([c, name]) => `<button class="chip" data-a="alle-ueb-ziel" data-ziel="${c}" aria-pressed="${c === ziel}">${esc(name)}</button>`).join('')}</div>`
+      + (n ? `<p class="scan-was" id="alle-kosten" title="${esc(k.text)}">${fuelle(L('etwa {0} Token', 'about {0} tokens'), (Math.ceil(k.token / 100) * 100).toLocaleString(ort))}${preis}</p><div class="reihe"><button class="knopf gross" data-a="alle-ueb-los" title="${esc(helferHinaus('uebersetzung', offen[0], sprache()))}">${I('uebersetzen')}<span>${n === 1 ? L('1 Getränk übersetzen', 'Translate 1 drink') : fuelle(L('{0} Getränke übersetzen', 'Translate {0} drinks'), n)}</span><small id="alle-was">Anthropic · ${esc(kiWas('uebersetzung', offen[0]))}</small></button></div>`
+        : `<p class="scan-was" id="alle-fertig">${I('check')}${L('Schon alles übersetzt', 'Everything is translated')}</p>`) };
+}
+async function alleUebersetzen() {
+  const ziel = Z.uebZiel, offen = uebOffen(ziel), n = offen.length; if (!n || uebLauf) return;
+  await schlLaden(); if (!SK.anthropic) return schluesselFenster('anthropic', 'alle-ueb');
+  const lauf = uebLauf = { stopp: false, ab: new AbortController() }; let ok = 0, fehler = 0, grund = '';
+  /* Das Fenster bleibt offen, solange übersetzt wird; in der freien Zeile steht am Handy der Ladebalken des Kerns. */
+  Z.fenster = { titel: L('Alle übersetzen', 'Translate all'), uebLauf: lauf, kopfHtml: UEB_KOPF(), html: `<div class="ueb-lauf" id="ueb-lauf"></div><div class="reihe ende"><button class="knopf hell" data-a="alle-ueb-stopp">${I('x')}${L('Abbrechen', 'Cancel')}</button></div>` };
+  zeichne();
+  await W.mit(L('Getränke werden übersetzt …', 'Translating the drinks …'), async (w) => {
+    for (let i = 0; i < n && !lauf.stopp; i++) { const r = getr(offen[i].uid); if (!r) continue;
+      w.anteil(i / n); w.text(fuelle(L('{0} von {1}: {2}', '{0} of {1}: {2}'), i + 1, n, r.name));
+      try { const t = await uebersetze(r, ziel, { schluessel: SK.anthropic, stufe: E.scan.stufe, sprache: sprache(), hol: (u, o) => fetch(u, { ...o, signal: lauf.ab.signal }) }); const jetzt = getr(r.uid); if (lauf.stopp || !jetzt) break; getraenkSetzen(uebersetzungAnRezept(jetzt, ziel, t, sprache())); ok++; }
+      catch (f) { if (lauf.stopp) break; fehler++; grund = f.message; if (f.schluesselAbgelehnt || f.keinSchluessel || f.status === 402 || f.status === 429) break; }   /* ohne Schlüssel oder Guthaben scheitert auch der Rest */
+    }
+  });
+  uebLauf = null; if (Z.fenster && Z.fenster.uebLauf === lauf) Z.fenster = null;
+  melde(!ok && fehler ? grund : fuelle(L('+{0} übersetzt', '+{0} translated'), ok) + (fehler ? ' · ' + (fehler === 1 ? L('1 Fehler', '1 failed') : fuelle(L('{0} Fehler', '{0} failed'), fehler)) : '') + (lauf.stopp ? ' · ' + L('abgebrochen', 'cancelled') : ''));
 }
 
 /* ── Ordner verwalten (Vorbild: Mein Rezeptbuch). Dieselben Zeilen wie bei den Kategorien: Griff, Zeichen, Name, Zahl, Löschen.
@@ -869,6 +976,20 @@ const TUN = {
     return false; },
   'ordner-zuordnen'() { ordnerWahlFenster(Z.uid); },
   'ordner-setzen'(b) { ordnerSetzen(b.dataset.uid, b.dataset.oid); return false; },
+  gmenue() { getraenkMenue(); },
+  'gm-drucken'() { const r = getr(Z.uid); if (!r) return false; Z.fenster = null; zeichne(); drucke(druckGetraenk(r), { sprache: sprache() }).catch((f) => melde(f.message)); return false; },
+  'gm-qr'() { qrFenster(); return false; },
+  'qr-kopieren'() { (navigator.clipboard ? navigator.clipboard.writeText(Z.teil || '') : Promise.reject(new Error('ohne Zwischenablage'))).then(() => melde(L('Link kopiert', 'Link copied')), () => melde(L('Kopieren ging nicht', 'Copying failed'))); return false; },
+  'qr-teilen'() { const r = getr(Z.uid); if (navigator.share) navigator.share({ title: r ? zeig(r).name : '', url: Z.teil }).catch(() => {}); return false; },
+  'gm-uebersetzen'() { uebersetzFenster(); },
+  'gm-ueb-los'(b) { uebersetzeEins(b.dataset.ziel); return false; },
+  'gm-recht'() { kiAmGetraenk('rechtschreibung'); return false; },
+  'gm-naehr'() { kiAmGetraenk('naehrwerte'); return false; },
+  original() { Z.original = !Z.original; },
+  'alle-ueb'() { alleUebFenster(); },
+  'alle-ueb-ziel'(b) { alleUebFenster(b.dataset.ziel); },
+  'alle-ueb-los'() { alleUebersetzen(); return false; },
+  'alle-ueb-stopp'() { Z.fenster = null; },   /* zeichne() bemerkt das geschlossene Fenster und bricht den Lauf ab */
   'toast-tun'() { const t = toastTun; toastTun = null; Z.toast = ''; Z.toastKnopf = ''; clearTimeout(melde.uhr); if (t) t(); },
   'einst-auf'(b) { const g = b.dataset.g; if (Z.einstAuf.has(g)) Z.einstAuf.delete(g); else Z.einstAuf.add(g); },
   hinweise() { E.hinweiseAus = !E.hinweiseAus; einstSichern(); melde(E.hinweiseAus ? L('Hinweis-Blasen aus', 'Tooltips off') : L('Hinweis-Blasen an', 'Tooltips on')); },
@@ -986,11 +1107,11 @@ const TUN = {
   'ed-bildweg'() { Z.fenster.img = ''; $('#edbild').innerHTML = platzbild({ name: 'x' }); return false; },
   'ed-loeschen'() { const r = getr(Z.fenster.uid); frage(L('Getränk löschen', 'Delete drink'), L(`„${esc(r.name)}“ wird aus deiner Sammlung entfernt.`, `“${esc(r.name)}” will be removed from your collection.`), L('Löschen', 'Delete'), () => { A.getraenke = A.getraenke.filter((x) => x.uid !== r.uid); (A.anlaesse || []).forEach((a) => { a.posten = a.posten.filter((p) => p.uid !== r.uid); }); sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L('Gelöscht.', 'Deleted.')); }, true); return false; },
   'fenster-zu'() { Z.fenster = null; }, 'fenster-ja'() { const f = Z.fenster; if (f && f.ja) f.ja(); return false; },
-  'einkauf-dazu'() { const r = sicht(getr(Z.uid)); einkaufDazu(r, Z.port, r.name); sichern(); melde(L('Zutaten stehen auf der Einkaufsliste.', 'Ingredients are on the shopping list.')); return false; },
+  'einkauf-dazu'() { const r = zeig(getr(Z.uid)); einkaufDazu(r, Z.port, r.name); sichern(); melde(L('Zutaten stehen auf der Einkaufsliste.', 'Ingredients are on the shopping list.')); return false; },
   'einkauf-erledigt'() { A.einkauf = A.einkauf.filter((p) => !p.ok); sichern(); },
   'einkauf-leeren'() { frage(L('Liste leeren', 'Clear list'), L('Alle Posten werden entfernt.', 'All items will be removed.'), L('Leeren', 'Clear'), () => { A.einkauf = []; sichern(); fZu(); }, true); return false; },
   'einkauf-teilen'() { teilen(L('Einkaufsliste', 'Shopping list'), ladenFolge().map((g) => { const l = A.einkauf.filter((p) => !p.ok && gruppeVon(p.name) === g); return l.length ? gruppeName(EK.GRUPPEN.find((x) => x.id === g)) + '\n' + l.map((p) => '– ' + (p.wert !== null ? zahl(G.zahlFormatieren(p.wert)) + (p.unit ? ' ' + p.unit : '') : [p.text, p.unit].filter(Boolean).join(' ')) + ' ' + p.name).join('\n') : ''; }).filter(Boolean).join('\n\n')); return false; },
-  teilen() { const r = sicht(getr(Z.uid)); teilen(r.name, r.name + '\n\n' + zutatenVon(r).map((z) => '– ' + [mengeText(z), z.name].filter(Boolean).join(' ')).join('\n') + '\n\n' + (r.steps || []).map((s, i) => `${i + 1}. ${s.txt}`).join('\n')); return false; },
+  teilen() { const r = zeig(getr(Z.uid)); teilen(r.name, r.name + '\n\n' + zutatenVon(r).map((z) => '– ' + [mengeText(z), z.name].filter(Boolean).join(' ')).join('\n') + '\n\n' + (r.steps || []).map((s, i) => `${i + 1}. ${s.txt}`).join('\n')); return false; },
   bildvoll() { Z.fenster = null; Z.bildVoll = true; history.pushState({ v: 'bild' }, ''); },
   'bildvoll-zu'() { history.back(); return false; },
   /* Klaus 23.11.: ein Tipp aufs Bild öffnet das Vollbild, von dort ein Tipp das Bild-Blatt. Ohne Bild gleich das Bild-Blatt. */
@@ -1051,9 +1172,11 @@ document.addEventListener('submit', (ev) => {
   if (ev.target.id === 'ed') return editorSpeichern(ev.target);
   if (ev.target.id === 'webform') return webHolen();
   if (ev.target.id === 'entdform') return entdeckenHolen(false);
+  if (ev.target.id === 'rechtform') { const f = Z.fenster, r = f && getr(f.uid), wahl = new FormData(ev.target).getAll('n').map(Number); if (!r || !f.recht) return;
+    getraenkSetzen(rechtschreibungAnwenden(r, f.recht.aenderungen.filter((_, i) => wahl.includes(i)))); Z.fenster = null; return melde(wahl.length === 1 ? L('1 übernommen', '1 applied') : fuelle(L('{0} übernommen', '{0} applied'), wahl.length)); }
   if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
-    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert.', 'Key saved.') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); }); return; }
+    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert.', 'Key saved.') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
     const f = LAB.bewerten(r, { taste: d.get('taste'), practicality: d.get('practicality'), originality: d.get('originality'), description: d.get('description') }, String(d.get('fb') || ''), { solo: labSolo() });
     Z.fenster = null; sichern();
@@ -1137,11 +1260,13 @@ async function start() {
   breitWar = breit();
   hinweiseEinrichten(document, { aus: () => !!E.hinweiseAus });   // Hinweis-Blasen wie in der alten App (Kern 0.16), ausschaltbar
   const geteilt = new URLSearchParams(location.search), geteilteAdresse = webAdresse(geteilt.get('url') || '') || webAdresse(geteilt.get('text') || '');   /* über „Teilen“ an die installierte App geschickt */
-  if (location.search) history.replaceState(history.state, '', location.pathname);
+  const geteiltesGetraenk = /^#share=/.test(location.hash) ? location.href : '';   /* Link aus einem QR-Code (Format der bisherigen App) */
+  if (location.search || location.hash) history.replaceState(history.state, '', location.pathname);
   zeichne(true);
   $('#start').remove();
   if (geteilteAdresse) { Z.web = { adresse: geteilteAdresse, text: '', stand: '', seitentext: '' }; neuBlatt('web'); }
   if (erster) { try { await ausAlterApp(true); } catch (e) { /* nichts Altes da */ } if (!A.getraenke.some(G.istSichtbar) && !geteilt.has('leer')) await startGetraenke(); sichern(); zeichne(true); lager.dauerhaft(); }
+  if (geteiltesGetraenk) await geteiltOeffnen(geteiltesGetraenk);
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 start();

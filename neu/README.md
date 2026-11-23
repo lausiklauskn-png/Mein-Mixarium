@@ -29,6 +29,10 @@ mit einem Tipp löschen; Sicherung speichern und einspielen (Format der alten Ap
 Leiste links am Monitor, „Nur dieses Getränk“.
 Ordner (eigene Sammlungen neben den Kategorien; Kern `modell/ordner.mjs`): anlegen, umbenennen, ordnen, löschen (die Getränke
 bleiben), ein Getränk über seine Werkzeuge hineinlegen oder herausnehmen; ein Ordner frisst die Kategorie nicht.
+Menü am Getränk (Winkel → „Mehr“; Kern `ausgabe/druck.mjs`, `teilen/qr.mjs`, `ki/helfer.mjs`): Drucken (wie am Bildschirm: Portionen,
+ml/cl/oz), Teilen per QR-Code (Link im Format der bisherigen App; er öffnet das Getränk im Formular), Übersetzen in eine der acht
+Sprachen mit Umschalter aufs Original, Rechtschreibung prüfen, Nährwerte schätzen. Einstellungen → KI: „Alle übersetzen“ mit
+Kostenhinweis, abbrechbar. KI-Zeilen sagen, was an wen geht; ohne Schlüssel kommt erst das Schlüssel-Fenster.
 
 ## Was noch fehlt (benannte Grenzen)
 
@@ -47,6 +51,7 @@ bleiben), ein Getränk über seine Werkzeuge hineinlegen oder herausnehmen; ein 
 ```bash
 node tests/smoke_neu_pwa.mjs              # echter Browser, Handy und Monitor
 node tests/smoke_neu_ordner.mjs           # Ordner; Gegenprobe: python3 -u tests/gegenprobe_neu_ordner.py
+node tests/smoke_neu_menue.mjs            # Menü am Getränk, Alle übersetzen (KI gestellt); Gegenprobe: gegenprobe_neu_menue.py
 npm test                                  # Getränke-Schicht
 node tools/kern-nachziehen.mjs --pruefen  # Kern stimmt mit dem Pin überein
 ```
