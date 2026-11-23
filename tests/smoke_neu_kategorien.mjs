@@ -78,6 +78,10 @@ await p.click('.w-auf'); await ruhe(p); pruefe('ein Tipp auf ein geplantes Getr�
 await p.click('.seite [data-a=planen], [data-a=planen]'); await ruhe(p); await p.locator('.fenster [data-a=plan-setzen]').nth(1).click(); await ruhe(p);
 pruefe('am Getränk: „Planen“ trägt es an einem Tag ein', await Zs(p, () => Object.values(__mixarium.sammlung.plan).flat().filter((u) => u === __mixarium.zustand.uid).length === 2));
 pruefe('die Sicherung trägt den Plan', await Zs(p, () => Object.keys(JSON.parse(__mixarium.sicherung()).plan || {}).length >= 1));
+await p.click('.nav [data-go=karte]'); await ruhe(p); await p.click('[data-go=plan]'); await ruhe(p);
+for (let i = 0; i < 5 && await p.locator('.w-tag.heute [data-a=plan-weg]').count(); i++) { await p.locator('.w-tag.heute [data-a=plan-weg]').first().click(); await ruhe(p); }   // begrenzt: kehrt ein Eintrag immer wieder, soll die Probe ROT melden, nicht hängen
+await p.reload(); await p.waitForSelector('.mx'); await ruhe(p); await p.click('.nav [data-go=karte]'); await ruhe(p); await p.click('[data-go=plan]'); await ruhe(p);
+pruefe('ein übernommener Eintrag, den man herausnimmt, kommt nicht wieder (Übernahme nur einmal)', !(await p.locator('.w-tag.heute').innerText()).includes('Virgin Mojito'), await p.locator('.w-tag.heute').innerText());
 
 console.log('Kategorien verwalten');
 await p.click('.nav [data-go=mehr]'); await ruhe(p); await p.click('[data-a=kategorien]'); await p.waitForSelector('#kat-liste');
@@ -207,6 +211,29 @@ pruefe('ohne Überschriften sagt das Formular, dass geraten wurde', /geraten/.te
 await p.keyboard.press('Escape'); await ruhe(p);
 pruefe('Abbrechen legt nichts an', await p.evaluate(() => !__mixarium.sammlung.getraenke.some((r) => r.name === 'Zitronenwasser')));
 await c.close();
+
+console.log('Sinn-Suche: Modul 04 echt, Modul 03 (Sprachmodell) nachgestellt');
+{ const k = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', serviceWorkers: 'block' }); const q = await k.newPage(); q.on('pageerror', (e) => fehler.push(e.message));
+  await q.route(/^https?:\/\/(?!localhost)/, (r) => { fehler.push('Netz nach draußen: ' + r.request().url()); r.abort(); });
+  const geladen = []; q.on('request', (x) => { if (x.url().includes('/sbkim/')) geladen.push(x.url().split('/sbkim/')[1]); });
+  // Nachgestelltes Modell: „sommerhitze“ liegt bei „Gurke“; alles andere ist ein Buchstaben-Vektor. Modul 04 rechnet echt.
+  await q.route('**/sbkim/03_embedding.js', (r) => r.fulfill({ contentType: 'text/javascript', body: `(function(){const v=(t)=>{const a=new Float32Array(384);const s=/sommerhitze|gurke/i.test(t)?'gurke':String(t).toLowerCase();for(const c of s)a[c.charCodeAt(0)%384]+=1;let n=0;for(const x of a)n+=x*x;n=Math.sqrt(n)||1;return a.map((x)=>x/n)};window.SbkimEmbedding={init:async()=>{},isReady:()=>true,embedQuery:async(t)=>v(t),embedPassage:async(t)=>v(t),embedQueryBatch:async(a)=>a.map(v),embedPassageBatch:async(a)=>a.map(v)};})();` }));
+  await q.goto(U + 'neu/'); await q.waitForSelector('.mx'); await ruhe(q);
+  await q.click('[data-a=beispiele]'); await q.waitForSelector('[data-paket]'); await q.click('[data-paket=getraenke-ohne-alkohol-start]'); await q.waitForSelector('.karte'); await ruhe(q);
+  pruefe('ohne Sinn-Suche wird kein SBKIM-Baustein geladen', geladen.length === 0 && await q.evaluate(() => !window.SbkimMatch && !window.SbkimEmbedding));
+  await q.fill('#suche', 'sommerhitze'); await ruhe(q); const ohne = await q.locator('.karte').count();
+  await q.click('[data-a=sinn]'); await ruhe(q); pruefe('vor dem Einschalten steht, was geladen wird (120 MB)', (await q.locator('.fenster').innerText()).includes('120 MB'));
+  await q.click('.fenster [data-a=fenster-ja]'); await q.waitForSelector('#sinn-treffer .karte', { timeout: 15000 }).catch(() => {});
+  const sinn = await q.locator('#sinn-treffer .karte').allInnerTexts();
+  pruefe('die Wortsuche findet „sommerhitze“ nicht, die Sinn-Suche findet den Gurken-Spritz', ohne === 0 && sinn.some((x) => /Gurken/.test(x)), ohne + ' · ' + sinn.map((x) => x.split('\n')[0]).join(' | '));
+  pruefe('geladen werden genau Modul 03 und 04, sonst nichts aus sbkim/', geladen.length === 2 && geladen.some((x) => x.startsWith('03_')) && geladen.some((x) => x.startsWith('04_')), geladen.join(','));
+  pruefe('die Statuszeile sagt, was dazukam', /zusätzlich nach Bedeutung/.test(await q.locator('#sinn-status').innerText()));
+  await q.fill('#suche', 'gurke'); await q.waitForTimeout(900);
+  pruefe('ein Worttreffer steht nicht doppelt unter „Nach Bedeutung“', await q.locator('.karten:not(#sinn-treffer) .karte', { hasText: 'Gurken' }).count() === 1 && await q.locator('#sinn-treffer .karte', { hasText: 'Gurken' }).count() === 0);
+  await q.reload(); await q.waitForSelector('.mx'); await ruhe(q);
+  pruefe('die Sinn-Suche bleibt nach dem Neuladen eingeschaltet', await q.locator('[data-a=sinn][aria-pressed=true]').count() === 1);
+  await q.click('[data-a=sinn]'); await ruhe(q); pruefe('ausschalten: Schalter aus', await q.locator('[data-a=sinn][aria-pressed=true]').count() === 0);
+  await k.close(); }
 
 pruefe('keine Fehler in der Konsole', fehler.length === 0, fehler.join(' | '));
 await b.close(); server.close();

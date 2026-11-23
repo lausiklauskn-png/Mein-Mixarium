@@ -19,6 +19,7 @@ import { katVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
 import { einkaufMit } from '../kern/modell/einkauf.mjs';
 import { rezeptAusText } from '../kern/import/text.mjs';
 import { woche, tagIso, planen, entplanen, ausAltemMenu } from '../kern/modell/plan.mjs';
+import { ladeBausteine, korpus as semKorpus, sucheBedeutung } from '../kern/suche/bedeutung.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -28,7 +29,7 @@ const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENK
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor13';
+export const FASSUNG = '10.0.0-vor14';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -105,7 +106,7 @@ function bild(r, klasse = '') {
 function logo() { return `<svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b8cff"/><stop offset="1" stop-color="#6b3fc4"/></linearGradient></defs><path d="M25 6h14v4h-2v14l15 24a6 6 0 0 1-5 9H17a6 6 0 0 1-5-9l15-24V10h-2z" fill="rgba(91,140,255,.16)" stroke="url(#lg)" stroke-width="3" stroke-linejoin="round"/><path d="M17 44c8-6 14 4 30-2l4 6a5 5 0 0 1-4 7H17a5 5 0 0 1-4-7z" fill="url(#lg)"/><path d="M52 6l1.6 4.4L58 12l-4.4 1.6L52 18l-1.6-4.4L46 12l4.4-1.6z" fill="#5b8cff"/></svg>`; }
 /* Spracheingabe (Küchen-Kern, `diktat`): nur wo der Browser sie kann. Der Ton geht zur Erkennung an den Dienst des Browsers. */
 const mikro = (ziel) => (diktatMoeglich() ? `<button type="button" class="mikro" data-a="diktat" data-ziel="${ziel}" aria-pressed="false" aria-label="${L('Diktieren', 'Dictate')}" title="${L('Diktieren', 'Dictate')}">${I('mic')}</button>` : '');
-function suchfeld(voll) { return `<label class="suchfeld" ${voll ? 'style="width:100%;margin-top:12px"' : ''}>${I('search')}<input id="suche" type="search" value="${esc(Z.suche)}" placeholder="${L('Getränk oder Zutat suchen', 'Search drink or ingredient')}" aria-label="${L('Suchen', 'Search')}" autocomplete="off">${mikro('#suche')}</label>`; }
+function suchfeld(voll) { return `<label class="suchfeld" ${voll ? 'style="width:100%;margin-top:12px"' : ''}>${I('search')}<input id="suche" type="search" value="${esc(Z.suche)}" placeholder="${L('Getränk oder Zutat suchen', 'Search drink or ingredient')}" aria-label="${L('Suchen', 'Search')}" autocomplete="off">${mikro('#suche')}<button type="button" class="sinn" data-a="sinn" aria-pressed="${!!E.sinn}" aria-label="${L('Sinn-Suche: auch nach Bedeutung suchen', 'Meaning search: also search by meaning')}" title="${L('Sinn-Suche', 'Meaning search')}">${I('sparkle')}</button></label>`; }
 function kopf(br) {
   const auf = Z.kopfAuf, n = sichtbar().length;
   /* Aufgeklappt bleibt der Kopf EINE Zeile (Klaus 23.11.): am Handy weicht der Name, die Werkzeuge sind nur Symbole. */
@@ -141,9 +142,39 @@ function leiste() {
 }
 function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.beispiel ? `<span class="marke rechts">${L('Beispiel', 'Example')}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
 function kartenHtml() {
-  const l = sichtbar();
-  if (!l.length) return `<p class="leer">${Z.suche ? L('Nichts gefunden. Anderes Wort versuchen oder die Kategorie „Alle“ wählen.', 'Nothing found. Try another word or choose “All”.') : L('In dieser Kategorie ist noch nichts.', 'Nothing in this category yet.')}</p>`;
-  return `<div class="karten">${l.map(karte).join('')}</div>`;
+  const l = sichtbar(), sinn = semTreffer(), an = E.sinn && Z.suche.trim();
+  const status = an ? `<p class="sinn-status" id="sinn-status" role="status">${esc(sem.status)}</p>` : '';
+  const zusatz = sinn.length ? `<h3 class="eh">${L('Nach Bedeutung', 'By meaning')} <small>${sinn.length}</small></h3><div class="karten" id="sinn-treffer">${sinn.map(karte).join('')}</div>` : '';
+  if (!l.length) return (sinn.length ? '' : `<p class="leer">${Z.suche ? L('Nichts gefunden. Anderes Wort versuchen oder die Kategorie „Alle“ wählen.', 'Nothing found. Try another word or choose “All”.') : L('In dieser Kategorie ist noch nichts.', 'Nothing in this category yet.')}</p>`) + status + zusatz;
+  return `<div class="karten">${l.map(karte).join('')}</div>${status}${zusatz}`;
+}
+
+/* ── Sinn-Suche (Kern: suche/bedeutung.mjs; Vorbild Mein Rezeptbuch). Lädt Modul 03 und 04 aus sbkim/ ERST beim Einschalten,
+   sonst kein SBKIM-Baustein. Beim ersten Mal kommt das Sprachmodell aus dem Netz; danach rechnet das Gerät. ── */
+const sem = { ids: [], fuer: '', status: '', uhr: null, laeuft: false, korpus: null, sig: '' };
+const semStatus = (t) => { sem.status = t; const el = $('#sinn-status'); if (el) el.textContent = t; };
+function semTreffer() {
+  const q = Z.suche.trim().toLowerCase(); if (!E.sinn || !q || sem.fuer !== q) return [];
+  const da = new Set(sichtbar().map((r) => r.uid)), erlaubt = new Set(G.filterOhneAlkohol(A.getraenke, ohneAlk()).map((r) => r.uid));
+  return sem.ids.map(getr).filter((r) => r && G.istSichtbar(r) && !da.has(r.uid) && erlaubt.has(r.uid) && (Z.kat === 'all' || katVonRezept(r) === Z.kat));
+}
+async function semBereit() {
+  await ladeBausteine('../sbkim/'); await window.SbkimEmbedding.init();
+  const rs = A.getraenke.filter(G.istSichtbar), sig = rs.map((r) => r.uid + ':' + r.name).join(',');
+  if (!sem.korpus || sem.sig !== sig) { sem.korpus = await semKorpus(rs.map(sicht), (r) => katNameVon(r), { einbetten: (t) => window.SbkimEmbedding.embedPassage(t), fortschritt: (i, n) => semStatus(L(`Sinn-Suche wird vorbereitet: ${i} von ${n} Getränken`, `Preparing meaning search: ${i} of ${n} drinks`)) }); sem.sig = sig; }
+  return sem.korpus;
+}
+function semPlanen() { clearTimeout(sem.uhr); if (!E.sinn) return; const f = Z.suche.trim().toLowerCase(); if (!f) { sem.ids = []; sem.fuer = ''; return; } sem.uhr = setTimeout(() => semLauf(f), 350); }
+async function semLauf(f) {
+  if (!E.sinn) return; if (sem.laeuft) { sem.uhr = setTimeout(() => semLauf(f), 300); return; }
+  sem.laeuft = true; semStatus(sem.korpus ? L('sucht nach Bedeutung …', 'searching by meaning …') : L('Sinn-Suche wird vorbereitet (beim ersten Mal lädt das Sprachmodell) …', 'Preparing meaning search (the language model loads the first time) …'));
+  try {
+    const c = await semBereit(); if (Z.suche.trim().toLowerCase() !== f) return;
+    sem.ids = await sucheBedeutung(window.SbkimMatch, f, c); sem.fuer = f; if (Z.suche.trim().toLowerCase() !== f) return;
+    const dazu = semTreffer().length;
+    sem.status = dazu ? L(`${dazu} zusätzlich nach Bedeutung gefunden`, `${dazu} more found by meaning`) : L('Sinn-Suche an, keine weiteren Treffer', 'Meaning search on, no further results');
+    const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml();
+  } catch (e) { console.warn('Sinn-Suche:', (e && e.message) || e); semStatus(L('Die Sinn-Suche ist gerade nicht verfügbar. Die Wortsuche läuft weiter.', 'Meaning search is not available right now. Word search keeps working.')); } finally { sem.laeuft = false; }
 }
 function willkommen() {
   return `<div class="willkommen"><h3>${L('Willkommen im neuen Mixarium', 'Welcome to the new Mixarium')}</h3><p>${L('Deine Sammlung ist noch leer. So kommst du zu Getränken:', 'Your collection is still empty. Here is how to get drinks:')}</p><div class="reihe"><button class="knopf" data-a="beispiele">${I('box')}${L('Beispiele laden', 'Load examples')}</button><button class="knopf hell" data-a="neu">${I('plus')}${L('Getränk anlegen', 'Add a drink')}</button><button class="knopf hell" data-a="einspielen">${I('upload')}${L('Sicherung einspielen', 'Restore a backup')}</button></div></div>`;
@@ -512,6 +543,8 @@ function katLoeschenMit(id, ziel) {
 /* ── Bedienung ── */
 const TUN = {
   kategorien() { katFenster(); },
+  sinn() { if (E.sinn) { E.sinn = false; sem.ids = []; sem.fuer = ''; einstSichern(); melde(L('Sinn-Suche aus', 'Meaning search off')); return; }
+    frage(L('Sinn-Suche einschalten?', 'Turn on meaning search?'), L('Sie findet Getränke auch nach Bedeutung, zum Beispiel „etwas Erfrischendes“ oder „für den Winter“. Dafür lädt die App einmalig ein Sprachmodell aus dem Netz (etwa 120 MB). Danach rechnet sie im Gerät; deine Getränke gehen nirgendwohin.', 'It also finds drinks by meaning, e.g. “something refreshing” or “for winter”. For this the app loads a language model from the internet once (about 120 MB). After that it works on the device; your drinks go nowhere.'), L('Einschalten', 'Turn on'), () => { E.sinn = true; sem.status = ''; einstSichern(); Z.fenster = null; zeichne(); if (Z.suche.trim()) semPlanen(); else semBereit().then(() => melde(L('Sinn-Suche bereit', 'Meaning search ready'))).catch(() => melde(L('Die Sinn-Suche ließ sich nicht laden.', 'The meaning search could not be loaded.'))); }); return false; },
   'plan-waehlen'(b) { planWahl(b.dataset.tag); }, planen() { planWahl(null, Z.uid); },
   'plan-setzen'(b) { A.plan = planen(A.plan, b.dataset.tag, b.dataset.uid); sichern(); Z.fenster = null; if (Z.view !== 'plan') melde(L('Im Wochenplan eingetragen.', 'Added to the week plan.')); },
   'plan-weg'(b) { A.plan = entplanen(A.plan, b.dataset.tag, b.dataset.uid); sichern(); },
@@ -652,7 +685,7 @@ document.addEventListener('submit', (ev) => {
 document.addEventListener('input', (ev) => {
   if (ev.target.id === 'asx' || ev.target.id === 'asy') { $('#asbild').style.objectPosition = `${$('#asx').value}% ${$('#asy').value}%`; return; }
   if (ev.target.id === 'schriftregler') { E.schrift = schriftSetzen($('.mx'), ev.target.value); $('#schriftzahl').textContent = E.schrift + ' %'; clearTimeout(einstSichern.uhr); einstSichern.uhr = setTimeout(einstSichern, 300); return; }
-  if (ev.target.id === 'suche') { Z.suche = ev.target.value; const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = `${z} ${z === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}`; } } });
+  if (ev.target.id === 'suche') { Z.suche = ev.target.value; semPlanen(); const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = `${z} ${z === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}`; } } });
 document.addEventListener('change', async (ev) => {
   if (ev.target.classList && ev.target.classList.contains('kat-name')) { const f = ev.target, id = f.dataset.kid, eig = A.kategorien.eigene.some((c) => c.id === id);
     if (eig && f.value.trim()) A.kategorien = { ...katUmbenennen(A.kategorien, id, ''), eigene: A.kategorien.eigene.map((c) => (c.id === id ? { ...c, de: f.value.trim() } : c)) }; else if (!eig) A.kategorien = katUmbenennen(A.kategorien, id, f.value);

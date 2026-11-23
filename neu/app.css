@@ -712,3 +712,9 @@ h1,h2,h3,p{margin:0}
 .mx.breit .w-bild{width:100%;height:110px;border-radius:0}
 .mx.breit .w-auf>span:last-child{padding:6px 8px 8px;font-size:13px}
 .mx.breit .w-weg{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9);color:#14273a}
+
+/* Sinn-Suche */
+.mx .suchfeld .sinn{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.mx .suchfeld .sinn .ico{width:17px;height:17px}
+.mx .suchfeld .sinn[aria-pressed="true"]{background:var(--akz);color:#fff}.mx .suchfeld .sinn[aria-pressed="true"] .ico{color:#fff}
+.mx .sinn-status{font-size:12.5px;color:var(--muted);margin:10px 2px 0}
