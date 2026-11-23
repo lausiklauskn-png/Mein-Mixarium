@@ -1,48 +1,46 @@
-# Übergabe an die gemeinsame Sitzung (Mixarium-Seite)
+# Übergabe der gemeinsamen Sitzung (Mixarium-Seite)
 
-Stand 23.11.2026. Klaus legt die Mixarium-Sitzung und die Rezeptbuch-Sitzung zu **einer** zusammen, weil er sonst alles
-zweimal sagen muss. Diese Datei ist die Übergabe der Mixarium-Seite; die Rezeptbuch-Seite steht in
-`Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SITZUNG.md` (dort auch: wie die gemeinsame Sitzung arbeitet).
-Diese Sitzung arbeitet nach der Übergabe nicht weiter.
+Stand **23.11.2026, 18:05 Uhr** (Europe/Berlin). Die gemeinsame Sitzung (Tag) übergibt an die Nacht-Sitzung. Diese Datei ist
+die Mixarium-Seite; die gemeinsame Seite (Arbeitsweise, Kern, Rezeptbuch, Fallen) steht in
+`Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SITZUNG.md`, der Auftrag für die Nacht in `Mein-Rezeptbuch/docs/NACHTAUFTRAG.md`.
+Halb Fertiges gibt es nicht: alles, was diese Sitzung angefangen hat, ist geprüft und auf `main`.
 
-## Stand Mixarium (main, PWA 10.0.0-vor16, Kern 0.15.0 per Pin `74ab9e3`)
+## Stand Mixarium (main `859c911`, PWA **10.0.0-vor19**, Kern **0.17.0** per Pin `0b18345`)
 
 - **Die bisherige App ist unverändert**: `index.html` und `QC_Mixarium_20_04_26.html`, md5 beide `49ce4320795972269057083e4c189f48`.
   Sie bleibt online, bis Klaus die neue abgenommen hat. Die Pflicht-Checkliste aus `CLAUDE.md` gilt weiter für jede Änderung daran.
 - **Neue PWA** unter `neu/` (ES-Module ohne Bauschritt), Adresse `https://lausiklauskn-png.github.io/Mein-Mixarium/neu/`.
-  Eigener Speicher (Kern-Speicher `KuechenKern-mixarium`), die alte App wird nur gelesen. Eine erste Vorab-Fassung schrieb nach
-  `MixariumNeu1`; `neu/alt.mjs` holt diesen Stand einmal herüber.
-- **Getränke-Schicht** `getraenke/` (Einheiten ml/cl/oz, Gläser, Kategorien, Alkohol, Gerätschaften, Übernahme, Beispiele, zwei
-  Ausgaben), mit Proben und Gegenprobe (`tests/getraenke/`).
-- **Ausgaben** `ausgaben/mixarium-store` (ohne Alkohol) und `ausgaben/mixarium-voll`; **Beispiele** `beispiele/` mit `KATALOG.json`:
-  Startpaket ohne Alkohol (7 Getränke, gezeichnete Bilder) und Alkohol-Paket (8 Getränke, durchgesehen und berichtigt).
-- **Proben:** `npm test` 86 von 86 · `node tests/smoke_neu_pwa.mjs` 63 grün, 0 ROT (echter Browser, Handy und Monitor) ·
-  `node tools/kern-nachziehen.mjs --pruefen` stimmt · `node kern/ausgabe/ausgabe.mjs ausgaben/mixarium-<store|voll>/ausgabe.json` in Ordnung.
-- **Unterlagen:** `docs/FUNKTIONSLISTE.md` (631 Funktionen der alten App mit Ziel), `docs/vorschau/mixarium-neu.html` (von Klaus
-  abgenommene Vorschau, Artefakt https://claude.ai/artifact/Mib1gJ2k2gNR4kAJyLKB61), `docs/ABGLEICH_REZEPTBUCH.md` (Briefkasten),
-  `neu/README.md`, `getraenke/README.md`, `beispiele/README.md`.
+  Eigener Speicher (Kern-Speicher `KuechenKern-mixarium`), die alte App wird nur gelesen; `neu/alt.mjs` holt einen Vorab-Stand
+  aus `MixariumNeu1` einmal herüber.
+- **Getränke-Schicht** `getraenke/` (Einheiten ml/cl/oz, Gläser, Kategorien, Warengruppen, Alkohol, Gerätschaften, Übernahme,
+  Beispiele, Labor, zwei Ausgaben), mit Proben (`tests/getraenke/`, gegen die Funktionen der alten App gerechnet).
+- **Ausgaben** `ausgaben/mixarium-store` (ohne Alkohol) und `ausgaben/mixarium-voll`; **Beispiele** `beispiele/` mit `KATALOG.json`.
+- **Proben (zuletzt grün gesehen):** `npm test` **104** · `node tests/smoke_neu_pwa.mjs` **71** · `node tests/smoke_neu_kategorien.mjs`
+  **78** · `node tests/smoke_neu_labor.mjs` **43**, je 0 ROT · Gegenproben `python3 -u tests/gegenprobe_neu_kategorien.py` (9 Fälle),
+  `python3 -u tests/gegenprobe_neu_labor.py` (3 Fälle) · `node tools/kern-nachziehen.mjs --pruefen` stimmt.
+- **Unterlagen:** `docs/FUNKTIONSLISTE.md` (631 Funktionen der alten App mit Ziel), `docs/vorschau/mixarium-neu.html`,
+  `docs/ABGLEICH_REZEPTBUCH.md` (Briefkasten, neueste Runde 6), `neu/README.md`, `getraenke/README.md`, `beispiele/README.md`.
 
-**Fertig in der neuen PWA:** Getränke als Karten, Suche (auch über Zutaten), Kategorien, Schalter „Ohne Alkohol“ · Getränk mit
-Foto, Glas, Temperatur, Portionen umrechnen, ml/cl/oz · anlegen, bearbeiten, löschen · Mix-Ansicht im Vollbild (Bild, Zutaten
-und Gerätschaften je Schritt, Wischen, Pfeiltasten, Esc, Bildschirm bleibt an) · Einkaufsliste · Getränkekarten für einen
-Anlass · Farbe mit Hell/Dunkel je Farbe · Schrift-Regler 85–150 % · Sprache (Oberfläche Deutsch/Englisch) · Beispiele laden und
-mit einem Tipp löschen · Sicherung als Datei, Einspielen, Sammlung leeren · Tresor · Bild-Blatt (ganzes Bild, Ausschnitt,
-ersetzen, KI-Bild, Gratis-Foto) · Winkel in der Namenszeile am Handy · fliegende Leiste am Handy, Leiste links am Monitor,
-„Nur dieses Getränk“ · Übernahme aus der alten App beim ersten Start · offline.
+**Fertig in der neuen PWA:** Getränke als Karten, Suche (auch über Zutaten) und **Sinn-Suche** (Modul 03/04 erst beim Einschalten) ·
+Kategorien als **Sticker mit Mini-Foto** (Einstellungen → Kategorien: umbenennen, Zeichen/Bild, neu, löschen mit Ziel,
+ausblenden, ziehen) · Schalter „Ohne Alkohol“ · Getränk mit Foto, Glas, Temperatur, Portionen, ml/cl/oz · anlegen, bearbeiten,
+löschen · **Getränk aus Text** (ohne KI, Bar-Einheiten) · Mix-Ansicht im Vollbild · Einkaufsliste **je Laden** · Getränkekarten ·
+**Wochenplan** (Plan der alten App einmal übernommen) · Farbe mit Hell/Dunkel · Schrift-Regler · Sprache Deutsch/Englisch ·
+Beispiele laden/löschen · Sicherung, Einspielen, Sammlung leeren · Tresor · Bild: **Tipp → Vollbild mit Knopf zum Bild-Blatt**,
+Ausschnitt, ersetzen, KI-Bild, Gratis-Foto · **Bilder-Ordner** (einziger Ort zum Löschen eines Bildes) · Winkel in der
+Namenszeile, am Monitor neben dem Bild · **Mix-Labor** (erfinden mit **Haiku 5.5**, Bewertung, Status-Kette, KI-Überarbeitung,
+Favorit-Schutz, verwerfen/wiederherstellen, Protokoll) · Anthropic- und OpenAI-Schlüssel nur im Gerät · **Hinweis-Blasen**
+(abschaltbar) · **Erklärtexte hinter „?“** · **Ladebalken** bei jeder Wartezeit · Übernahme aus der alten App · offline.
 
 ## Was vom Kern kommt und was nicht
 
-| Vom Küchen-Kern übernommen (läuft in der PWA) | Bewusst NICHT vom Kern (Grund) |
-|---|---|
-| `speicher/speicher`, `speicher/tresor` | `oberflaeche/geraete`: meldet bei „schütteln“ einen Küchenmixer, kennt keine Bar-Geräte → `getraenke/geraete.mjs` |
-| `oberflaeche/farben` (mit Ton), `schrift`, `bild`, `symbole`, `diktat` | `modell/kategorien(-fest)`, `warengruppen`, `einkauf`: noch nicht je Ausgabe austauschbar → `getraenke/kategorien.mjs`, Einkauf in `neu/app.mjs` |
-| `ki/bild` (KI-Bild, Gratis-Foto) | `modell/mengen`: `getraenke/einheiten.mjs` kann ml/cl/oz, Spannen, Brüche und ist gegen die alte App geprüft |
-| `modell/rezept` (nur `sicht`) | `sicherung/sicherung` (Fassung 11) und `speicher/uebernahme`: hier gilt `getraenke/uebernahme.mjs` (liest auch IndexedDB der alten App, Tresor, Rezeptbuch-Pakete; schreibt Fassung 10) |
-| `ausgabe/ausgabe`, `pruefung/paket` (in Proben) | `suche/bedeutung`, `modell/kochen`, `modell/plan`, `import/text`: noch nicht eingebaut |
-
-**Noch vorläufig** (eigener Code in `neu/app.mjs` und `neu/app.css`, soll auf Kern-Bausteine, sobald es sie gibt): die ganze
-Oberfläche (Kopf, fliegende Leiste, Fenster, Karten, Einstellungs-Liste, Gerüst der Mix-Ansicht), die Einkaufsliste, die
-Getränkekarten. Getränke-eigen und bleibend: `neu/getraenke-symbole.mjs`, `neu/platzbild.mjs`, `neu/alt.mjs`, `getraenke/`.
+Vom Kern: speicher, tresor, farben, schrift, bild, symbole, diktat, hinweis, warten, ki/bild (Auftrag `art: 'getraenk'`),
+rezept (`sicht`), kategorien (`kategorienMit` mit Familien-Namen, `katBild`), einkauf (`einkaufMit` mit
+`getraenke/warengruppen.mjs`), plan, import/text, suche/bedeutung, ausgabe, pruefung/paket (in Proben).
+Bewusst eigen (Grund): `getraenke/geraete.mjs` (eigene Bar-Zeichnungen) · `getraenke/einheiten.mjs` (gegen die alte App geprüft;
+`tests/getraenke/kern-abgleich.test.mjs` misst den Kern daran) · `getraenke/uebernahme.mjs` (liest IndexedDB der alten App,
+schreibt Sicherung Fassung 10 mit `kategorienZustand`, `einkaufLaeden`) · `getraenke/labor.mjs` (nur Mixarium).
+Noch vorläufig in `neu/app.mjs`: Oberfläche (Kopf, fliegende Leiste, Fenster, Karten), Posten-Modell der Einkaufsliste.
 
 ## Was Klaus in dieser Sitzung gesagt hat
 
@@ -76,44 +74,31 @@ sie bleiben in `karten` gespeichert) · „Planen“ am Getränk. Proben: `tests
 **Mix-Labor (10.0.0-vor16):** `getraenke/labor.mjs` (Regeln der alten App, Punkte und Status-Kette gegen die alte Funktion
 gerechnet: 2000 + 3000 Verläufe) und die Oberfläche nach der Vorschau: erfinden (Kategorie, Geschmack, Zutaten), Vorschau, ins Labor,
 4 Bewertungen, Status-Kette, KI-Überarbeitung (automatisch und auf Knopfdruck), Favorit-Schutz, verwerfen/wiederherstellen,
-Einzelpersonen-Modus, Protokoll. Eigener Anthropic-Schlüssel nur im Gerät; Modell `claude-haiku-4-5` (wie bisher, an einer Stelle).
+Einzelpersonen-Modus, Protokoll. Eigener Anthropic-Schlüssel nur im Gerät; Modell seit 10.0.0-vor18 `claude-haiku-5-5` (Klaus 23.11., `LAB_MODELL`, `LAB_MAX_TOKENS` 8192 – das Denken zählt mit).
 Klaus 23.11.: Kacheln dicht gepackt und in Wasserfarben (Bereiche der Private Akte), Erklärtexte hinter „?“ (`frag`), kurze
 Meldungen. Proben `tests/getraenke/labor.test.mjs`, `tests/smoke_neu_labor.mjs` (38), Gegenprobe `tests/gegenprobe_neu_labor.py`.
-Offen: „Bekannte Drinks entdecken“; die „?“-Erklärungen in den übrigen Bereichen der PWA; Tooltips der alten Apps prüfen.
+Danach erledigt: Tooltips der alten Apps (Kern 0.16, vor17) · „?“-Erklärungen in Labor, Schlüsseln, Tresor, Text-Import, Paketen, Kategorien, Läden, Bildern (vor17) · Ladebalken (Kern 0.17, vor19).
 
-**Offen** (gesagt, noch nicht gebaut):
+**Offen** (gesagt, noch nicht gebaut), nach Wichtigkeit:
 
-1. **„Es soll alles noch so funktionieren wie vorher. Auch das Labor, vielleicht sogar noch besser.“** In der neuen PWA fehlen:
-   Mix-Labor (erfinden, vier Bewertungen, experimentell → Buch/entfernt, KI-Überarbeitung, Favorit-Schutz, Einzelpersonen-Modus),
-   „Bekannte Drinks entdecken“ (TheCocktailDB, Netz nur auf Knopfdruck), Foto-Scan (einzeln/Stapel, Claude/Mistral, Reinigung
-   vor der KI, Datei prüfen), Web-Import (ohne öffentliche Weiterleiter), Text-Import, Übersetzen (alle/einzeln, mit
-   Kostenhinweis), Rechtschreibung, Ordner, Kategorien umbenennen/anlegen/löschen/sortieren, Bewertung am Getränk,
-   Bildausschnitt mit Zoom, Bilder-Ordner, Sammel-Weg „KI-Bilder für alle“, Bücher (PDF, Flipbook, EPUB), Drucken, QR-Teilen,
-   Wochenplan (Daten sind übernommen), Bedeutungssuche, Handbuch/Hilfe, Barrierefreiheit-Schalter, App-Bewertung,
-   Schlüssel für Anthropic und Mistral. Vollständige Liste mit Zeilen: `docs/FUNKTIONSLISTE.md`.
-2. **SBKIM/Mycel:** soll funktionsfähig im Hintergrund bleiben, unsichtbar, später freischaltbar. In `neu/` ist es noch gar
-   nicht eingehängt. Wie freigeschaltet wird, entscheidet Klaus später (mein Vorschlag war: siebenmal auf die Fassungsnummer + Code).
-3. **Beispielbilder:** Klaus wollte Bilder und JSON-Sicherungen liefern (Release `eingang-bilder` / `eingang-json` oder Ordner
-   `beispiele/eingang/`). Bisher ist nichts angekommen; das Startpaket hat gezeichnete Bilder.
-4. **Intro** nur beim ersten Start, überspringbar: die PWA hat gar keines. Ob eines gewünscht ist, ist nicht bestätigt.
-5. **Oberfläche in den übrigen sechs Sprachen** (jetzt Deutsch/Englisch; Kategorien und Gläser sind in 8 Sprachen).
-6. **Android, Windows, Google Play** (Capacitor, Ziel API 36; Windows-Paket; Store-Fassung = Ausgabe `mixarium-store`).
-7. **Erklärtexte hinter „?“**, Spracheingabe in allen größeren Feldern mit Modul 21, Einkaufsliste je Laden (aus dem
-   Rezeptbuch, hier noch nicht).
+1. **„Es soll alles noch so funktionieren wie vorher. Auch das Labor, vielleicht sogar noch besser.“** Es fehlen noch:
+   „Bekannte Drinks entdecken“ (TheCocktailDB, Netz nur auf Knopfdruck) · Foto-Scan (einzeln/Stapel, Claude/Mistral, Reinigung
+   vor der KI, „Datei prüfen“) · Web-Import (ohne öffentliche Weiterleiter) · Mistral-Schlüssel · Übersetzen (alle/einzeln, mit
+   Kostenhinweis) · Rechtschreibung · Ordner-Ansicht (alte `fld_`-Kategorien liegen in `folder`, ohne Ansicht) · Bewertung am
+   Getränk außerhalb des Labors · Sammel-Weg „KI-Bilder für alle“ · Bücher (PDF, Flipbook, EPUB) · Drucken · QR-Teilen ·
+   Handbuch/Hilfe · Barrierefreiheit-Schalter · App-Bewertung. Mit Zeilen: `docs/FUNKTIONSLISTE.md`.
+2. **Oberfläche in den übrigen sechs Sprachen** (jetzt Deutsch/Englisch; Kategorien und Gläser in 8 Sprachen).
+3. **Mikrofon aus Modul 21** in allen größeren Feldern (jetzt `diktat.mjs`).
+4. **SBKIM/Mycel:** funktionsfähig im Hintergrund, unsichtbar, später freischaltbar; in `neu/` nur Modul 03/04 für die Sinn-Suche.
+5. **Beispielbilder** von Klaus (Release `eingang-bilder`/`eingang-json` oder `beispiele/eingang/`): nichts angekommen.
+6. **Intro** nur beim ersten Start: nicht bestätigt, nicht gebaut.
+7. **Android, Windows, Google Play** erst nach Klaus' Go.
 
 ## Aus dem Briefkasten des Rezeptbuchs noch nicht umgesetzt
 
-Gelesen: `Mein-Rezeptbuch/docs/BRIEFKASTEN_MIXARIUM.md` (main `ed99b34`). Antworten je Punkt stehen in
-`docs/ABGLEICH_REZEPTBUCH.md`, Runde 5. Noch nicht umgesetzt:
-
-- **Winkel am Monitor:** am Handy übernommen; am Monitor steht der Name neben dem Bild, dort sind „Nur dieses Getränk“ und
-  „Bild“ Knöpfe rechts. Im Rezeptbuch steht der Winkel überall. → Frage an Klaus.
-- **Bilder-Ordner** (dort wird ein Bild gelöscht): fehlt. „Foto entfernen“ ist aus dem Formular genommen, im Bild-Blatt wird
-  nichts gelöscht; ein Bild lässt sich im Mixarium zurzeit nur ersetzen.
-- **Bedeutungssuche** (`kern/suche/bedeutung.mjs`, Module 03/04 aus `sbkim/`): nicht eingebaut.
-- **Mikrofon nach Modul 21:** nur die einfache Fassung `diktat.mjs`.
-- **Tresor-Stände der alten App** in den neuen Tresor legen: gelesen, aber nicht abgelegt.
-- **Sammel-Weg KI-Bilder**, KI-Richter: nicht eingebaut.
+Gelesen: Runde C (`Mein-Rezeptbuch/docs/BRIEFKASTEN_MIXARIUM.md`), beantwortet in Runde 6. Noch offen: Mikrofon nach Modul 21 ·
+Tresor-Stände der alten App in den neuen Tresor legen · Sammel-Weg KI-Bilder · KI-Richter. Winkel, Bilder-Ordner und
+Bedeutungssuche sind inzwischen umgesetzt.
 
 ## Wünsche an den Kern (aus Mixarium-Sicht)
 
@@ -135,18 +120,22 @@ Proben: `tests/smoke_neu_kategorien.mjs` (32, Monitor und Finger), Gegenprobe `t
 Die Einkaufsliste behält ihr eigenes Posten-Modell (abhaken je Posten, zusammenzählen bei gleicher Einheit); nur Gruppen und
 Läden kommen aus dem Kern.
 
-- `ki/bild.mjs`: Bildauftrag je Ausgabe austauschbar (jetzt „beautifully plated … Food photography“, für Getränke unpassend).
-- `oberflaeche/geraete.mjs`: „shaker“/„schüttel“ nicht fest dem Mixer zuordnen; Bar-Geräte per `erweitern()` mit eigenen Wörtern.
-- Kategorien, Warengruppen und Einheiten je Ausgabe; `getraenke/einheiten.mjs` gegen `modell/mengen.mjs` prüfen. Die alte App
-  rechnete falsch: „10,5“ wurde 1,5 und „1 ½“ wurde 1 (in `getraenke/` berichtigt, Probe hält die alten Werte fest).
-- Falle beim Winkel: Werkzeuge über der Namenszeile verankern, nicht mit festem Abstand (siehe Fallen).
-- Schrift-Regler, Farben: englische Namen fehlen im Kern (hier in `neu/app.mjs` ergänzt).
+Die früheren Wünsche (Bildauftrag je Ausgabe, Bar-Geräte, Kategorien/Warengruppen/Einheiten je Ausgabe, englische Namen) sind mit Kern 0.11–0.13 erledigt. Offener Wunsch: das Posten-Modell der Einkaufsliste und die Oberflächen-Bausteine (Kopf, Leiste, Fenster) gemeinsam in den Kern.
+
+## Entscheidungen dieser Sitzung (mit Grund)
+
+- Labor auf Haiku 5.5 (Klaus' Ja): laut Anthropic etwa ein Zehntel des Preises und besser im Befolgen von Anweisungen;
+  `max_tokens` 8192, weil das Denken mitzählt; keine Sampling-Parameter und kein Vorfüllen (beides 400).
+- Erklärtexte in Fenstern als kurze Zeile + „?“ (Klaus: „nicht ein Buch“); im Schlüssel-Fenster bleibt nur „Es ist ein Schlüssel gespeichert“.
+- Ladebalken aus dem Kern statt Toasts wie „KI-Bild wird erzeugt, das dauert etwa 20 Sekunden“ – ein Toast verschwindet, bevor das Bild da ist.
+- Kacheln im Labor: first-fit-decreasing über CSS `order` (`kachelnPacken`), damit jede Reihe voll ist.
 
 ## Nicht gemessen
 
 - **Die Live-Seite**: `github.io` ist aus der Sitzung nicht erreichbar; geprüft ist nur lokal im Browser (Playwright).
 - Klaus' Tablet und Handy: Bedienung der fliegenden Leiste mit dem Finger, Installieren, Offline, Ladezeit (Ziel unter 1 s).
-- Echter OpenAI-Aufruf (KI-Bild) und Gratis-Foto; es gibt nur die Prüfung „ohne Schlüssel wird gefragt und nichts geladen“.
+- Echte Aufrufe an OpenAI (KI-Bild), Pollinations und Anthropic (Labor mit Haiku 5.5); die Proben stellen die Antworten nach.
+- Das echte Sprachmodell der Sinn-Suche (120 MB, Dauer); die Probe stellt Modul 03 und seinen Ladestand nach.
 - Mikrofon: nur, dass die Knöpfe da sind, wo der Browser es kann; kein Diktat gefahren.
 - Übernahme aus einer **echten** IndexedDB `MeinMxBackup1` und aus Klaus' echten Daten; die Probe stellt nur localStorage.
 - Große Sammlungen mit vielen Fotos (Speicher, Tempo); `zoom` für den Schrift-Regler in Firefox.
@@ -157,7 +146,7 @@ Läden kommen aus dem Kern.
 1. **Amaretto Sunrise:** in seinen Daten standen 1 cl Amaretto und ¼ cl Grenadine auf 4 oz Saft; im Beispielpaket jetzt 1 oz und
    ¼ oz. So lassen oder zurück?
 2. **Mango Mojito:** hatte nur einen Schritt und keinen Zucker; ergänzt nach dem Original auf 6 Gläser, Rum 180 ml statt 200. In Ordnung?
-3. **Winkel am Monitor** wie im Rezeptbuch, oder Knöpfe rechts neben dem Bild (jetzt so)?
+3. ~~Winkel am Monitor~~ – erledigt: Klaus wollte ihn am Monitor neben dem Bild (gebaut).
 4. **Name „Getränkekarte“** (in der Leiste „Karte“) endgültig?
 5. **Kräftig:** in der Private Akte ein dunkles Blau mit Petrol; Klaus fand es unpassend zum Namen. Ändern?
 6. **Intro:** soll die neue App eines haben (nur beim ersten Start)?
@@ -179,3 +168,7 @@ Läden kommen aus dem Kern.
   nach „Alle Beispiele löschen“ und neuem Laden.
 - **Nicht am Arbeitsbaum arbeiten, während ein Helfer darin baut;** nur eigene Pfade committen (`git commit <pfade>`).
 - **Der Brief dieser Sitzung** lag nicht auf main von Meine-Familienakte, sondern auf dem Zweig `ccr-2d0572d2-vhgluh`.
+- **`data-d` ist schon vergeben** (Getränk öffnen); die Wochen-Knöpfe heißen `data-tage`.
+- **Plan-Übernahme nur einmal:** `A.planUebernommen`, sonst kommt ein gelöschter übernommener Eintrag zurück.
+- **Gegenprobe-Kopien brauchen `sbkim/` und `assets/`**; Python-Läufer mit `-u`, eine hängende Probe fängt `TimeoutExpired` als „GESTOLPERT“.
+- **`Zs(p, f)` in den Proben verliert Argumente;** für Funktionen mit Argument `p.evaluate` nehmen.
