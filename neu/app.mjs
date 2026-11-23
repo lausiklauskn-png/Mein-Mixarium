@@ -26,7 +26,7 @@ const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENK
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor8';
+export const FASSUNG = '10.0.0-vor9';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -165,10 +165,10 @@ function vGetraenk(br) {
   /* Kein Knopf auf dem Foto (Klaus 23.11., wie im Rezeptbuch): rechts in der Namenszeile ein weißer Winkel, der die Werkzeuge
      über dem Bild aufklappt, ohne neue Zeile und ohne etwas zu verschieben; „Zurück“ als Winkel links vom Namen. */
   const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
-  if (!br) return `<div class="held" data-a="bildblatt" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}</div>`;
+  if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}</div>`;
   const fk = Z.fokus;
   const liste = fk ? '' : `<div class="liste">${leiste()}${sichtbar().map((x) => `<button class="zeile" data-d="${esc(x.uid)}" ${x.uid === r.uid ? 'aria-current="true"' : ''}><span class="mini">${bild(x)}</span><span><strong>${esc(x.name)}</strong><small>${esc(katNameVon(x))}${x.prepTime ? ` · ${Number(x.prepTime)} min` : ''}</small></span></button>`).join('')}</div>`;
-  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="bildblatt" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><h2>${esc(r.name)}</h2>${fakten(r)}${aktionen(r, true)}<div class="reihe ansicht"><button class="knopf hell" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button><button class="knopf hell" data-a="bildblatt">${I('image')}${L('Bild', 'Picture')}</button></div></div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}</div></div></div></div>`;
+  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bildblatt', 'image', L('Bild', 'Picture'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}</div></div></div></div>`;
 }
 
 /* ── Mix-Ansicht ── Welche Zutaten nennt der Schritt? Über den Namen (Wortanfang, mindestens 4 Buchstaben). */
@@ -246,7 +246,7 @@ function vMehr() {
 }
 
 /* Bild im Vollbild: füllt den ganzen Schirm, das Bild ganz sichtbar (nicht beschnitten); Tipp, × oder Esc schließt. */
-function bildVoll() { const r = Z.bildVoll && getr(Z.uid); if (!r) return ''; return `<div class="bildvoll" data-a="bildvoll-zu" role="dialog" aria-modal="true" aria-label="${esc(r.name)}">${r.img ? `<img src="${esc(r.img)}" alt="${esc(r.name)}">` : platzbild(r)}<span class="bvname">${esc(r.name)}</span><button class="bvzu" data-a="bildvoll-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div>`; }
+function bildVoll() { const r = Z.bildVoll && getr(Z.uid); if (!r) return ''; return `<div class="bildvoll" data-a="bildvoll-zu" role="dialog" aria-modal="true" aria-label="${esc(r.name)}">${r.img ? `<img src="${esc(r.img)}" alt="${esc(r.name)}">` : platzbild(r)}<span class="bvname">${esc(r.name)}</span><button class="bvwerk" data-a="bildvoll-werk">${I('image')}${L('Bild bearbeiten', 'Edit picture')}</button><button class="bvzu" data-a="bildvoll-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div>`; }
 
 /* ── Fenster (Dialoge) ── */
 function fenster() {
@@ -428,7 +428,7 @@ function setze(f, frisch) {
   if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
 }
 function geh(v) { history.pushState({ v }, ''); setze(() => { Z.view = v; Z.flAuf = false; Z.menue = null; if (v === 'mix') { Z.step = 0; Z.richt = 'vor'; wachAn(); } if (v !== 'karte') Z.anlass = null; }, true); }
-function zurueck() { if (Z.bildVoll) { Z.bildVoll = false; return zeichne(); } if (Z.fenster) return fZu(); if (Z.menue) { Z.menue = null; return zeichne(); } if (Z.view === 'mix') return mixZu(); if (Z.view === 'karte' && Z.anlass) return setze(() => { Z.anlass = null; }, true); if (Z.view !== 'start') return setze(() => { Z.view = Z.view === 'getraenk' ? 'start' : 'start'; Z.fokus = false; }, true); }
+function zurueck() { if (Z.bildVoll) { Z.bildVoll = false; if (Z.nachBild) { Z.nachBild = false; Z.bildWerk = false; return bildBlatt(); } return zeichne(); } if (Z.fenster) return fZu(); if (Z.menue) { Z.menue = null; return zeichne(); } if (Z.view === 'mix') return mixZu(); if (Z.view === 'karte' && Z.anlass) return setze(() => { Z.anlass = null; }, true); if (Z.view !== 'start') return setze(() => { Z.view = Z.view === 'getraenk' ? 'start' : 'start'; Z.fokus = false; }, true); }
 function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; Z.bildWerk = false; }, true); }
 
 /* Bildschirm wach halten, solange die Mix-Ansicht offen ist (wo das Gerät es erlaubt). */
@@ -513,6 +513,9 @@ const TUN = {
   teilen() { const r = sicht(getr(Z.uid)); teilen(r.name, r.name + '\n\n' + zutatenVon(r).map((z) => '– ' + [mengeText(z), z.name].filter(Boolean).join(' ')).join('\n') + '\n\n' + (r.steps || []).map((s, i) => `${i + 1}. ${s.txt}`).join('\n')); return false; },
   bildvoll() { Z.fenster = null; Z.bildVoll = true; history.pushState({ v: 'bild' }, ''); },
   'bildvoll-zu'() { history.back(); return false; },
+  /* Klaus 23.11.: ein Tipp aufs Bild öffnet das Vollbild, von dort ein Tipp das Bild-Blatt. Ohne Bild gleich das Bild-Blatt. */
+  held() { const r = getr(Z.uid); if (r && r.img) return TUN.bildvoll(); Z.bildWerk = false; bildBlatt(); return false; },
+  'bildvoll-werk'() { Z.nachBild = true; history.back(); return false; },
   beispiele() { beispieleFenster(); return false; }, 'beispiele-weg'() { beispieleWeg(); return false; },
   sichern() { sichernDatei(); return false; },
   einspielen() { $('#datei').click(); return false; },

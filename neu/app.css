@@ -639,3 +639,13 @@ h1,h2,h3,p{margin:0}
 .mx .emoji-raster button{height:42px;border-radius:10px;font-size:22px;display:grid;place-items:center;background:var(--fl2)}
 .mx .laeden{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
 .mx .unter.klein{font-size:12px;margin-top:6px}
+
+/* Vollbild → Bild-Blatt; Monitor: Winkel neben dem Bild in der Namenszeile (Klaus 23.11.) */
+.mx .bvwerk{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:12px;height:42px;padding:0 15px 0 12px;border-radius:21px;background:rgba(255,255,255,.92);color:#0f1d3a;display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px}
+.mx .bvwerk .ico{width:18px;height:18px}
+.mx .tzeile.mon{align-items:center}
+.mx .wk-pf.mon{color:var(--ink);filter:none;margin:0;background:none}
+.mx .rwerk.mon{position:static;flex-direction:row;flex-wrap:wrap;gap:6px;animation:none}
+.mx .rwerk.mon .chip{background:var(--fl2);color:var(--ink);box-shadow:none}
+.mx .rwerk.mon .chip .ico{color:var(--ink)}
+.mx .rwerk.mon .chip.rot,.mx .rwerk.mon .chip.rot .ico{color:#a3321f}
