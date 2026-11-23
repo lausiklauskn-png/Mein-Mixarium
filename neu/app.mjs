@@ -14,11 +14,19 @@ import { bildAusDatei } from '../kern/oberflaeche/bild.mjs';
 import { kiBild, gratisBild, KOSTEN } from '../kern/ki/bild.mjs';
 import { sicht as kernSicht } from '../kern/modell/rezept.mjs';
 import { diktat, diktatAus, diktatMoeglich } from '../kern/oberflaeche/diktat.mjs';
+import { kategorienMit, beschriftung as katBeschr, anzahl as katZahl, anlegen as katAnlegen, umbenennen as katUmbenennen, KATEGORIEN_FEST } from '../kern/modell/kategorien.mjs';
+import { katVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
+import { einkaufMit } from '../kern/modell/einkauf.mjs';
+
+/* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
+   Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
+const K = kategorienMit(G.KATEGORIEN, { familie: KATEGORIEN_FEST });
+const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENKE_EINKAUF_EINHEITEN });
 
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor7';
+export const FASSUNG = '10.0.0-vor8';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -58,12 +66,22 @@ function melde(t) { Z.toast = t; zeichne(); clearTimeout(melde.uhr); melde.uhr =
 function sichtbar() {
   const q = Z.suche.trim().toLowerCase();
   return G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter((r) => G.istSichtbar(r)
-    && (Z.kat === 'all' || G.katVonRezept(r, A.ordner) === Z.kat)
+    && (Z.kat === 'all' || katVonRezept(r) === Z.kat)
     && (!q || String(r.name).toLowerCase().includes(q) || (r.ings || []).some((z) => String(z.name).toLowerCase().includes(q)) || (r.tags || []).some((t) => String(t).toLowerCase().includes(q))));
 }
-function kats() { const l = lage(); return G.katsAlle(l).map((c) => ({ c, n: G.katAnzahl(c.id, l.getraenke, l.ordner) })).filter((x) => x.n > 0); }
-const katText = (c) => G.katBeschriftung(c, A.kategorien && A.kategorien.eigen, sprache());
-const katNameVon = (r) => { const id = G.katVonRezept(r, A.ordner); const c = G.katsAlle(lage()).find((x) => x.id === id); return c ? katText(c) : (id === G.KAT_OHNE ? L('Ohne Kategorie', 'No category') : id); };
+function kats() { const gl = G.filterOhneAlkohol(A.getraenke, ohneAlk()); return K.alleKategorien(gl, A.kategorien).map((c) => ({ c, n: katZahl(gl, c.id) })).filter((x) => x.n > 0); }
+const katText = (c) => katBeschr(c, sprache(), A.kategorien);
+const katNameVon = (r) => { const id = katVonRezept(r); const c = K.alleKategorien(A.getraenke, A.kategorien).find((x) => x.id === id); return c ? katText(c) : (id === KAT_OHNE ? L('Ohne Kategorie', 'No category') : id); };
+/* Zeichen einer Kategorie: ein selbst gewähltes Emoji, sonst das gezeichnete Symbol. */
+const katZeichen = (c) => { const e = (A.kategorien.namen && A.kategorien.namen[c.id] && A.kategorien.namen[c.id].emoji) || c.emoji; return e ? `<span class="kemoji" aria-hidden="true">${esc(e)}</span>` : I(KAT_SYM[c.id] || (c.art === 'ohne' ? 'frage' : c.art === 'unbekannt' ? 'paket' : 'box')); };
+/* Eine Form für alle Wege herein (Start, Einspielen, Tresor, Übernahme): Kategorie-Zustand im Kern-Format; ein altes
+   cat: "fld_…" ist ein Ordner und zieht nach `folder` (Familien-Regel: ein Ordner frisst die Kategorie nicht). */
+function inForm() {
+  if (!A) return;
+  A.kategorien = G.katZustandZuKern(A.kategorien);
+  for (const r of A.getraenke || []) if (typeof r.cat === 'string' && r.cat.startsWith('fld_')) { if (!r.folder) r.folder = r.cat.slice(4); r.cat = ''; }
+  A.einkaufLaeden = A.einkaufLaeden && A.einkaufLaeden.laeden ? A.einkaufLaeden : { laeden: { [L('Supermarkt', 'Supermarket')]: [] }, laden: L('Supermarkt', 'Supermarket') };
+}
 
 /* ── Bausteine ── */
 function bild(r, klasse = '') {
@@ -103,7 +121,7 @@ function menue() {
 }
 function leiste() {
   const l = lage(), alle = l.getraenke.filter(G.istSichtbar).length;
-  return `<div class="leiste"><button class="chip" data-kat="all" aria-pressed="${Z.kat === 'all'}">${I('book')}${L('Alle', 'All')}<span class="zahl">${alle}</span></button>${kats().map(({ c, n }) => `<button class="chip" data-kat="${esc(c.id)}" aria-pressed="${Z.kat === c.id}">${I(KAT_SYM[c.id] || 'box')}${esc(katText(c))}<span class="zahl">${n}</span></button>`).join('')}</div>`;
+  return `<div class="leiste"><button class="chip" data-kat="all" aria-pressed="${Z.kat === 'all'}">${I('book')}${L('Alle', 'All')}<span class="zahl">${alle}</span></button>${kats().map(({ c, n }) => `<button class="chip" data-kat="${esc(c.id)}" aria-pressed="${Z.kat === c.id}">${katZeichen(c)}${esc(katText(c))}<span class="zahl">${n}</span></button>`).join('')}</div>`;
 }
 function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.beispiel ? `<span class="marke rechts">${L('Beispiel', 'Example')}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
 function kartenHtml() {
@@ -174,8 +192,10 @@ function vMix(br) {
 }
 
 /* ── Einkaufsliste ── */
-const GRP = [['obst', ['Obst & Kräuter', 'Fruit & herbs'], 'leaf', /zitron|limett|orange|minz|gurke|ingwer|beere|apfel|äpfel|mango|basilik|rosmarin|ananas|pfirsich|banane|kirsch|melone|holunder|thymian|lemon|lime|mint|cucumber|ginger|berr|apple|peach|pineapple|basil/i], ['saft', ['Säfte & Sirupe', 'Juices & syrups'], 'drop', /saft|sirup|nektar|juice|syrup|grenadine|püree|puree/i], ['wasser', ['Sprudel & Wasser', 'Sparkling & water'], 'glass', /wasser|soda|sprudel|tonic|limonade|cola|ginger ale|ginger beer|water|lemonade/i], ['kuehl', ['Kühlregal & Eis', 'Chilled & ice'], 'snow', /milch|joghurt|sahne|eis|butter|quark|milk|yogurt|cream|ice/i], ['vorrat', ['Vorrat', 'Pantry'], 'list', /./]];
-const gruppeVon = (name) => GRP.find((g) => g[3].test(name))[0];
+/* Warengruppen aus getraenke/warengruppen.mjs, zugeordnet vom Kern; jeder Laden merkt sich seine Reihenfolge der Gruppen. */
+const gruppeVon = (name) => EK.warengruppe(name);
+const gruppeName = (g) => g[sprache()] || g.en || g.de;
+const ladenFolge = () => EK.gruppenFolge(A.einkaufLaeden.laeden[A.einkaufLaeden.laden] || []);
 function einkaufDazu(r, portionen, wofuer) {
   for (const z of G.portionenSkalieren(r.ings || [], r.servings, portionen)) {
     if (!String(z.name).trim()) continue;
@@ -187,10 +207,11 @@ function einkaufDazu(r, portionen, wofuer) {
 function vEinkauf(br) {
   const ps = A.einkauf, offen = ps.filter((p) => !p.ok).length;
   const posten = (p) => `<button class="posten ${Z.pop === p.id ? 'pop' : ''}" role="checkbox" aria-checked="${!!p.ok}" data-h="${p.id}"><span class="kasten">${p.ok ? I('check') : ''}</span><span class="was">${esc(p.name)}<small>${L('für', 'for')} ${esc(p.fuer.join(', '))}</small></span><span class="wieviel">${esc(p.wert !== null ? zahl(G.zahlFormatieren(p.wert)) + (p.unit ? ' ' + p.unit : '') : [p.text, p.unit].filter(Boolean).join(' '))}</span></button>`;
-  const gruppen = GRP.map(([g, n, i]) => { const l = ps.filter((p) => gruppeVon(p.name) === g); return l.length ? `<div class="gruppe-e"><h3>${I(i)}${L(...n)}</h3>${l.map(posten).join('')}</div>` : ''; }).join('');
+  const gruppen = ladenFolge().map((gid) => { const g = EK.GRUPPEN.find((x) => x.id === gid), l = ps.filter((p) => gruppeVon(p.name) === gid); return l.length ? `<div class="gruppe-e" data-g="${gid}"><h3 title="${L('Lange drücken und ziehen, um die Reihenfolge zu ändern', 'Long-press and drag to reorder')}">${I('griff', 'griffz')}${I(g.symbol)}${esc(gruppeName(g))}</h3>${l.map(posten).join('')}</div>` : ''; }).join('');
+  const lae = A.einkaufLaeden, laeden = ps.length ? `<div class="laeden" role="group" aria-label="${L('Laden', 'Shop')}">${Object.keys(lae.laeden).map((n) => `<button class="chip" data-a="ek-laden" data-l="${esc(n)}" aria-pressed="${n === lae.laden}">${I('markt')}${esc(n)}</button>`).join('')}<button class="chip" data-a="ek-laden-neu">${I('plus')}${L('Laden', 'Shop')}</button></div><p class="unter klein">${L('Jeder Laden merkt sich seine Reihenfolge. Eine Gruppe an der Überschrift lange drücken oder mit der Maus ziehen.', 'Each shop keeps its own order. Long-press a group heading or drag it with the mouse.')}</p>` : '';
   const kopfz = `<h2 class="titel">${L('Einkaufsliste', 'Shopping list')}</h2><p class="unter">${ps.length ? L(`${offen} von ${ps.length} offen`, `${offen} of ${ps.length} open`) : L('Noch leer. Im Getränk oder in einer Getränkekarte auf „Auf die Einkaufsliste“ tippen.', 'Empty. Tap “Add to shopping list” in a drink or a drinks list.')}</p>`;
   const werk = ps.length ? `<div class="reihe" style="margin-top:10px"><button class="knopf hell" data-a="einkauf-teilen">${I('share')}${L('Teilen', 'Share')}</button><button class="knopf hell" data-a="einkauf-erledigt">${I('check')}${L('Erledigtes entfernen', 'Remove done')}</button><button class="knopf hell" data-a="einkauf-leeren">${I('trash')}${L('Liste leeren', 'Clear list')}</button></div>` : '';
-  return `<div class="innen-p">${kopfz}${werk}${br ? `<div class="einkauf-breit">${gruppen}</div>` : gruppen}</div>`;
+  return `<div class="innen-p">${kopfz}${werk}${laeden}${br ? `<div class="einkauf-breit" id="ek-liste">${gruppen}</div>` : `<div id="ek-liste">${gruppen}</div>`}</div>`;
 }
 
 /* ── Getränkekarte (Anlässe) ── */
@@ -217,7 +238,7 @@ function vMehr() {
   const z = (i, t, w, attr = '') => `<button class="ezeile" ${attr}>${i}<span><b>${t}</b><small>${w}</small></span>${I('right')}</button>`;
   const bsp = A.getraenke.filter((r) => r.beispiel).length, alle = A.getraenke.filter(G.istSichtbar).length;
   return `<div class="innen-p"><h2 class="titel">${L('Einstellungen', 'Settings')}</h2>
-  <div class="eliste">${z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"')}${z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch nach Land', 'automatic by country'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"')}${z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' % · ' + L('Schieberegler, ändert sich sofort', 'slider, changes right away'), 'data-a="menue" data-m="schrift"')}${z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { geraet: L('wie das Gerät', 'same as device'), hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"')}${z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an: Getränke mit Alkohol sind ausgeblendet', 'on: drinks with alcohol are hidden') : L('aus', 'off'), 'data-a="alk"')}</div>
+  <div class="eliste">${z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"')}${z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch nach Land', 'automatic by country'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"')}${z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' % · ' + L('Schieberegler, ändert sich sofort', 'slider, changes right away'), 'data-a="menue" data-m="schrift"')}${z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { geraet: L('wie das Gerät', 'same as device'), hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"')}${z(I('box'), L('Kategorien', 'Categories'), L('umbenennen, Zeichen, ordnen, löschen, neu', 'rename, symbol, order, delete, new'), 'data-a="kategorien"')}${z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an: Getränke mit Alkohol sind ausgeblendet', 'on: drinks with alcohol are hidden') : L('aus', 'off'), 'data-a="alk"')}</div>
   <h3 class="eh">${L('Beispiele', 'Examples')}</h3><div class="eliste">${z(I('box'), L('Beispiele laden', 'Load examples'), L('Pakete mit Getränken zum Ausprobieren', 'Packages of drinks to try'), 'data-a="beispiele"')}${z(I('trash'), L('Alle Beispiele löschen', 'Delete all examples'), bsp ? L(`${bsp} Beispiele in deiner Sammlung`, `${bsp} examples in your collection`) : L('keine Beispiele in deiner Sammlung', 'no examples in your collection'), 'data-a="beispiele-weg"')}</div>
   <h3 class="eh">${L('Sammlung', 'Collection')}</h3><div class="eliste">${z(I('download'), L('Sicherung speichern', 'Save a backup'), L(`${alle} Getränke als Datei`, `${alle} drinks as a file`), 'data-a="sichern"')}${z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), L('fügt hinzu, Doppelte werden erkannt', 'adds; duplicates are detected'), 'data-a="einspielen"')}${z(I('safe'), L('Tresor', 'Vault'), L('Stände im Gerät: ablegen und zurückholen', 'states on this device: store and restore'), 'data-a="tresor"')}${z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), L('liest die alten Daten, ändert sie nicht', 'reads the old data, does not change it'), 'data-a="uebernehmen"')}${z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('alle Getränke, Karten und die Einkaufsliste entfernen', 'remove all drinks, lists and the shopping list'), 'data-a="leeren"')}</div>
   <h3 class="eh">${L('KI', 'AI')}</h3><div class="eliste">${z(I('sparkle'), L('OpenAI-Schlüssel für KI-Bilder', 'OpenAI key for AI pictures'), L('eigener Schlüssel, bleibt auf diesem Gerät', 'your own key, stays on this device'), 'data-a="schluessel"')}</div>
@@ -237,7 +258,7 @@ function frage(titel, text, jaText, ja, gefahr) { Z.fenster = { titel, html: `<p
 
 function editor(r) {
   const neu = !r; r = r || { name: '', cat: Z.kat !== 'all' ? Z.kat : 'mock', glass: 'highball', temp: 'kalt', servings: 1, prepTime: 5, ings: [], steps: [], notes: '', img: '' };
-  const katListe = G.katsAlle({ ...lage(), getraenke: A.getraenke }).filter((c) => c.id !== G.KAT_OHNE);
+  const katListe = K.alleKategorien(A.getraenke, A.kategorien).filter((c) => c.art !== 'ohne');
   const opt = (l, wert, name) => l.map((x) => `<option value="${esc(x.id)}" ${x.id === wert ? 'selected' : ''}>${esc(name(x))}</option>`).join('');
   const glasBekannt = !r.glass || G.istBekanntesGlas(r.glass);
   Z.fenster = { titel: neu ? L('Neues Getränk', 'New drink') : L('Getränk bearbeiten', 'Edit drink'), uid: r.uid || null, img: r.img || '', html: `<form id="ed" class="felder" autocomplete="off">
@@ -344,13 +365,13 @@ async function tresorHolen(id) {
     await tresorAuto(L('vor dem Zurückholen', 'before restoring'));
     const g = G.sicherungLesen(s, { knoten: A.knoten });
     A = { ...G.leereSammlung(A), getraenke: g.getraenke, ordner: g.ordner, karten: g.karten, einkauf: Array.isArray(s.einkauf) ? s.einkauf : [], anlaesse: Array.isArray(s.anlaesse) ? s.anlaesse : [], kategorien: A.kategorien, einstellungen: A.einstellungen, knoten: A.knoten };
-    if (g.kategorien.length) A.kategorien = { ...A.kategorien, neu: g.kategorien };
+    A.kategorien = G.katZustandZuKern({ ...(s.kategorienZustand || A.kategorien), neu: g.kategorien }); if (s.einkaufLaeden) A.einkaufLaeden = s.einkaufLaeden;
     sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; Z.kat = 'all'; melde(L('Stand zurückgeholt.', 'State restored.')); zeichne(true);
   });
 }
 
 /* ── Sicherung ── Format wie die alte App (version 10), damit beide Richtungen gehen. */
-function sicherungText() { return JSON.stringify({ version: G.SICHERUNG_VERSION, exported: new Date().toISOString(), app: 'Mein Mixarium ' + FASSUNG, knoten: A.knoten || undefined, recipes: A.getraenke, folders: A.ordner, menu: A.karten || [], kategorien: (A.kategorien && A.kategorien.neu) || [], einkauf: A.einkauf, anlaesse: A.anlaesse || [] }); }
+function sicherungText() { return JSON.stringify({ version: G.SICHERUNG_VERSION, exported: new Date().toISOString(), app: 'Mein Mixarium ' + FASSUNG, knoten: A.knoten || undefined, recipes: A.getraenke, folders: A.ordner, menu: A.karten || [], kategorien: G.katListeFuerSicherung(A.kategorien), kategorienZustand: A.kategorien, einkauf: A.einkauf, einkaufLaeden: A.einkaufLaeden, anlaesse: A.anlaesse || [] }); }   // kategorienZustand/einkaufLaeden: neu, die bisherige App übergeht sie
 function sichernDatei() {
   const d = new Date(), p = (n) => String(n).padStart(2, '0');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([sicherungText()], { type: 'application/json' }));
@@ -360,8 +381,11 @@ function sichernDatei() {
 async function einspielenDatei(datei) {
   try {
     await tresorAuto(L('vor dem Einspielen', 'before restoring a file'));
-    const e = G.sicherungEinspielen(A, await datei.text(), { knoten: A.knoten });
-    A = { ...A, ...e.sammlung }; sichern(); Z.view = 'start'; Z.kat = 'all';
+    const text = await datei.text(), e = G.sicherungEinspielen(A, text, { knoten: A.knoten });
+    A = { ...A, ...e.sammlung }; inForm();
+    let roh = null; try { roh = JSON.parse(text); } catch (f) { /* gelesen hat sie schon sicherungEinspielen */ }
+    if (roh && roh.kategorienZustand) { const f = G.katZustandZuKern(roh.kategorienZustand), k = A.kategorien; A.kategorien = { ...k, eigene: [...k.eigene, ...f.eigene.filter((c) => !k.eigene.some((x) => x.id === c.id))], namen: { ...f.namen, ...k.namen } }; }   // die eigenen Namen gewinnen
+    sichern(); Z.view = 'start'; Z.kat = 'all';
     const ohne = (e.ohneKategorie || []).length;
     melde(L(`${e.neu.length} Getränke hinzugefügt${e.uebersprungen && e.uebersprungen.length ? `, ${e.uebersprungen.length} waren schon da` : ''}${ohne ? `, ${ohne} ohne Kategorie` : ''}.`, `${e.neu.length} drinks added${e.uebersprungen && e.uebersprungen.length ? `, ${e.uebersprungen.length} already there` : ''}.`));
   } catch (err) { melde(L('Diese Datei ist keine Sicherung, die ich lesen kann.', 'This file is not a backup I can read.')); }
@@ -384,6 +408,7 @@ async function ausAlterApp(still) {
    (für eigene Mischungen dieser Ausgabe). */
 function kernStil() { const el = $('.mx'); farbeSetzen(el, E.farbe, E.ton); el.style.setProperty('--pa', (FARBEN[E.farbe] || FARBEN.blau).akz); E.schrift = schriftSetzen(el, E.schrift); }
 function zeichne(frisch) {
+  inForm();
   const br = breit(), v = Z.view, mix = v === 'mix';
   const basis = mix ? 'getraenk' : v;
   const h = basis === 'start' ? vStart(br) : basis === 'getraenk' ? vGetraenk(br) : basis === 'einkauf' ? vEinkauf(br) : basis === 'karte' ? vKarte(br) : basis === 'labor' ? vLabor() : vMehr();
@@ -414,8 +439,39 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function mixZu() { wachAus(); setze(() => { Z.view = 'getraenk'; Z.step = 0; }, true); }
 function schritt(d) { const r = getr(Z.uid), n = Math.max(1, (r.steps || []).length); const neu = Math.min(n - 1, Math.max(0, Z.step + d)); if (neu === Z.step) return; Z.richt = d > 0 ? 'vor' : 'zur'; Z.step = neu; zeichne(); }
 
+/* ── Kategorien verwalten (Vorbild: Mein Rezeptbuch, neu/app.mjs) ── */
+const EMOJI = '🥤 🍹 🍸 🍋 ☕ 🍶 🫙 🥨 🍢 🍷 🍺 🥂 🧃 🥛 🍵 🫖 🧉 🍾 🥃 🍓 🍒 🍑 🍍 🥭 🍌 🍇 🍉 🍊 🍎 🥥 🥝 🫐 🌿 🍃 🌸 🧊 🔥 ❄️ ⭐ ❤️ 🎄 🎂 🎉 🌞 🌙 👶 🍣 🍕 🍰 🍮 🍪 🧁 🍫 🍦 🍯'.split(' ');
+function katFenster() {
+  const alle = K.alleKategorien(A.getraenke, A.kategorien), aus = (A.kategorien.ausgeblendet || []).filter((id) => !alle.some((c) => c.id === id)).map((id) => G.KATEGORIEN.find((c) => c.id === id)).filter(Boolean);
+  const zeile = (c) => { const n = katZahl(A.getraenke, c.id), eig = (A.kategorien.namen[c.id] && A.kategorien.namen[c.id].name) || '', ohne = c.art === 'ohne';
+    return `<div class="kat-zeile" data-kid="${esc(c.id)}"><span class="griff" aria-hidden="true">${I('griff')}</span><button class="kat-zeichen" data-a="kat-emoji" data-kid="${esc(c.id)}" aria-label="${L('Zeichen ändern', 'Change symbol')}">${katZeichen(c)}</button>${ohne ? `<span class="kat-fest">${esc(katText(c))}</span>` : `<input class="feld kat-name" data-kid="${esc(c.id)}" value="${esc(c.art === 'eigen' && !eig ? c.de : eig)}" placeholder="${esc(c[sprache()] || c.de || c.id)}" aria-label="${L('Name der Kategorie', 'Category name')} ${esc(katText(c))}" autocomplete="off">`}<small>${n}</small>${ohne ? '<span class="platz"></span>' : `<button class="rund klein" data-a="kat-weg" data-kid="${esc(c.id)}" aria-label="${L('Kategorie löschen', 'Delete category')} ${esc(katText(c))}">${I('trash')}</button>`}</div>`; };
+  Z.fenster = { titel: L('Kategorien', 'Categories'), html: `<p class="ftext">${L('Namen und Zeichen kannst du frei ändern; ein leeres Namensfeld heißt Vorgabe. Ein eigener Name gilt in allen Sprachen. Zum Ordnen eine Zeile am Griff lange drücken oder mit der Maus ziehen. Eine Kategorie mit Getränken fragt beim Löschen, wohin die Getränke sollen.', 'You can change names and symbols freely; an empty name means the default. Your own name applies in all languages. To reorder, long-press a row at its handle or drag it with the mouse. A category with drinks asks where its drinks should go when you delete it.')}</p>
+   <div class="kat-liste" id="kat-liste">${alle.map(zeile).join('')}</div><div class="reihe" style="margin-top:12px"><button class="knopf" data-a="kat-neu">${I('plus')}${L('Neue Kategorie', 'New category')}</button></div>
+   ${aus.length ? `<h3 class="eh">${L('Ausgeblendet', 'Hidden')}</h3><div class="eliste">${aus.map((c) => `<button class="ezeile" data-a="kat-zurueck" data-kid="${esc(c.id)}">${I('plus')}<span><b>${esc(katText(c))}</b><small>${L('wieder zeigen', 'show again')}</small></span></button>`).join('')}</div>` : ''}`, kat: true };
+}
+function katWegFenster(id) {
+  const c = K.alleKategorien(A.getraenke, A.kategorien).find((x) => x.id === id), n = katZahl(A.getraenke, id);
+  const ziele = K.alleKategorien(A.getraenke, A.kategorien).filter((x) => x.art !== 'ohne' && x.id !== id);
+  Z.fenster = { titel: L(`Wohin mit ${n} Getränken?`, `Where should ${n} drinks go?`), html: `<p class="ftext">${L(`„${esc(katText(c))}“ wird gelöscht. Die Getränke bleiben und bekommen die Kategorie, die du hier wählst.`, `“${esc(katText(c))}” will be deleted. The drinks stay and get the category you pick here.`)}</p><div class="eliste">${ziele.map((x) => `<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="${esc(x.id)}">${katZeichen(x)}<span><b>${esc(katText(x))}</b><small></small></span></button>`).join('')}<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="">${I('frage')}<span><b>${L('ohne Kategorie', 'no category')}</b><small>${L('sie erscheinen unter „Ohne Kategorie“', 'they appear under “No category”')}</small></span></button></div><div class="reihe ende"><button class="knopf hell" data-a="kategorien">${L('Abbrechen', 'Cancel')}</button></div>` };
+}
+function katLoeschenMit(id, ziel) {
+  const c = K.alleKategorien(A.getraenke, A.kategorien).find((x) => x.id === id), name = c ? katText(c) : id;
+  const l = K.loeschen(A.getraenke, A.kategorien, id, ziel); A.getraenke = l.rezepte; A.kategorien = l.kat; if (Z.kat === id) Z.kat = 'all'; sichern(); katFenster();
+  melde(l.verschoben ? L(`„${name}“ gelöscht, ${l.verschoben} Getränke umgehängt.`, `“${name}” deleted, ${l.verschoben} drinks moved.`) : L(`„${name}“ gelöscht.`, `“${name}” deleted.`));
+}
+
 /* ── Bedienung ── */
 const TUN = {
+  kategorien() { katFenster(); },
+  'kat-neu'() { const a = katAnlegen(A.kategorien, L('Neue Kategorie', 'New category')); A.kategorien = a.kat; sichern(); katFenster(); zeichne(); const f = document.querySelector(`.kat-name[data-kid="${a.id}"]`); if (f) { f.focus(); f.select(); } return false; },
+  'kat-weg'(b) { const id = b.dataset.kid; if (katZahl(A.getraenke, id)) katWegFenster(id); else katLoeschenMit(id, null); },
+  'kat-weg-ziel'(b) { katLoeschenMit(b.dataset.kid, b.dataset.ziel); return false; },
+  'kat-zurueck'(b) { A.kategorien = { ...A.kategorien, ausgeblendet: A.kategorien.ausgeblendet.filter((x) => x !== b.dataset.kid) }; sichern(); katFenster(); },
+  'kat-emoji'(b) { const id = b.dataset.kid; Z.fenster = { titel: L('Zeichen wählen', 'Choose a symbol'), html: `<div class="emoji-raster">${EMOJI.map((x) => `<button data-a="kat-emoji-setzen" data-kid="${esc(id)}" data-em="${x}" aria-label="${x}">${x}</button>`).join('')}</div><div class="reihe ende"><button class="knopf hell" data-a="kat-emoji-setzen" data-kid="${esc(id)}" data-em="">${L('Vorgabe', 'Default')}</button><button class="knopf hell" data-a="kategorien">${L('Zurück', 'Back')}</button></div>` }; },
+  'kat-emoji-setzen'(b) { const id = b.dataset.kid, e = b.dataset.em, namen = { ...A.kategorien.namen }, v = { ...(namen[id] || {}) }; if (e) v.emoji = e; else delete v.emoji; if (Object.keys(v).length) namen[id] = v; else delete namen[id];
+    A.kategorien = { ...A.kategorien, namen, eigene: A.kategorien.eigene.map((c) => (c.id === id && !e ? (({ emoji, ...rest }) => rest)(c) : c)) }; sichern(); katFenster(); },
+  'ek-laden'(b) { A.einkaufLaeden = { ...A.einkaufLaeden, laden: b.dataset.l }; sichern(); },
+  'ek-laden-neu'() { Z.fenster = { titel: L('Neuer Laden', 'New shop'), html: `<form id="ladenform" class="felder" autocomplete="off"><label>${L('Name', 'Name')}<input class="feld" name="n" required placeholder="${L('z. B. Getränkemarkt', 'e.g. drinks store')}"></label><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Anlegen', 'Create')}</button></div></form>` }; },
   alk() { A.einstellungen.ohneAlkohol = !ohneAlk(); const r = getr(Z.uid); if (ohneAlk() && r && G.hatAlkohol(r)) { Z.view = 'start'; Z.uid = null; } if (!kats().some((x) => x.c.id === Z.kat)) Z.kat = 'all'; sichern(); },
   kopf() { Z.kopfAuf = !Z.kopfAuf; Z.menue = null; },
   navzu() { E.navZu = !E.navZu; einstSichern(); },
@@ -453,7 +509,7 @@ const TUN = {
   'einkauf-dazu'() { const r = sicht(getr(Z.uid)); einkaufDazu(r, Z.port, r.name); sichern(); melde(L('Zutaten stehen auf der Einkaufsliste.', 'Ingredients are on the shopping list.')); return false; },
   'einkauf-erledigt'() { A.einkauf = A.einkauf.filter((p) => !p.ok); sichern(); },
   'einkauf-leeren'() { frage(L('Liste leeren', 'Clear list'), L('Alle Posten werden entfernt.', 'All items will be removed.'), L('Leeren', 'Clear'), () => { A.einkauf = []; sichern(); fZu(); }, true); return false; },
-  'einkauf-teilen'() { teilen(L('Einkaufsliste', 'Shopping list'), GRP.map(([g, n]) => { const l = A.einkauf.filter((p) => !p.ok && gruppeVon(p.name) === g); return l.length ? L(...n) + '\n' + l.map((p) => '– ' + (p.wert !== null ? zahl(G.zahlFormatieren(p.wert)) + (p.unit ? ' ' + p.unit : '') : [p.text, p.unit].filter(Boolean).join(' ')) + ' ' + p.name).join('\n') : ''; }).filter(Boolean).join('\n\n')); return false; },
+  'einkauf-teilen'() { teilen(L('Einkaufsliste', 'Shopping list'), ladenFolge().map((g) => { const l = A.einkauf.filter((p) => !p.ok && gruppeVon(p.name) === g); return l.length ? gruppeName(EK.GRUPPEN.find((x) => x.id === g)) + '\n' + l.map((p) => '– ' + (p.wert !== null ? zahl(G.zahlFormatieren(p.wert)) + (p.unit ? ' ' + p.unit : '') : [p.text, p.unit].filter(Boolean).join(' ')) + ' ' + p.name).join('\n') : ''; }).filter(Boolean).join('\n\n')); return false; },
   teilen() { const r = sicht(getr(Z.uid)); teilen(r.name, r.name + '\n\n' + zutatenVon(r).map((z) => '– ' + [mengeText(z), z.name].filter(Boolean).join(' ')).join('\n') + '\n\n' + (r.steps || []).map((s, i) => `${i + 1}. ${s.txt}`).join('\n')); return false; },
   bildvoll() { Z.fenster = null; Z.bildVoll = true; history.pushState({ v: 'bild' }, ''); },
   'bildvoll-zu'() { history.back(); return false; },
@@ -509,6 +565,7 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('submit', (ev) => {
   ev.preventDefault();
   if (ev.target.id === 'ed') return editorSpeichern(ev.target);
+  if (ev.target.id === 'ladenform') { const n = String(new FormData(ev.target).get('n') || '').trim(); if (!n) return; const lae = A.einkaufLaeden; A.einkaufLaeden = { laeden: { ...lae.laeden, [n]: lae.laeden[n] || [...(lae.laeden[lae.laden] || [])] }, laden: n }; sichern(); Z.fenster = null; return zeichne(); }
   if (ev.target.id === 'trform') { tr.ablegen(sicherungObjekt(), 'benannt', String(new FormData(ev.target).get('name') || '').trim()).then(tresorFenster); return; }
   if (ev.target.id === 'skform') { const k = String(new FormData(ev.target).get('k') || '').trim(), fb = Z.fenster.fuerBild; if (!k) return; lager.setz('schluessel-openai', k).then(() => { Z.fenster = null; melde(L('Schlüssel gespeichert.', 'Key saved.')); if (fb) bildErzeugen(false); }); return; }
   if (ev.target.id === 'anform') { const d = new FormData(ev.target), titel = String(d.get('titel') || '').trim(); if (!titel) return; A.anlaesse = A.anlaesse || []; let an = A.anlaesse.find((x) => x.id === Z.fenster.anlass); if (!an) { an = { id: Date.now(), posten: [] }; A.anlaesse.unshift(an); } Object.assign(an, { titel, datum: String(d.get('datum') || '').trim(), gaeste: Number(d.get('gaeste')) || 0 }); Z.anlass = an.id; Z.fenster = null; sichern(); zeichne(true); }
@@ -518,6 +575,9 @@ document.addEventListener('input', (ev) => {
   if (ev.target.id === 'schriftregler') { E.schrift = schriftSetzen($('.mx'), ev.target.value); $('#schriftzahl').textContent = E.schrift + ' %'; clearTimeout(einstSichern.uhr); einstSichern.uhr = setTimeout(einstSichern, 300); return; }
   if (ev.target.id === 'suche') { Z.suche = ev.target.value; const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = `${z} ${z === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}`; } } });
 document.addEventListener('change', async (ev) => {
+  if (ev.target.classList && ev.target.classList.contains('kat-name')) { const f = ev.target, id = f.dataset.kid, eig = A.kategorien.eigene.some((c) => c.id === id);
+    if (eig && f.value.trim()) A.kategorien = { ...katUmbenennen(A.kategorien, id, ''), eigene: A.kategorien.eigene.map((c) => (c.id === id ? { ...c, de: f.value.trim() } : c)) }; else if (!eig) A.kategorien = katUmbenennen(A.kategorien, id, f.value);
+    sichern(); katFenster(); return; }
   if (ev.target.id === 'edfoto' && ev.target.files[0]) { try { Z.fenster.img = await bildAusDatei(ev.target.files[0]); $('#edbild').innerHTML = `<img class="foto" src="${Z.fenster.img}" alt="">`; } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
   if (ev.target.id === 'bbdatei' && ev.target.files[0]) { try { bildSetzen(await bildAusDatei(ev.target.files[0])); Z.fenster = null; melde(L('Bild gespeichert.', 'Picture saved.')); } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
   if (ev.target.id === 'datei' && ev.target.files[0]) { await einspielenDatei(ev.target.files[0]); ev.target.value = ''; zeichne(true); }
@@ -539,6 +599,22 @@ document.addEventListener('pointermove', (ev) => { if (!flZug) return; if (!flZu
 const flLos = () => { if (!flZug) return; const w = flZug.weit; clearTimeout(flZug.uhr); flZug = null; if (w) { flGezogen = Date.now(); einstSichern(); zeichne(); } };
 document.addEventListener('pointerup', flLos); document.addEventListener('pointercancel', flLos);
 document.addEventListener('contextmenu', (ev) => { if (ev.target.closest && ev.target.closest('.fl-griff')) ev.preventDefault(); });
+
+/* Kategorie oder Warengruppe verschieben: lange drücken (350 ms) oder mit der Maus ziehen. Übernommen aus Mein Rezeptbuch. */
+let gz = null;
+const gzAn = () => { if (!gz || gz.weit) return; gz.weit = true; gz.gr.classList.add('zieht'); };
+document.addEventListener('pointerdown', (ev) => { const h = ev.target.closest && ev.target.closest('.gruppe-e h3, .kat-zeile .griff'); if (!h) return; const gr = h.closest('.gruppe-e, .kat-zeile'); gz = { gr, art: gr.classList.contains('kat-zeile') ? 'kat' : 'ek', y: ev.clientY, weit: false, ziel: null, uhr: setTimeout(gzAn, 350) }; try { h.setPointerCapture(ev.pointerId); } catch (e) { /* geht auch ohne */ } });
+document.addEventListener('pointermove', (ev) => { if (!gz) return; if (!gz.weit && Math.abs(ev.clientY - gz.y) < 8) return; gzAn(); gz.gr.style.transform = `translateY(${ev.clientY - gz.y}px)`;
+  const andere = [...document.querySelectorAll(gz.art === 'kat' ? '.kat-zeile' : '.gruppe-e')].filter((g) => g !== gz.gr); andere.forEach((g) => g.classList.remove('ziel-vor', 'ziel-nach')); let ziel = null, vor = true;
+  for (const g of andere) { const r = g.getBoundingClientRect(); ziel = g; if (ev.clientY < r.top + r.height / 2) { vor = true; break; } vor = false; }
+  if (ziel) { ziel.classList.add(vor ? 'ziel-vor' : 'ziel-nach'); gz.ziel = { id: ziel.dataset.g || ziel.dataset.kid, vor, nach: ziel.nextElementSibling === gz.gr ? ziel.nextElementSibling && ziel.nextElementSibling.nextElementSibling : ziel.nextElementSibling }; } });
+const gzLos = () => { if (!gz) return; const g = gz; gz = null; clearTimeout(g.uhr); if (!g.weit) return;
+  if (g.ziel) { const vorId = g.ziel.vor ? g.ziel.id : ((g.ziel.nach && (g.ziel.nach.dataset.g || g.ziel.nach.dataset.kid)) || null);
+    if (g.art === 'kat') { A.kategorien = K.umsortieren(A.getraenke, A.kategorien, g.gr.dataset.kid, vorId); katFenster(); }
+    else { const lae = A.einkaufLaeden; A.einkaufLaeden = { ...lae, laeden: { ...lae.laeden, [lae.laden]: EK.gruppeVerschieben(lae.laeden[lae.laden] || [], g.gr.dataset.g, vorId) } }; }
+    sichern(); }
+  zeichne(); };
+document.addEventListener('pointerup', gzLos); document.addEventListener('pointercancel', gzLos);
 
 /* ── Start ── */
 async function start() {

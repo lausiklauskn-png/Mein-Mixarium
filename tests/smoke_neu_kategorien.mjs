@@ -1,0 +1,134 @@
+// Probe: Kategorien und Einkauf der neuen PWA laufen über den Küchen-Kern (ab 10.0.0-vor8). Echter Browser, kein Netz nach draußen.
+//   node tests/smoke_neu_kategorien.mjs   Schlusszeile: „N grün · M ROT“, Rückgabewert 1 bei ROT
+import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { extname, join, normalize } from 'node:path';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const WURZEL = process.env.WURZEL || process.cwd();
+const ART = { '.html': 'text/html', '.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml' };
+const server = createServer(async (q, a) => {
+  let p = decodeURIComponent(new URL(q.url, 'http://x').pathname).replace(/^\/Mein-Mixarium/, '');
+  if (p.endsWith('/')) p += 'index.html';
+  try { const d = await readFile(join(WURZEL, normalize(p))); a.writeHead(200, { 'content-type': ART[extname(p)] || 'application/octet-stream' }); a.end(d); } catch (e) { a.writeHead(404); a.end('fehlt'); }
+});
+await new Promise((r) => server.listen(0, r));
+const U = `http://localhost:${server.address().port}/Mein-Mixarium/`;
+let gruen = 0, rot = 0;
+const pruefe = (name, ok, mehr = '') => { if (ok) { gruen++; console.log('  ✓ ' + name); } else { rot++; console.log('  ✗ ROT ' + name + (mehr ? ' — ' + mehr : '')); } };
+const b = await chromium.launch();
+// Ein Absturz ist ROT, nicht ein toter Lauf: die Schlusszeile steht trotzdem da (Lehre aus Mein Rezeptbuch).
+const abbruch = async (e) => { rot++; console.log('  ✗ ROT Probe abgebrochen — ' + String(e && e.message || e).split('\n')[0]); try { await b.close(); } catch (f) { /* schon zu */ } server.close(); console.log(`\n${gruen} grün · ${rot} ROT`); process.exitCode = 1; };
+process.on('unhandledRejection', abbruch); process.on('uncaughtException', abbruch);
+const fehler = [];
+const seite = async (w, h) => { const c = await b.newContext({ viewport: { width: w, height: h }, locale: 'de-DE' }); const p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') fehler.push(m.text()); }); return p; };
+const ruhe = (p) => p.waitForTimeout(350);
+const Zs = (p, f) => p.evaluate(f);
+
+
+const leiste = (p) => p.locator('.leiste .chip').evaluateAll((l) => l.map((c) => { const k = c.cloneNode(true); k.querySelectorAll('.kemoji,.zahl,svg').forEach((x) => x.remove()); return k.textContent.trim(); }));
+
+console.log('Monitor 1280 px · alte Daten mit eigenen Kategorien, Ordner-Kennung und Rezeptbuch-Kategorie');
+let p = await seite(1280, 900);
+await p.goto(U + 'impressum.html');
+await Zs(p, () => {
+  localStorage.setItem('mix9m', JSON.stringify([
+    { id: 1, name: 'Virgin Mojito', cat: 'mock', ings: [{ amt: '2', unit: 'cl', name: 'Limettensaft' }, { amt: '1', unit: 'oz', name: 'Limettensaft' }, { amt: '', unit: '', name: 'Minze' }], steps: [{ txt: 'Mixen.' }], servings: 1 },
+    { id: 2, name: 'Tiki Punch', cat: 'eig_tiki', ings: [{ amt: '4', unit: 'cl', name: 'Ananassaft' }], steps: [{ txt: 'Rühren.' }], servings: 1 },
+    { id: 3, name: 'Bruschetta', cat: 'vorsp', ings: [{ amt: '1', unit: '', name: 'Brot' }], steps: [{ txt: 'Rösten.' }] },
+    { id: 4, name: 'Im Ordner', cat: 'fld_f1', ings: [{ amt: '1', unit: 'cl', name: 'Sirup' }], steps: [{ txt: 'X.' }] },
+    { id: 5, name: 'Zitronenlimo', cat: 'limo', ings: [{ amt: '1', unit: 'l', name: 'Mineralwasser' }, { amt: '4', unit: 'cl', name: 'weißer Rum' }], steps: [{ txt: 'Y.' }] },
+  ]));
+  localStorage.setItem('mxcats9m', JSON.stringify({ mock: { name: 'Ohne Prozente', ico: '🧃' } }));
+  localStorage.setItem('mxcatsneu9m', JSON.stringify([{ id: 'eig_tiki', de: 'Tiki', ico: '🗿' }]));
+  localStorage.setItem('mxcatord9m', JSON.stringify(['limo', 'eig_tiki', 'mock']));
+  localStorage.setItem('mxcatsaus9m', JSON.stringify(['knab']));
+});
+await p.goto(U + 'neu/'); await p.waitForSelector('.karte'); await ruhe(p);
+const k = await Zs(p, () => __mixarium.sammlung.kategorien);
+pruefe('der Kategorie-Zustand steht im Format des Kerns (eigene/namen/ausgeblendet/folge)', Array.isArray(k.eigene) && k.namen && Array.isArray(k.ausgeblendet) && Array.isArray(k.folge) && !('neu' in k) && !('eigen' in k), JSON.stringify(k));
+pruefe('eigener Name, eigenes Zeichen, neue Kategorie, Reihenfolge und Ausblendung sind mitgekommen', k.namen.mock?.name === 'Ohne Prozente' && k.namen.mock?.emoji === '🧃' && k.eigene.some((c) => c.id === 'eig_tiki' && c.emoji === '🗿') && k.folge.join() === 'limo,eig_tiki,mock' && k.ausgeblendet.includes('knab'), JSON.stringify(k));
+const l1 = await leiste(p);
+pruefe('die Leiste folgt der alten Reihenfolge und zeigt den eigenen Namen', l1.slice(0, 4).join('|') === 'Alle|Limonaden|Tiki|Ohne Prozente', l1.join('|'));
+pruefe('„vorsp“ aus dem Rezeptbuch heißt „Vorspeisen“, nie roh', l1.includes('Vorspeisen') && !l1.includes('vorsp'), l1.join('|'));
+pruefe('ein altes cat: "fld_…" ist ein Ordner: es zieht nach folder und erscheint sichtbar unter „Ohne Kategorie“', await Zs(p, () => { const r = __mixarium.sammlung.getraenke.find((x) => x.name === 'Im Ordner'); return r.cat === '' && r.folder === 'f1'; }) && l1.includes('Ohne Kategorie'), l1.join('|'));
+pruefe('das eigene Zeichen steht in der Leiste', (await p.locator('.leiste .chip .kemoji').allInnerTexts()).join('') === '🗿🧃');
+pruefe('die alten Daten sind unverändert', await Zs(p, () => JSON.parse(localStorage.getItem('mxcats9m')).mock.name === 'Ohne Prozente' && localStorage.getItem('mxcatsneu9m').includes('eig_tiki')));
+
+console.log('Kategorien verwalten');
+await p.click('.nav [data-go=mehr]'); await ruhe(p); await p.click('[data-a=kategorien]'); await p.waitForSelector('#kat-liste');
+pruefe('Einstellungen → Kategorien öffnet die Liste mit Griff, Zeichen, Name, Zahl, Löschen', await p.locator('.kat-zeile').count() >= 10 && await p.locator('.kat-zeile .griff').count() === await p.locator('.kat-zeile').count());
+await p.fill('.kat-name[data-kid=limo]', 'Limos'); await p.press('.kat-name[data-kid=limo]', 'Tab'); await ruhe(p);
+pruefe('Umbenennen wirkt und gilt auch auf Englisch', await Zs(p, () => __mixarium.sammlung.kategorien.namen.limo?.name === 'Limos'));
+await p.click('.kat-zeichen[data-kid=limo]'); await p.click('[data-a=kat-emoji-setzen][data-em="🍋"]'); await ruhe(p);
+pruefe('ein Zeichen wählen setzt das Emoji und führt zurück zur Liste', await Zs(p, () => __mixarium.sammlung.kategorien.namen.limo?.emoji === '🍋') && await p.locator('#kat-liste').count() === 1);
+await p.click('[data-a=kat-neu]'); await ruhe(p);
+const neuId = await Zs(p, () => __mixarium.sammlung.kategorien.eigene.at(-1).id);
+pruefe('„Neue Kategorie“ legt eine an und setzt den Cursor in ihr Namensfeld', /^eig_/.test(neuId) && await p.evaluate((id) => document.activeElement?.dataset?.kid === id, neuId));
+await p.keyboard.type('Heißgetränke'); await p.keyboard.press('Tab'); await ruhe(p);
+pruefe('ihr Name wird gespeichert', await p.evaluate((id) => __mixarium.sammlung.kategorien.eigene.find((c) => c.id === id)?.de === 'Heißgetränke', neuId));
+// Ziehen: „Tiki“ hinter „Ohne Prozente“ (mit der Maus, wie am Monitor)
+const zug = async (von, nach, unten) => { const a = await p.locator(von).boundingBox(), z = await p.locator(nach).boundingBox(); await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await p.mouse.down(); await p.mouse.move(a.x + a.width / 2, a.y + 30, { steps: 4 }); await p.mouse.move(z.x + z.width / 2, z.y + (unten ? z.height * 0.85 : z.height * 0.15), { steps: 8 }); await p.mouse.up(); await ruhe(p); };
+await zug('.kat-zeile[data-kid=eig_tiki] .griff', '.kat-zeile[data-kid=mock]', true);
+pruefe('eine Kategorie am Griff ziehen ändert die Reihenfolge', (await Zs(p, () => __mixarium.sammlung.kategorien.folge.slice(0, 3).join())) === 'limo,mock,eig_tiki', await Zs(p, () => __mixarium.sammlung.kategorien.folge.join()));
+await p.click('[data-a=kat-weg][data-kid=eig_tiki]'); await ruhe(p);
+pruefe('Löschen mit Getränken fragt, wohin', (await p.locator('.fenster').innerText()).includes('Wohin mit 1') && await p.locator('[data-a=kat-weg-ziel][data-ziel=bowle]').count() === 1);
+await p.click('[data-a=kat-weg-ziel][data-ziel=bowle]'); await ruhe(p);
+pruefe('der Tiki Punch hängt jetzt unter Bowlen, „Tiki“ ist weg', await Zs(p, () => __mixarium.sammlung.getraenke.find((r) => r.name === 'Tiki Punch').cat === 'bowle' && !__mixarium.sammlung.kategorien.eigene.some((c) => c.id === 'eig_tiki')));
+await p.click('[data-a=kat-weg][data-kid=sirup]'); await ruhe(p);
+pruefe('eine leere feste Kategorie wird ausgeblendet und lässt sich wieder zeigen', await Zs(p, () => __mixarium.sammlung.kategorien.ausgeblendet.includes('sirup')) && await p.locator('[data-a=kat-zurueck][data-kid=sirup]').count() === 1);
+await p.click('[data-a=kat-zurueck][data-kid=sirup]'); await ruhe(p);
+pruefe('… und ist wieder da', await Zs(p, () => !__mixarium.sammlung.kategorien.ausgeblendet.includes('sirup')) && await p.locator('.kat-zeile[data-kid=sirup]').count() === 1);
+await p.keyboard.press('Escape'); await ruhe(p);
+await p.click('.nav [data-go=start]'); await ruhe(p);
+const l2 = await leiste(p);
+pruefe('die Leiste übernimmt Name, Reihenfolge und Löschen sofort', l2.slice(0, 3).join('|') === 'Alle|Limos|Ohne Prozente' && !l2.includes('Tiki'), l2.join('|'));
+await Zs(p, () => document.querySelector('[data-lang=en]') || null); await p.click('.nav [data-go=mehr]'); await ruhe(p); await p.click('.eliste [data-a=menue][data-m=sprache]'); await p.click('[data-lang=en]'); await ruhe(p); await p.click('.nav [data-go=start]'); await ruhe(p);
+const l3 = await leiste(p);
+pruefe('auf Englisch: eigene Namen bleiben, feste werden übersetzt', l3.includes('Limos') && l3.includes('Ohne Prozente') && l3.includes('Punches') && l3.includes('Starters'), l3.join('|'));
+await p.click('.nav [data-go=mehr]'); await ruhe(p); await p.click('.eliste [data-a=menue][data-m=sprache]'); await p.click('[data-lang=de]'); await ruhe(p);
+
+console.log('Sicherung trägt den Kern-Zustand, die alte App kann sie weiter lesen');
+const sich = await Zs(p, () => JSON.parse(__mixarium.sicherung()));
+pruefe('Sicherung: Fassung 10, Liste im alten Format UND der volle Zustand', sich.version === 10 && Array.isArray(sich.kategorien) && sich.kategorien.every((c) => !('emoji' in c)) && sich.kategorienZustand?.namen?.limo?.name === 'Limos', JSON.stringify(sich.kategorien));
+
+console.log('Einkaufsliste je Laden');
+await p.click('.nav [data-go=start]'); await ruhe(p);
+await p.click('.karte >> text=Virgin Mojito'); await ruhe(p); await p.click('[data-a=einkauf-dazu]'); await ruhe(p);
+await p.click('.nav [data-go=start]'); await ruhe(p); await p.click('.karte >> text=Zitronenlimo'); await ruhe(p); await p.click('[data-a=einkauf-dazu]'); await ruhe(p);
+await p.click('.nav [data-go=einkauf]'); await ruhe(p);
+const gruppen = () => p.locator('.gruppe-e').evaluateAll((l) => l.map((g) => g.dataset.g));
+pruefe('Warengruppen kommen aus dem Kern mit den Getränke-Gruppen', (await gruppen()).join() === 'saft,wasser,spirituosen,obst', (await gruppen()).join());
+pruefe('Rum steht unter Spirituosen, Limettensaft unter Säften', (await p.locator('.gruppe-e[data-g=spirituosen]').innerText()).includes('Rum') && (await p.locator('.gruppe-e[data-g=saft]').innerText()).includes('Limettensaft'));
+pruefe('es gibt einen Laden, und man kann einen anlegen', await p.locator('[data-a=ek-laden]').count() === 1 && await p.locator('[data-a=ek-laden-neu]').count() === 1);
+await zug('.gruppe-e[data-g=obst] h3', '.gruppe-e[data-g=saft]', false);
+pruefe('eine Gruppe an der Überschrift ziehen ändert die Reihenfolge im Laden', (await gruppen()).join() === 'obst,saft,wasser,spirituosen', (await gruppen()).join());
+await p.click('[data-a=ek-laden-neu]'); await p.fill('#ladenform [name=n]', 'Getränkemarkt'); await p.click('#ladenform [type=submit]'); await ruhe(p);
+pruefe('ein neuer Laden übernimmt die Reihenfolge des gewählten und ist ausgewählt', await p.locator('[data-a=ek-laden][aria-pressed=true]').innerText() === 'Getränkemarkt' && (await gruppen()).join() === 'obst,saft,wasser,spirituosen');
+await zug('.gruppe-e[data-g=spirituosen] h3', '.gruppe-e[data-g=obst]', false);
+pruefe('im neuen Laden eine eigene Reihenfolge', (await gruppen()).join() === 'spirituosen,obst,saft,wasser', (await gruppen()).join());
+await p.click('[data-a=ek-laden][data-l=Supermarkt]'); await ruhe(p);
+pruefe('der erste Laden behält seine Reihenfolge', (await gruppen()).join() === 'obst,saft,wasser,spirituosen', (await gruppen()).join());
+pruefe('kein Querlaufen', await Zs(p, () => document.documentElement.scrollWidth <= innerWidth));
+await p.reload(); await p.waitForSelector('.mx'); await ruhe(p); await p.click('.nav [data-go=einkauf]'); await ruhe(p);
+pruefe('nach dem Neuladen: Läden und Kategorien sind gespeichert', (await gruppen()).join() === 'obst,saft,wasser,spirituosen' && await p.locator('[data-a=ek-laden]').count() === 2 && await Zs(p, () => __mixarium.sammlung.kategorien.namen.limo?.name === 'Limos'));
+await p.context().close();
+
+console.log('Handy 390 px: Kategorien mit dem Finger ziehen');
+const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', hasTouch: true }); p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message));
+await p.goto(U + 'neu/'); await p.waitForSelector('.mx'); await ruhe(p);
+await p.click('[data-a=beispiele]'); await p.waitForSelector('[data-paket]'); await p.click('[data-paket=getraenke-ohne-alkohol-start]'); await p.waitForSelector('.karte'); await ruhe(p);
+await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p); await p.click('[data-a=kategorien]'); await p.waitForSelector('#kat-liste');
+pruefe('am Handy: die Liste passt ohne Querlaufen', await Zs(p, () => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll('.kat-zeile')].every((z) => z.getBoundingClientRect().right <= innerWidth + 1)));
+const ids0 = await p.locator('.kat-zeile').evaluateAll((l) => l.map((z) => z.dataset.kid));
+const g0 = await p.locator('.kat-zeile').nth(0).locator('.griff').boundingBox(), z2 = await p.locator('.kat-zeile').nth(2).boundingBox();
+const cdp = await c.newCDPSession(p); const t = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+await t('touchStart', g0.x + 13, g0.y + 17); await p.waitForTimeout(450); await t('touchMove', g0.x + 13, g0.y + 40); await t('touchMove', g0.x + 13, z2.y + z2.height * 0.8); await t('touchEnd'); await ruhe(p);
+const ids1 = await p.locator('.kat-zeile').evaluateAll((l) => l.map((z) => z.dataset.kid));
+pruefe('lange drücken und ziehen: die erste Kategorie steht jetzt an dritter Stelle', ids1[2] === ids0[0] && ids1[0] === ids0[1], ids0.slice(0, 3).join() + ' → ' + ids1.slice(0, 3).join());
+await c.close();
+
+pruefe('keine Fehler in der Konsole', fehler.length === 0, fehler.join(' | '));
+await b.close(); server.close();
+console.log(`\n${gruen} grün · ${rot} ROT`);
+process.exit(rot ? 1 : 0);

@@ -615,3 +615,27 @@ h1,h2,h3,p{margin:0}
 .mx .mikro.an{background:var(--rot);color:#fff}
 .mx .felder label{position:relative}
 .mx .felder label>.mikro{position:absolute;right:4px;top:-6px}
+
+/* Kategorien verwalten, Läden, Ziehen (ab 10.0.0-vor8; Vorbild Mein Rezeptbuch) */
+.mx .kemoji{font-size:15px;line-height:1;width:17px;text-align:center;display:inline-block}
+.mx .kat-liste{border:1px solid var(--linie);border-radius:14px;overflow:hidden;background:var(--fl)}
+.mx .kat-zeile{display:flex;align-items:center;gap:8px;padding:5px 8px;border-top:1px solid var(--linie);background:var(--fl)}
+.mx .kat-zeile:first-child{border-top:0}
+.mx .kat-zeile .griff{width:26px;height:34px;display:grid;place-items:center;color:var(--muted);touch-action:none;cursor:grab;flex:none;user-select:none;-webkit-user-select:none}
+.mx .kat-zeile .griff .ico{width:17px;height:17px}
+.mx .kat-zeichen{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--fl2);color:var(--akz);font-size:19px;flex:none}
+.mx .kat-zeichen .kemoji{font-size:19px;width:auto}
+.mx .kat-zeichen .ico{width:19px;height:19px}
+.mx .kat-zeile .feld{flex:1;min-width:0;padding:6px 9px}
+.mx .kat-fest{flex:1;min-width:0;font-size:14px;color:var(--muted)}
+.mx .kat-zeile small{color:var(--muted);font-variant-numeric:tabular-nums;min-width:22px;text-align:right}
+.mx .kat-zeile .platz{width:30px;flex:none}
+.mx .kat-zeile.zieht,.mx .gruppe-e.zieht{position:relative;z-index:3;box-shadow:0 12px 28px rgba(0,0,0,.25);opacity:.96}
+.mx .kat-zeile.ziel-vor,.mx .gruppe-e.ziel-vor{box-shadow:0 -3px 0 0 var(--akz)}
+.mx .kat-zeile.ziel-nach,.mx .gruppe-e.ziel-nach{box-shadow:0 3px 0 0 var(--akz)}
+.mx .gruppe-e h3{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.mx .gruppe-e h3 .griffz{width:14px;height:14px;color:var(--muted);opacity:.8}
+.mx .emoji-raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:4px}
+.mx .emoji-raster button{height:42px;border-radius:10px;font-size:22px;display:grid;place-items:center;background:var(--fl2)}
+.mx .laeden{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.mx .unter.klein{font-size:12px;margin-top:6px}

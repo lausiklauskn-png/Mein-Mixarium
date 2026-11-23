@@ -210,3 +210,37 @@ export function katHatAlkohol(id, neu) {
   const sid = String(id == null ? '' : id).trim();
   return KATEGORIEN.concat(neu || []).some(c => c && String(c.id) === sid && c.alcohol === true);
 }
+
+/* ── Übergang zum Zustand des Küchen-Kerns (ab PWA 10.0.0-vor8) ───────────
+   Alt (wie die bisherige App speichert): { eigen: {id: {name, ico}}, neu: [{id, de, ico, …}], aus: [id], ord: [id] }
+   Kern (`kern/modell/kategorien.mjs`):   { eigene: [{id, de, emoji, …}], namen: {id: {name, emoji}}, ausgeblendet: [id], folge: [id] }
+   Nimmt auch einen GEMISCHTEN Zustand (Kern-Zustand, an den die Getränke-Schicht beim Einspielen noch `neu` gehängt
+   hat) und legt beides zusammen. Verloren geht nichts: eigene Namen, Zeichen, Ausblendungen und die Reihenfolge
+   kommen mit; eine Kennung kommt genau einmal vor (die schon vorhandene gewinnt). Das Zeichen der alten App (`ico`,
+   ein Emoji) heißt im Kern `emoji`. */
+export function katZustandZuKern(z) {
+  const k = z || {};
+  const eigene = [], ids = new Set();
+  const nimm = (c, ausAlt) => {
+    if (!c || c.id == null || !String(c.id).trim()) return;
+    const id = String(c.id).trim(); if (ids.has(id)) return; ids.add(id);
+    if (!ausAlt) { eigene.push({ ...c, id }); return; }
+    const { ico, col, eigen, fremd, ...rest } = c;
+    eigene.push({ ...rest, id, de: rest.de || rest.name || id, ...(ico ? { emoji: ico } : {}) });
+  };
+  (Array.isArray(k.eigene) ? k.eigene : []).forEach((c) => nimm(c, false));
+  (Array.isArray(k.neu) ? k.neu : []).forEach((c) => nimm(c, true));
+  const namen = {};
+  const eigenAlt = k.eigen && typeof k.eigen === 'object' && !Array.isArray(k.eigen) ? k.eigen : {};
+  for (const [id, e] of Object.entries(eigenAlt)) { if (!e) continue; const v = {}; if (e.name && String(e.name).trim()) v.name = String(e.name).trim(); if (e.ico) v.emoji = e.ico; if (Object.keys(v).length) namen[id] = v; }
+  Object.assign(namen, k.namen && typeof k.namen === 'object' ? k.namen : {});
+  const liste = (a) => (Array.isArray(a) ? a.map(String) : []);
+  const ausgeblendet = [...new Set([...liste(k.ausgeblendet), ...liste(k.aus)])];
+  const folge = liste(k.folge).length ? liste(k.folge) : liste(k.ord);
+  return { eigene, namen, ausgeblendet, folge };
+}
+/* Für die Sicherung (Fassung 10, die die bisherige App lesen kann): die neu angelegten Kategorien als Liste im alten
+   Format. Der vollständige Kern-Zustand geht ZUSÄTZLICH als `kategorienZustand` mit (die alte App übergeht das Feld). */
+export function katListeFuerSicherung(k) {
+  return (katZustandZuKern(k).eigene).map(({ emoji, ...c }) => ({ ...c, ...(emoji ? { ico: emoji } : {}) }));
+}

@@ -6,3 +6,4 @@ export * from './kategorien.mjs';
 export * from './alkohol.mjs';
 export * from './geraete.mjs';
 export * from './uebernahme.mjs';
+export * from './warengruppen.mjs';
