@@ -132,13 +132,16 @@ await p.click('[data-a=schluessel]'); await p.fill('#skform [name=k]', 'sk-probe
 pruefe('der OpenAI-Schlüssel steht weder in der Sammlung noch in der Sicherung', await Zs(p, () => !JSON.stringify(__mixarium.sammlung).includes('geheim-456') && !__mixarium.sicherung().includes('geheim-456')));
 { // Kern 0.11: das Mixarium schickt einen Getränke-Auftrag, keinen „angerichteten Teller“ (Netz nachgestellt, nichts geht hinaus)
   const auftraege = [], fehlerVorher = fehler.length;
-  await p.route('https://api.openai.com/**', async (r) => { auftraege.push(JSON.parse(r.request().postData()).prompt); await r.fulfill({ status: 400, contentType: 'application/json', body: '{"error":{"message":"Probe"}}' }); });
+  await p.route('https://api.openai.com/**', async (r) => { auftraege.push(JSON.parse(r.request().postData()).prompt); await new Promise((f) => setTimeout(f, 1500)); await r.fulfill({ status: 400, contentType: 'application/json', body: '{"error":{"message":"Probe"}}' }); });
   await p.route('https://image.pollinations.ai/**', async (r) => { auftraege.push(decodeURIComponent(r.request().url())); await r.fulfill({ status: 502, body: '' }); });
   await p.click('.nav [data-go=start]'); await ruhe(p); await p.click('.karte >> nth=0'); await ruhe(p);
   const werkAuf = async () => { if (!(await p.locator('.seite [data-a=bildblatt]').count())) await p.click('.seite [data-a=bildwerk]'); await ruhe(p); };
   await werkAuf(); await p.click('.seite [data-a=bildblatt]'); await ruhe(p);
   pruefe('Kosten-Hinweis im Bild-Blatt kommt aus dem Kern', /4 Cent je Bild/.test(await p.locator('.fenster').innerText()));
-  await p.click('.fenster [data-a=ki-bild]'); await p.waitForTimeout(800);
+  await p.click('.fenster [data-a=ki-bild]'); await p.waitForTimeout(700);
+  pruefe('Ladebalken (Klaus 23.11.): während das KI-Bild entsteht, stehen Balken und Zeile da', await p.locator('#warten-zeile.an').isVisible().catch(() => false) && /KI-Bild/.test(await p.locator('#warten-zeile').innerText().catch(() => '')) && await p.locator('#warten-balken.an').count() === 1);
+  /* kiBild versucht zwei Modelle nacheinander (je 1,5 s gestellte Wartezeit): auf das Ende warten, nicht auf die Uhr */
+  await p.waitForFunction(() => !document.querySelector('#warten-zeile.an'), null, { timeout: 8000 }).catch(() => {}); pruefe('Ladebalken: auch nach einem Fehler ist er wieder weg', await p.locator('#warten-zeile.an, #warten-balken.an').count() === 0);
   await werkAuf(); await p.click('.seite [data-a=bildblatt]'); await ruhe(p); await p.click('.fenster [data-a=gratis-bild]'); await p.waitForTimeout(800);
   pruefe('KI-Bild und Gratis-Foto fragen ein GETRÄNK an, kein Essen', auftraege.length >= 2 && auftraege.every((t) => /drink/i.test(t) && !/plated|food/i.test(t)), auftraege.join(' | ').slice(0, 300));
   await p.unroute('https://api.openai.com/**'); await p.unroute('https://image.pollinations.ai/**');

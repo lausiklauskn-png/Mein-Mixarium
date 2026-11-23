@@ -29,7 +29,7 @@ const Zs = (p, f) => p.evaluate(f);
 
 const rezept = (titel, extra = {}) => JSON.stringify({ titel, beschreibung: 'Frisch und grün.', portionen: 1, zubereitungszeit_min: 5, schwierigkeit: 2, glastyp: 'highball', alkohol: false, zutaten: [{ menge: '4 cl', name: 'Gurkensaft' }, { menge: '2 cl', name: 'Limettensaft' }, { menge: 'etwas', name: 'Minze' }], schritte: ['Alles mit Eis shaken.', 'Ins Glas abseihen.'], tags: ['frisch'], ...extra });
 const antworten = [], anfragen = [];
-const KI = (p) => p.route('https://api.anthropic.com/**', async (r) => { const q = r.request(); anfragen.push({ kopf: q.headers(), body: JSON.parse(q.postData()) }); const a = antworten.shift() || { stop_reason: 'end_turn', text: rezept('Ersatz') };
+const KI = (p) => p.route('https://api.anthropic.com/**', async (r) => { const q = r.request(); anfragen.push({ kopf: q.headers(), body: JSON.parse(q.postData()) }); const a = antworten.shift() || { stop_reason: 'end_turn', text: rezept('Ersatz') }; if (a.warte) await new Promise((f) => setTimeout(f, a.warte));
   await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'msg_probe', type: 'message', role: 'assistant', model: 'claude-haiku-5-5', stop_reason: a.stop_reason, content: [{ type: 'thinking', thinking: '', signature: 'probe' }, ...(a.text ? [{ type: 'text', text: a.text }] : [])] }) }); });
 const zuLabor = async (p) => { await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=labor]'); await ruhe(p); };
 const bewerte = async (p, uid, wert, fb = '') => { await p.click(`[data-a=lab-bewerten][data-u="${uid}"]`); await ruhe(p); for (const d of ['taste', 'practicality', 'originality', 'description']) await p.locator(`#labrate [name=${d}]`).evaluate((e, v) => { e.value = String(v); e.dispatchEvent(new Event('input', { bubbles: true })); }, wert); if (fb) await p.fill('#labrate [name=fb]', fb); await p.click('#labrate [type=submit]'); await p.waitForTimeout(400); };
@@ -52,8 +52,10 @@ await p.click('[data-a=lab-kat][data-k=mock]'); await p.click('[data-a=lab-gesch
 await p.click('[data-a=lab-erfinden]'); await ruhe(p);
 pruefe('ohne Schlüssel fragt das Labor nach dem Anthropic-Schlüssel und schickt nichts', await p.locator('#akform').count() === 1 && anfragen.length === 0);
 pruefe('Schlüssel-Fenster (Klaus 23.11.): die Erklärung steht hinter einem „?“, kein Absatz darüber', await p.locator('#akform .frag').count() === 1 && !(await p.locator('.fenster, [role=dialog]').first().innerText().catch(() => '')).includes('Er bleibt nur auf diesem Gerät'));
-antworten.push({ stop_reason: 'end_turn', text: 'Gern! ' + rezept('Gurken-Smash') + ' Prost.' });
-await p.fill('#akform [name=k]', 'sk-ant-probe-123'); await p.click('#akform [type=submit]'); await p.waitForSelector('.laborform.entwurf', { timeout: 8000 }).catch(() => {});
+antworten.push({ stop_reason: 'end_turn', text: 'Gern! ' + rezept('Gurken-Smash') + ' Prost.', warte: 1500 });
+await p.fill('#akform [name=k]', 'sk-ant-probe-123'); await p.click('#akform [type=submit]'); await p.waitForTimeout(700);
+pruefe('Ladebalken (Klaus 23.11.): während die KI erfindet, stehen Balken und Zeile da', await p.locator('#warten-zeile.an').isVisible().catch(() => false) && /erfunden/.test(await p.locator('#warten-zeile').innerText().catch(() => '')) && await p.locator('#warten-balken.an').count() === 1); await p.waitForSelector('.laborform.entwurf', { timeout: 8000 }).catch(() => {});
+pruefe('Ladebalken: ist die Antwort da, ist er wieder weg', await p.locator('#warten-zeile.an, #warten-balken.an').count() === 0);
 pruefe('nach dem Speichern des Schlüssels erfindet das Labor sofort: die Vorschau steht da', (await p.locator('.laborform.entwurf h3').innerText().catch(() => '')).includes('Gurken-Smash'));
 const a0 = anfragen[0] || { kopf: {}, body: { messages: [{ content: '' }] } }, auftrag = a0.body.messages[0].content;
 pruefe('der Aufruf geht wie in der alten App direkt an Anthropic (Schlüssel, Version, Browser-Freigabe)', a0.kopf['x-api-key'] === 'sk-ant-probe-123' && a0.kopf['anthropic-version'] === '2023-06-01' && a0.kopf['anthropic-dangerous-direct-browser-access'] === 'true');

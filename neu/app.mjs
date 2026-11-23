@@ -22,6 +22,7 @@ import { woche, tagIso, planen, entplanen, ausAltemMenu } from '../kern/modell/p
 import { ladeBausteine, korpus as semKorpus, sucheBedeutung } from '../kern/suche/bedeutung.mjs';
 import * as LAB from '../getraenke/labor.mjs';
 import { hinweiseEinrichten } from '../kern/oberflaeche/hinweis.mjs';
+import { wartenEinrichten, modellFortschritt, bytesMitAnteil } from '../kern/oberflaeche/warten.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -31,7 +32,7 @@ const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENK
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor18';
+export const FASSUNG = '10.0.0-vor19';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -160,11 +161,17 @@ function semTreffer() {
   const da = new Set(sichtbar().map((r) => r.uid)), erlaubt = new Set(G.filterOhneAlkohol(A.getraenke, ohneAlk()).map((r) => r.uid));
   return sem.ids.map(getr).filter((r) => r && G.istSichtbar(r) && !da.has(r.uid) && erlaubt.has(r.uid) && (Z.kat === 'all' || katVonRezept(r) === Z.kat));
 }
-async function semBereit() {
-  await ladeBausteine('../sbkim/'); await window.SbkimEmbedding.init();
-  const rs = A.getraenke.filter(G.istSichtbar), sig = rs.map((r) => r.uid + ':' + r.name).join(',');
-  if (!sem.korpus || sem.sig !== sig) { sem.korpus = await semKorpus(rs.map(sicht), (r) => katNameVon(r), { einbetten: (t) => window.SbkimEmbedding.embedPassage(t), fortschritt: (i, n) => semStatus(L(`Sinn-Suche wird vorbereitet: ${i} von ${n} Getränken`, `Preparing meaning search: ${i} of ${n} drinks`)) }); sem.sig = sig; }
-  return sem.korpus;
+/* Ladebalken (Klaus 23.11., Kern 0.17): jede Wartezeit zeigt Balken und Zeile, damit die App nie abgestürzt wirkt. */
+const W = wartenEinrichten(document);
+function semBereit() {
+  return W.mit(L('Sinn-Suche: Sprachmodell wird geladen …', 'Meaning search: loading the language model …'), async (w) => {
+    const ab = modellFortschritt((a, g, t) => { w.anteil(a); if (t) w.text(L(`Sprachmodell wird geladen: ${g} von ${t} MB`, `Loading the language model: ${g} of ${t} MB`)); });
+    try { await ladeBausteine('../sbkim/'); await window.SbkimEmbedding.init(); } finally { ab(); }
+    w.anteil(null); w.text(L('Sinn-Suche wird vorbereitet …', 'Preparing meaning search …'));
+    const rs = A.getraenke.filter(G.istSichtbar), sig = rs.map((r) => r.uid + ':' + r.name).join(',');
+    if (!sem.korpus || sem.sig !== sig) { sem.korpus = await semKorpus(rs.map(sicht), (r) => katNameVon(r), { einbetten: (t) => window.SbkimEmbedding.embedPassage(t), fortschritt: (i, n) => { const t = L(`Sinn-Suche wird vorbereitet: ${i} von ${n} Getränken`, `Preparing meaning search: ${i} of ${n} drinks`); semStatus(t); w.text(t); w.anteil(n ? i / n : null); } }); sem.sig = sig; }
+    return sem.korpus;
+  });
 }
 function semPlanen() { clearTimeout(sem.uhr); if (!E.sinn) return; const f = Z.suche.trim().toLowerCase(); if (!f) { sem.ids = []; sem.fuer = ''; return; } sem.uhr = setTimeout(() => semLauf(f), 350); }
 async function semLauf(f) {
@@ -338,24 +345,27 @@ function vLabor() {
 }
 /* Ein Aufruf an Claude (Anthropic), wie in der alten App direkt aus dem Browser mit dem eigenen Schlüssel. Kein SDK:
    die PWA hat keinen Bauschritt und soll offline starten. Prüft stop_reason (Ablehnung, abgeschnitten) über LAB.antwortLesen. */
-async function kiRezept(auftrag) {
+async function kiRezept(auftrag, text) {
   const k = (await lager.hol('schluessel-anthropic')) || ''; if (!k) { const f = new Error('kein-schluessel'); f.keinSchluessel = true; throw f; }
+  const warte = W.start(text || L('Die KI arbeitet …', 'The AI is working …'));
+  try {
   let ant;
   try { ant = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': k, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: LAB.LAB_MODELL, max_tokens: LAB.LAB_MAX_TOKENS, messages: [{ role: 'user', content: auftrag }] }) }); }
   catch (e) { throw new Error(L('Keine Verbindung. Das Labor braucht Internet.', 'No connection. The lab needs internet.')); }
   if (!ant.ok) { const j = await ant.json().catch(() => ({})); throw new Error(ant.status === 401 ? L('Der Anthropic-Schlüssel wurde abgelehnt. Bitte in den Einstellungen prüfen.', 'The Anthropic key was rejected. Please check it in the settings.') : ant.status === 429 ? L('Anthropic meldet: zu viele Anfragen oder kein Guthaben.', 'Anthropic reports: too many requests or no credit.') : ((j.error && j.error.message) || 'HTTP ' + ant.status)); }
   return LAB.antwortLesen(await ant.json());
+  } finally { warte.ende(); }
 }
 const labKatName = (id) => { const c = G.KATEGORIEN.find((k) => k.id === id); return c ? c.de : id; };
 async function labErfinden() {
   const lb = Z.lab; lb.zutaten = ($('#labzutaten') && $('#labzutaten').value) || lb.zutaten; lb.fehler = ''; lb.laeuft = true; zeichne();
-  try { lb.entwurf = await kiRezept(LAB.auftragErfinden({ kategorie: labKatName(lb.kat), geschmack: lb.geschmack, zutaten: lb.zutaten, ohneAlkohol: ohneAlk() || ['mock', 'afckt'].includes(lb.kat) /* Schalter an, oder eine Kategorie, die alkoholfrei IST */, sprache: sprache() })); }
+  try { lb.entwurf = await kiRezept(LAB.auftragErfinden({ kategorie: labKatName(lb.kat), geschmack: lb.geschmack, zutaten: lb.zutaten, ohneAlkohol: ohneAlk() || ['mock', 'afckt'].includes(lb.kat) /* Schalter an, oder eine Kategorie, die alkoholfrei IST */, sprache: sprache() }), L('Neues Getränk wird erfunden …', 'Inventing a new drink …')); }
   catch (e) { if (e.keinSchluessel) { lb.laeuft = false; return anthropicFenster(true); } lb.fehler = e.message; }
   finally { lb.laeuft = false; zeichne(); }
 }
 async function labUeberarbeiten(r) {
   r.labRevisionPending = true; sichern(); zeichne();
-  try { LAB.ueberarbeitungBereit(r, await kiRezept(LAB.auftragUeberarbeiten(r, { kategorie: labKatName(r.cat), sprache: sprache() }))); melde(L('Entwurf bereit', 'Draft ready')); }
+  try { LAB.ueberarbeitungBereit(r, await kiRezept(LAB.auftragUeberarbeiten(r, { kategorie: labKatName(r.cat), sprache: sprache() }), L('Getränk wird überarbeitet …', 'Revising the drink …'))); melde(L('Entwurf bereit', 'Draft ready')); }
   catch (e) { LAB.ueberarbeitungFehlgeschlagen(r, e.keinSchluessel ? 'kein Schlüssel' : e.message); melde(e.keinSchluessel ? L('Für die Überarbeitung fehlt der Anthropic-Schlüssel.', 'The Anthropic key is missing for the revision.') : L('Überarbeitung fehlgeschlagen: ', 'Revision failed: ') + e.message); }
   sichern(); zeichne();
 }
@@ -444,7 +454,7 @@ async function paketeLaden() {
 async function beispieleFenster() {
   Z.fenster = { titel: L('Beispiele laden', 'Load examples'), html: `<p class="ftext">${L('Pakete werden gesucht …', 'Looking for packages …')}</p>` }; zeichne();
   let ps = [];
-  try { ps = await paketeLaden(); } catch (e) { Z.fenster.html = `<p class="ftext">${L('Die Paketliste ließ sich nicht laden. Bist du online?', 'The package list could not be loaded. Are you online?')}</p>`; return zeichne(); }
+  try { ps = await W.mit(L('Pakete werden gesucht …', 'Looking for packages …'), paketeLaden); } catch (e) { Z.fenster.html = `<p class="ftext">${L('Die Paketliste ließ sich nicht laden. Bist du online?', 'The package list could not be loaded. Are you online?')}</p>`; return zeichne(); }
   Z.pakete = ps;
   const zeigbar = ps.filter((p) => !(p.alkohol && ohneAlk())), versteckt = ps.length - zeigbar.length;
   Z.fenster.html = `<p class="ftext klein">${L('Pakete', 'Packages')}${frag(L('Ein Paket ist eine Sammlung fertiger Getränke. Es wird erst beim Antippen geladen. Beispiele lassen sich in den Einstellungen mit einem Tipp wieder löschen.', 'A package is a set of ready-made drinks. It loads only when you tap it. Examples can be deleted again with one tap in the settings.'))}</p>${zeigbar.map((p) => `<button class="slot" data-paket="${esc(p.id)}"><span class="mitte"><strong>${esc(p.titel)}</strong><small>${(p.bytes / 1048576).toFixed(1).replace('.', sprache() === 'de' ? ',' : '.')} MB${p.alkohol ? ' · ' + L('mit Alkohol', 'with alcohol') : ' · ' + L('ohne Alkohol', 'alcohol-free')}</small></span>${I('download')}</button>`).join('') || `<p class="leer">${L('Zurzeit gibt es kein Paket für diese Einstellung.', 'There is no package for this setting at the moment.')}</p>`}${versteckt ? `<p class="hinweis">${I('noalc')}${L(`„Ohne Alkohol“ ist an: ${versteckt} Paket mit Alkohol wird nicht angeboten.`, `“Alcohol-free” is on: ${versteckt} package with alcohol is not offered.`)}</p>` : ''}`;
@@ -454,7 +464,7 @@ async function paketEinspielen(id) {
   const p = (Z.pakete || []).find((x) => x.id === id); if (!p) return;
   Z.fenster.html = `<p class="ftext">${L('Paket wird geladen …', 'Loading package …')}</p>`; zeichne();
   try {
-    const roh = await fetch('../beispiele/' + p.datei).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.text(); });
+    const roh = await W.mit(L(`„${p.titel}“ wird geladen …`, `Loading “${p.titel}” …`), async (w) => { const ant = await fetch('../beispiele/' + p.datei); if (!ant.ok) throw new Error(String(ant.status)); return new TextDecoder().decode(await bytesMitAnteil(ant, (a) => w.anteil(a))); });
     const e = G.beispielPaketEinspielen(A, roh, p.id, { knoten: A.knoten });
     A = { ...A, ...e.sammlung }; sichern(); Z.fenster = null; Z.view = 'start'; Z.kat = 'all';
     melde(e.neu.length ? L(`${e.neu.length} Beispiele hinzugefügt.`, `${e.neu.length} examples added.`) : L('Diese Beispiele sind schon in deiner Sammlung.', 'These examples are already in your collection.'));
@@ -486,10 +496,12 @@ async function bildErzeugen(gratis) {
   const r = getr(Z.uid); if (!r) return;
   let schluessel = '';
   if (!gratis) { schluessel = (await lager.hol('schluessel-openai')) || ''; if (!schluessel) return schluesselFenster(true); }
-  Z.fenster = null; melde(gratis ? L('Gratis-Foto wird erzeugt …', 'Creating free photo …') : L('KI-Bild wird erzeugt, das dauert etwa 20 Sekunden …', 'Creating AI picture, this takes about 20 seconds …'));
+  Z.fenster = null; zeichne();
   try {
-    const roh = gratis ? await gratisBild(sicht(r), { art: 'getraenk' }) : await kiBild(schluessel, sicht(r), { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
-    bildSetzen(await bildAusDatei(await (await fetch(roh)).blob())); melde(L('Das neue Bild ist da.', 'The new picture is there.'));
+    const img = await W.mit(gratis ? L('Gratis-Foto wird erzeugt …', 'Creating free photo …') : L('KI-Bild wird erzeugt (etwa 20 s) …', 'Creating AI picture (about 20 s) …'), async (w) => {
+      const roh = gratis ? await gratisBild(sicht(r), { art: 'getraenk' }) : await kiBild(schluessel, sicht(r), { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
+      w.text(L('Bild wird gespeichert …', 'Saving the picture …')); return bildAusDatei(await (await fetch(roh)).blob()); });
+    bildSetzen(img); melde(L('Das neue Bild ist da.', 'The new picture is there.'));
   } catch (f) { melde(L('Das hat nicht geklappt: ', 'That did not work: ') + (f && f.message ? f.message : L('unbekannter Fehler', 'unknown error'))); }
 }
 /* Der OpenAI-Schlüssel bleibt nur auf diesem Gerät (Kern-Speicher), steht in keiner Sicherung und wird nie aus der alten App übernommen. */
@@ -799,9 +811,9 @@ document.addEventListener('change', async (ev) => {
   if (ev.target.classList && ev.target.classList.contains('kat-name')) { const f = ev.target, id = f.dataset.kid, eig = A.kategorien.eigene.some((c) => c.id === id);
     if (eig && f.value.trim()) A.kategorien = { ...katUmbenennen(A.kategorien, id, ''), eigene: A.kategorien.eigene.map((c) => (c.id === id ? { ...c, de: f.value.trim() } : c)) }; else if (!eig) A.kategorien = katUmbenennen(A.kategorien, id, f.value);
     sichern(); katFenster(); return; }
-  if (ev.target.id === 'edfoto' && ev.target.files[0]) { try { Z.fenster.img = await bildAusDatei(ev.target.files[0]); $('#edbild').innerHTML = `<img class="foto" src="${Z.fenster.img}" alt="">`; } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
-  if (ev.target.id === 'bbdatei' && ev.target.files[0]) { try { bildSetzen(await bildAusDatei(ev.target.files[0])); Z.fenster = null; melde(L('Bild gespeichert.', 'Picture saved.')); } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
-  if (ev.target.id === 'datei' && ev.target.files[0]) { await einspielenDatei(ev.target.files[0]); ev.target.value = ''; zeichne(true); }
+  if (ev.target.id === 'edfoto' && ev.target.files[0]) { try { Z.fenster.img = await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0])); $('#edbild').innerHTML = `<img class="foto" src="${Z.fenster.img}" alt="">`; } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
+  if (ev.target.id === 'bbdatei' && ev.target.files[0]) { try { bildSetzen(await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0]))); Z.fenster = null; melde(L('Bild gespeichert.', 'Picture saved.')); } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
+  if (ev.target.id === 'datei' && ev.target.files[0]) { await W.mit(L('Datei wird eingelesen …', 'Reading the file …'), () => einspielenDatei(ev.target.files[0])); ev.target.value = ''; zeichne(true); }
 });
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') { if (Z.bildVoll) return history.back(); if (Z.fenster || Z.menue) return zurueck(); if (Z.view === 'mix') return history.back(); if (Z.flAuf) { Z.flAuf = false; return zeichne(); } }
