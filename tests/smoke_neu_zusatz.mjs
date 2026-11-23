@@ -190,6 +190,33 @@ if (will(4)) {
   await c.close();
 }
 
+if (will(7)) {
+  console.log('7 · Hoher Kontrast');
+  ({ p, c } = await seite({ getraenke: [D(1, 'Zitronen-Spritz')] }));
+  /* Kontrast zweier Farben, über eine Leinwand gerechnet (color-mix lässt sich nicht aus dem Text lesen). neben: Nebentext auf Fläche ·
+     schrift: Schrift auf Grund · feld: Symbol auf seinem Wasserfarben-Feld (das erste Thema der Einstellungen). */
+  const mess = () => p.evaluate(() => { const mx = document.querySelector('.mx'), l = document.createElement('canvas'); l.width = l.height = 1; const x = l.getContext('2d', { willReadFrequently: true });
+    const hell = (f, grund = '#fff') => { x.clearRect(0, 0, 1, 1); x.fillStyle = '#fff'; x.fillRect(0, 0, 1, 1); x.fillStyle = grund; x.fillRect(0, 0, 1, 1); x.fillStyle = f; x.fillRect(0, 0, 1, 1); const [r, g, bl] = [...x.getImageData(0, 0, 1, 1).data].map((n) => { n /= 255; return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
+    const k = (a, b) => { const l1 = hell(a, b), l2 = hell(b);   /* a liegt auf b: eine durchscheinende Linie wird über ihrem Grund gemessen */ return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); }, v = (n) => { const e = document.createElement('i'); e.style.color = `var(${n})`; mx.appendChild(e); const f = getComputedStyle(e).color; e.remove(); return f; };
+    const ks = getComputedStyle(document.querySelector('.thema .kfeld')), kl = getComputedStyle(document.querySelector('.thema .ezeile small'));
+    return { neben: k(v('--muted'), v('--fl')), schrift: k(v('--ink'), v('--bg')), feld: k(ks.color, ks.backgroundColor), rand: parseFloat(ks.borderTopWidth), klein: k(kl.color, v('--fl')), linie: k(v('--linie'), v('--bg')), an: mx.dataset.kontrast === '1', dunkel: mx.classList.contains('dunkel'), glatt: !/gradient/.test(getComputedStyle(mx).backgroundImage) }; });
+  const zeile = () => p.locator('.thema[data-g=aussehen] [data-a=kontrast]').evaluate((e) => e.querySelector('b').textContent.trim() + ' · ' + e.querySelector('small').textContent.trim() + ' · ' + e.getAttribute('aria-pressed')).catch(() => 'fehlt');
+  await zuEinst(p); const vorher = await mess();
+  pruefe('unter Darstellung steht „Hoher Kontrast · aus“', await zeile() === 'Hoher Kontrast · aus · false' && !vorher.an, await zeile());
+  await p.click('[data-a=kontrast]'); const an = await mess();
+  pruefe('ein Tipp schaltet ihn an: Nebentext hat mindestens 7:1 zur Fläche (vorher weniger), Schrift mindestens 15:1 zum Grund', an.an && an.neben >= 7 && an.neben > vorher.neben && an.klein >= 7 && an.schrift >= 15 && await zeile() === 'Hoher Kontrast · an · true', `${vorher.neben.toFixed(1)} → ${an.neben.toFixed(1)} · klein ${an.klein.toFixed(1)} · Schrift ${an.schrift.toFixed(1)}`);
+  pruefe('die Wasserfarben-Felder tragen ihr Symbol deutlich (mindestens 7:1, vorher weniger) und einen kräftigeren Rand; der Grund ist glatt', an.feld >= 7 && an.feld > vorher.feld && an.rand > vorher.rand && an.glatt && !vorher.glatt, `${vorher.feld.toFixed(1)} → ${an.feld.toFixed(1)} · Rand ${vorher.rand} → ${an.rand}`);
+  /* Gemerkt wird sofort – noch bevor irgendetwas anderes die Einstellungen speichert. */
+  await p.waitForFunction(() => new Promise((ja) => { const a = indexedDB.open('KuechenKern-mixarium'); a.onsuccess = () => { const q = a.result.transaction('zustand').objectStore('zustand').get('einst'); q.onsuccess = () => { a.result.close(); ja(!!(q.result && q.result.kontrast)); }; }; }), null, { timeout: 3000 }).catch(() => {});
+  await p.reload(); await p.waitForSelector('.mx .titel');
+  pruefe('nach dem Neuladen ist er noch an', await p.evaluate(() => document.querySelector('.mx').dataset.kontrast === '1'));
+  await zuEinst(p); await p.click('.fl-griff'); await p.click('.fl-werk [data-ton=dunkel]'); const du = await mess();
+  pruefe('er gilt auch im dunklen Ton (Nebentext und Symbolfeld mindestens 7:1, Schrift 15:1, Linien mindestens 3:1) und bleibt beim Wechsel an', du.an && du.dunkel && du.neben >= 7 && du.klein >= 7 && du.feld >= 7 && du.schrift >= 15 && du.linie >= 3 && an.linie >= 3, `neben ${du.neben.toFixed(1)} · klein ${du.klein.toFixed(1)} · Feld ${du.feld.toFixed(1)} · Schrift ${du.schrift.toFixed(1)} · Linie ${du.linie.toFixed(1)} (hell ${an.linie.toFixed(1)})`);
+  await p.click('[data-a=kontrast]');
+  pruefe('ein zweiter Tipp schaltet ihn aus', await p.evaluate(() => !('kontrast' in document.querySelector('.mx').dataset)) && await zeile() === 'Hoher Kontrast · aus · false');
+  await c.close();
+}
+
 pruefe('keine Fehler in der Konsole, kein Aufruf nach draußen außer den gestellten', fehler.length === 0, fehler.slice(0, 3).join(' · '));
 await b.close(); server.close();
 console.log(`\n${gruen} grün · ${rot} ROT`); process.exitCode = rot ? 1 : 0;

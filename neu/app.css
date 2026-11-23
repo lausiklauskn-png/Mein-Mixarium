@@ -945,3 +945,8 @@ h1,h2,h3,p{margin:0}
 .mx .chip.ki small{font-weight:500;color:var(--muted);margin-left:2px;font-size:11.5px}
 .mx .chip.ok{color:var(--ok);border-color:var(--ok)}.mx .chip.ok .ico{color:var(--ok);width:15px;height:15px}
 .mx #sinn-rest{margin-top:12px}.mx #sinn-rest .karten{opacity:.85}
+/* Hoher Kontrast (Einstellungen → Darstellung): der Kern setzt Schrift, Grund, Linien und Akzent. Hier steht, was diese App dazu braucht:
+   Nebentext und Linien folgen dem Kern auch im Dunkeln, der Grund ist glatt, die Wasserfarben-Felder tragen ihr Symbol in voller Schrift und einen Rand. */
+.mx[data-kontrast]{--linie:var(--line);--muted:var(--mut);background:var(--bg)}
+.mx[data-kontrast] .kfeld{color:var(--ink);border:2px solid currentColor;background:color-mix(in srgb,var(--kc,var(--akz)) 22%,var(--fl))}
+.mx[data-kontrast] :is(small,.leise,.unter,.quelle,.zahl){opacity:1}

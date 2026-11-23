@@ -29,6 +29,11 @@ F=[('alter-stand-doppelt', "    if (schon.has(s.alt)) continue;", "", 'kern/spei
    ('sammel-essen-auftrag', "pruefe: kiAnweisungen, art: 'getraenk', abbruch", "pruefe: kiAnweisungen, abbruch", 'neu/zusatz.mjs', 'die Aufträge sind Getränke-Aufträge'),
    ('sammel-bricht-nicht-ab', "abbruch: () => stopp,", "abbruch: () => false,", 'neu/zusatz.mjs', '„Abbrechen“ hört nach dem laufenden Bild auf'),
    ('sammel-laeuft-nach-nein', "aus.grund = f.status === 401 ? 'schluessel' : 'limit'; aus.offen = liste.length - i - 1; break; }", "aus.grund = f.status === 401 ? 'schluessel' : 'limit'; aus.offen = liste.length - i - 1; }", 'kern/ki/bild.mjs', 'ein abgelehnter Schlüssel beendet den Lauf'),
+   ('kontrast-setzt-nichts', "  if (kontrast) Object.assign(v, d", "  if (false) Object.assign(v, d", 'kern/oberflaeche/farben.mjs', 'Nebentext hat mindestens 7:1'),
+   ('kontrast-merkt-nicht', "  kontrast() { E.kontrast = !E.kontrast; einstSichern(); },", "  kontrast() { E.kontrast = !E.kontrast; },", 'neu/app.mjs', 'nach dem Neuladen ist er noch an'),
+   ('kontrast-dunkel-blass', ".mx[data-kontrast]{--linie:var(--line);--muted:var(--mut);background:var(--bg)}", ".mx[data-kontrast]{background:var(--bg)}", 'neu/app.css', 'er gilt auch im dunklen Ton'),
+   ('kontrast-grund-bunt', ".mx[data-kontrast]{--linie:var(--line);--muted:var(--mut);background:var(--bg)}", ".mx[data-kontrast]{--linie:var(--line);--muted:var(--mut)}", 'neu/app.css', 'der Grund ist glatt'),
+   ('kontrast-feld-blass', ".mx[data-kontrast] .kfeld{color:var(--ink);border:2px solid currentColor;", ".mx[data-kontrast] .kfeld{border:2px solid currentColor;", 'neu/app.css', 'die Wasserfarben-Felder tragen ihr Symbol deutlich'),
    ('sammel-bild-verloren', "bildAn: (uid, img) => bildSetzen(img, uid),", "bildAn: (uid, img) => bildSetzen(img),", 'neu/app.mjs', 'die Bilder hängen an ihren Getränken')]
 # Jeder Fall fährt nur seinen Abschnitt der Probe (NUR_TEIL); der Abschnitt hängt am ersten Wort des Namens.
 TEILE={'alter':'1','alte':'1','richter':'2','bild':'3','sammel':'4','buch':'5','glas':'6','kontrast':'7','handbuch':'7'}
