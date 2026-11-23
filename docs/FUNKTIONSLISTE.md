@@ -16,11 +16,11 @@ Abgleich mit der Funktionsliste von Sitzung A: **offen** – sie liegt noch nich
 | BOOT PROGRESS | 6602 | 5 | entfällt | Intro nur beim ersten Start, überspringbar | – |
 | BOOT / SEED | 6640 | 4 | Kern + nur Mixarium | Start im Kern; Beispiel-Getränke (ohne Alkohol) hier | – |
 | LANGUAGE | 6849 | 6 | Kern |  | gegenprobe_zugangscode_erklaerung, smoke_ki_bild, smoke_zugangscode_erklaerung |
-| THEME | 6950 | 2 | Kern (geändert) | 8 Themen → eine Palette hell/dunkel | – |
+| THEME | 6950 | 2 | Kern (geändert) | 8 Themen → Wasserfarben aus Familienbüro/Private Akte (7), je hell und dunkel; Klaus 23.11. | – |
 | PWA | 6969 | 6 | Kern |  | – |
 | TOAST | 7032 | 1 | Kern |  | gegenprobe_ki_bild, smoke_kamera_bild |
 | SCREENS | 7042 | 6 | Kern |  | smoke_bildausschnitt, smoke_kategorien, smoke_schluessel_loeschen |
-| KI-LABOR (Mix-Labor) — Getränke erfinden & bewerten | 7110 | 44 | nur Mixarium | Mix-Labor, Bewertung, TheCocktailDB-Entdecken (Netz auf Knopfdruck) | – |
+| KI-LABOR (Mix-Labor) — Getränke erfinden & bewerten | 7110 | 44 | nur Mixarium | **alles wie bisher, jede Funktion mit Probe** (Klaus 23.11.): Erfinden, 4 Bewertungen, experimentell → Buch/entfernt, KI-Überarbeitung, Favorit-Schutz, Einzelpersonen-Modus, Entdecken (Netz auf Knopfdruck) | – |
 | ALKOHOL-TOGGLE (systemweit, Privacy-First) | 8050 | 6 | nur Mixarium | Schalter „ohne Alkohol“ (mxNoAlc9) | smoke_kategorien |
 | SEARCH | 8112 | 17 | Kern | Suche, Bedeutungssuche | smoke_a5_suchfeld_multiquery |
 | OVERLAYS | 8279 | 3 | Kern |  | – |
@@ -49,7 +49,7 @@ Abgleich mit der Funktionsliste von Sitzung A: **offen** – sie liegt noch nich
 | INIT | 12991 | 44 | Kern | Wischen, Zurück-Taste, KI-Panel, Barrierefreiheit, Text-Import | smoke_reinigung, gegenprobe_reinigung |
 | WEB RECIPE IMPORT – Rezept aus dem Internet laden | 13897 | 29 | Kern (geändert) | ohne öffentliche Weiterleiter | smoke_doppelte_namen, smoke_web_import |
 | JSON SANITIZER — fixes unescaped control chars and quotes in AI responses | 14378 | 2 | Kern |  | – |
-| TRANSLATION ENGINE | 14449 | 16 | Kern |  | – |
+| TRANSLATION ENGINE | 14449 | 16 | Kern | Sprachknopf sichtbar im Kopf; Getränke-Übersetzung am Getränk gespeichert (Klaus 23.11.) | – |
 | BACKUP VAULT – Mehrere Sicherungen verwalten | 14857 | 15 | Kern |  | – |
 | HANDBUCH / MANUAL | 15156 | 50 | Kern + nur Mixarium | Hilfe-Gerüst im Kern, Getränke-Texte hier | smoke_kategorien, smoke_wortkarte, gegenprobe_reinigung |
 
@@ -59,7 +59,7 @@ Abgleich mit der Funktionsliste von Sitzung A: **offen** – sie liegt noch nich
 
 | Teil | Ziel | Hinweis |
 |---|---|---|
-| `sbkim/` (SBKIM/Mycel, 41 Dateien, u. a. `23_rendezvous_ui.js`) | **nicht in die Store-Fassung** | bleibt in der Web-Fassung bis Klaus entscheidet |
+| `sbkim/` (SBKIM/Mycel, 41 Dateien, u. a. `23_rendezvous_ui.js`) | Modul im Hintergrund, **unsichtbar** | Klaus 23.11.: bleibt drin, taucht nirgends auf (kein Knopf, kein Widget, keine Hilfe, kein Netz), nur über Freischaltung nutzbar; Vorschlag 7× auf die Fassungsnummer + Code |
 | `assets/` (Reinigung, Prüfer) | Kern | Reinigung vor der KI, Prüfung auf Knopfdruck |
 | `app-sw.js` | Kern | Offline-Speicher |
 | `gift*.html`, `invite-v5.html`, `impressum.html` | nur Mixarium | eigenständige Seiten, unverändert |

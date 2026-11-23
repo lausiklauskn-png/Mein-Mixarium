@@ -19,9 +19,9 @@ const K={
  'BOOT PROGRESS':['entfällt','Intro nur beim ersten Start, überspringbar'],
  'BOOT / SEED':['Kern + nur Mixarium','Start im Kern; Beispiel-Getränke (ohne Alkohol) hier'],
  'LANGUAGE':['Kern',''],
- 'THEME':['Kern (geändert)','8 Themen → eine Palette hell/dunkel'],
+ 'THEME':['Kern (geändert)','8 Themen → Wasserfarben aus Familienbüro/Private Akte (7), je hell und dunkel; Klaus 23.11.'],
  'PWA':['Kern',''],'TOAST':['Kern',''],'SCREENS':['Kern',''],
- 'KI-LABOR (Mix-Labor) — Getränke erfinden & bewerten':['nur Mixarium','Mix-Labor, Bewertung, TheCocktailDB-Entdecken (Netz auf Knopfdruck)'],
+ 'KI-LABOR (Mix-Labor) — Getränke erfinden & bewerten':['nur Mixarium','**alles wie bisher, jede Funktion mit Probe** (Klaus 23.11.): Erfinden, 4 Bewertungen, experimentell → Buch/entfernt, KI-Überarbeitung, Favorit-Schutz, Einzelpersonen-Modus, Entdecken (Netz auf Knopfdruck)'],
  'ALKOHOL-TOGGLE (systemweit, Privacy-First)':['nur Mixarium','Schalter „ohne Alkohol“ (mxNoAlc9)'],
  'SEARCH':['Kern','Suche, Bedeutungssuche'],
  'OVERLAYS':['Kern',''],
@@ -44,7 +44,7 @@ const K={
  'INIT':['Kern','Wischen, Zurück-Taste, KI-Panel, Barrierefreiheit, Text-Import'],
  'WEB RECIPE IMPORT – Rezept aus dem Internet laden':['Kern (geändert)','ohne öffentliche Weiterleiter'],
  'JSON SANITIZER — fixes unescaped control chars and quotes in AI responses':['Kern',''],
- 'TRANSLATION ENGINE':['Kern',''],
+ 'TRANSLATION ENGINE':['Kern','Sprachknopf sichtbar im Kopf; Getränke-Übersetzung am Getränk gespeichert (Klaus 23.11.)'],
  'BACKUP VAULT – Mehrere Sicherungen verwalten':['Kern',''],
  'HANDBUCH / MANUAL':['Kern + nur Mixarium','Hilfe-Gerüst im Kern, Getränke-Texte hier'],
 };
@@ -68,7 +68,7 @@ out.push(`## Außerhalb der Seite
 
 | Teil | Ziel | Hinweis |
 |---|---|---|
-| \`sbkim/\` (SBKIM/Mycel, 41 Dateien, u. a. \`23_rendezvous_ui.js\`) | **nicht in die Store-Fassung** | bleibt in der Web-Fassung bis Klaus entscheidet |
+| \`sbkim/\` (SBKIM/Mycel, 41 Dateien, u. a. \`23_rendezvous_ui.js\`) | Modul im Hintergrund, **unsichtbar** | Klaus 23.11.: bleibt drin, taucht nirgends auf (kein Knopf, kein Widget, keine Hilfe, kein Netz), nur über Freischaltung nutzbar; Vorschlag 7× auf die Fassungsnummer + Code |
 | \`assets/\` (Reinigung, Prüfer) | Kern | Reinigung vor der KI, Prüfung auf Knopfdruck |
 | \`app-sw.js\` | Kern | Offline-Speicher |
 | \`gift*.html\`, \`invite-v5.html\`, \`impressum.html\` | nur Mixarium | eigenständige Seiten, unverändert |
