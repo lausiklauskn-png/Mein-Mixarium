@@ -43,6 +43,8 @@ await Zs(p, () => {
   localStorage.setItem('mxcatsneu9m', JSON.stringify([{ id: 'eig_tiki', de: 'Tiki', ico: '🗿' }]));
   localStorage.setItem('mxcatord9m', JSON.stringify(['limo', 'eig_tiki', 'mock']));
   localStorage.setItem('mxcatsaus9m', JSON.stringify(['knab']));
+  const heute = new Date(), iso = `${heute.getFullYear()}-${String(heute.getMonth() + 1).padStart(2, '0')}-${String(heute.getDate()).padStart(2, '0')}`;
+  localStorage.setItem('mxms9m', JSON.stringify([{ id: 1, date: iso, mealType: 'abend', rid: 1, courseType: 'mock' }, { id: 2, date: iso, mealType: 'abend', rid: null, customText: 'Wasser' }]));
 });
 await p.goto(U + 'neu/'); await p.waitForSelector('.karte'); await ruhe(p);
 const k = await Zs(p, () => __mixarium.sammlung.kategorien);
@@ -54,6 +56,28 @@ pruefe('„vorsp“ aus dem Rezeptbuch heißt „Vorspeisen“, nie roh', l1.inc
 pruefe('ein altes cat: "fld_…" ist ein Ordner: es zieht nach folder und erscheint sichtbar unter „Ohne Kategorie“', await Zs(p, () => { const r = __mixarium.sammlung.getraenke.find((x) => x.name === 'Im Ordner'); return r.cat === '' && r.folder === 'f1'; }) && l1.includes('Ohne Kategorie'), l1.join('|'));
 pruefe('das eigene Zeichen steht in der Leiste', (await p.locator('.leiste .chip .kemoji').allInnerTexts()).join('') === '🗿🧃');
 pruefe('die alten Daten sind unverändert', await Zs(p, () => JSON.parse(localStorage.getItem('mxcats9m')).mock.name === 'Ohne Prozente' && localStorage.getItem('mxcatsneu9m').includes('eig_tiki')));
+
+console.log('Wochenplan');
+await p.click('.nav [data-go=karte]'); await ruhe(p); await p.click('[data-go=plan]'); await ruhe(p);
+pruefe('Karte → Wochenplan: der Plan der bisherigen App ist da (Virgin Mojito heute)', (await p.locator('.w-tag.heute').innerText()).includes('Virgin Mojito'), await p.locator('.w-tag.heute').innerText());
+pruefe('die alten Daten bleiben unberührt (mxms9m und A.karten)', await Zs(p, () => JSON.parse(localStorage.getItem('mxms9m')).length === 2 && __mixarium.sammlung.karten.length === 2));
+pruefe('die Leiste markiert „Karte“', await p.locator('.nav [data-go=karte][aria-current=page]').count() === 1);
+const morgen = await p.evaluate(() => [...document.querySelectorAll('.w-tag')].map((x) => x.dataset.tag).find((d) => d > document.querySelector('.w-tag.heute')?.dataset.tag) || document.querySelectorAll('.w-tag')[6].dataset.tag);
+await p.click(`.w-tag[data-tag="${morgen}"] [data-a=plan-waehlen]`); await ruhe(p); await p.locator('.fenster [data-a=plan-setzen]', { hasText: 'Zitronenlimo' }).click(); await ruhe(p);
+pruefe('ein Getränk an einem Tag planen', (await p.locator(`.w-tag[data-tag="${morgen}"]`).innerText()).includes('Zitronenlimo'));
+await p.click('[data-a=plan-einkauf]'); await ruhe(p);
+pruefe('„Einkaufsliste für die Woche“ setzt die Zutaten der geplanten Getränke auf die Liste', await Zs(p, () => __mixarium.sammlung.einkauf.some((x) => x.name === 'Limettensaft') && __mixarium.sammlung.einkauf.some((x) => x.name === 'Mineralwasser')));
+const nEk = await Zs(p, () => __mixarium.sammlung.einkauf.length); await p.click('[data-a=plan-einkauf]'); await ruhe(p);
+pruefe('ein zweiter Tipp setzt nichts doppelt', await Zs(p, () => __mixarium.sammlung.einkauf.length) === nEk);
+await p.click(`.w-tag[data-tag="${morgen}"] [data-a=plan-weg]`); await ruhe(p);
+pruefe('aus dem Plan nehmen', !(await p.locator(`.w-tag[data-tag="${morgen}"]`).innerText()).includes('Zitronenlimo'));
+await p.click('[data-a=plan-woche][data-tage="7"]'); await ruhe(p); pruefe('nächste Woche: leer', await p.locator('.w-slot').count() === 0, await p.locator('.w-tage').innerText() + ' / ' + JSON.stringify(await Zs(p, () => __mixarium.sammlung.plan)));
+await p.click('[data-a=plan-heute]'); await ruhe(p); pruefe('„Heute“ springt zurück', await p.locator('.w-tag.heute').count() === 1);
+pruefe('am Monitor stehen die sieben Tage nebeneinander', await Zs(p, () => { const t = [...document.querySelectorAll('.w-tag')].map((x) => x.getBoundingClientRect()); return t.length === 7 && t.every((r) => Math.abs(r.top - t[0].top) < 2); }));
+await p.click('.w-auf'); await ruhe(p); pruefe('ein Tipp auf ein geplantes Getränk öffnet es', await Zs(p, () => __mixarium.zustand.view === 'getraenk'));
+await p.click('.seite [data-a=planen], [data-a=planen]'); await ruhe(p); await p.locator('.fenster [data-a=plan-setzen]').nth(1).click(); await ruhe(p);
+pruefe('am Getränk: „Planen“ trägt es an einem Tag ein', await Zs(p, () => Object.values(__mixarium.sammlung.plan).flat().filter((u) => u === __mixarium.zustand.uid).length === 2));
+pruefe('die Sicherung trägt den Plan', await Zs(p, () => Object.keys(JSON.parse(__mixarium.sicherung()).plan || {}).length >= 1));
 
 console.log('Kategorien verwalten');
 await p.click('.nav [data-go=mehr]'); await ruhe(p); await p.click('[data-a=kategorien]'); await p.waitForSelector('#kat-liste');

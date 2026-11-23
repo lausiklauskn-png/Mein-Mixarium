@@ -18,6 +18,7 @@ import { kategorienMit, beschriftung as katBeschr, anzahl as katZahl, anlegen as
 import { katVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
 import { einkaufMit } from '../kern/modell/einkauf.mjs';
 import { rezeptAusText } from '../kern/import/text.mjs';
+import { woche, tagIso, planen, entplanen, ausAltemMenu } from '../kern/modell/plan.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -27,7 +28,7 @@ const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENK
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor12';
+export const FASSUNG = '10.0.0-vor13';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -41,7 +42,7 @@ const KAT_SYM = { all: 'drinks', mock: 'drinks', afckt: 'drinks', ckt: 'wine', s
 /* ── Zustand ── E: Einstellungen des Geräts · A: die Sammlung · Z: was gerade zu sehen ist (flüchtig) */
 let E = { sprache: null, farbe: 'blau', ton: 'geraet', schrift: 100, einheit: 'auto', fl: { seite: 'r', oben: 64 }, navZu: true };
 let A = null;
-const Z = { bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
+const Z = { planTag: new Date(), bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
 
 const sprache = () => E.sprache || (A && A.einstellungen && A.einstellungen.sprache) || ((navigator.language || 'de').slice(0, 2));
 const L = (de, en) => (sprache() === 'de' ? de : en);
@@ -89,6 +90,10 @@ function inForm() {
   if (!A) return;
   A.kategorien = G.katZustandZuKern(A.kategorien);
   for (const r of A.getraenke || []) if (typeof r.cat === 'string' && r.cat.startsWith('fld_')) { if (!r.folder) r.folder = r.cat.slice(4); r.cat = ''; }
+  if (!A.plan || typeof A.plan !== 'object' || Array.isArray(A.plan)) A.plan = {};
+  /* Wochenplan der alten App EINMAL in die Kern-Form (A.karten bleibt unberührt). Gemerkt wird, DASS übernommen wurde – nicht nur,
+     dass es einen Plan gibt: beim ersten Start zeichnet die App, bevor sie die alten Daten gelesen hat. */
+  if (!A.planUebernommen && (A.karten || []).length && (A.getraenke || []).length) { const alt = ausAltemMenu(A.karten, A.getraenke); for (const [tag, l] of Object.entries(alt)) for (const u of l) A.plan = planen(A.plan, tag, u); A.planUebernommen = true; }
   A.einkaufLaeden = A.einkaufLaeden && A.einkaufLaeden.laeden ? A.einkaufLaeden : { laeden: { [L('Supermarkt', 'Supermarket')]: [] }, laden: L('Supermarkt', 'Supermarket') };
 }
 
@@ -111,11 +116,11 @@ function kopf(br) {
   return `<header class="kopf ${auf ? 'auf' : ''}">${logo()}${name}${br ? suchfeld(false) : ''}${auf ? werk : mini}<button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button><button class="klapp" data-a="kopf" aria-expanded="${auf}" aria-label="${auf ? L('Werkzeuge einklappen', 'Collapse tools') : L('Werkzeuge aufklappen', 'Expand tools')}">${I(auf ? 'right' : 'left')}</button></header>`;
 }
 function navLinks() {
-  const akt = Z.view === 'getraenk' ? 'start' : Z.view, zu = E.navZu;
+  const akt = Z.view === 'getraenk' ? 'start' : Z.view === 'plan' ? 'karte' : Z.view, zu = E.navZu;
   return `<nav class="nav ${zu ? 'zu' : ''}" aria-label="${L('Bereiche', 'Sections')}">${NAV.map(([v, n, i]) => `<button data-go="${v}" ${akt === v ? 'aria-current="page"' : ''} ${zu ? `aria-label="${L(...n)}" title="${L(...n)}"` : ''}>${I(i)}<span>${L(...n)}</span></button>`).join('')}<button class="navgriff" data-a="navzu" aria-expanded="${!zu}" aria-label="${zu ? L('Leiste aufklappen', 'Expand bar') : L('Leiste einklappen', 'Collapse bar')}">${I(zu ? 'right' : 'left')}</button></nav>`;
 }
 function flLeiste() {
-  const f = E.fl, akt = Z.view === 'getraenk' ? 'start' : Z.view;
+  const f = E.fl, akt = Z.view === 'getraenk' ? 'start' : Z.view === 'plan' ? 'karte' : Z.view;
   const cls = `fl-leiste ${f.seite === 'l' ? 'links' : ''} ${f.seite === 'u' ? 'unten' : ''}`;
   const ort = f.seite === 'u' ? `left:${Z.flAuf ? 50 : f.oben}%` : `top:${Z.flAuf ? Math.min(66, Math.max(34, f.oben)) : f.oben}%`;
   if (!Z.flAuf) return `<aside class="${cls}" style="${ort}"><button class="fl-griff" data-a="fl-auf" aria-label="${L('Leiste öffnen. Ziehen verschiebt sie.', 'Open bar. Drag to move it.')}"><span aria-hidden="true"></span></button></aside>`;
@@ -165,7 +170,7 @@ function portion(r) {
   return `<div class="portion"><b>${Z.port} ${Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings')}<small>${L('Mengen werden umgerechnet', 'Amounts are recalculated')}</small></b><div class="stepper"><button data-a="minus" aria-label="${L('Weniger', 'Fewer')}">${I('minus')}</button><output>${Z.port}</output><button data-a="plus" aria-label="${L('Mehr', 'More')}">${I('plus')}</button></div></div><div class="einheiten" role="group" aria-label="${L('Einheit', 'Unit')}">${[['orig', L('wie notiert', 'as written')], ['ml', 'ml'], ['cl', 'cl'], ['oz', 'oz']].map(([k, n]) => `<button data-e="${k}" aria-pressed="${e === k}">${n}</button>`).join('')}</div>`;
 }
 function geraeteKacheln(liste, hell) { return liste.length ? `<div class="geraete ${hell ? 'hell' : ''}">${liste.map((g) => `<span class="gk">${G.geraetSvg(g)}<small>${esc(G.geraetName(g, sprache()))}</small></span>`).join('')}</div>` : ''; }
-function aktionen(r, br) { return `<div class="reihe" style="margin-top:14px"><button class="knopf" data-go="mix">${I('shaker')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu">${I('cart')}${L('Auf die Einkaufsliste', 'Add to shopping list')}</button><button class="knopf hell" data-a="teilen">${I('share')}${L('Teilen', 'Share')}</button><button class="knopf hell" data-a="bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button></div>`; }
+function aktionen(r, br) { return `<div class="reihe" style="margin-top:14px"><button class="knopf" data-go="mix">${I('shaker')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu">${I('cart')}${L('Auf die Einkaufsliste', 'Add to shopping list')}</button><button class="knopf hell" data-a="planen">${I('plan')}${L('Planen', 'Plan')}</button><button class="knopf hell" data-a="teilen">${I('share')}${L('Teilen', 'Share')}</button><button class="knopf hell" data-a="bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button></div>`; }
 function vGetraenk(br) {
   const r = sicht(getr(Z.uid)); if (!r) { Z.view = 'start'; return vStart(br); }
   const ger = G.geraeteFuerGetraenk(r);
@@ -231,14 +236,32 @@ function vKarte(br) {
   A.anlaesse = A.anlaesse || [];
   const an = A.anlaesse.find((x) => x.id === Z.anlass);
   if (!an) {
-    const alt = (A.karten || []).length;
-    return `<div class="innen-p"><h2 class="titel">${L('Getränkekarten', 'Drinks lists')}</h2><p class="unter">${L('Für einen Anlass zusammenstellen, was es wann zu trinken gibt.', 'Put together what to drink and when, for an occasion.')}</p><div class="reihe" style="margin-top:12px"><button class="knopf" data-a="anlass-neu">${I('plus')}${L('Neue Getränkekarte', 'New drinks list')}</button></div>${A.anlaesse.map((x) => `<button class="slot" data-anlass="${x.id}"><span class="mitte"><strong>${esc(x.titel)}</strong><small>${esc([x.datum, x.gaeste ? x.gaeste + ' ' + L('Gäste', 'guests') : ''].filter(Boolean).join(' · '))}</small></span><span class="anz">${x.posten.length}</span></button>`).join('')}${alt ? `<p class="hinweis">${I('info')}${L(`Dein Wochenplan aus der bisherigen App (${alt} Einträge) ist übernommen und bleibt gespeichert. Die Wochenansicht zieht noch um.`, `Your week plan from the previous app (${alt} entries) was taken over and stays saved. The week view is still to come.`)}</p>` : ''}</div>`;
+    return `<div class="innen-p"><h2 class="titel">${L('Getränkekarten', 'Drinks lists')}</h2><p class="unter">${L('Für einen Anlass zusammenstellen, was es wann zu trinken gibt.', 'Put together what to drink and when, for an occasion.')}</p><div class="reihe" style="margin-top:12px"><button class="knopf" data-a="anlass-neu">${I('plus')}${L('Neue Getränkekarte', 'New drinks list')}</button><button class="knopf hell" data-go="plan">${I('plan')}${L('Wochenplan', 'Week plan')}</button></div>${A.anlaesse.map((x) => `<button class="slot" data-anlass="${x.id}"><span class="mitte"><strong>${esc(x.titel)}</strong><small>${esc([x.datum, x.gaeste ? x.gaeste + ' ' + L('Gäste', 'guests') : ''].filter(Boolean).join(' · '))}</small></span><span class="anz">${x.posten.length}</span></button>`).join('')}</div>`;
   }
   const gaenge = ABSCHNITTE.map(([de, en], ai) => { const l = an.posten.filter((p) => p.abschnitt === ai); return l.length ? `<div class="gang"><h3>${L(de, en)}</h3>${l.map((p) => { const r = getr(p.uid); return r ? `<div class="slot"><button class="mini" data-d="${esc(r.uid)}" aria-label="${esc(r.name)}">${bild(r)}</button><span class="mitte"><strong>${esc(r.name)}</strong><small>${esc(katNameVon(r))}</small></span><span class="stepper klein"><button data-a="posten-minus" data-p="${p.id}" aria-label="${L('Weniger', 'Fewer')}">${I('minus')}</button><output>${p.anzahl}</output><button data-a="posten-plus" data-p="${p.id}" aria-label="${L('Mehr', 'More')}">${I('plus')}</button></span><button class="rund klein" data-a="posten-weg" data-p="${p.id}" aria-label="${L('Entfernen', 'Remove')}">${I('x')}</button></div>` : ''; }).join('')}</div>` : ''; }).join('');
   const links = `<button class="zurueckzeile" data-a="anlass-zu">${I('left')}${L('Alle Getränkekarten', 'All drinks lists')}</button><div class="anlass"><h2>${esc(an.titel)}</h2><p>${an.datum ? `<span>${I('plan')}${esc(an.datum)}</span>` : ''}${an.gaeste ? `<span>${I('users')}${Number(an.gaeste)} ${L('Gäste', 'guests')}</span>` : ''}</p></div>${gaenge || `<p class="leer">${L('Noch kein Getränk auf dieser Karte.', 'No drink on this list yet.')}</p>`}<div class="reihe" style="margin-top:16px"><button class="knopf" data-a="posten-neu">${I('plus')}${L('Getränk hinzufügen', 'Add drink')}</button><button class="knopf hell" data-a="anlass-einkauf">${I('cart')}${L('Alles auf die Einkaufsliste', 'All to the shopping list')}</button><button class="knopf hell" data-a="anlass-bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button><button class="knopf hell" data-a="anlass-weg">${I('trash')}${L('Löschen', 'Delete')}</button></div>`;
   if (!br) return `<div class="innen-p">${links}</div>`;
   const blatt = `<div class="menuekarte"><div class="kl">${L('Getränkekarte', 'Drinks list')}</div><h2>${esc(an.titel)}</h2><div class="dat">${esc(an.datum || '')}</div><hr>${ABSCHNITTE.map(([de, en], ai) => { const l = an.posten.filter((p) => p.abschnitt === ai && getr(p.uid)); return l.length ? `<h4>${L(de, en)}</h4>${l.map((p) => `<p>${esc(getr(p.uid).name)}</p>`).join('')}` : ''; }).join('')}</div>`;
   return `<div class="innen-p"><div class="menue-breit"><div>${links}</div><div><p class="unter" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">${L('So sieht die Karte aus', 'This is how the list looks')}<button class="chip" data-a="drucken">${I('print')}${L('Drucken', 'Print')}</button></p>${blatt}</div></div></div>`;
+}
+
+/* ── Wochenplan (Kern: modell/plan.mjs; Vorbild Mein Rezeptbuch). Was es an welchem Tag zu trinken gibt. ── */
+const WT = () => (sprache() === 'de' ? ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+function vPlan() {
+  const w = woche(Z.planTag), heute = tagIso(new Date()), loc = sprache() === 'de' ? 'de-DE' : 'en-GB';
+  const von = w.tage[0].toLocaleDateString(loc, { day: 'numeric', month: 'short' }), bis = w.tage[6].toLocaleDateString(loc, { day: 'numeric', month: 'short' });
+  const anzahlW = w.tage.reduce((n, t) => n + (A.plan[tagIso(t)] || []).filter(getr).length, 0);
+  return `<div class="innen-p"><button class="zurueckzeile" data-go="karte">${I('left')}${L('Getränkekarten', 'Drinks lists')}</button><h2 class="titel">${L('Wochenplan', 'Week plan')}</h2>
+   <div class="w-kopf"><button class="rund" data-a="plan-woche" data-tage="-7" aria-label="${L('Vorige Woche', 'Previous week')}">${I('left')}</button><strong>${L('Woche', 'Week')} ${w.kw}<small>${esc(von)} – ${esc(bis)}</small></strong><button class="rund" data-a="plan-woche" data-tage="7" aria-label="${L('Nächste Woche', 'Next week')}">${I('right')}</button></div>
+   <div class="w-tage">${w.tage.map((t, i) => { const tag = tagIso(t), rz = (A.plan[tag] || []).map(getr).filter(Boolean);
+     return `<div class="w-tag ${tag === heute ? 'heute' : ''}" data-tag="${tag}"><div class="d"><small>${WT()[i]}</small><b>${t.getDate()}</b></div><div class="w-slots">${rz.map((r) => `<div class="w-slot"><button class="w-auf" data-d="${esc(r.uid)}"><span class="w-bild">${bild(r)}</span><span>${esc(sicht(r).name)}<small>${esc(katNameVon(r))}</small></span></button><button class="w-weg" data-a="plan-weg" data-tag="${tag}" data-uid="${esc(r.uid)}" aria-label="${L('Aus dem Plan nehmen', 'Remove from plan')}">${I('x')}</button></div>`).join('')}<button class="w-leer ${rz.length ? 'mehr' : ''}" data-a="plan-waehlen" data-tag="${tag}">${I('plus')}${rz.length ? L('noch eins', 'one more') : L('Getränk planen', 'Plan a drink')}</button></div></div>`; }).join('')}</div>
+   <div class="reihe" style="margin-top:14px"><button class="knopf" data-a="plan-einkauf" ${anzahlW ? '' : 'disabled'}>${I('cart')}${L('Einkaufsliste für die Woche', 'Shopping list for the week')}</button><button class="knopf hell" data-a="plan-heute">${L('Heute', 'Today')}</button></div></div>`;
+}
+function planWahl(tag, uidFest) {
+  if (uidFest) { const tage = [...woche(new Date()).tage, ...woche(new Date(Date.now() + 7 * 864e5)).tage].filter((t) => tagIso(t) >= tagIso(new Date())), loc = sprache() === 'de' ? 'de-DE' : 'en-GB';
+    Z.fenster = { titel: L('Wann?', 'When?'), html: `<div class="tagwahl">${tage.map((t) => `<button class="chip" data-a="plan-setzen" data-tag="${tagIso(t)}" data-uid="${esc(uidFest)}">${esc(t.toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'numeric' }))}</button>`).join('')}</div>` }; return; }
+  const l = G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter(G.istSichtbar);
+  Z.fenster = { titel: L('Getränk planen', 'Plan a drink'), html: `<div class="wahl">${l.map((r) => `<button class="zeile" data-a="plan-setzen" data-tag="${tag}" data-uid="${esc(r.uid)}"><span class="mini">${bild(r)}</span><span><strong>${esc(sicht(r).name)}</strong><small>${esc(katNameVon(r))}</small></span></button>`).join('') || `<p class="leer">${L('Noch keine Getränke in der Sammlung.', 'No drinks in the collection yet.')}</p>`}</div>` };
 }
 
 /* ── Labor (zieht als Nächstes um) ── */
@@ -391,13 +414,13 @@ async function tresorHolen(id) {
     await tresorAuto(L('vor dem Zurückholen', 'before restoring'));
     const g = G.sicherungLesen(s, { knoten: A.knoten });
     A = { ...G.leereSammlung(A), getraenke: g.getraenke, ordner: g.ordner, karten: g.karten, einkauf: Array.isArray(s.einkauf) ? s.einkauf : [], anlaesse: Array.isArray(s.anlaesse) ? s.anlaesse : [], kategorien: A.kategorien, einstellungen: A.einstellungen, knoten: A.knoten };
-    A.kategorien = G.katZustandZuKern({ ...(s.kategorienZustand || A.kategorien), neu: g.kategorien }); if (s.einkaufLaeden) A.einkaufLaeden = s.einkaufLaeden;
+    A.kategorien = G.katZustandZuKern({ ...(s.kategorienZustand || A.kategorien), neu: g.kategorien }); if (s.einkaufLaeden) A.einkaufLaeden = s.einkaufLaeden; if (s.plan && typeof s.plan === 'object') A.plan = s.plan;
     sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; Z.kat = 'all'; melde(L('Stand zurückgeholt.', 'State restored.')); zeichne(true);
   });
 }
 
 /* ── Sicherung ── Format wie die alte App (version 10), damit beide Richtungen gehen. */
-function sicherungText() { return JSON.stringify({ version: G.SICHERUNG_VERSION, exported: new Date().toISOString(), app: 'Mein Mixarium ' + FASSUNG, knoten: A.knoten || undefined, recipes: A.getraenke, folders: A.ordner, menu: A.karten || [], kategorien: G.katListeFuerSicherung(A.kategorien), kategorienZustand: A.kategorien, einkauf: A.einkauf, einkaufLaeden: A.einkaufLaeden, anlaesse: A.anlaesse || [] }); }   // kategorienZustand/einkaufLaeden: neu, die bisherige App übergeht sie
+function sicherungText() { return JSON.stringify({ version: G.SICHERUNG_VERSION, exported: new Date().toISOString(), app: 'Mein Mixarium ' + FASSUNG, knoten: A.knoten || undefined, recipes: A.getraenke, folders: A.ordner, menu: A.karten || [], kategorien: G.katListeFuerSicherung(A.kategorien), kategorienZustand: A.kategorien, einkauf: A.einkauf, einkaufLaeden: A.einkaufLaeden, plan: A.plan, anlaesse: A.anlaesse || [] }); }   // kategorienZustand/einkaufLaeden: neu, die bisherige App übergeht sie
 function sichernDatei() {
   const d = new Date(), p = (n) => String(n).padStart(2, '0');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([sicherungText()], { type: 'application/json' }));
@@ -437,7 +460,7 @@ function zeichne(frisch) {
   inForm();
   const br = breit(), v = Z.view, mix = v === 'mix';
   const basis = mix ? 'getraenk' : v;
-  const h = basis === 'start' ? vStart(br) : basis === 'getraenk' ? vGetraenk(br) : basis === 'einkauf' ? vEinkauf(br) : basis === 'karte' ? vKarte(br) : basis === 'labor' ? vLabor() : basis === 'bilder' ? vBilder() : vMehr();
+  const h = basis === 'start' ? vStart(br) : basis === 'getraenk' ? vGetraenk(br) : basis === 'einkauf' ? vEinkauf(br) : basis === 'karte' ? vKarte(br) : basis === 'labor' ? vLabor() : basis === 'bilder' ? vBilder() : basis === 'plan' ? vPlan() : vMehr();
   const ohneKopf = !br && basis === 'getraenk', fokus = br && Z.fokus && basis === 'getraenk';
   const alt = $('.haupt'), roll = alt && zeichne.letzte === basis + '|' + Z.uid + '|' + Z.anlass ? alt.scrollTop : 0;
   const such = document.activeElement && document.activeElement.id === 'suche' ? document.activeElement.selectionStart : null;
@@ -489,6 +512,14 @@ function katLoeschenMit(id, ziel) {
 /* ── Bedienung ── */
 const TUN = {
   kategorien() { katFenster(); },
+  'plan-waehlen'(b) { planWahl(b.dataset.tag); }, planen() { planWahl(null, Z.uid); },
+  'plan-setzen'(b) { A.plan = planen(A.plan, b.dataset.tag, b.dataset.uid); sichern(); Z.fenster = null; if (Z.view !== 'plan') melde(L('Im Wochenplan eingetragen.', 'Added to the week plan.')); },
+  'plan-weg'(b) { A.plan = entplanen(A.plan, b.dataset.tag, b.dataset.uid); sichern(); },
+  'plan-woche'(b) { const d = new Date(Z.planTag); d.setDate(d.getDate() + Number(b.dataset.tage)); Z.planTag = d; },
+  'plan-heute'() { Z.planTag = new Date(); },
+  'plan-einkauf'() { const w = woche(Z.planTag); let n = 0, da = 0;
+    for (const t of w.tage) for (const uid of A.plan[tagIso(t)] || []) { const r = getr(uid); if (!r) continue; const v = sicht(r); if (A.einkauf.some((p) => !p.ok && p.fuer.includes(v.name))) { da++; continue; } einkaufDazu(v, Number(r.servings) || 1, v.name); n++; }
+    sichern(); melde(n ? L(`${n} Getränke auf die Einkaufsliste gesetzt.`, `${n} drinks added to the shopping list.`) : L('Alle Getränke der Woche stehen schon auf der Liste.', 'All drinks of the week are already on the list.')); },
   /* Text-Import ohne KI (Kern: import/text.mjs, kennt seit 0.15 auch oz, Barlöffel, Dash …). Das Ergebnis steht im Formular
      zum Prüfen; gespeichert wird erst dort. Nichts geht ins Netz. */
   'text-import'() { Z.flAuf = false; Z.fenster = { titel: L('Getränk aus Text', 'Drink from text'), html: `<p class="ftext">${L('Rezepttext einfügen, etwa aus einer Mail, einer Notiz oder von einer Webseite. Die erste Zeile ist der Name. Die App teilt ohne KI in Zutaten und Schritte; du siehst das Ergebnis im Formular und speicherst dort.', 'Paste a recipe text, e.g. from an e-mail, a note or a web page. The first line is the name. The app splits it into ingredients and steps without AI; you check the result in the form and save there.')}</p><label class="felder">${mikro('#imptext')}<textarea class="feld" id="imptext" rows="10" placeholder="${L('Virgin Mojito\n\nZutaten\n2 cl Limettensaft\n…\n\nZubereitung\n1. Minze andrücken …', 'Virgin Mojito\n\nIngredients\n2 cl lime juice\n…\n\nMethod\n1. Muddle the mint …')}"></textarea></label><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button type="button" class="knopf" data-a="text-aufteilen">${I('check')}${L('Aufteilen', 'Split')}</button></div>` }; },

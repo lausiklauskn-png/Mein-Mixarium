@@ -5,7 +5,7 @@ zweimal sagen muss. Diese Datei ist die Übergabe der Mixarium-Seite; die Rezept
 `Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SITZUNG.md` (dort auch: wie die gemeinsame Sitzung arbeitet).
 Diese Sitzung arbeitet nach der Übergabe nicht weiter.
 
-## Stand Mixarium (main, PWA 10.0.0-vor8, Kern 0.13.0 per Pin `666ac5d`)
+## Stand Mixarium (main, PWA 10.0.0-vor13, Kern 0.15.0 per Pin `74ab9e3`)
 
 - **Die bisherige App ist unverändert**: `index.html` und `QC_Mixarium_20_04_26.html`, md5 beide `49ce4320795972269057083e4c189f48`.
   Sie bleibt online, bis Klaus die neue abgenommen hat. Die Pflicht-Checkliste aus `CLAUDE.md` gilt weiter für jede Änderung daran.
@@ -66,6 +66,12 @@ Erledigt (in Vorschau oder PWA umgesetzt, mit Probe wo möglich):
 13. Bild: Vollbild wirklich groß; keine Knöpfe auf dem Bild; ganzes Bild am breiten Schirm; Bild-Blatt; Tresor; KI-Bild.
 14. Feinschliff darf die Sitzung selbst machen, solange nichts langsamer wird (nur Lage und Deckkraft, einmalig).
 15. Nicht blind vom Rezeptbuch übernehmen, je Punkt prüfen. Codex wird nicht mehr geprüft.
+
+**Neu seit der Übergabe (gemeinsame Sitzung, 23.11.):** Tipp aufs Bild → Vollbild mit „Bild bearbeiten“ · Monitor: Winkel neben
+dem Bild · Kategorien als Sticker mit Mini-Foto (aus der eigenen Kategorie, sonst das gezeichnete Bild, sonst das Zeichen) ·
+Bilder-Ordner (Einstellungen → Bilder; einziger Ort zum Löschen eines Bildes) · Getränk aus Text (ohne KI) · Wochenplan
+(Karte → Wochenplan; der Plan der alten App wird einmal übernommen, Einträge nur mit Freitext ohne Getränk zeigt er nicht,
+sie bleiben in `karten` gespeichert) · „Planen“ am Getränk. Proben: `tests/smoke_neu_kategorien.mjs` (68).
 
 **Offen** (gesagt, noch nicht gebaut):
 
