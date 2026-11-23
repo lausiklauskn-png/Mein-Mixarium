@@ -1,6 +1,7 @@
 // Probe: Kategorien und Einkauf der neuen PWA laufen über den Küchen-Kern (ab 10.0.0-vor8). Echter Browser, kein Netz nach draußen.
 //   node tests/smoke_neu_kategorien.mjs   Schlusszeile: „N grün · M ROT“, Rückgabewert 1 bei ROT
 import { createServer } from 'node:http';
+import { mitThemen, themenAuf } from './neu-hilfe.mjs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createRequire } from 'node:module';
@@ -21,7 +22,7 @@ const b = await chromium.launch();
 const abbruch = async (e) => { rot++; console.log('  ✗ ROT Probe abgebrochen — ' + String(e && e.message || e).split('\n')[0]); try { await b.close(); } catch (f) { /* schon zu */ } server.close(); console.log(`\n${gruen} grün · ${rot} ROT`); process.exitCode = 1; };
 process.on('unhandledRejection', abbruch); process.on('uncaughtException', abbruch);
 const fehler = [];
-const seite = async (w, h) => { const c = await b.newContext({ viewport: { width: w, height: h }, locale: 'de-DE' }); const p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') fehler.push(m.text()); }); return p; };
+const seite = async (w, h) => { const c = await b.newContext({ viewport: { width: w, height: h }, locale: 'de-DE' }); const p = mitThemen(await c.newPage()); p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') fehler.push(m.text()); }); return p; };
 const ruhe = (p) => p.waitForTimeout(350);
 const Zs = (p, f) => p.evaluate(f);
 
@@ -46,7 +47,7 @@ await Zs(p, () => {
   const heute = new Date(), iso = `${heute.getFullYear()}-${String(heute.getMonth() + 1).padStart(2, '0')}-${String(heute.getDate()).padStart(2, '0')}`;
   localStorage.setItem('mxms9m', JSON.stringify([{ id: 1, date: iso, mealType: 'abend', rid: 1, courseType: 'mock' }, { id: 2, date: iso, mealType: 'abend', rid: null, customText: 'Wasser' }]));
 });
-await p.goto(U + 'neu/'); await p.waitForSelector('.karte'); await ruhe(p);
+await p.goto(U + 'neu/?leer'); await p.waitForSelector('.karte'); await ruhe(p);
 const k = await Zs(p, () => __mixarium.sammlung.kategorien);
 pruefe('der Kategorie-Zustand steht im Format des Kerns (eigene/namen/ausgeblendet/folge)', Array.isArray(k.eigene) && k.namen && Array.isArray(k.ausgeblendet) && Array.isArray(k.folge) && !('neu' in k) && !('eigen' in k), JSON.stringify(k));
 pruefe('eigener Name, eigenes Zeichen, neue Kategorie, Reihenfolge und Ausblendung sind mitgekommen', k.namen.mock?.name === 'Ohne Prozente' && k.namen.mock?.emoji === '🧃' && k.eigene.some((c) => c.id === 'eig_tiki' && c.emoji === '🗿') && k.folge.join() === 'limo,eig_tiki,mock' && k.ausgeblendet.includes('knab'), JSON.stringify(k));
@@ -143,8 +144,8 @@ pruefe('nach dem Neuladen: Läden und Kategorien sind gespeichert', (await grupp
 await p.context().close();
 
 console.log('Handy 390 px: Kategorien mit dem Finger ziehen');
-const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', hasTouch: true }); p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message));
-await p.goto(U + 'neu/'); await p.waitForSelector('.mx'); await ruhe(p);
+const c = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', hasTouch: true }); p = mitThemen(await c.newPage()); p.on('pageerror', (e) => fehler.push(e.message));
+await p.goto(U + 'neu/?leer'); await p.waitForSelector('.mx'); await ruhe(p);
 await p.click('[data-a=beispiele]'); await p.waitForSelector('[data-paket]'); await p.click('[data-paket=getraenke-ohne-alkohol-start]'); await p.waitForSelector('.karte'); await ruhe(p);
 await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p); await p.click('[data-a=kategorien]'); await p.waitForSelector('#kat-liste');
 pruefe('am Handy: die Liste passt ohne Querlaufen', await Zs(p, () => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll('.kat-zeile')].every((z) => z.getBoundingClientRect().right <= innerWidth + 1)));
@@ -193,7 +194,7 @@ await p.keyboard.press('Escape'); await ruhe(p);
 pruefe('am Handy läuft der Bilder-Ordner nicht quer', await Zs(p, () => document.documentElement.scrollWidth <= innerWidth));
 
 console.log('Getränk aus Text (ohne KI)');
-await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p); await p.click('[data-a=text-import]'); await ruhe(p);
+await p.click('.kopf [data-a=neu]'); await ruhe(p); await p.click('.imp-tabs [data-t=text]'); await ruhe(p);   /* der Text-Weg steht im Blatt hinter „+“ */
 await p.fill('#imptext', 'Old Fashioned\nFür 1 Glas · 5 Minuten\n\nZutaten\n2 oz Bourbon Whiskey\n1 Barlöffel Zuckersirup\n2 Dashes Angostura\n1 Orangenzeste (zum Garnieren)\n\nZubereitung\n1. Sirup und Angostura ins Glas geben.\n2. Whiskey und Eis dazu, 30 Sekunden rühren.\n3. Mit der Orangenzeste garnieren.');
 await p.click('[data-a=text-aufteilen]'); await ruhe(p);
 const ed = await p.evaluate(() => { const f = document.querySelector('#ed'); return { name: f.name.value, ings: f.ings.value.split('\n'), steps: f.steps.value.split('\n').length, alk: f.alcohol.checked, cat: f.cat.value, titel: document.querySelector('.fenster h2').textContent, hin: document.querySelector('#ed .hinweis')?.textContent || '' }; });
@@ -205,7 +206,7 @@ const vorN = await p.evaluate(() => __mixarium.sammlung.getraenke.length);
 await p.click('#ed [type=submit]'); await ruhe(p);
 const neu = await p.evaluate(() => __mixarium.sammlung.getraenke.find((r) => r.name === 'Old Fashioned'));
 pruefe('erst Speichern legt es an; Einheit oz steht im Feld unit', !!neu && await p.evaluate(() => __mixarium.sammlung.getraenke.length) === vorN + 1 && neu.ings[0].unit === 'oz' && neu.ings[0].amt === '2' && neu.alcohol === true, JSON.stringify(neu && neu.ings[0]));
-await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p); await p.click('[data-a=text-import]'); await ruhe(p);
+await p.click('.wk-pf.zur'); await ruhe(p); /* am Handy hat die Getränk-Ansicht keinen Kopf; das Plus steht auf der Startseite */ await p.click('.kopf [data-a=neu]'); await ruhe(p); await p.click('.imp-tabs [data-t=text]'); await ruhe(p);   /* der Text-Weg steht im Blatt hinter „+“ */
 await p.fill('#imptext', 'Zitronenwasser\n1 l Wasser\n2 Zitronen\nZitronen auspressen und mit Wasser mischen.'); await p.click('[data-a=text-aufteilen]'); await ruhe(p);
 pruefe('ohne Überschriften sagt das Formular, dass geraten wurde', /geraten/.test(await p.locator('#ed .hinweis').innerText()));
 await p.keyboard.press('Escape'); await ruhe(p);
@@ -213,12 +214,12 @@ pruefe('Abbrechen legt nichts an', await p.evaluate(() => !__mixarium.sammlung.g
 await c.close();
 
 console.log('Sinn-Suche: Modul 04 echt, Modul 03 (Sprachmodell) nachgestellt');
-{ const k = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', serviceWorkers: 'block' }); const q = await k.newPage(); q.on('pageerror', (e) => fehler.push(e.message));
+{ const k = await b.newContext({ viewport: { width: 390, height: 800 }, locale: 'de-DE', serviceWorkers: 'block' }); const q = mitThemen(await k.newPage()); q.on('pageerror', (e) => fehler.push(e.message));
   await q.route(/^https?:\/\/(?!localhost)/, (r) => { fehler.push('Netz nach draußen: ' + r.request().url()); r.abort(); });
   const geladen = []; q.on('request', (x) => { if (x.url().includes('/sbkim/')) geladen.push(x.url().split('/sbkim/')[1]); });
   // Nachgestelltes Modell: „sommerhitze“ liegt bei „Gurke“; alles andere ist ein Buchstaben-Vektor. Modul 04 rechnet echt.
   await q.route('**/sbkim/03_embedding.js', (r) => r.fulfill({ contentType: 'text/javascript', body: `(function(){const v=(t)=>{const a=new Float32Array(384);const s=/sommerhitze|gurke/i.test(t)?'gurke':String(t).toLowerCase();for(const c of s)a[c.charCodeAt(0)%384]+=1;let n=0;for(const x of a)n+=x*x;n=Math.sqrt(n)||1;return a.map((x)=>x/n)};window.SbkimEmbedding={init:async()=>{if(window.__geladen)return;window.__geladen=1;for(const x of [10,55,100]){dispatchEvent(new CustomEvent('sbkim:embedding-progress',{detail:{file:'m.onnx',status:x===100?'done':'progress',loaded:x*1048576*1.2,total:120*1048576}}));await new Promise((f)=>setTimeout(f,600));}},isReady:()=>true,embedQuery:async(t)=>v(t),embedPassage:async(t)=>v(t),embedQueryBatch:async(a)=>a.map(v),embedPassageBatch:async(a)=>a.map(v)};})();` }));
-  await q.goto(U + 'neu/'); await q.waitForSelector('.mx'); await ruhe(q);
+  await q.goto(U + 'neu/?leer'); await q.waitForSelector('.mx'); await ruhe(q);
   await q.click('[data-a=beispiele]'); await q.waitForSelector('[data-paket]'); await q.click('[data-paket=getraenke-ohne-alkohol-start]'); await q.waitForSelector('.karte'); await ruhe(q);
   pruefe('ohne Sinn-Suche wird kein SBKIM-Baustein geladen', geladen.length === 0 && await q.evaluate(() => !window.SbkimMatch && !window.SbkimEmbedding));
   await q.fill('#suche', 'sommerhitze'); await ruhe(q); const ohne = await q.locator('.karte').count();

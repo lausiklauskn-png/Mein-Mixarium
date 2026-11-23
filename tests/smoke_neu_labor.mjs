@@ -1,6 +1,7 @@
 // Probe: Mix-Labor der neuen PWA (ab 10.0.0-vor15). Echter Browser; die Anthropic-Schnittstelle ist nachgestellt, sonst kein Netz.
 //   node tests/smoke_neu_labor.mjs   Schlusszeile: „N grün · M ROT“, Rückgabewert 1 bei ROT
 import { createServer } from 'node:http';
+import { mitThemen, themenAuf } from './neu-hilfe.mjs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createRequire } from 'node:module';
@@ -21,7 +22,7 @@ const b = await chromium.launch();
 const abbruch = async (e) => { rot++; console.log('  ✗ ROT Probe abgebrochen — ' + String(e && e.message || e).split('\n')[0]); try { await b.close(); } catch (f) { /* schon zu */ } server.close(); console.log(`\n${gruen} grün · ${rot} ROT`); process.exitCode = 1; };
 process.on('unhandledRejection', abbruch); process.on('uncaughtException', abbruch);
 const fehler = [];
-const seite = async (w, h) => { const c = await b.newContext({ viewport: { width: w, height: h }, locale: 'de-DE' }); const p = await c.newPage(); p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') fehler.push(m.text()); }); return p; };
+const seite = async (w, h) => { const c = await b.newContext({ viewport: { width: w, height: h }, locale: 'de-DE' }); const p = mitThemen(await c.newPage()); p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') fehler.push(m.text()); }); return p; };
 const ruhe = (p) => p.waitForTimeout(350);
 const Zs = (p, f) => p.evaluate(f);
 
@@ -39,19 +40,19 @@ console.log('Handy 390 px · Erfinden');
 let p = await seite(390, 800);
 await p.route(/^https?:\/\/(?!localhost|api\.anthropic\.com)/, (r) => { fehler.push('Netz nach draußen: ' + r.request().url()); r.abort(); });
 await KI(p);
-await p.goto(U + 'neu/'); await p.waitForSelector('.mx'); await ruhe(p);
+await p.goto(U + 'neu/?leer'); await p.waitForSelector('.mx'); await ruhe(p);
 await zuLabor(p);
 pruefe('Kacheln (Klaus 23.11.): jede Reihe ist gefüllt, keine Lücke rechts', await p.evaluate(() => [...document.querySelectorAll('.kachelraster')].every((r) => { const rr = r.getBoundingClientRect(), reihen = new Map(); for (const k of r.children) { const b = k.getBoundingClientRect(); const y = Math.round(b.top); reihen.set(y, Math.max(reihen.get(y) || 0, b.right)); } return [...reihen.values()].every((re) => rr.right - re < 2); })));
 pruefe('Kacheln: jede Kategorie trägt ihre eigene Farbe', await p.evaluate(() => new Set([...document.querySelectorAll('[data-a=lab-kat]')].map((k) => getComputedStyle(k).backgroundImage)).size >= 8 && [...document.querySelectorAll('[data-a=lab-kat]')].every((k) => k.querySelector('.kfeld .ico'))));
 pruefe('Kacheln rücken auf: höchstens so viele Reihen, wie die Breiten mindestens brauchen (keine Kachel allein, wo eine andere daneben passt)', await p.evaluate(() => { const r = document.querySelector('.kachelraster:not(.drei)'), ys = new Set([...r.children].map((k) => Math.round(k.getBoundingClientRect().top))); r.classList.add('messen'); const w = [...r.children].map((k) => k.getBoundingClientRect().width), B = r.clientWidth; r.classList.remove('messen'); const summe = w.reduce((a, x) => a + x + 7, 0); return ys.size <= Math.ceil(summe / B) + 1; }), await p.evaluate(() => [...document.querySelectorAll('.kachelraster:not(.drei) .kachel')].map((k) => Math.round(k.getBoundingClientRect().top) + ':' + k.textContent.trim()).join(' | ')));
 pruefe('jeder Geschmack trägt eine eigene Farbe', await p.evaluate(() => new Set([...document.querySelectorAll('[data-a=lab-geschmack] .kfeld')].map((k) => getComputedStyle(k).backgroundColor)).size === 6));
-pruefe('Erklärtexte stehen hinter einem „?“, nicht als Absatz', await p.locator('.laborform .frag').count() >= 2 && !(await p.locator('.laborform').first().innerText()).includes('Braucht Internet'));
+pruefe('im Labor steht EIN „?“ (an der Überschrift), sonst reichen Hinweise; kein Erklär-Absatz', await p.locator('.haupt .frag').count() === 1 && await p.locator('.laborform .frag').count() === 0 && (await p.locator('.laborform h3').first().getAttribute('title') || '').includes('Anthropic') && !(await p.locator('.laborform').first().innerText()).includes('Braucht Internet'), String(await p.locator('.haupt .frag').count()));
 pruefe('Geschmack am Handy: zwei volle Reihen zu je drei', await p.evaluate(() => { const ys = [...document.querySelectorAll('[data-a=lab-geschmack]')].map((k) => Math.round(k.getBoundingClientRect().top)); return new Set(ys).size === 2 && ys.filter((y) => y === ys[0]).length === 3; }));
 pruefe('das Labor zeigt das Formular: Kategorien, sechs Geschmäcker, Zutatenfeld, Erfinden', await p.locator('[data-a=lab-kat]').count() >= 9 && await p.locator('[data-a=lab-geschmack]').count() === 6 && await p.locator('#labzutaten').count() === 1 && await p.locator('[data-a=lab-erfinden]').count() === 1);
 await p.click('[data-a=lab-kat][data-k=mock]'); await p.click('[data-a=lab-geschmack][data-g=frisch]'); await p.click('[data-a=lab-geschmack][data-g=herb]'); await p.fill('#labzutaten', 'Gurke');
 await p.click('[data-a=lab-erfinden]'); await ruhe(p);
 pruefe('ohne Schlüssel fragt das Labor nach dem Anthropic-Schlüssel und schickt nichts', await p.locator('#akform').count() === 1 && anfragen.length === 0);
-pruefe('Schlüssel-Fenster (Klaus 23.11.): die Erklärung steht hinter einem „?“, kein Absatz darüber', await p.locator('#akform .frag').count() === 1 && !(await p.locator('.fenster, [role=dialog]').first().innerText().catch(() => '')).includes('Er bleibt nur auf diesem Gerät'));
+pruefe('Schlüssel-Fenster (Klaus 23.11.): die Erklärung steht hinter einem „?“, kein Absatz darüber', await p.locator('.fenster .fkopf .frag').count() === 1 && await p.locator('.fenster .ftext').count() === 0 && await p.locator('.fenster #schl-holen').getAttribute('href') === 'https://platform.claude.com/settings/keys' && await p.locator('.fenster .reihe').count() === 1 && !(await p.locator('.fenster, [role=dialog]').first().innerText().catch(() => '')).includes('Er bleibt nur auf diesem Gerät'));
 antworten.push({ stop_reason: 'end_turn', text: 'Gern! ' + rezept('Gurken-Smash') + ' Prost.', warte: 1500 });
 await p.fill('#akform [name=k]', 'sk-ant-probe-123'); await p.click('#akform [type=submit]'); await p.waitForTimeout(700);
 pruefe('Ladebalken (Klaus 23.11.): während die KI erfindet, stehen Balken und Zeile da', await p.locator('#warten-zeile.an').isVisible().catch(() => false) && /erfunden/.test(await p.locator('#warten-zeile').innerText().catch(() => '')) && await p.locator('#warten-balken.an').count() === 1); await p.waitForSelector('.laborform.entwurf', { timeout: 8000 }).catch(() => {});
@@ -128,7 +129,7 @@ await p.context().close();
 
 console.log('Monitor 1280 px');
 p = await seite(1280, 860); await p.route(/^https?:\/\/(?!localhost)/, (r) => { fehler.push('Netz nach draußen: ' + r.request().url()); r.abort(); });
-await p.goto(U + 'neu/'); await p.waitForSelector('.mx'); await ruhe(p); await p.click('.nav [data-go=labor]'); await ruhe(p);
+await p.goto(U + 'neu/?leer'); await p.waitForSelector('.mx'); await ruhe(p); await p.click('.nav [data-go=labor]'); await ruhe(p);
 { const w = p.locator('.nav [data-a=navzu]'); const lbl = await w.getAttribute('aria-label'); await w.hover(); await p.waitForTimeout(650);
   pruefe('Hinweis-Blase (Kern 0.16, wie in der alten App): ein Symbol-Knopf zeigt seine Beschriftung', await p.evaluate(() => { const b = document.getElementById('hinweis-blase'); return b && b.style.opacity === '1' ? b.textContent : ''; }) === lbl, lbl);
   await p.mouse.move(640, 840); await p.click('.nav [data-go=mehr]'); await ruhe(p); await p.click('[data-a=hinweise]'); await ruhe(p); await p.click('.nav [data-go=labor]'); await ruhe(p);

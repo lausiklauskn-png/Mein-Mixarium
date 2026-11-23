@@ -3,7 +3,11 @@
 # Die Fälle zum Kern selbst (Foto nicht verkleinert, nicht zugedeckt, Stufe …) stehen in Mein-Rezeptbuch; hier steht die Verdrahtung der App.
 import subprocess, shutil, os, tempfile, sys
 F=[('kein-vermerk', "  if (f.kiEntfernt && f.kiEntfernt.length) vermerken(r, f.kiEntfernt, 'scan');", "", 'neu/app.mjs', 'am Getränk steht der Vermerk'),
-   ('abbrechen-sendet-weiter', "if (!(await rein.halt(d.name, v.liste))) { fehler.push([d.name, kiMeldung('abgebrochen', sprache())]); break; }", "await rein.halt(d.name, v.liste);", 'neu/app.mjs', 'ROT'),
+   ('drin-lassen-deckt-zu', "vorbereiten(sc.dateien[0], { sprache: sprache(), zudecken: false })", "vorbereiten(sc.dateien[0], { sprache: sprache(), zudecken: true })", 'neu/app.mjs', 'steht die blasse Zeile noch'),
+   ('vermerk-bei-drin-lassen', "Z.fenster.kiEntfernt = sc.v.liste.filter((e) => e.grund === 'meta' || sc.v.zugedeckt);", "Z.fenster.kiEntfernt = sc.v.liste;", 'neu/app.mjs', 'steht kein Vermerk, denn es wurde nichts entfernt'),
+   ('fund-ohne-frage', "if (fundeZumEntscheiden(v.liste).length && !sc.entschieden) return", "if (false) return", 'neu/app.mjs', 'der Fund steht als markiertes Seitenbild da'),
+   ('stapel-laesst-verstecktes-drin', "const v = await vorbereiten(d, { sprache: sprache() });", "const v = await vorbereiten(d, { sprache: sprache(), zudecken: false });", 'neu/app.mjs', 'im Stapel geht das PDF ohne die versteckte Zeile hinaus'),
+   ('auskunft-fehlt-im-knopf', "<small id=\"scan-was\">${esc(wohinKurz(v, an, sprache()))}</small>", "<small id=\"scan-was\"></small>", 'neu/app.mjs', 'im Knopf steht, wohin und wie viel hinausgeht'),
    ('senden-ohne-schluessel', "  if (!SK.anthropic) return schluesselFenster('anthropic', 'scan');", "", 'neu/app.mjs', 'ROT'),
    ('essens-kategorien', "const scanKats = () => K.alleKategorien(A.getraenke, A.kategorien).filter((c) => c.art !== 'ohne').map((c) => ({ id: c.id, name: katText(c) }));", "const scanKats = () => KATEGORIEN_FEST.map((c) => ({ id: c.id, name: c.de }));", 'neu/app.mjs', 'GETRÄNKE-Kategorien'),
    ('alte-app-geschrieben', "async weg(a) { await lager.setz(eintrag(a), ''); },", "async weg(a) { await lager.setz(eintrag(a), ''); try { for (const n of altNamen[a] || []) alt.removeItem(n); } catch {} },", 'kern/ki/schluessel.mjs', 'Speicher der bisherigen App ist unverändert'),
