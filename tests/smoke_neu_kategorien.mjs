@@ -79,7 +79,7 @@ await p.click('.seite [data-a=planen], [data-a=planen]'); await ruhe(p); await p
 pruefe('am Getränk: „Planen“ trägt es an einem Tag ein', await Zs(p, () => Object.values(__mixarium.sammlung.plan).flat().filter((u) => u === __mixarium.zustand.uid).length === 2));
 pruefe('die Sicherung trägt den Plan', await Zs(p, () => Object.keys(JSON.parse(__mixarium.sicherung()).plan || {}).length >= 1));
 await p.click('.nav [data-go=karte]'); await ruhe(p); await p.click('[data-go=plan]'); await ruhe(p);
-while (await p.locator('.w-tag.heute [data-a=plan-weg]').count()) { await p.locator('.w-tag.heute [data-a=plan-weg]').first().click(); await ruhe(p); }
+for (let i = 0; i < 5 && await p.locator('.w-tag.heute [data-a=plan-weg]').count(); i++) { await p.locator('.w-tag.heute [data-a=plan-weg]').first().click(); await ruhe(p); }   // begrenzt: kehrt ein Eintrag immer wieder, soll die Probe ROT melden, nicht hängen
 await p.reload(); await p.waitForSelector('.mx'); await ruhe(p); await p.click('.nav [data-go=karte]'); await ruhe(p); await p.click('[data-go=plan]'); await ruhe(p);
 pruefe('ein übernommener Eintrag, den man herausnimmt, kommt nicht wieder (Übernahme nur einmal)', !(await p.locator('.w-tag.heute').innerText()).includes('Virgin Mojito'), await p.locator('.w-tag.heute').innerText());
 

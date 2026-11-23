@@ -22,6 +22,7 @@ for name,alt,neu in FAELLE:
     p=W+'/neu/app.mjs'; s=open(p,encoding='utf-8').read(); n=s.count(alt)
     if n!=1: print('==',name,'TOTER ANKER',n); continue
     open(p,'w',encoding='utf-8').write(s.replace(alt,neu))
-    r=subprocess.run(['node','tests/smoke_neu_kategorien.mjs'],env={**os.environ,'WURZEL':W},capture_output=True,text=True,timeout=400)
+    try: r=subprocess.run(['node','tests/smoke_neu_kategorien.mjs'],env={**os.environ,'WURZEL':W},capture_output=True,text=True,timeout=400)
+    except subprocess.TimeoutExpired: print('==',name,'GESTOLPERT (Zeitablauf, keine benannte rote Zeile)'); continue
     rot=[l for l in r.stdout.splitlines() if 'ROT' in l]
     print('==',name,'rc',r.returncode); print('\n'.join(rot[:4]))
