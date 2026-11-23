@@ -22,7 +22,11 @@
 import { mengeUndEinheitTrennen } from './einheiten.mjs';
 const trennen = (menge) => { const roh = String(menge == null ? '' : menge).trim(); return mengeUndEinheitTrennen(roh) || { amt: roh, unit: '' }; };
 
-export const LAB_MODELL = 'claude-haiku-4-5';   // wie in der alten App (CLAUDE.md: Haiku 4.5), hier an EINER Stelle
+/* Klaus 23.11.2026: Haiku 5.5 statt Haiku 4.5 (die alte App nutzt 4.5). Laut Anthropic etwa ein Zehntel des Preises und
+   besser im Befolgen von Anweisungen. Haiku 5.5 denkt vor der Antwort; das Denken zählt in die Längengrenze, deshalb
+   LAB_MAX_TOKENS höher als die 2048 von bisher. Keine temperature/top_p und kein vorgefülltes Antwortstück (beides 400). */
+export const LAB_MODELL = 'claude-haiku-5-5';
+export const LAB_MAX_TOKENS = 8192;
 
 export const LAB_STATUS = Object.freeze({
   experimentell: { de: 'Experimentell', en: 'Experimental', farbe: '#e07c20' },

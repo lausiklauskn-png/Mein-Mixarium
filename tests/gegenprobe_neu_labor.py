@@ -3,7 +3,7 @@
 import subprocess, shutil, os, tempfile
 F=[('kopfzeile',"'anthropic-dangerous-direct-browser-access': 'true' ","",'neu/app.mjs'),
    ('ueberarbeitung',"    if (f.ueberarbeiten) labUeberarbeiten(r); return zeichne(); }","    return zeichne(); }",'neu/app.mjs'),
-   ('modell',"export const LAB_MODELL = 'claude-haiku-4-5';","export const LAB_MODELL = 'claude-opus-5-5';",'getraenke/labor.mjs')]
+   ('modell',"export const LAB_MODELL = 'claude-haiku-5-5';","export const LAB_MODELL = 'claude-opus-5-5';",'getraenke/labor.mjs')]
 for name,a,b,f in F:
     W=tempfile.mkdtemp(prefix='mx-gl-')
     for d in ['neu','kern','getraenke','beispiele','icons','ausgaben','sbkim','assets']: shutil.copytree(d,W+'/'+d)

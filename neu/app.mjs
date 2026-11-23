@@ -31,7 +31,7 @@ const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENK
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor17';
+export const FASSUNG = '10.0.0-vor18';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -341,7 +341,7 @@ function vLabor() {
 async function kiRezept(auftrag) {
   const k = (await lager.hol('schluessel-anthropic')) || ''; if (!k) { const f = new Error('kein-schluessel'); f.keinSchluessel = true; throw f; }
   let ant;
-  try { ant = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': k, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: LAB.LAB_MODELL, max_tokens: 2048, messages: [{ role: 'user', content: auftrag }] }) }); }
+  try { ant = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': k, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: LAB.LAB_MODELL, max_tokens: LAB.LAB_MAX_TOKENS, messages: [{ role: 'user', content: auftrag }] }) }); }
   catch (e) { throw new Error(L('Keine Verbindung. Das Labor braucht Internet.', 'No connection. The lab needs internet.')); }
   if (!ant.ok) { const j = await ant.json().catch(() => ({})); throw new Error(ant.status === 401 ? L('Der Anthropic-Schlüssel wurde abgelehnt. Bitte in den Einstellungen prüfen.', 'The Anthropic key was rejected. Please check it in the settings.') : ant.status === 429 ? L('Anthropic meldet: zu viele Anfragen oder kein Guthaben.', 'Anthropic reports: too many requests or no credit.') : ((j.error && j.error.message) || 'HTTP ' + ant.status)); }
   return LAB.antwortLesen(await ant.json());
