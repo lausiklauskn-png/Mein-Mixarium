@@ -9,23 +9,21 @@ Kein Bau-Schritt: reine ES-Module, läuft direkt von GitHub Pages. Gestaltung na
 
 ## Was woher kommt
 
-| Teil | Ort | Bleibt? |
-|---|---|---|
-| Getränke-Logik (Einheiten, Gläser, Kategorien, Alkohol, Gerätschaften, Übernahme, Beispiele) | `../getraenke/` | ja, mit Proben |
-| Ausgaben und Beispiel-Katalog | `../kern/` (Pin), `../ausgaben/`, `../beispiele/` | ja, aus dem Küchen-Kern |
-| Oberfläche (`app.mjs`, `app.css`), Speicher, Symbole, Platzhalterbild | hier und `vorlaeufig/` | **vorläufig** |
+| Teil | Ort |
+|---|---|
+| Speicher, Tresor, Farben mit Hell/Dunkel, Schrift-Regler, Bild verkleinern, Symbole, Spracheingabe, KI-Bild, `sicht` | Küchen-Kern `../kern/` (byte-gleich aus Mein Rezeptbuch, Pin `../KERN-PIN.json`) |
+| Einheiten, Gläser, Kategorien, Alkohol, Gerätschaften, Übernahme, Beispiele, Ausgaben | Getränke-Schicht `../getraenke/` (mit Proben) |
+| Getränke-Symbole, Platzhalterbild, Lesen der alten App | `getraenke-symbole.mjs`, `platzbild.mjs`, `alt.mjs` |
+| Oberfläche, Einkaufsliste, Getränkekarten | `app.mjs`, `app.css` – **vorläufig**, bis der Kern dafür Bausteine hat |
 
-**Vorläufig** heißt (Klaus 23.11.: „jetzt bauen und später umhängen“): Palette und Farbscheibe, Verlaufs-Knöpfe, fliegende
-Leiste, klappbarer Kopf, Fenster, Einstellungs-Liste, das Gerüst der Mix-Ansicht, Speicher (IndexedDB `MixariumNeu1`), Symbole
-und Platzhalterbild werden gegen die Bausteine des Küchen-Kerns getauscht, sobald Mein Rezeptbuch sie liefert. Hier wird
-dafür kein eigener Kern aufgebaut; der Ordner `vorlaeufig/` ist die Liste dessen, was wegfällt.
+Stand, Offenes und Fallen: `../docs/UEBERGABE_GEMEINSAME_SITZUNG.md`.
 
 ## Was diese Fassung kann
 
 Getränke ansehen, suchen, nach Kategorie filtern, „Ohne Alkohol“; Getränk mit Foto, Glas, Temperatur, Portionen umrechnen,
 ml/cl/oz; anlegen, bearbeiten (mit Foto, verkleinert auf 1600 px), löschen; Mix-Ansicht im Vollbild mit Bild, Zutaten und
 Gerätschaften je Schritt, Wischen/Pfeiltasten/Esc, Bildschirm bleibt an; Einkaufsliste (zusammengerechnet, nach Gruppen,
-abhaken, teilen); Getränkekarten für einen Anlass; Farbe (im Dunkeln durchgehend getönt), hell/dunkel, Sprache, Einheiten, Schriftgröße als Schieberegler (85–150 %, wirkt sofort); Beispiele laden und
+abhaken, teilen); Getränkekarten für einen Anlass; Tresor; Bild-Blatt mit Ausschnitt, KI-Bild und Gratis-Foto; Spracheingabe; Farbe (im Dunkeln durchgehend getönt), hell/dunkel, Sprache, Einheiten, Schriftgröße als Schieberegler (85–150 %, wirkt sofort); Beispiele laden und
 mit einem Tipp löschen; Sicherung speichern und einspielen (Format der alten App, `version: 10`); Sammlung leeren;
 Übernahme aus der bisherigen App beim ersten Start (nur lesen); offline nach dem ersten Laden; fliegende Leiste am Handy,
 Leiste links am Monitor, „Nur dieses Getränk“.
@@ -52,5 +50,5 @@ npm test                                  # Getränke-Schicht
 node tools/kern-nachziehen.mjs --pruefen  # Kern stimmt mit dem Pin überein
 ```
 
-Zuletzt gemessen (23.11.2026): `smoke_neu_pwa` 50 grün · 0 ROT; Getränke-Schicht und Beispiele 84 von 84; von Hand nachgestellt:
+Zuletzt gemessen (23.11.2026): `smoke_neu_pwa` 63 grün · 0 ROT; Getränke-Schicht und Beispiele 86 von 86; von Hand nachgestellt:
 Alkohol-Paket trotz Schalter angeboten → 1 ROT; App füllt den Schirm nicht → 3 ROT.
