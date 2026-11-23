@@ -649,3 +649,21 @@ h1,h2,h3,p{margin:0}
 .mx .rwerk.mon .chip{background:var(--fl2);color:var(--ink);box-shadow:none}
 .mx .rwerk.mon .chip .ico{color:var(--ink)}
 .mx .rwerk.mon .chip.rot,.mx .rwerk.mon .chip.rot .ico{color:#a3321f}
+
+/* Kategorien als Sticker (Klaus 23.11.): rundes Mini-Foto, Name und Zahl darunter */
+.mx .leiste.stickers{gap:10px;align-items:flex-start;padding-top:4px;padding-bottom:2px}
+.mx .leiste.stickers .chip.stk{flex:none;display:grid;justify-items:center;gap:4px;width:66px;padding:0;background:none;border:0;box-shadow:none;min-height:0;color:var(--muted);font-size:11.5px;line-height:1.2;text-align:center}
+.mx .stk-bild{width:50px;height:50px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--fl2);color:var(--akz);border:3px solid var(--bg);box-shadow:0 0 0 1.5px var(--linie)}
+.mx .stk-bild .ico{width:22px;height:22px}.mx .stk-bild .kemoji{font-size:22px;width:auto}
+.mx .sticker{width:100%;height:100%;object-fit:cover;display:block}
+.mx .stk-name{display:block;max-width:66px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.mx .stk-name .zahl{opacity:.75;font-weight:400}
+.mx .leiste.stickers .chip.stk[aria-pressed="true"]{color:var(--ink);font-weight:650}
+.mx .leiste.stickers .chip.stk[aria-pressed="true"] .stk-bild{box-shadow:0 0 0 2.5px var(--akz)}
+.mx .kat-zeichen{overflow:hidden}.mx .kat-zeichen:has(.sticker){border-radius:50%}
+.mx .kat-zeichen.klein{width:30px;height:30px;font-size:16px}
+.mx .sticker-raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.mx .sticker-raster button{aspect-ratio:1;border-radius:50%;overflow:hidden;padding:0;border:3px solid var(--bg);box-shadow:0 0 0 1.5px var(--linie)}
+.mx .sticker-raster button[aria-pressed="true"]{box-shadow:0 0 0 3px var(--akz)}
+.mx .sticker-raster img{width:100%;height:100%;object-fit:cover;display:block}
+.mx .sticker.gezeichnet{display:block}.mx .sticker.gezeichnet svg{width:100%;height:100%;display:block}

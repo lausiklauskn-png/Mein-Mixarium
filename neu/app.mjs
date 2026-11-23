@@ -14,7 +14,7 @@ import { bildAusDatei } from '../kern/oberflaeche/bild.mjs';
 import { kiBild, gratisBild, KOSTEN } from '../kern/ki/bild.mjs';
 import { sicht as kernSicht } from '../kern/modell/rezept.mjs';
 import { diktat, diktatAus, diktatMoeglich } from '../kern/oberflaeche/diktat.mjs';
-import { kategorienMit, beschriftung as katBeschr, anzahl as katZahl, anlegen as katAnlegen, umbenennen as katUmbenennen, KATEGORIEN_FEST } from '../kern/modell/kategorien.mjs';
+import { kategorienMit, beschriftung as katBeschr, anzahl as katZahl, anlegen as katAnlegen, umbenennen as katUmbenennen, KATEGORIEN_FEST, katBild, bildWaehlen } from '../kern/modell/kategorien.mjs';
 import { katVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
 import { einkaufMit } from '../kern/modell/einkauf.mjs';
 
@@ -26,7 +26,7 @@ const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENK
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor9';
+export const FASSUNG = '10.0.0-vor10';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -74,6 +74,14 @@ const katText = (c) => katBeschr(c, sprache(), A.kategorien);
 const katNameVon = (r) => { const id = katVonRezept(r); const c = K.alleKategorien(A.getraenke, A.kategorien).find((x) => x.id === id); return c ? katText(c) : (id === KAT_OHNE ? L('Ohne Kategorie', 'No category') : id); };
 /* Zeichen einer Kategorie: ein selbst gewähltes Emoji, sonst das gezeichnete Symbol. */
 const katZeichen = (c) => { const e = (A.kategorien.namen && A.kategorien.namen[c.id] && A.kategorien.namen[c.id].emoji) || c.emoji; return e ? `<span class="kemoji" aria-hidden="true">${esc(e)}</span>` : I(KAT_SYM[c.id] || (c.art === 'ohne' ? 'frage' : c.art === 'unbekannt' ? 'paket' : 'box')); };
+/* Sticker einer Kategorie (Klaus 23.11.: „kleine Bilderchen sprechen mehr als Emojis … wie kleine Sticker“): ein Foto aus der
+   EIGENEN Kategorie (gewählt, sonst das erste mit Bild), sonst das Zeichen. Der Name steht immer darunter. */
+const katSticker = (c, liste = A.getraenke) => {
+  const b = katBild(liste, A.kategorien, c.id); if (b) return `<img class="sticker" src="${esc(b.img)}" alt="" loading="lazy">`;   // 1. Foto aus der Kategorie
+  if ((A.kategorien.namen[c.id] && A.kategorien.namen[c.id].emoji) || c.emoji) return katZeichen(c);                                             // 2. selbst gewähltes Zeichen
+  const r = liste.find((x) => G.istSichtbar(x) && katVonRezept(x) === c.id);                                                          // 3. das gezeichnete Bild des ersten Getränks
+  return r ? `<span class="sticker gezeichnet" aria-hidden="true">${platzbild(r)}</span>` : katZeichen(c);                            // 4. Zeichen
+};
 /* Eine Form für alle Wege herein (Start, Einspielen, Tresor, Übernahme): Kategorie-Zustand im Kern-Format; ein altes
    cat: "fld_…" ist ein Ordner und zieht nach `folder` (Familien-Regel: ein Ordner frisst die Kategorie nicht). */
 function inForm() {
@@ -121,7 +129,9 @@ function menue() {
 }
 function leiste() {
   const l = lage(), alle = l.getraenke.filter(G.istSichtbar).length;
-  return `<div class="leiste"><button class="chip" data-kat="all" aria-pressed="${Z.kat === 'all'}">${I('book')}${L('Alle', 'All')}<span class="zahl">${alle}</span></button>${kats().map(({ c, n }) => `<button class="chip" data-kat="${esc(c.id)}" aria-pressed="${Z.kat === c.id}">${katZeichen(c)}${esc(katText(c))}<span class="zahl">${n}</span></button>`).join('')}</div>`;
+  const gl = l.getraenke, alleBild = katBild(gl, A.kategorien, 'alle');
+  const stk = (id, bildHtml, name, n) => `<button class="chip stk" data-kat="${esc(id)}" aria-pressed="${Z.kat === id}"><span class="stk-bild">${bildHtml}</span><span class="stk-name">${esc(name)} <span class="zahl">${n}</span></span></button>`;
+  return `<div class="leiste stickers" role="group" aria-label="${L('Kategorien', 'Categories')}">${stk('all', alleBild ? `<img class="sticker" src="${esc(alleBild.img)}" alt="" loading="lazy">` : I('book'), L('Alle', 'All'), alle)}${kats().map(({ c, n }) => stk(c.id, katSticker(c, gl), katText(c), n)).join('')}</div>`;
 }
 function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.beispiel ? `<span class="marke rechts">${L('Beispiel', 'Example')}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
 function kartenHtml() {
@@ -444,7 +454,7 @@ const EMOJI = '🥤 🍹 🍸 🍋 ☕ 🍶 🫙 🥨 🍢 🍷 🍺 🥂 🧃 �
 function katFenster() {
   const alle = K.alleKategorien(A.getraenke, A.kategorien), aus = (A.kategorien.ausgeblendet || []).filter((id) => !alle.some((c) => c.id === id)).map((id) => G.KATEGORIEN.find((c) => c.id === id)).filter(Boolean);
   const zeile = (c) => { const n = katZahl(A.getraenke, c.id), eig = (A.kategorien.namen[c.id] && A.kategorien.namen[c.id].name) || '', ohne = c.art === 'ohne';
-    return `<div class="kat-zeile" data-kid="${esc(c.id)}"><span class="griff" aria-hidden="true">${I('griff')}</span><button class="kat-zeichen" data-a="kat-emoji" data-kid="${esc(c.id)}" aria-label="${L('Zeichen ändern', 'Change symbol')}">${katZeichen(c)}</button>${ohne ? `<span class="kat-fest">${esc(katText(c))}</span>` : `<input class="feld kat-name" data-kid="${esc(c.id)}" value="${esc(c.art === 'eigen' && !eig ? c.de : eig)}" placeholder="${esc(c[sprache()] || c.de || c.id)}" aria-label="${L('Name der Kategorie', 'Category name')} ${esc(katText(c))}" autocomplete="off">`}<small>${n}</small>${ohne ? '<span class="platz"></span>' : `<button class="rund klein" data-a="kat-weg" data-kid="${esc(c.id)}" aria-label="${L('Kategorie löschen', 'Delete category')} ${esc(katText(c))}">${I('trash')}</button>`}</div>`; };
+    return `<div class="kat-zeile" data-kid="${esc(c.id)}"><span class="griff" aria-hidden="true">${I('griff')}</span><button class="kat-zeichen" data-a="kat-emoji" data-kid="${esc(c.id)}" aria-label="${L('Bild oder Zeichen ändern', 'Change picture or symbol')}">${katSticker(c)}</button>${ohne ? `<span class="kat-fest">${esc(katText(c))}</span>` : `<input class="feld kat-name" data-kid="${esc(c.id)}" value="${esc(c.art === 'eigen' && !eig ? c.de : eig)}" placeholder="${esc(c[sprache()] || c.de || c.id)}" aria-label="${L('Name der Kategorie', 'Category name')} ${esc(katText(c))}" autocomplete="off">`}<small>${n}</small>${ohne ? '<span class="platz"></span>' : `<button class="rund klein" data-a="kat-weg" data-kid="${esc(c.id)}" aria-label="${L('Kategorie löschen', 'Delete category')} ${esc(katText(c))}">${I('trash')}</button>`}</div>`; };
   Z.fenster = { titel: L('Kategorien', 'Categories'), html: `<p class="ftext">${L('Namen und Zeichen kannst du frei ändern; ein leeres Namensfeld heißt Vorgabe. Ein eigener Name gilt in allen Sprachen. Zum Ordnen eine Zeile am Griff lange drücken oder mit der Maus ziehen. Eine Kategorie mit Getränken fragt beim Löschen, wohin die Getränke sollen.', 'You can change names and symbols freely; an empty name means the default. Your own name applies in all languages. To reorder, long-press a row at its handle or drag it with the mouse. A category with drinks asks where its drinks should go when you delete it.')}</p>
    <div class="kat-liste" id="kat-liste">${alle.map(zeile).join('')}</div><div class="reihe" style="margin-top:12px"><button class="knopf" data-a="kat-neu">${I('plus')}${L('Neue Kategorie', 'New category')}</button></div>
    ${aus.length ? `<h3 class="eh">${L('Ausgeblendet', 'Hidden')}</h3><div class="eliste">${aus.map((c) => `<button class="ezeile" data-a="kat-zurueck" data-kid="${esc(c.id)}">${I('plus')}<span><b>${esc(katText(c))}</b><small>${L('wieder zeigen', 'show again')}</small></span></button>`).join('')}</div>` : ''}`, kat: true };
@@ -452,7 +462,7 @@ function katFenster() {
 function katWegFenster(id) {
   const c = K.alleKategorien(A.getraenke, A.kategorien).find((x) => x.id === id), n = katZahl(A.getraenke, id);
   const ziele = K.alleKategorien(A.getraenke, A.kategorien).filter((x) => x.art !== 'ohne' && x.id !== id);
-  Z.fenster = { titel: L(`Wohin mit ${n} Getränken?`, `Where should ${n} drinks go?`), html: `<p class="ftext">${L(`„${esc(katText(c))}“ wird gelöscht. Die Getränke bleiben und bekommen die Kategorie, die du hier wählst.`, `“${esc(katText(c))}” will be deleted. The drinks stay and get the category you pick here.`)}</p><div class="eliste">${ziele.map((x) => `<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="${esc(x.id)}">${katZeichen(x)}<span><b>${esc(katText(x))}</b><small></small></span></button>`).join('')}<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="">${I('frage')}<span><b>${L('ohne Kategorie', 'no category')}</b><small>${L('sie erscheinen unter „Ohne Kategorie“', 'they appear under “No category”')}</small></span></button></div><div class="reihe ende"><button class="knopf hell" data-a="kategorien">${L('Abbrechen', 'Cancel')}</button></div>` };
+  Z.fenster = { titel: L(`Wohin mit ${n} Getränken?`, `Where should ${n} drinks go?`), html: `<p class="ftext">${L(`„${esc(katText(c))}“ wird gelöscht. Die Getränke bleiben und bekommen die Kategorie, die du hier wählst.`, `“${esc(katText(c))}” will be deleted. The drinks stay and get the category you pick here.`)}</p><div class="eliste">${ziele.map((x) => `<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="${esc(x.id)}"><span class="kat-zeichen klein">${katSticker(x)}</span><span><b>${esc(katText(x))}</b><small></small></span></button>`).join('')}<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="">${I('frage')}<span><b>${L('ohne Kategorie', 'no category')}</b><small>${L('sie erscheinen unter „Ohne Kategorie“', 'they appear under “No category”')}</small></span></button></div><div class="reihe ende"><button class="knopf hell" data-a="kategorien">${L('Abbrechen', 'Cancel')}</button></div>` };
 }
 function katLoeschenMit(id, ziel) {
   const c = K.alleKategorien(A.getraenke, A.kategorien).find((x) => x.id === id), name = c ? katText(c) : id;
@@ -467,7 +477,9 @@ const TUN = {
   'kat-weg'(b) { const id = b.dataset.kid; if (katZahl(A.getraenke, id)) katWegFenster(id); else katLoeschenMit(id, null); },
   'kat-weg-ziel'(b) { katLoeschenMit(b.dataset.kid, b.dataset.ziel); return false; },
   'kat-zurueck'(b) { A.kategorien = { ...A.kategorien, ausgeblendet: A.kategorien.ausgeblendet.filter((x) => x !== b.dataset.kid) }; sichern(); katFenster(); },
-  'kat-emoji'(b) { const id = b.dataset.kid; Z.fenster = { titel: L('Zeichen wählen', 'Choose a symbol'), html: `<div class="emoji-raster">${EMOJI.map((x) => `<button data-a="kat-emoji-setzen" data-kid="${esc(id)}" data-em="${x}" aria-label="${x}">${x}</button>`).join('')}</div><div class="reihe ende"><button class="knopf hell" data-a="kat-emoji-setzen" data-kid="${esc(id)}" data-em="">${L('Vorgabe', 'Default')}</button><button class="knopf hell" data-a="kategorien">${L('Zurück', 'Back')}</button></div>` }; },
+  'kat-emoji'(b) { const id = b.dataset.kid, bilder = A.getraenke.filter((r) => G.istSichtbar(r) && r.img && katVonRezept(r) === id), gew = A.kategorien.namen[id] && A.kategorien.namen[id].bild, jetzt = (katBild(A.getraenke, A.kategorien, id) || {}).uid;
+    Z.fenster = { titel: L('Bild oder Zeichen', 'Picture or symbol'), html: `${bilder.length ? `<p class="ftext">${L('Ein kleines Foto aus dieser Kategorie, wie ein Sticker. Ohne Wahl steht das erste Getränk mit Bild.', 'A small photo from this category, like a sticker. Without a choice, the first drink with a picture is used.')}</p><div class="sticker-raster">${bilder.map((r) => `<button data-a="kat-bild-setzen" data-kid="${esc(id)}" data-uid="${esc(r.uid)}" aria-pressed="${r.uid === jetzt}" aria-label="${esc(r.name)}"><img src="${esc(r.img)}" alt="" loading="lazy"></button>`).join('')}</div>${gew ? `<div class="reihe"><button class="knopf hell" data-a="kat-bild-setzen" data-kid="${esc(id)}" data-uid="">${L('Vorgabe: erstes Bild', 'Default: first picture')}</button></div>` : ''}<h3 class="eh">${L('Zeichen, wenn es kein Bild gibt', 'Symbol if there is no picture')}</h3>` : `<p class="ftext">${L('In dieser Kategorie hat noch kein Getränk ein Bild. Bis dahin steht das Zeichen.', 'No drink in this category has a picture yet. Until then the symbol is shown.')}</p>`}<div class="emoji-raster">${EMOJI.map((x) => `<button data-a="kat-emoji-setzen" data-kid="${esc(id)}" data-em="${x}" aria-label="${x}">${x}</button>`).join('')}</div><div class="reihe ende"><button class="knopf hell" data-a="kat-emoji-setzen" data-kid="${esc(id)}" data-em="">${L('Vorgabe', 'Default')}</button><button class="knopf hell" data-a="kategorien">${L('Zurück', 'Back')}</button></div>` }; },
+  'kat-bild-setzen'(b) { A.kategorien = bildWaehlen(A.kategorien, b.dataset.kid, b.dataset.uid || null); sichern(); katFenster(); },
   'kat-emoji-setzen'(b) { const id = b.dataset.kid, e = b.dataset.em, namen = { ...A.kategorien.namen }, v = { ...(namen[id] || {}) }; if (e) v.emoji = e; else delete v.emoji; if (Object.keys(v).length) namen[id] = v; else delete namen[id];
     A.kategorien = { ...A.kategorien, namen, eigene: A.kategorien.eigene.map((c) => (c.id === id && !e ? (({ emoji, ...rest }) => rest)(c) : c)) }; sichern(); katFenster(); },
   'ek-laden'(b) { A.einkaufLaeden = { ...A.einkaufLaeden, laden: b.dataset.l }; sichern(); },

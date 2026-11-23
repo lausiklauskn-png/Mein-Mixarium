@@ -126,6 +126,27 @@ const cdp = await c.newCDPSession(p); const t = (type, x, y) => cdp.send('Input.
 await t('touchStart', g0.x + 13, g0.y + 17); await p.waitForTimeout(450); await t('touchMove', g0.x + 13, g0.y + 40); await t('touchMove', g0.x + 13, z2.y + z2.height * 0.8); await t('touchEnd'); await ruhe(p);
 const ids1 = await p.locator('.kat-zeile').evaluateAll((l) => l.map((z) => z.dataset.kid));
 pruefe('lange drücken und ziehen: die erste Kategorie steht jetzt an dritter Stelle', ids1[2] === ids0[0] && ids1[0] === ids0[1], ids0.slice(0, 3).join() + ' → ' + ids1.slice(0, 3).join());
+await p.keyboard.press('Escape'); await ruhe(p); await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=start]'); await ruhe(p);
+console.log('Sticker: Kategorien mit Mini-Fotos (Klaus 23.11.)');
+pruefe('ohne Fotos: jede Kategorie trägt das gezeichnete Bild ihres ersten Getränks', await p.evaluate(() => [...document.querySelectorAll('.leiste .chip.stk')].filter((b) => b.dataset.kat !== 'all').every((b) => b.querySelector('.sticker.gezeichnet svg'))));
+// echte Fotos stellen: zwei im ersten Getränk-Kategorie-Paar, eins in einer anderen
+await p.evaluate(() => { const foto = (f) => { const c = document.createElement('canvas'); c.width = 60; c.height = 60; const x = c.getContext('2d'); x.fillStyle = f; x.fillRect(0, 0, 60, 60); return c.toDataURL('image/jpeg'); }; const g = __mixarium.sammlung.getraenke, k = g[0].cat, gl = g.filter((r) => r.cat === k); gl[0].img = foto('#c33'); if (gl[1]) gl[1].img = foto('#3c3'); const andere = g.find((r) => r.cat !== k); andere.img = foto('#33c'); });
+await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p); await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=start]'); await ruhe(p);
+const st = await p.evaluate(() => [...document.querySelectorAll('.leiste .chip.stk')].map((b) => ({ id: b.dataset.kat, foto: !!b.querySelector('img.sticker'), name: b.querySelector('.stk-name').textContent.trim(), sicht: b.querySelector('.stk-name').getBoundingClientRect().height > 8 })));
+pruefe('die Leiste zeigt runde Mini-Fotos, jede Kategorie mit Bild trägt eins', st.some((x) => x.foto && x.id !== 'all'), JSON.stringify(st.map((x) => x.id + ':' + x.foto)));
+pruefe('der Name jeder Kategorie bleibt lesbar unter dem Foto', st.every((x) => x.name.length > 2 && x.sicht), JSON.stringify(st.map((x) => x.name)));
+const echt = await p.evaluate(() => { const g = __mixarium.sammlung.getraenke; return [...document.querySelectorAll('.leiste .chip.stk')].filter((b) => b.dataset.kat !== 'all').every((b) => { const img = b.querySelector('img.sticker'); const mit = g.filter((r) => r.cat === b.dataset.kat && r.img); return img ? mit.some((r) => r.img === img.getAttribute('src')) : mit.length === 0; }); });
+pruefe('jedes Sticker-Foto stammt aus der EIGENEN Kategorie; ohne Bild steht das Zeichen', echt);
+pruefe('am Handy läuft die Sticker-Reihe nicht quer über die Seite', await Zs(p, () => document.documentElement.scrollWidth <= innerWidth));
+await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p); await p.click('[data-a=kategorien]'); await p.waitForSelector('#kat-liste');
+const mitBild = await p.evaluate(() => { const g = __mixarium.sammlung.getraenke, z = {}; for (const r of g) if (r.img) z[r.cat] = (z[r.cat] || 0) + 1; return Object.entries(z).sort((a, b) => b[1] - a[1])[0]; });
+await p.click(`.kat-zeile[data-kid="${mitBild[0]}"] [data-a=kat-emoji]`); await ruhe(p);
+const n = await p.locator('.sticker-raster button').count();
+pruefe('der Dialog bietet die Fotos der Kategorie als Sticker an, das jetzige markiert', n === mitBild[1] && await p.locator('.sticker-raster button[aria-pressed=true]').count() === 1, n + ' / ' + mitBild[1]);
+const wahl = await p.locator('.sticker-raster button').nth(n - 1).locator('img').getAttribute('src'); await p.locator('.sticker-raster button').nth(n - 1).click(); await ruhe(p);
+pruefe('das gewählte Foto steht in der Liste und ist gespeichert', (await p.locator(`.kat-zeile[data-kid="${mitBild[0]}"] .kat-zeichen img`).getAttribute('src')) === wahl && await p.evaluate((id) => !!__mixarium.sammlung.kategorien.namen[id]?.bild, mitBild[0]));
+await p.keyboard.press('Escape'); await ruhe(p); await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=start]'); await ruhe(p);
+pruefe('… und als Sticker in der Leiste', (await p.locator(`.leiste .chip.stk[data-kat="${mitBild[0]}"] img`).getAttribute('src')) === wahl);
 await c.close();
 
 pruefe('keine Fehler in der Konsole', fehler.length === 0, fehler.join(' | '));
