@@ -49,7 +49,7 @@ try {
   console.log('1 · Das Plus öffnet das Blatt; Foto wählen: vor dem Senden steht, was hinausgeht');
   let { p, k } = await seite();
   await p.click('.kopf [data-a=neu]'); await ruhe(p);
-  ok(await p.locator('.imp-tabs button').count() === 5 && await p.locator('[data-a=neu-form]').count() === 1, 'das Plus öffnet das Blatt mit allen Wegen: Selbst, Foto-Scan, Text, Datei, Pakete');
+  ok(await p.locator('.imp-tabs button').count() === 6 && await p.locator('[data-a=neu-form]').count() === 1, 'das Plus öffnet das Blatt mit allen Wegen: Selbst, Foto-Scan, Web, Text, Datei, Pakete');
   await scanAuf(p);
   ok(await p.locator('[data-a=scan-kamera]').count() === 1 && await p.locator('[data-a=scan-datei]').count() === 1 && await p.locator('#datei-kamera[capture]').count() === 1 && await p.locator('#datei-scan[multiple]').count() === 1, 'Foto-Scan: Foto aufnehmen und Datei wählen (Fotos, PDF, mehrere)');
   ok(await p.locator('[data-a=scan-anbieter][aria-pressed=true]').getAttribute('data-w') === 'anthropic' && await p.locator('[data-a=scan-stufe][aria-pressed=true]').getAttribute('data-w') === 'schnell', 'Vorgabe wie in der alten App: Claude, schnell');

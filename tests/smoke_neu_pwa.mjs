@@ -68,7 +68,7 @@ pruefe('Abhaken wird gemerkt', await Zs(p, () => __mixarium.sammlung.einkauf.fil
 await p.waitForTimeout(300); await p.reload(); await p.waitForSelector('.karte');
 pruefe('nach dem Neuladen ist alles noch da', await p.locator('.karte').count() === 7 && await Zs(p, () => __mixarium.sammlung.einkauf.length === 6));
 await p.click('.kopf [data-a=neu]'); await ruhe(p);
-pruefe('das Plus öffnet das Blatt mit allen Wegen (wie im Rezeptbuch)', await p.locator('.imp-tabs button').count() === 5 && await p.locator('[data-a=neu-form]').count() === 1);
+pruefe('das Plus öffnet das Blatt mit allen Wegen (wie im Rezeptbuch)', await p.locator('.imp-tabs button').count() === 6 && await p.locator('[data-a=neu-form]').count() === 1);
 await p.click('[data-a=neu-form]'); await p.fill('[name=name]', 'Testlimo'); await p.fill('[name=ings]', '4 cl Zitronensaft\n1/2 Stück Limette\nEis'); await p.fill('[name=steps]', 'Alles schütteln.\nAbseihen.'); await p.click('#ed [type=submit]'); await ruhe(p);
 pruefe('neues Getränk: Menge, Einheit und Name getrennt, eigene Kennung, kein Beispiel', await Zs(p, () => { const r = __mixarium.sammlung.getraenke[0]; return r.name === 'Testlimo' && r.ings[0].amt === '4' && r.ings[0].unit === 'cl' && r.ings[2].name === 'Eis' && r.uid && !r.beispiel; }));
 pruefe('auf dem Foto liegt kein Knopf: nur die zwei Winkel in der Namenszeile', await p.locator('.held .wk-pf').count() === 2 && await p.locator('.held .chip, .held .rund').count() === 0);

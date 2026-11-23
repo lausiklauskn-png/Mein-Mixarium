@@ -15,6 +15,9 @@ stehen auf der gemeinsamen Seite (`Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SIT
 | Kern 0.18.0 (Pin `9c97d27`) · PWA 10.0.0-vor20 | **Das Plus öffnet ein Blatt** „Getränk hinzufügen“ wie im Rezeptbuch (Selbst, Foto-Scan, Text, Datei, Pakete). **Foto-Scan** (Foto aufnehmen, Dateien wählen, PDF, Stapel; Claude oder Mistral OCR + Claude; drei Stufen) mit **Reinigung vor der KI** und **„Datei prüfen“**. **Drei Schlüssel** in den Einstellungen (Anthropic, OpenAI, Mistral; speichern, prüfen, löschen) aus dem Kern; ein Schlüssel der bisherigen App (`mxkey9m`, `mxoaiimg9m`, `mxmistralkey9m`) gilt jetzt weiter und wird nur gelesen. Vor einem Stapel kommt der Stand in den Tresor. | `tests/smoke_neu_scan.mjs` (52) · `tests/gegenprobe_neu_scan.py` (6 Fälle) |
 
 
+| Kern 0.19.0 (Pin `07485eb`) · PWA 10.0.0-vor21 | **Web-Import ohne öffentliche Weiterleiter** (Plus → Web): Seite direkt abrufen, Rezeptdaten ohne KI lesen, Bild als eigene Kopie; gesperrt → Hinweis, „Seite öffnen“, Einfügen; ohne Rezeptdaten → „Ohne KI aufteilen“ oder „Mit Claude lesen“ (nur sichtbarer Text, Halt bei einer Anweisung an eine KI). **Quelle am Getränk.** Die App ist Ziel für „Teilen“. | `tests/smoke_neu_web.mjs` (28) |
+
+
 ## Stand Mixarium (main `859c911`, PWA **10.0.0-vor19**, Kern **0.17.0** per Pin `0b18345`)
 
 - **Die bisherige App ist unverändert**: `index.html` und `QC_Mixarium_20_04_26.html`, md5 beide `49ce4320795972269057083e4c189f48`.
