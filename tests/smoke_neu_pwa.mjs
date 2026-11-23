@@ -67,7 +67,9 @@ await p.click('.posten >> nth=0'); await ruhe(p);
 pruefe('Abhaken wird gemerkt', await Zs(p, () => __mixarium.sammlung.einkauf.filter((x) => x.ok).length === 1));
 await p.waitForTimeout(300); await p.reload(); await p.waitForSelector('.karte');
 pruefe('nach dem Neuladen ist alles noch da', await p.locator('.karte').count() === 7 && await Zs(p, () => __mixarium.sammlung.einkauf.length === 6));
-await p.click('.kopf [data-a=neu]'); await p.fill('[name=name]', 'Testlimo'); await p.fill('[name=ings]', '4 cl Zitronensaft\n1/2 Stück Limette\nEis'); await p.fill('[name=steps]', 'Alles schütteln.\nAbseihen.'); await p.click('#ed [type=submit]'); await ruhe(p);
+await p.click('.kopf [data-a=neu]'); await ruhe(p);
+pruefe('das Plus öffnet das Blatt mit allen Wegen (wie im Rezeptbuch)', await p.locator('.imp-tabs button').count() === 5 && await p.locator('[data-a=neu-form]').count() === 1);
+await p.click('[data-a=neu-form]'); await p.fill('[name=name]', 'Testlimo'); await p.fill('[name=ings]', '4 cl Zitronensaft\n1/2 Stück Limette\nEis'); await p.fill('[name=steps]', 'Alles schütteln.\nAbseihen.'); await p.click('#ed [type=submit]'); await ruhe(p);
 pruefe('neues Getränk: Menge, Einheit und Name getrennt, eigene Kennung, kein Beispiel', await Zs(p, () => { const r = __mixarium.sammlung.getraenke[0]; return r.name === 'Testlimo' && r.ings[0].amt === '4' && r.ings[0].unit === 'cl' && r.ings[2].name === 'Eis' && r.uid && !r.beispiel; }));
 pruefe('auf dem Foto liegt kein Knopf: nur die zwei Winkel in der Namenszeile', await p.locator('.held .wk-pf').count() === 2 && await p.locator('.held .chip, .held .rund').count() === 0);
 const lageHeld = () => Zs(p, () => { const r = document.querySelector('.held').getBoundingClientRect(), n = document.querySelector('.held h2').getBoundingClientRect(); return [Math.round(r.height), Math.round(n.top)].join(); });
@@ -128,7 +130,7 @@ await p.click('.seite [data-a=bildwerk]'); await ruhe(p); await p.click('[data-a
 pruefe('„Nur dieses Getränk“ blendet Liste und Leiste aus', await p.locator('.md .liste').count() === 0 && await p.locator('.nav').count() === 0);
 pruefe('die App füllt den Bildschirm genau', await Zs(p, () => Math.round(document.querySelector('.mx').getBoundingClientRect().height) === innerHeight));
 await p.click('[data-a=fokus]'); await ruhe(p); await p.click('.nav [data-go=mehr]'); await ruhe(p);
-await p.click('[data-a=schluessel]'); await p.fill('#skform [name=k]', 'sk-probe-geheim-456'); await p.click('#skform [type=submit]'); await ruhe(p);
+await p.click('[data-a=schluessel][data-anbieter=openai]'); await p.fill('#skform [name=k]', 'sk-probe-geheim-456'); await p.click('#skform [type=submit]'); await ruhe(p);
 pruefe('der OpenAI-Schlüssel steht weder in der Sammlung noch in der Sicherung', await Zs(p, () => !JSON.stringify(__mixarium.sammlung).includes('geheim-456') && !__mixarium.sicherung().includes('geheim-456')));
 { // Kern 0.11: das Mixarium schickt einen Getränke-Auftrag, keinen „angerichteten Teller“ (Netz nachgestellt, nichts geht hinaus)
   const auftraege = [], fehlerVorher = fehler.length;
