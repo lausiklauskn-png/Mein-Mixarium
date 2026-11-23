@@ -5,7 +5,7 @@ zweimal sagen muss. Diese Datei ist die Übergabe der Mixarium-Seite; die Rezept
 `Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SITZUNG.md` (dort auch: wie die gemeinsame Sitzung arbeitet).
 Diese Sitzung arbeitet nach der Übergabe nicht weiter.
 
-## Stand Mixarium (main, PWA 10.0.0-vor6, Kern 0.10.0 per Pin `ed99b34`)
+## Stand Mixarium (main, PWA 10.0.0-vor7, Kern 0.11.0 per Pin `c57fefc`)
 
 - **Die bisherige App ist unverändert**: `index.html` und `QC_Mixarium_20_04_26.html`, md5 beide `49ce4320795972269057083e4c189f48`.
   Sie bleibt online, bis Klaus die neue abgenommen hat. Die Pflicht-Checkliste aus `CLAUDE.md` gilt weiter für jede Änderung daran.
@@ -102,6 +102,12 @@ Gelesen: `Mein-Rezeptbuch/docs/BRIEFKASTEN_MIXARIUM.md` (main `ed99b34`). Antwor
 - **Sammel-Weg KI-Bilder**, KI-Richter: nicht eingebaut.
 
 ## Wünsche an den Kern (aus Mixarium-Sicht)
+
+**Erledigt mit Kern 0.11.0 (gemeinsame Sitzung, 23.11.2026):** Bildauftrag je Ausgabe (`art: 'getraenk'`, die PWA nutzt ihn
+für KI-Bild und Gratis-Foto, Probe liest den Auftrag mit) · „Shaker“/„schütteln“ ist im Kern kein Küchenmixer mehr; Geräte mit
+englischen Namen und eigenem Raster (`vb`). Die PWA behält trotzdem `getraenke/geraete.mjs` (eigene Zeichnungen, eigene Proben).
+· Englische Namen für Farben, Töne und Schrift-Regler kommen aus dem Kern; `FARBE_EN` in `neu/app.mjs` ist weg.
+Noch offen: Kategorien, Warengruppen und Einheiten je Ausgabe.
 
 - `ki/bild.mjs`: Bildauftrag je Ausgabe austauschbar (jetzt „beautifully plated … Food photography“, für Getränke unpassend).
 - `oberflaeche/geraete.mjs`: „shaker“/„schüttel“ nicht fest dem Mixer zuordnen; Bar-Geräte per `erweitern()` mit eigenen Wörtern.

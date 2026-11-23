@@ -124,6 +124,21 @@ pruefe('die App füllt den Bildschirm genau', await Zs(p, () => Math.round(docum
 await p.click('[data-a=fokus]'); await ruhe(p); await p.click('.nav [data-go=mehr]'); await ruhe(p);
 await p.click('[data-a=schluessel]'); await p.fill('#skform [name=k]', 'sk-probe-geheim-456'); await p.click('#skform [type=submit]'); await ruhe(p);
 pruefe('der OpenAI-Schlüssel steht weder in der Sammlung noch in der Sicherung', await Zs(p, () => !JSON.stringify(__mixarium.sammlung).includes('geheim-456') && !__mixarium.sicherung().includes('geheim-456')));
+{ // Kern 0.11: das Mixarium schickt einen Getränke-Auftrag, keinen „angerichteten Teller“ (Netz nachgestellt, nichts geht hinaus)
+  const auftraege = [], fehlerVorher = fehler.length;
+  await p.route('https://api.openai.com/**', async (r) => { auftraege.push(JSON.parse(r.request().postData()).prompt); await r.fulfill({ status: 400, contentType: 'application/json', body: '{"error":{"message":"Probe"}}' }); });
+  await p.route('https://image.pollinations.ai/**', async (r) => { auftraege.push(decodeURIComponent(r.request().url())); await r.fulfill({ status: 502, body: '' }); });
+  await p.click('.nav [data-go=start]'); await ruhe(p); await p.click('.karte >> nth=0'); await ruhe(p);
+  await p.click('.seite [data-a=bildblatt]'); await ruhe(p);
+  pruefe('Kosten-Hinweis im Bild-Blatt kommt aus dem Kern', /4 Cent je Bild/.test(await p.locator('.fenster').innerText()));
+  await p.click('.fenster [data-a=ki-bild]'); await p.waitForTimeout(800);
+  await p.click('.seite [data-a=bildblatt]'); await ruhe(p); await p.click('.fenster [data-a=gratis-bild]'); await p.waitForTimeout(800);
+  pruefe('KI-Bild und Gratis-Foto fragen ein GETRÄNK an, kein Essen', auftraege.length >= 2 && auftraege.every((t) => /drink/i.test(t) && !/plated|food/i.test(t)), auftraege.join(' | ').slice(0, 300));
+  await p.unroute('https://api.openai.com/**'); await p.unroute('https://image.pollinations.ai/**');
+  // die nachgestellten Fehlerantworten (400/502) meldet der Browser als „Failed to load resource“; nur diese fallen heraus
+  const neu = fehler.splice(fehlerVorher); fehler.push(...neu.filter((m) => !/Failed to load resource: the server responded with a status of (400|502)/.test(m)));
+  await p.click('.nav [data-go=mehr]'); await ruhe(p);
+}
 await p.click('[data-a=tresor]'); await p.waitForSelector('#trform'); await p.fill('#trform [name=name]', 'Probe-Stand'); await p.click('#trform [type=submit]'); await p.waitForSelector('.fenster .slot');
 pruefe('Tresor: ein benannter Stand liegt drin', await p.locator('.fenster .slot').count() === 1 && /Probe-Stand/.test(await p.locator('.fenster .slot').textContent()));
 await p.click('[data-a=fenster-zu]'); await ruhe(p);
