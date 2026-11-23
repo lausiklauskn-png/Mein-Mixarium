@@ -86,5 +86,5 @@ test('Aufträge: Kategorie, Geschmack, Zutaten, alkoholfrei, Sprache, Feedback',
   const r = { name: 'Alt', ings: [{ amt: '2', unit: 'cl', name: 'Gin' }], steps: [{ txt: 'Rühren.' }], labScore: 1.8, labFeedback: ['zu bitter'] };
   const u = LAB.auftragUeberarbeiten(r, { kategorie: 'Cocktails' });
   assert.ok(u.includes('"Alt"') && u.includes('2 cl Gin') && u.includes('1. Rühren.') && u.includes('1.8/5') && u.includes('zu bitter'));
-  assert.equal(LAB.LAB_MODELL, 'claude-haiku-4-5');
+  assert.equal(LAB.LAB_MODELL, 'claude-haiku-5-5');
 });
