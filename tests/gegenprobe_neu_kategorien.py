@@ -9,12 +9,15 @@ FAELLE=[
  ('ziehen', "    if (g.art === 'kat') { A.kategorien = K.umsortieren(A.getraenke, A.kategorien, g.gr.dataset.kid, vorId); katFenster(); }", "    if (g.art === 'kat') { katFenster(); }"),
  ('laden', "[n]: lae.laeden[n] || [...(lae.laeden[lae.laden] || [])]", "[n]: []"),
  ('warengruppen', "const gruppeVon = (name) => EK.warengruppe(name);", "const gruppeVon = () => 'sonstiges';"),
+ ('sinn', "    sem.ids = await sucheBedeutung(window.SbkimMatch, f, c); sem.fuer = f;", "    sem.ids = []; sem.fuer = f;"),
+ ('plan-uebernahme', "A.planUebernommen = true; }", "}"),
+ ('bilder-loeschen', "if (w.has(r.uid)) { r.img = ''; delete r.imgCrop; r.modified = Date.now(); }", "if (w.has(r.uid)) { r.modified = Date.now(); }"),
  ('uebergang', "  A.kategorien = G.katZustandZuKern(A.kategorien);\n", "  A.kategorien = { eigene: [], namen: {}, ausgeblendet: [], folge: [], ...A.kategorien };\n"),
 ]
 for name,alt,neu in FAELLE:
     if len(sys.argv)>1 and name not in sys.argv[1:]: continue
     shutil.rmtree(W, ignore_errors=True); os.makedirs(W)
-    for d in ['neu','kern','getraenke','beispiele','icons','ausgaben']: shutil.copytree(d, W+'/'+d)
+    for d in ['neu','kern','getraenke','beispiele','icons','ausgaben','sbkim','assets']: shutil.copytree(d, W+'/'+d)
     shutil.copy('impressum.html', W)
     p=W+'/neu/app.mjs'; s=open(p,encoding='utf-8').read(); n=s.count(alt)
     if n!=1: print('==',name,'TOTER ANKER',n); continue
