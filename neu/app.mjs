@@ -20,6 +20,7 @@ import { einkaufMit } from '../kern/modell/einkauf.mjs';
 import { rezeptAusText } from '../kern/import/text.mjs';
 import { woche, tagIso, planen, entplanen, ausAltemMenu } from '../kern/modell/plan.mjs';
 import { ladeBausteine, korpus as semKorpus, sucheBedeutung } from '../kern/suche/bedeutung.mjs';
+import * as LAB from '../getraenke/labor.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -29,7 +30,7 @@ const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENK
 /* Kern-Speicher: eine Datenbank für das Mixarium (beide Ausgaben teilen die Sammlung nicht – Web und App sind getrennte Orte). */
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 
-export const FASSUNG = '10.0.0-vor14';
+export const FASSUNG = '10.0.0-vor16';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -43,7 +44,7 @@ const KAT_SYM = { all: 'drinks', mock: 'drinks', afckt: 'drinks', ckt: 'wine', s
 /* ── Zustand ── E: Einstellungen des Geräts · A: die Sammlung · Z: was gerade zu sehen ist (flüchtig) */
 let E = { sprache: null, farbe: 'blau', ton: 'geraet', schrift: 100, einheit: 'auto', fl: { seite: 'r', oben: 64 }, navZu: true };
 let A = null;
-const Z = { planTag: new Date(), bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
+const Z = { lab: { kat: 'mock', geschmack: [], zutaten: '', entwurf: null, laeuft: false, fehler: '', entfernteAuf: false }, planTag: new Date(), bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
 
 const sprache = () => E.sprache || (A && A.einstellungen && A.einstellungen.sprache) || ((navigator.language || 'de').slice(0, 2));
 const L = (de, en) => (sprache() === 'de' ? de : en);
@@ -140,7 +141,7 @@ function leiste() {
   const stk = (id, bildHtml, name, n) => `<button class="chip stk" data-kat="${esc(id)}" aria-pressed="${Z.kat === id}"><span class="stk-bild">${bildHtml}</span><span class="stk-name">${esc(name)} <span class="zahl">${n}</span></span></button>`;
   return `<div class="leiste stickers" role="group" aria-label="${L('Kategorien', 'Categories')}">${stk('all', alleBild ? `<img class="sticker" src="${esc(alleBild.img)}" alt="" loading="lazy">` : I('book'), L('Alle', 'All'), alle)}${kats().map(({ c, n }) => stk(c.id, katSticker(c, gl), katText(c), n)).join('')}</div>`;
 }
-function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.beispiel ? `<span class="marke rechts">${L('Beispiel', 'Example')}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
+function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.beispiel ? `<span class="marke rechts">${L('Beispiel', 'Example')}</span>` : r.labGen && r.labStatus && r.labStatus !== 'accepted' ? `<span class="marke rechts">${I('lab')}${L('Labor', 'Lab')}${r.labScore ? ' · ' + zahl(r.labScore.toFixed(1)) : ''}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
 function kartenHtml() {
   const l = sichtbar(), sinn = semTreffer(), an = E.sinn && Z.suche.trim();
   const status = an ? `<p class="sinn-status" id="sinn-status" role="status">${esc(sem.status)}</p>` : '';
@@ -296,7 +297,75 @@ function planWahl(tag, uidFest) {
 }
 
 /* ── Labor (zieht als Nächstes um) ── */
-function vLabor() { return `<div class="innen-p"><h2 class="titel">${L('Mix-Labor', 'Mix lab')}</h2><p class="unter">${L('Erfinden, bewerten, ins Buch übernehmen.', 'Invent, rate, move into the book.')}</p><div class="willkommen"><h3>${I('lab')} ${L('Das Labor zieht als Nächstes um', 'The lab moves in next')}</h3><p>${L('Mix-Labor, „Bekannte Drinks entdecken“, Foto-Scan, KI-Bild und Übersetzen sind in dieser ersten Fassung noch nicht eingebaut. Sie kommen mit allen bisherigen Funktionen, jede mit eigener Prüfung. Bis dahin findest du sie unverändert in der bisherigen App.', 'Mix lab, discover, photo scan, AI picture and translation are not built into this first version yet. They will come with all previous features. Until then you find them unchanged in the previous app.')}</p><div class="reihe"><a class="knopf hell" href="../index.html">${L('Zur bisherigen App', 'To the previous app')}</a></div></div></div>`; }
+/* ── Mix-Labor (Logik: getraenke/labor.mjs, aus der alten App übernommen; Gestaltung: abgenommene Vorschau) ── */
+/* Erklärung hinter einem „?“ genau an der Stelle, die sie erklärt (Klaus 23.11.; Baustein aus Mein Rezeptbuch). */
+const frag = (t) => `<details class="frag"><summary aria-label="${L('Erklärung', 'Explanation')}">?</summary><p>${esc(t)}</p></details>`;
+const GESCHMACK_FARBE = { frisch: '#2fa57a', 'süß': '#d9628f', herb: '#7d7a3a', fruchtig: '#ec7f2e', cremig: '#c9a25e', intensiv: '#7c3aa8' };
+const sterneHtml = (n) => `<span class="sterne" aria-label="${Math.round(n)} / 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= Math.round(n) ? 'an' : ''}">${I('star')}</i>`).join('')}</span>`;
+const labStatusText = (st) => { const x = LAB.LAB_STATUS[st] || LAB.LAB_STATUS.experimentell; return L(x.de, x.en); };
+const labSolo = () => !!(A.einstellungen && A.einstellungen.labSolo);
+function vLabor() {
+  const br = breit(), lb = Z.lab, kats = G.KATEGORIEN.filter((k) => !(k.alcohol && ohneAlk()));
+  if (!kats.some((k) => k.id === lb.kat)) lb.kat = kats[0].id;
+  const form = `<div class="laborform"><h3>${I('wand')}${L('Neues Getränk erfinden', 'Invent a new drink')}${frag(L('Braucht Internet und deinen eigenen Anthropic-Schlüssel. Das Ergebnis landet erst im Labor; ins Buch kommt es, wenn es gut bewertet oder angenommen ist.', 'Needs internet and your own Anthropic key. The result goes to the lab first; it enters the book once it is rated well or accepted.'))}</h3>
+   <p class="feldname">${L('Kategorie', 'Category')}</p><div class="kachelraster">${kats.map((k) => `<button class="kachel" style="--kc:${esc(k.col || '#5a7ab0')}" data-a="lab-kat" data-k="${k.id}" aria-pressed="${lb.kat === k.id}"><span class="kfeld">${I(KAT_SYM[k.id] || 'drinks')}</span><span>${esc(katText(k))}</span></button>`).join('')}</div>
+   <p class="feldname">${L('Geschmack', 'Taste')}</p><div class="kachelraster drei">${LAB.GESCHMAECKER.map((g) => `<button class="kachel" style="--kc:${GESCHMACK_FARBE[g.id]}" data-a="lab-geschmack" data-g="${esc(g.id)}" aria-pressed="${lb.geschmack.includes(g.id)}"><span class="kfeld punkt"></span><span>${L(g.de, g.en)}</span></button>`).join('')}</div>
+   <p class="feldname">${L('Das habe ich da (optional)', 'What I have (optional)')}</p><label class="suchfeld" style="width:100%;margin-top:6px">${I('drop')}<input id="labzutaten" value="${esc(lb.zutaten)}" placeholder="${L('z. B. Gurke, Basilikum, Tonic', 'e.g. cucumber, basil, tonic')}" autocomplete="off">${mikro('#labzutaten')}</label>
+   <button class="knopf voll" data-a="lab-erfinden" style="margin-top:14px" ${lb.laeuft ? 'disabled' : ''}>${I('sparkle')}${lb.laeuft ? L('Die KI mixt …', 'The AI is mixing …') : L('Getränk erfinden', 'Invent drink')}</button>
+   ${lb.fehler ? `<p class="hinweis rotschrift" role="alert">${I('info')}${esc(lb.fehler)}</p>` : ''}
+   <div class="reihe" style="margin-top:10px;align-items:center"><label class="haken"><input type="checkbox" data-a="lab-solo" ${labSolo() ? 'checked' : ''}> ${L('Einzelpersonen-Modus', 'Single-person mode')}</label>${frag(L('Eine Bewertung genügt, um ein Getränk anzunehmen oder unter Beobachtung zu stellen. Sonst braucht es drei.', 'One rating is enough to accept a drink or put it under watch. Otherwise it takes three.'))}</div></div>`;
+  const e = lb.entwurf;
+  const vorschau = e ? `<div class="laborform entwurf"><h3>${I('lab')}${esc(e.titel)}<span class="status">${L('Vorschau', 'Preview')}</span></h3>${e.beschreibung ? `<p class="ftext">${esc(e.beschreibung)}</p>` : ''}
+   <p class="klein">${[e.zubereitungszeit_min ? `${Number(e.zubereitungszeit_min)} min` : '', e.portionen ? L(`${Number(e.portionen)} Portionen`, `${Number(e.portionen)} servings`) : '', e.glastyp ? glasText(e.glastyp) : '', e.alkohol ? L('mit Alkohol', 'with alcohol') : L('alkoholfrei', 'alcohol-free')].filter(Boolean).map(esc).join(' · ')}</p>
+   <ul class="zutaten klein-l">${e.zutaten.map((z) => `<li><b>${esc(z.menge || '')}</b> ${esc(z.name)}</li>`).join('')}</ul><ol class="klein-l">${e.schritte.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
+   <div class="reihe"><button class="knopf" data-a="lab-sichern">${I('check')}${L('Ins Labor übernehmen', 'Move into the lab')}</button><button class="knopf hell" data-a="lab-verwerfen">${I('x')}${L('Verwerfen', 'Discard')}</button></div></div>` : '';
+  const pool = LAB.imLabor(A.getraenke), weg = LAB.entfernteAusLabor(A.getraenke);
+  const dimMittel = (r, d) => { const l = r.labRatings || []; return l.length ? l.reduce((s2, x) => s2 + x[d], 0) / l.length : 0; };
+  const karteLab = (r) => { const n = (r.labRatings || []).length, x = LAB.LAB_STATUS[r.labStatus] || LAB.LAB_STATUS.experimentell;
+    return `<div class="laborkarte" data-lab="${esc(r.uid)}"><button class="mini" data-d="${esc(r.uid)}" aria-label="${esc(r.name)}">${bild(r)}</button><div class="mitte"><strong>${esc(r.name)}${r.labFavorite ? ` ${I('star')}` : ''}</strong><small>${esc(katNameVon(r))} · ${L('Fassung', 'Version')} ${(r.labRevision || 0) + 1}</small>
+     <div class="wertung"><span class="status" style="--st:${x.farbe}">${labStatusText(r.labStatus)}</span><b>${n ? zahl(r.labScore.toFixed(1)) : '–'}</b><span class="klein">${L(`${n} von ${LAB.mindestBewertungen(labSolo())} Bewertungen`, `${n} of ${LAB.mindestBewertungen(labSolo())} ratings`)}</span></div>
+     ${n ? `<div class="dims">${LAB.DIMENSIONEN.map((d) => `<span>${L(d.de, d.en)}</span>${sterneHtml(dimMittel(r, d.id))}`).join('')}</div>` : ''}
+     ${r.labRevisionPending ? `<p class="klein">${I('wand')} ${L('Die KI überarbeitet gerade …', 'The AI is revising …')}</p>` : ''}
+     ${r.labRevisionDraft ? `<div class="entwurfbox"><b>${L('Überarbeiteter Entwurf', 'Revised draft')}: ${esc(r.labRevisionDraft.titel)}</b><small>${esc(r.labRevisionDraft.zutaten.map((z) => [z.menge, z.name].filter(Boolean).join(' ')).join(', '))}</small><div class="laborknoepfe"><button class="chip" data-a="lab-rev-ja" data-u="${esc(r.uid)}">${I('check')}${L('Annehmen', 'Accept')}</button><button class="chip" data-a="lab-rev-nein" data-u="${esc(r.uid)}">${I('x')}${L('Ablehnen', 'Reject')}</button></div></div>` : ''}
+     <div class="laborknoepfe"><button class="chip" data-a="lab-bewerten" data-u="${esc(r.uid)}">${I('star')}${L('Bewerten', 'Rate')}</button><button class="chip" data-a="lab-annehmen" data-u="${esc(r.uid)}">${I('check')}${L('Ins Buch', 'To the book')}</button><button class="chip" data-a="lab-ueberarbeiten" data-u="${esc(r.uid)}" ${r.labRevisionPending || r.labRevisionDraft ? 'disabled' : ''}>${I('wand')}${L('Überarbeiten', 'Revise')}</button><button class="chip" data-a="lab-favorit" data-u="${esc(r.uid)}" aria-pressed="${!!r.labFavorite}" title="${L('Vor dem Rauswurf schützen', 'Protect from removal')}">${I('star')}${r.labFavorite ? L('Geschützt', 'Protected') : L('Schützen', 'Protect')}</button><button class="chip" data-a="lab-entfernen" data-u="${esc(r.uid)}">${I('trash')}${L('Verwerfen', 'Discard')}</button></div>
+     ${(r.labLog || []).length ? `<details class="protokoll"><summary>${L('Protokoll', 'Log')}</summary>${r.labLog.slice(-6).reverse().map((l) => `<p>${esc(new Date(l.ts).toLocaleDateString(sprache() === 'de' ? 'de-DE' : 'en-GB'))}: ${esc(l.detail)}</p>`).join('')}</details>` : ''}</div></div>`; };
+  const poolHtml = `<div class="abschnitt" style="${br ? 'margin-top:0' : ''}"><h3>${L('Im Labor', 'In the lab')} · ${pool.length}${frag(L('Ab 3,5 Punkten kommt ein Getränk ins Buch, unter 2,5 unter Beobachtung. Bleibt es schlecht, überarbeitet die KI es; fällt auch die neue Fassung durch, wird es verworfen, außer es ist geschützt. Gewichtung: Geschmack 40 %, Zubereitung 25 %, Originalität 20 %, Beschreibung 15 %.', 'From 3.5 points a drink enters the book, below 2.5 it goes under watch. If it stays poor, the AI revises it; if the new version fails too, it is discarded unless protected. Weights: taste 40 %, practicality 25 %, originality 20 %, description 15 %.'))}</h3>${pool.map(karteLab).join('') || `<p class="leer">${A.getraenke.some((r) => r.labLog) ? L('Alle Labor-Getränke sind angenommen oder verworfen. Angenommene stehen im Buch.', 'All lab drinks are accepted or discarded. Accepted ones are in the book.') : L('Noch nichts im Labor. Erfinde oben dein erstes Getränk.', 'Nothing in the lab yet. Invent your first drink above.')}</p>`}
+   ${weg.length ? `<button class="chip" data-a="lab-entfernte" aria-expanded="${lb.entfernteAuf}" style="margin-top:10px">${I(lb.entfernteAuf ? 'down' : 'right')}${L(`Entfernte Getränke (${weg.length})`, `Removed drinks (${weg.length})`)}</button>${lb.entfernteAuf ? weg.map((r) => { const s2 = (r.labLog || []).filter((l) => l.type === 'status').slice(-1)[0]; return `<div class="laborkarte entfernt"><div class="mitte"><strong>${esc(r.name)}</strong><small>${esc(katNameVon(r))}${s2 ? ' · ' + esc(s2.detail) : ''}</small><div class="laborknoepfe"><button class="chip" data-a="lab-zurueck" data-u="${esc(r.uid)}">${I('back')}${L('Wiederherstellen', 'Restore')}</button></div></div></div>`; }).join('') : ''}` : ''}</div>`;
+  const kopfz = `<h2 class="titel">${L('Mix-Labor', 'Mix lab')}${frag(L('Hier erfindet die KI neue Getränke. Du bewertest sie; gut bewertete kommen ins Buch, schwache überarbeitet die KI.', 'Here the AI invents new drinks. You rate them; good ones go into the book, weak ones are revised by the AI.'))}</h2>`;
+  if (!br) return `<div class="innen-p">${kopfz}${form}${vorschau}${poolHtml}</div>`;
+  return `<div class="innen-p">${kopfz}<div class="labor-breit"><div>${form}${vorschau}</div><div>${poolHtml}</div></div></div>`;
+}
+/* Ein Aufruf an Claude (Anthropic), wie in der alten App direkt aus dem Browser mit dem eigenen Schlüssel. Kein SDK:
+   die PWA hat keinen Bauschritt und soll offline starten. Prüft stop_reason (Ablehnung, abgeschnitten) über LAB.antwortLesen. */
+async function kiRezept(auftrag) {
+  const k = (await lager.hol('schluessel-anthropic')) || ''; if (!k) { const f = new Error('kein-schluessel'); f.keinSchluessel = true; throw f; }
+  let ant;
+  try { ant = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': k, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: LAB.LAB_MODELL, max_tokens: 2048, messages: [{ role: 'user', content: auftrag }] }) }); }
+  catch (e) { throw new Error(L('Keine Verbindung. Das Labor braucht Internet.', 'No connection. The lab needs internet.')); }
+  if (!ant.ok) { const j = await ant.json().catch(() => ({})); throw new Error(ant.status === 401 ? L('Der Anthropic-Schlüssel wurde abgelehnt. Bitte in den Einstellungen prüfen.', 'The Anthropic key was rejected. Please check it in the settings.') : ant.status === 429 ? L('Anthropic meldet: zu viele Anfragen oder kein Guthaben.', 'Anthropic reports: too many requests or no credit.') : ((j.error && j.error.message) || 'HTTP ' + ant.status)); }
+  return LAB.antwortLesen(await ant.json());
+}
+const labKatName = (id) => { const c = G.KATEGORIEN.find((k) => k.id === id); return c ? c.de : id; };
+async function labErfinden() {
+  const lb = Z.lab; lb.zutaten = ($('#labzutaten') && $('#labzutaten').value) || lb.zutaten; lb.fehler = ''; lb.laeuft = true; zeichne();
+  try { lb.entwurf = await kiRezept(LAB.auftragErfinden({ kategorie: labKatName(lb.kat), geschmack: lb.geschmack, zutaten: lb.zutaten, ohneAlkohol: ohneAlk() || ['mock', 'afckt'].includes(lb.kat) /* Schalter an, oder eine Kategorie, die alkoholfrei IST */, sprache: sprache() })); }
+  catch (e) { if (e.keinSchluessel) { lb.laeuft = false; return anthropicFenster(true); } lb.fehler = e.message; }
+  finally { lb.laeuft = false; zeichne(); }
+}
+async function labUeberarbeiten(r) {
+  r.labRevisionPending = true; sichern(); zeichne();
+  try { LAB.ueberarbeitungBereit(r, await kiRezept(LAB.auftragUeberarbeiten(r, { kategorie: labKatName(r.cat), sprache: sprache() }))); melde(L('Entwurf bereit', 'Draft ready')); }
+  catch (e) { LAB.ueberarbeitungFehlgeschlagen(r, e.keinSchluessel ? 'kein Schlüssel' : e.message); melde(e.keinSchluessel ? L('Für die Überarbeitung fehlt der Anthropic-Schlüssel.', 'The Anthropic key is missing for the revision.') : L('Überarbeitung fehlgeschlagen: ', 'Revision failed: ') + e.message); }
+  sichern(); zeichne();
+}
+function labBewertenFenster(r) {
+  Z.fenster = { titel: L('Bewerten', 'Rate') + ': ' + r.name, labUid: r.uid, html: `<form id="labrate" class="felder">${LAB.DIMENSIONEN.map((d) => `<label class="regler">${L(d.de, d.en)} <output id="lro-${d.id}">3</output><input type="range" name="${d.id}" min="1" max="5" step="1" value="3" data-lro="${d.id}"></label>`).join('')}
+   <label>${L('Was würdest du ändern? (optional, hilft der Überarbeitung)', 'What would you change? (optional, helps the revision)')}${mikro('#labrate [name=fb]')}<textarea class="feld" name="fb" rows="2"></textarea></label>
+   <div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Bewertung speichern', 'Save rating')}</button></div></form>` };
+}
+function anthropicFenster(fuerLabor) {
+  lager.hol('schluessel-anthropic').then((da) => { Z.fenster = { titel: L('Anthropic-Schlüssel', 'Anthropic key'), fuerLabor, html: `<p class="ftext">${L('Für das Labor brauchst du einen eigenen Schlüssel von Anthropic (Claude). Er bleibt nur auf diesem Gerät, steht in keiner Sicherung und geht nur an Anthropic, wenn du im Labor etwas erfinden oder überarbeiten lässt.', 'The lab needs your own Anthropic (Claude) key. It stays on this device only, is in no backup and goes to Anthropic only when you invent or revise something in the lab.')}${da ? ' ' + L('Es ist ein Schlüssel gespeichert.', 'A key is saved.') : ''}</p><form id="akform" class="felder" autocomplete="off"><label>${L('Schlüssel (beginnt mit sk-ant-)', 'Key (starts with sk-ant-)')}<input class="feld" name="k" type="password" autocomplete="off" placeholder="sk-ant-…"></label><div class="reihe ende">${da ? `<button type="button" class="knopf hell rotschrift" data-a="anthropic-weg">${I('trash')}${L('Schlüssel löschen', 'Delete key')}</button>` : ''}<button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Speichern', 'Save')}</button></div></form>` }; zeichne(); });
+}
 
 /* ── Bilder-Ordner (Vorbild Mein Rezeptbuch): der EINZIGE Ort, an dem ein Bild gelöscht wird; das Getränk bleibt. ── */
 function vBilder() {
@@ -320,7 +389,7 @@ function vMehr() {
   <div class="eliste">${z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"')}${z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch nach Land', 'automatic by country'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"')}${z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' % · ' + L('Schieberegler, ändert sich sofort', 'slider, changes right away'), 'data-a="menue" data-m="schrift"')}${z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { geraet: L('wie das Gerät', 'same as device'), hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"')}${z(I('image'), L('Bilder', 'Pictures'), L('alle Bilder sehen, auswählen und löschen', 'see, select and delete all pictures'), 'data-go="bilder"')}${z(I('box'), L('Kategorien', 'Categories'), L('umbenennen, Zeichen, ordnen, löschen, neu', 'rename, symbol, order, delete, new'), 'data-a="kategorien"')}${z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an: Getränke mit Alkohol sind ausgeblendet', 'on: drinks with alcohol are hidden') : L('aus', 'off'), 'data-a="alk"')}</div>
   <h3 class="eh">${L('Beispiele', 'Examples')}</h3><div class="eliste">${z(I('box'), L('Beispiele laden', 'Load examples'), L('Pakete mit Getränken zum Ausprobieren', 'Packages of drinks to try'), 'data-a="beispiele"')}${z(I('trash'), L('Alle Beispiele löschen', 'Delete all examples'), bsp ? L(`${bsp} Beispiele in deiner Sammlung`, `${bsp} examples in your collection`) : L('keine Beispiele in deiner Sammlung', 'no examples in your collection'), 'data-a="beispiele-weg"')}</div>
   <h3 class="eh">${L('Sammlung', 'Collection')}</h3><div class="eliste">${z(I('download'), L('Sicherung speichern', 'Save a backup'), L(`${alle} Getränke als Datei`, `${alle} drinks as a file`), 'data-a="sichern"')}${z(I('pencil'), L('Getränk aus Text', 'Drink from text'), L('Rezepttext einfügen, ohne KI aufteilen', 'paste a recipe text, split without AI'), 'data-a="text-import"')}${z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), L('fügt hinzu, Doppelte werden erkannt', 'adds; duplicates are detected'), 'data-a="einspielen"')}${z(I('safe'), L('Tresor', 'Vault'), L('Stände im Gerät: ablegen und zurückholen', 'states on this device: store and restore'), 'data-a="tresor"')}${z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), L('liest die alten Daten, ändert sie nicht', 'reads the old data, does not change it'), 'data-a="uebernehmen"')}${z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('alle Getränke, Karten und die Einkaufsliste entfernen', 'remove all drinks, lists and the shopping list'), 'data-a="leeren"')}</div>
-  <h3 class="eh">${L('KI', 'AI')}</h3><div class="eliste">${z(I('sparkle'), L('OpenAI-Schlüssel für KI-Bilder', 'OpenAI key for AI pictures'), L('eigener Schlüssel, bleibt auf diesem Gerät', 'your own key, stays on this device'), 'data-a="schluessel"')}</div>
+  <h3 class="eh">${L('KI', 'AI')}</h3><div class="eliste">${z(I('lab'), L('Anthropic-Schlüssel für das Labor', 'Anthropic key for the lab'), L('eigener Schlüssel, bleibt auf diesem Gerät', 'your own key, stays on this device'), 'data-a="anthropic"')}${z(I('sparkle'), L('OpenAI-Schlüssel für KI-Bilder', 'OpenAI key for AI pictures'), L('eigener Schlüssel, bleibt auf diesem Gerät', 'your own key, stays on this device'), 'data-a="schluessel"')}</div>
   <h3 class="eh">${L('Über', 'About')}</h3><div class="eliste">${z(I('info'), 'Mein Mixarium', L(`Fassung ${FASSUNG} · neue Gestaltung, Vorab`, `Version ${FASSUNG} · new design, preview`), 'data-a="ueber"')}<a class="ezeile" href="../index.html">${I('back')}<span><b>${L('Bisherige App öffnen', 'Open the previous app')}</b><small>${L('bleibt unverändert, mit Labor, Scan und KI', 'unchanged, with lab, scan and AI')}</small></span>${I('right')}</a><a class="ezeile" href="../impressum.html">${I('book')}<span><b>${L('Impressum', 'Legal notice')}</b><small></small></span>${I('right')}</a></div></div>`;
 }
 
@@ -487,6 +556,17 @@ async function ausAlterApp(still) {
 /* Farbe, Ton und Schriftgröße setzt der Kern als CSS-Variablen auf das App-Element. `--pa` ist die reine Palettenfarbe
    (für eigene Mischungen dieser Ausgabe). */
 function kernStil() { const el = $('.mx'); farbeSetzen(el, E.farbe, E.ton); el.style.setProperty('--pa', (FARBEN[E.farbe] || FARBEN.blau).akz); E.schrift = schriftSetzen(el, E.schrift); }
+/* Kacheln dicht packen (Klaus 23.11.: „die kleineren sollen so aufrücken, dass keine Zwischenräume leer bleiben“):
+   natürliche Breite messen, dann der Reihe nach immer die breiteste Kachel nehmen, die in die aktuelle Reihe noch passt
+   (erste Passung, absteigend). Die Reihenfolge wird nur über `order` gesetzt; danach füllen die Kacheln ihre Reihe. */
+function kachelnPacken() {
+  for (const r of document.querySelectorAll('.kachelraster:not(.drei)')) {
+    const k = [...r.children]; if (k.length < 3) continue;
+    r.classList.add('messen'); const breite = r.clientWidth, luecke = 7, w = k.map((x) => x.getBoundingClientRect().width); r.classList.remove('messen');
+    const offen = k.map((x, i) => i).sort((a, b) => w[b] - w[a]); let ord = 0;
+    while (offen.length) { let frei = breite; for (let j = 0; j < offen.length;) { const i = offen[j], brauch = w[i] + (frei < breite ? luecke : 0); if (brauch <= frei + 0.5) { k[i].style.order = String(ord++); frei -= brauch; offen.splice(j, 1); } else j++; } }
+  }
+}
 function zeichne(frisch) {
   inForm();
   const br = breit(), v = Z.view, mix = v === 'mix';
@@ -502,6 +582,7 @@ function zeichne(frisch) {
   if (such !== null) { const s = $('#suche'); if (s) { s.focus(); s.setSelectionRange(such, such); } }
   document.documentElement.lang = sprache();
   document.body.style.background = getComputedStyle($('.mx')).backgroundColor;
+  if ($('.kachelraster')) kachelnPacken();
 }
 function setze(f, frisch) {
   const go = () => { f(); zeichne(frisch); };
@@ -543,6 +624,26 @@ function katLoeschenMit(id, ziel) {
 /* ── Bedienung ── */
 const TUN = {
   kategorien() { katFenster(); },
+  'lab-kat'(b) { Z.lab.zutaten = ($('#labzutaten') && $('#labzutaten').value) || Z.lab.zutaten; Z.lab.kat = b.dataset.k; },
+  'lab-geschmack'(b) { Z.lab.zutaten = ($('#labzutaten') && $('#labzutaten').value) || Z.lab.zutaten; const g = Z.lab.geschmack, x = b.dataset.g; Z.lab.geschmack = g.includes(x) ? g.filter((y) => y !== x) : [...g, x]; },
+  'lab-erfinden'() { labErfinden(); return false; },
+  'lab-verwerfen'() { Z.lab.entwurf = null; },
+  'lab-sichern'() { const e = Z.lab.entwurf; if (!e) return; const d = LAB.getraenkAusEntwurf(e, { cat: Z.lab.kat });
+    const r = G.getraenkNormalisieren({ ...d, id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, uid: G.neueUid(A.knoten) }); Object.assign(r, { labStatus: d.labStatus, labRatings: [], labScore: 0, labGen: true, labRevision: 0, labLog: d.labLog, notes: d.notes });
+    A.getraenke.unshift(r); Z.lab.entwurf = null; sichern(); melde(L('Im Labor', 'In the lab')); },
+  'lab-bewerten'(b) { const r = getr(b.dataset.u); if (r) labBewertenFenster(r); },
+  'lab-annehmen'(b) { const r = getr(b.dataset.u); if (!r) return; LAB.annehmen(r); sichern(); melde(L('Im Buch', 'In the book')); },
+  'lab-favorit'(b) { const r = getr(b.dataset.u); if (!r) return; const an = LAB.favorit(r); sichern(); melde(an ? L('Geschützt', 'Protected') : L('Schutz aus', 'Protection off')); },
+  'lab-entfernen'(b) { const r = getr(b.dataset.u); if (!r) return; if (r.labFavorite) { melde(L('Erst den Schutz aufheben', 'Remove protection first')); return; }
+    frage(L('Aus dem Labor verwerfen', 'Discard from the lab'), L(`„${esc(r.name)}“ wird verworfen. Es bleibt unter „Entfernte Getränke“ und lässt sich wiederherstellen.`, `“${esc(r.name)}” will be discarded. It stays under “Removed drinks” and can be restored.`), L('Verwerfen', 'Discard'), () => { LAB.entfernen(r); sichern(); fZu(); }, true); return false; },
+  'lab-zurueck'(b) { const r = getr(b.dataset.u); if (!r) return; LAB.wiederherstellen(r); sichern(); melde(L('Zurück im Labor', 'Back in the lab')); },
+  'lab-entfernte'() { Z.lab.entfernteAuf = !Z.lab.entfernteAuf; },
+  'lab-ueberarbeiten'(b) { const r = getr(b.dataset.u); if (r) labUeberarbeiten(r); return false; },
+  'lab-rev-ja'(b) { const r = getr(b.dataset.u); if (!r) return; LAB.ueberarbeitungAnnehmen(r); sichern(); melde(L('Neue Fassung aktiv', 'New version active')); },
+  'lab-rev-nein'(b) { const r = getr(b.dataset.u); if (!r) return; LAB.ueberarbeitungAblehnen(r); sichern(); melde(L('Original bleibt', 'Original kept')); },
+  'lab-solo'() { A.einstellungen.labSolo = !labSolo(); sichern(); melde(labSolo() ? L('Eine Bewertung genügt', 'One rating is enough') : L('Drei Bewertungen', 'Three ratings')); },
+  anthropic() { anthropicFenster(false); return false; },
+  'anthropic-weg'() { lager.weg('schluessel-anthropic').then(() => { Z.fenster = null; melde(L('Schlüssel gelöscht.', 'Key deleted.')); }); return false; },
   sinn() { if (E.sinn) { E.sinn = false; sem.ids = []; sem.fuer = ''; einstSichern(); melde(L('Sinn-Suche aus', 'Meaning search off')); return; }
     frage(L('Sinn-Suche einschalten?', 'Turn on meaning search?'), L('Sie findet Getränke auch nach Bedeutung, zum Beispiel „etwas Erfrischendes“ oder „für den Winter“. Dafür lädt die App einmalig ein Sprachmodell aus dem Netz (etwa 120 MB). Danach rechnet sie im Gerät; deine Getränke gehen nirgendwohin.', 'It also finds drinks by meaning, e.g. “something refreshing” or “for winter”. For this the app loads a language model from the internet once (about 120 MB). After that it works on the device; your drinks go nowhere.'), L('Einschalten', 'Turn on'), () => { E.sinn = true; sem.status = ''; einstSichern(); Z.fenster = null; zeichne(); if (Z.suche.trim()) semPlanen(); else semBereit().then(() => melde(L('Sinn-Suche bereit', 'Meaning search ready'))).catch(() => melde(L('Die Sinn-Suche ließ sich nicht laden.', 'The meaning search could not be loaded.'))); }); return false; },
   'plan-waehlen'(b) { planWahl(b.dataset.tag); }, planen() { planWahl(null, Z.uid); },
@@ -677,12 +778,19 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('submit', (ev) => {
   ev.preventDefault();
   if (ev.target.id === 'ed') return editorSpeichern(ev.target);
+  if (ev.target.id === 'akform') { const k = String(new FormData(ev.target).get('k') || '').trim(), fl = Z.fenster.fuerLabor; if (!k) return; lager.setz('schluessel-anthropic', k).then(() => { Z.fenster = null; melde(L('Schlüssel gespeichert.', 'Key saved.')); if (fl) labErfinden(); }); return; }
+  if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
+    const f = LAB.bewerten(r, { taste: d.get('taste'), practicality: d.get('practicality'), originality: d.get('originality'), description: d.get('description') }, String(d.get('fb') || ''), { solo: labSolo() });
+    Z.fenster = null; sichern();
+    melde(r.labStatus === 'accepted' && vor !== 'accepted' ? L('Angenommen · im Buch', 'Accepted · in the book') : r.labStatus === 'warning' && vor !== 'warning' ? L('Unter Beobachtung', 'Under watch') : r.labStatus === 'removed' ? L('Verworfen', 'Discarded') : L('Bewertet · ', 'Rated · ') + zahl(r.labScore.toFixed(1)));
+    if (f.ueberarbeiten) labUeberarbeiten(r); return zeichne(); }
   if (ev.target.id === 'ladenform') { const n = String(new FormData(ev.target).get('n') || '').trim(); if (!n) return; const lae = A.einkaufLaeden; A.einkaufLaeden = { laeden: { ...lae.laeden, [n]: lae.laeden[n] || [...(lae.laeden[lae.laden] || [])] }, laden: n }; sichern(); Z.fenster = null; return zeichne(); }
   if (ev.target.id === 'trform') { tr.ablegen(sicherungObjekt(), 'benannt', String(new FormData(ev.target).get('name') || '').trim()).then(tresorFenster); return; }
   if (ev.target.id === 'skform') { const k = String(new FormData(ev.target).get('k') || '').trim(), fb = Z.fenster.fuerBild; if (!k) return; lager.setz('schluessel-openai', k).then(() => { Z.fenster = null; melde(L('Schlüssel gespeichert.', 'Key saved.')); if (fb) bildErzeugen(false); }); return; }
   if (ev.target.id === 'anform') { const d = new FormData(ev.target), titel = String(d.get('titel') || '').trim(); if (!titel) return; A.anlaesse = A.anlaesse || []; let an = A.anlaesse.find((x) => x.id === Z.fenster.anlass); if (!an) { an = { id: Date.now(), posten: [] }; A.anlaesse.unshift(an); } Object.assign(an, { titel, datum: String(d.get('datum') || '').trim(), gaeste: Number(d.get('gaeste')) || 0 }); Z.anlass = an.id; Z.fenster = null; sichern(); zeichne(true); }
 });
 document.addEventListener('input', (ev) => {
+  if (ev.target.dataset && ev.target.dataset.lro) { const o = $('#lro-' + ev.target.dataset.lro); if (o) o.textContent = ev.target.value; return; }
   if (ev.target.id === 'asx' || ev.target.id === 'asy') { $('#asbild').style.objectPosition = `${$('#asx').value}% ${$('#asy').value}%`; return; }
   if (ev.target.id === 'schriftregler') { E.schrift = schriftSetzen($('.mx'), ev.target.value); $('#schriftzahl').textContent = E.schrift + ' %'; clearTimeout(einstSichern.uhr); einstSichern.uhr = setTimeout(einstSichern, 300); return; }
   if (ev.target.id === 'suche') { Z.suche = ev.target.value; semPlanen(); const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = `${z} ${z === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}`; } } });
