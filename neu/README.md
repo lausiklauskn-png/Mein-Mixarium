@@ -27,15 +27,20 @@ abhaken, teilen); Getränkekarten für einen Anlass; Tresor; Bild-Blatt mit Auss
 mit einem Tipp löschen; Sicherung speichern und einspielen (Format der alten App, `version: 10`); Sammlung leeren;
 Übernahme aus der bisherigen App beim ersten Start (nur lesen); offline nach dem ersten Laden; fliegende Leiste am Handy,
 Leiste links am Monitor, „Nur dieses Getränk“.
+Ordner (eigene Sammlungen neben den Kategorien; Kern `modell/ordner.mjs`): anlegen, umbenennen, ordnen, löschen (die Getränke
+bleiben), ein Getränk über seine Werkzeuge hineinlegen oder herausnehmen; ein Ordner frisst die Kategorie nicht.
+Menü am Getränk (Winkel → „Mehr“; Kern `ausgabe/druck.mjs`, `teilen/qr.mjs`, `ki/helfer.mjs`): Drucken (wie am Bildschirm: Portionen,
+ml/cl/oz), Teilen per QR-Code (Link im Format der bisherigen App; er öffnet das Getränk im Formular), Übersetzen in eine der acht
+Sprachen mit Umschalter aufs Original, Rechtschreibung prüfen, Nährwerte schätzen. Einstellungen → KI: „Alle übersetzen“ mit
+Kostenhinweis, abbrechbar. KI-Zeilen sagen, was an wen geht; ohne Schlüssel kommt erst das Schlüssel-Fenster.
 
 ## Was noch fehlt (benannte Grenzen)
 
 - Stand der Nacht 23./24.11.: `../docs/UEBERGABE_GEMEINSAME_SITZUNG.md`, Abschnitt „Nacht“ (Labor, KI-Bild, Foto-Scan und die
   Schlüssel sind eingebaut).
-- **Ordner, Kategorien umbenennen/anlegen/sortieren, Bewertung, Bildausschnitt wählen, Bücher/PDF, QR-Teilen, Tresor mit
-  mehreren Sicherungen, Wochenplan** – Daten werden übernommen und bleiben erhalten, die Oberfläche dafür fehlt noch.
-- **Oberfläche in der App noch nur Deutsch und Englisch.** Kategorien und Gläser sind in 8 Sprachen übersetzt; die Tabellen für
-  die übrige Oberfläche liegen bereit, die App lädt sie noch nicht (Abschnitt „Sprachen“).
+- **Bücher/PDF** – Daten werden übernommen und bleiben erhalten, die Oberfläche dafür fehlt noch.
+- **Oberfläche in acht Sprachen:** Deutsch und Englisch stehen im Code, die übrigen sechs kommen aus Tabellen (Abschnitt „Sprachen“);
+  fehlt ein Eintrag, steht Englisch da. Kategorien und Gläser tragen ihre Namen in allen acht Sprachen selbst.
 - **SBKIM/Mycel** ist hier nicht eingebunden (nicht sichtbar, kein Netz). Das Einhängen als unsichtbares, freischaltbares
   Modul kommt mit dem Kern.
 - **Intro** gibt es in dieser Fassung keines; die App zeigt sofort Inhalt.
@@ -64,6 +69,8 @@ Gerätschaften stehen schon in den Tabellen, laufen aber noch nicht über `text(
 
 ```bash
 node tests/smoke_neu_pwa.mjs              # echter Browser, Handy und Monitor
+node tests/smoke_neu_ordner.mjs           # Ordner; Gegenprobe: python3 -u tests/gegenprobe_neu_ordner.py
+node tests/smoke_neu_menue.mjs            # Menü am Getränk, Alle übersetzen (KI gestellt); Gegenprobe: gegenprobe_neu_menue.py
 npm test                                  # Getränke-Schicht
 node tools/kern-nachziehen.mjs --pruefen  # Kern stimmt mit dem Pin überein
 node tests/smoke_neu_sprachen.mjs         # Sprach-Tabellen im echten Browser (misst die Tabellen, nicht die Verdrahtung)
