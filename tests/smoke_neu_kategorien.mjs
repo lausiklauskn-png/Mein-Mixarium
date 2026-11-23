@@ -147,6 +147,22 @@ const wahl = await p.locator('.sticker-raster button').nth(n - 1).locator('img')
 pruefe('das gewählte Foto steht in der Liste und ist gespeichert', (await p.locator(`.kat-zeile[data-kid="${mitBild[0]}"] .kat-zeichen img`).getAttribute('src')) === wahl && await p.evaluate((id) => !!__mixarium.sammlung.kategorien.namen[id]?.bild, mitBild[0]));
 await p.keyboard.press('Escape'); await ruhe(p); await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=start]'); await ruhe(p);
 pruefe('… und als Sticker in der Leiste', (await p.locator(`.leiste .chip.stk[data-kat="${mitBild[0]}"] img`).getAttribute('src')) === wahl);
+
+console.log('Bilder-Ordner');
+await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p); await p.click('.ezeile[data-go=bilder]'); await ruhe(p);
+const nImg = await p.evaluate(() => __mixarium.sammlung.getraenke.filter((r) => r.img).length), nGes = await p.evaluate(() => __mixarium.sammlung.getraenke.length);
+pruefe('Einstellungen → Bilder zeigt jedes Bild als Kachel und die Getränke ohne Bild darunter', await p.locator('.bildkachel').count() === nImg && await p.locator('.ezeile[data-a=bild-dazu]').count() === nGes - nImg, nImg + ' / ' + nGes);
+pruefe('ohne Auswahl ist „Löschen“ gesperrt', await p.locator('[data-a=bilder-weg]').isDisabled());
+const weg = await p.locator('.bildkachel').first().getAttribute('data-uid'); await p.click(`.bildkachel[data-uid="${weg}"]`); await ruhe(p);
+pruefe('Tippen wählt ein Bild aus', await p.locator(`.bildkachel[data-uid="${weg}"][aria-pressed=true]`).count() === 1 && !(await p.locator('[data-a=bilder-weg]').isDisabled()));
+await p.click('[data-a=bilder-weg]'); await ruhe(p); pruefe('Löschen fragt erst nach', await p.locator('.fenster [data-a=fenster-ja]').count() === 1);
+await p.click('.fenster [data-a=fenster-ja]'); await p.waitForTimeout(700);
+pruefe('nur das Bild ist weg, das Getränk mit seinem Text bleibt', await p.evaluate((u) => { const r = __mixarium.sammlung.getraenke.find((x) => x.uid === u); return !!r && !r.img && r.name && r.ings.length > 0; }, weg) && await p.locator('.bildkachel').count() === nImg - 1);
+pruefe('vorher wurde der Stand automatisch im Tresor abgelegt', await p.evaluate(async () => { const d = await new Promise((g) => { const q = indexedDB.open('KuechenKern-mixarium'); q.onsuccess = () => g(q.result); }); const st = d.objectStoreNames[0]; const alle = await new Promise((g) => { const q = d.transaction(st).objectStore(st).getAllKeys(); q.onsuccess = () => g(q.result); }); return alle.some((k) => String(k).includes('tresor')); }));
+await p.click(`.ezeile[data-a=bild-dazu][data-uid="${weg}"]`); await ruhe(p);
+pruefe('ein Getränk ohne Bild öffnet das Bild-Blatt (einfügen, KI-Bild, Gratis-Foto)', await p.locator('.fenster [data-a=bild-datei]').count() === 1 && await p.locator('.fenster [data-a=ki-bild]').count() === 1);
+await p.keyboard.press('Escape'); await ruhe(p);
+pruefe('am Handy läuft der Bilder-Ordner nicht quer', await Zs(p, () => document.documentElement.scrollWidth <= innerWidth));
 await c.close();
 
 pruefe('keine Fehler in der Konsole', fehler.length === 0, fehler.join(' | '));
