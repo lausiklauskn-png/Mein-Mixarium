@@ -5,7 +5,7 @@ zweimal sagen muss. Diese Datei ist die Übergabe der Mixarium-Seite; die Rezept
 `Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SITZUNG.md` (dort auch: wie die gemeinsame Sitzung arbeitet).
 Diese Sitzung arbeitet nach der Übergabe nicht weiter.
 
-## Stand Mixarium (main, PWA 10.0.0-vor13, Kern 0.15.0 per Pin `74ab9e3`)
+## Stand Mixarium (main, PWA 10.0.0-vor16, Kern 0.15.0 per Pin `74ab9e3`)
 
 - **Die bisherige App ist unverändert**: `index.html` und `QC_Mixarium_20_04_26.html`, md5 beide `49ce4320795972269057083e4c189f48`.
   Sie bleibt online, bis Klaus die neue abgenommen hat. Die Pflicht-Checkliste aus `CLAUDE.md` gilt weiter für jede Änderung daran.
@@ -72,6 +72,14 @@ dem Bild · Kategorien als Sticker mit Mini-Foto (aus der eigenen Kategorie, son
 Bilder-Ordner (Einstellungen → Bilder; einziger Ort zum Löschen eines Bildes) · Getränk aus Text (ohne KI) · Wochenplan
 (Karte → Wochenplan; der Plan der alten App wird einmal übernommen, Einträge nur mit Freitext ohne Getränk zeigt er nicht,
 sie bleiben in `karten` gespeichert) · „Planen“ am Getränk. Proben: `tests/smoke_neu_kategorien.mjs` (68).
+
+**Mix-Labor (10.0.0-vor16):** `getraenke/labor.mjs` (Regeln der alten App, Punkte und Status-Kette gegen die alte Funktion
+gerechnet: 2000 + 3000 Verläufe) und die Oberfläche nach der Vorschau: erfinden (Kategorie, Geschmack, Zutaten), Vorschau, ins Labor,
+4 Bewertungen, Status-Kette, KI-Überarbeitung (automatisch und auf Knopfdruck), Favorit-Schutz, verwerfen/wiederherstellen,
+Einzelpersonen-Modus, Protokoll. Eigener Anthropic-Schlüssel nur im Gerät; Modell `claude-haiku-4-5` (wie bisher, an einer Stelle).
+Klaus 23.11.: Kacheln dicht gepackt und in Wasserfarben (Bereiche der Private Akte), Erklärtexte hinter „?“ (`frag`), kurze
+Meldungen. Proben `tests/getraenke/labor.test.mjs`, `tests/smoke_neu_labor.mjs` (38), Gegenprobe `tests/gegenprobe_neu_labor.py`.
+Offen: „Bekannte Drinks entdecken“; die „?“-Erklärungen in den übrigen Bereichen der PWA; Tooltips der alten Apps prüfen.
 
 **Offen** (gesagt, noch nicht gebaut):
 
