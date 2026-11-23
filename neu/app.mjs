@@ -931,14 +931,14 @@ async function alleUebersetzen() {
   /* Das Fenster bleibt offen, solange übersetzt wird; in der freien Zeile steht am Handy der Ladebalken des Kerns. */
   Z.fenster = { titel: L('Alle übersetzen', 'Translate all'), uebLauf: lauf, kopfHtml: UEB_KOPF(), html: `<div class="ueb-lauf" id="ueb-lauf"></div><div class="reihe ende"><button class="knopf hell" data-a="alle-ueb-stopp">${I('x')}${L('Abbrechen', 'Cancel')}</button></div>` };
   zeichne();
-  await W.mit(L('Getränke werden übersetzt …', 'Translating the drinks …'), async (w) => {
+  try { await W.mit(L('Getränke werden übersetzt …', 'Translating the drinks …'), async (w) => {
     for (let i = 0; i < n && !lauf.stopp; i++) { const r = getr(offen[i].uid); if (!r) continue;
       w.anteil(i / n); w.text(fuelle(L('{0} von {1}: {2}', '{0} of {1}: {2}'), i + 1, n, r.name));
       try { const t = await uebersetze(r, ziel, { schluessel: SK.anthropic, stufe: E.scan.stufe, sprache: sprache(), hol: (u, o) => fetch(u, { ...o, signal: lauf.ab.signal }) }); const jetzt = getr(r.uid); if (lauf.stopp || !jetzt) break; getraenkSetzen(uebersetzungAnRezept(jetzt, ziel, t, sprache())); ok++; }
       catch (f) { if (lauf.stopp) break; fehler++; grund = f.message; if (f.schluesselAbgelehnt || f.keinSchluessel || f.status === 402 || f.status === 429) break; }   /* ohne Schlüssel oder Guthaben scheitert auch der Rest */
     }
-  });
-  uebLauf = null; if (Z.fenster && Z.fenster.uebLauf === lauf) Z.fenster = null;
+  }); } finally { uebLauf = null; }   /* was auch geschieht: der nächste Lauf darf beginnen */
+  if (Z.fenster && Z.fenster.uebLauf === lauf) Z.fenster = null;
   melde(!ok && fehler ? grund : fuelle(L('+{0} übersetzt', '+{0} translated'), ok) + (fehler ? ' · ' + (fehler === 1 ? L('1 Fehler', '1 failed') : fuelle(L('{0} Fehler', '{0} failed'), fehler)) : '') + (lauf.stopp ? ' · ' + L('abgebrochen', 'cancelled') : ''));
 }
 
@@ -1090,7 +1090,7 @@ const TUN = {
   'bild-datei'() { $('#bbdatei').click(); return false; },
   'ki-bild'() { bildErzeugen(false); return false; }, 'gratis-bild'() { bildErzeugen(true); return false; },
   schluessel(b) { schluesselFenster((b && b.dataset.anbieter) || 'openai'); return false; },
-  'schluessel-weg'(b) { const a = b.dataset.anbieter; S.weg(a).then(() => { SK[a] = ''; Z.fenster = null; melde(L('Schlüssel gelöscht.', 'Key deleted.')); }); return false; },
+  'schluessel-weg'(b) { const a = b.dataset.anbieter; S.weg(a).then(() => { SK[a] = ''; Z.fenster = null; melde(L('Schlüssel gelöscht', 'Key deleted')); }); return false; },
   tresor() { tresorFenster(); return false; },
   'tresor-holen'(b) { tresorHolen(b.dataset.id); return false; },
   'tresor-weg'(b) { tr.loeschen(b.dataset.id).then(tresorFenster); return false; },
@@ -1176,7 +1176,7 @@ document.addEventListener('submit', (ev) => {
     getraenkSetzen(rechtschreibungAnwenden(r, f.recht.aenderungen.filter((_, i) => wahl.includes(i)))); Z.fenster = null; return melde(wahl.length === 1 ? L('1 übernommen', '1 applied') : fuelle(L('{0} übernommen', '{0} applied'), wahl.length)); }
   if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
-    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert.', 'Key saved.') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } }); return; }
+    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
     const f = LAB.bewerten(r, { taste: d.get('taste'), practicality: d.get('practicality'), originality: d.get('originality'), description: d.get('description') }, String(d.get('fb') || ''), { solo: labSolo() });
     Z.fenster = null; sichern();

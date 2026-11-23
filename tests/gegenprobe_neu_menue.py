@@ -13,6 +13,7 @@ F=[('ki-ohne-schluessel', "await schlLaden(); if (!SK.anthropic) return schluess
    ('alle-ohne-ueberspringen', ".filter((r) => G.istSichtbar(r) && !uebersetzungPasst(r, (r.translations || {})[ziel]));", ".filter((r) => G.istSichtbar(r));", 'neu/app.mjs', 'schon Übersetzte zählen nicht mit'),
    ('alle-mit-alkohol', "const uebOffen = (ziel) => G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter(", "const uebOffen = (ziel) => A.getraenke.filter(", 'neu/app.mjs', 'ein ausgeblendetes Getränk mit Alkohol ging nicht an die KI'),
    ('fehlschlag-haelt-auf', "fehler++; grund = f.message; if (f.schluesselAbgelehnt", "fehler++; grund = f.message; break; if (f.schluesselAbgelehnt", 'neu/app.mjs', 'ein Fehlschlag hält den Rest nicht auf'),
+   ('erklaerung-ragt-hinaus', ".mx .fkopf .frag p{left:auto;right:-42px}", "", 'neu/app.css', 'die Erklärung hinter „?“ liegt ganz im Bildschirm'),
    ('abbrechen-wirkt-nicht', "  if (uebLauf && !(Z.fenster && Z.fenster.uebLauf === uebLauf)) { uebLauf.stopp = true; uebLauf.ab.abort(); }", "", 'neu/app.mjs', 'hört sofort auf')]
 nur=os.environ.get('NUR_FALL'); nur=nur.split(',') if nur else None; gefangen=0; durch=0; tot=0
 if os.environ.get('NUR_ANKER'):
