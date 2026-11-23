@@ -15,7 +15,8 @@ import { kiBild, gratisBild, KOSTEN } from '../kern/ki/bild.mjs';
 import { sicht as kernSicht } from '../kern/modell/rezept.mjs';
 import { diktat, diktatAus, diktatMoeglich } from '../kern/oberflaeche/diktat.mjs';
 import { kategorienMit, beschriftung as katBeschr, anzahl as katZahl, anlegen as katAnlegen, umbenennen as katUmbenennen, KATEGORIEN_FEST, katBild, bildWaehlen } from '../kern/modell/kategorien.mjs';
-import { katVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
+import { katVonRezept, ordnerVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
+import { anlegen as ordAnlegen, umbenennen as ordUmbenennen, loeschen as ordLoeschen, legeIn, umsortieren as ordUmsortieren, uebersicht as ordUebersicht, findeOrdner, ordnerName } from '../kern/modell/ordner.mjs';
 import { einkaufMit } from '../kern/modell/einkauf.mjs';
 import { rezeptAusText } from '../kern/import/text.mjs';
 import { woche, tagIso, planen, entplanen, ausAltemMenu } from '../kern/modell/plan.mjs';
@@ -23,7 +24,7 @@ import { ladeBausteine, korpus as semKorpus, sucheBedeutung } from '../kern/such
 import * as LAB from '../getraenke/labor.mjs';
 import { hinweiseEinrichten } from '../kern/oberflaeche/hinweis.mjs';
 import { wartenEinrichten, modellFortschritt, bytesMitAnteil } from '../kern/oberflaeche/warten.mjs';
-import { text as spText, fuelle } from '../kern/oberflaeche/sprache.mjs';
+import { text as spText, fuelle, ladeTabelle } from '../kern/oberflaeche/sprache.mjs';
 import { schluessel as schluesselLager, ANBIETER, erklaerung as schlErklaerung, formPasst, pruefeSchluessel, schluesselAdresse } from '../kern/ki/schluessel.mjs';
 import { STUFEN } from '../kern/ki/claude.mjs';
 import { vorbereiten, erkennen, rezeptAusScan, wasGehtHinaus, wohinKurz, istPdf, istBild } from '../kern/import/scan.mjs';
@@ -31,6 +32,9 @@ import { vermerken, vermerkHtml, fundeZumEntscheiden, fundName } from '../kern/k
 import { dateiPruefen, pruefHtml, kiAnweisungen } from '../kern/pruefung/datei.mjs';
 import * as DB from '../getraenke/entdecken.mjs';
 import { webAdresse, holeSeite, ausEingefuegtem, ohneKi, fuerKi, mitKi, holeBild } from '../kern/import/web.mjs';
+import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, rechtschreibungAnwenden, uebersetze, uebersetzungAnRezept, uebersetzungPasst, kostenSchaetzung, wasGehtHinaus as helferHinaus, wasKurz } from '../kern/ki/helfer.mjs';
+import { druckRezept, drucke } from '../kern/ausgabe/druck.mjs';
+import { teilLink, ausTeilLink, qrSvg, passtInQr } from '../kern/teilen/qr.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -44,7 +48,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor22';
+export const FASSUNG = '10.0.0-vor23';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -61,7 +65,9 @@ let A = null;
 const Z = { einstAuf: new Set(), entd: null, scanMehr: false, scan: null, web: null, lab: { kat: 'mock', geschmack: [], zutaten: '', entwurf: null, laeuft: false, fehler: '', entfernteAuf: false }, planTag: new Date(), bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
 
 const sprache = () => E.sprache || (A && A.einstellungen && A.einstellungen.sprache) || ((navigator.language || 'de').slice(0, 2));
-const L = (de, en) => spText(sprache(), de, en);   /* Deutsch und Englisch im Code; die übrigen Sprachen über Tabellen des Kerns, sonst Englisch */
+const L = (de, en) => spText(sprache(), de, en);
+/* Die sechs übrigen Sprachen: erst die Tabelle des Kerns, dann die der App (bei gleichem Schlüssel gewinnt die der App). Fehlt eine, steht Englisch da. */
+const tabellenLaden = (code = sprache()) => ladeTabelle(code, [new URL('../kern/sprachen/' + code + '.mjs', import.meta.url).href, new URL('./sprachen/' + code + '.mjs', import.meta.url).href]).catch(() => false);   /* Deutsch und Englisch im Code; die übrigen Sprachen über Tabellen des Kerns, sonst Englisch */
 const dunkel = () => istDunkel(E.farbe, E.ton);
 const breit = () => innerWidth >= 1000;
 const ohneAlk = () => !!(A.einstellungen && A.einstellungen.ohneAlkohol);
@@ -72,19 +78,35 @@ const glasText = (g) => { const n = G.glasName(g, sprache()); if (n !== g) retur
 /* Übersetzung am Getränk zeigen (auch Deutsch): aus dem Küchen-Kern, `sicht(r, sprache)`. Ersetzt wird nur, wenn die Zahl der
    Zutaten und Schritte passt; bearbeitet wird immer das Original. */
 const sicht = (r) => (r ? kernSicht(r, sprache()) : r);
+/* Am offenen Getränk lässt sich aufs Original umschalten (Z.original); Liste, Karte und Plan zeigen immer die Fassung der Sprache. */
+const zeig = (r) => (r && !Z.original ? sicht(r) : r);
+const sprName = (k) => (SPRACHEN.find((x) => x[0] === k) || [k, k])[1];
 const getr = (uid) => A.getraenke.find((r) => r.uid === uid) || null;
 const zahl = (t) => (sprache() === 'de' ? String(t).replace('.', ',') : String(t));
 
 let speicherUhr = 0;
 function sichern() { clearTimeout(speicherUhr); speicherUhr = setTimeout(() => { lager.schreibe(A).catch(() => melde(L('Speichern ist fehlgeschlagen. Bitte eine Sicherung anlegen.', 'Saving failed. Please make a backup.'))); }, 150); }
 function einstSichern() { lager.setz('einst', E).catch(() => {}); }
-function melde(t) { Z.toast = t; zeichne(); clearTimeout(melde.uhr); melde.uhr = setTimeout(() => { Z.toast = ''; const o = $('.mxtoast'); if (o) o.remove(); }, 2600); }
+/* Meldung, eine Zeile. Mit `knopf` trägt sie einen Knopf (z. B. „Rückgängig“) und bleibt länger stehen. */
+let toastTun = null;
+function melde(t, knopf = '', tun = null) { Z.toast = t; Z.toastKnopf = knopf; toastTun = knopf ? tun : null; zeichne(); clearTimeout(melde.uhr); melde.uhr = setTimeout(() => { Z.toast = ''; Z.toastKnopf = ''; toastTun = null; const o = $('.mxtoast'); if (o) o.remove(); }, knopf ? 7000 : 2600); }
 
 /* ── Auswahl ── */
+/* Ordner (Kern: modell/ordner.mjs; Vorbild Mein Rezeptbuch): eigene Sammlungen neben den Kategorien. Ist in der Leiste ein Ordner
+   gewählt, steht Z.kat auf 'ordner:<Kennung>'. Ein Ordner frisst die Kategorie nicht; ein Ordner, den es nicht gibt, ist keiner.
+   Gezählt wird, was zu sehen ist: „Ohne Alkohol“ gilt auch im Ordner. */
+const ordWahl = () => (Z.kat.startsWith('ordner:') ? Z.kat.slice(7) : '');
+const ordListe = () => ordUebersicht(G.filterOhneAlkohol(A.getraenke, ohneAlk()), A.ordner);
+const ordTitel = (o) => ordnerName(o) || L('Ordner', 'Folder');
+/* „Ordner“ ist Einzahl UND Mehrzahl. Die Mehrzahl trägt ein leeres {0} im Schlüssel, damit die Sprach-Tabellen beide Fälle
+   verschieden übersetzen können (Carpeta / Carpetas); am Bildschirm steht auf Deutsch und Englisch dasselbe wie bisher. */
+const ordMehr = () => fuelle(L('Ordner{0}', 'Folders{0}'), '');
+const inWahl = (r) => Z.kat === 'all' || (ordWahl() ? ordnerVonRezept(r, A.ordner) === ordWahl() : katVonRezept(r) === Z.kat);
+const katOffen = () => (Z.kat !== 'all' && !ordWahl() ? Z.kat : '');   /* die gewählte Kategorie; ein Ordner ist keine */
 function sichtbar() {
   const q = Z.suche.trim().toLowerCase();
   return G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter((r) => G.istSichtbar(r)
-    && (Z.kat === 'all' || katVonRezept(r) === Z.kat)
+    && inWahl(r)
     && (!q || String(r.name).toLowerCase().includes(q) || (r.ings || []).some((z) => String(z.name).toLowerCase().includes(q)) || (r.tags || []).some((t) => String(t).toLowerCase().includes(q))));
 }
 function kats() { const gl = G.filterOhneAlkohol(A.getraenke, ohneAlk()); return K.alleKategorien(gl, A.kategorien).map((c) => ({ c, n: katZahl(gl, c.id) })).filter((x) => x.n > 0); }
@@ -128,8 +150,8 @@ function kopf(br) {
   const alk = br ? `<button class="schalter ${ohneAlk() ? '' : 'aus'}" data-a="alk" aria-pressed="${ohneAlk()}">${I('noalc')}${ohneAlk() ? L('Ohne Alkohol', 'Alcohol-free') : L('Alkohol an', 'Alcohol on')}</button>` : `<button class="alkmini ${ohneAlk() ? '' : 'aus'}" data-a="alk" aria-pressed="${ohneAlk()}" aria-label="${L('Ohne Alkohol', 'Alcohol-free')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>`;
   const werk = `${alk}<button class="rund schriftknopf" data-a="menue" data-m="schrift" aria-label="${L('Schriftgröße', 'Text size')}" title="${L('Schriftgröße', 'Text size')}"><span aria-hidden="true">A<b>A</b></span></button><button class="rund" data-a="menue" data-m="sprache" aria-label="${L('Sprache', 'Language')}" title="${L('Sprache', 'Language')}">${I('lang')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund" data-go="mehr" aria-label="${L('Einstellungen', 'Settings')}" title="${L('Einstellungen', 'Settings')}">${I('settings')}</button>`;
   const mini = ohneAlk() ? `<button class="alkmini" data-a="alk" aria-pressed="true" aria-label="${L('Ohne Alkohol ist an', 'Alcohol-free is on')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>` : '';
-  const name = !br && auf ? '<span class="name"></span>' : `<div class="name">Mein Mixarium<small>${n} ${n === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}</small></div>`;
-  if (!br) return `<header class="kopf">${logo()}<div class="name">Mein Mixarium<small>${n} ${n === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}</small></div>${mini}<button class="rund" data-a="zur-suche" aria-label="${L('Suchen', 'Search')}" title="${L('Suchen', 'Search')}">${I('search')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button></header>`;
+  const name = !br && auf ? '<span class="name"></span>' : `<div class="name">Mein Mixarium<small>${n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n)}</small></div>`;
+  if (!br) return `<header class="kopf">${logo()}<div class="name">Mein Mixarium<small>${n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n)}</small></div>${mini}<button class="rund" data-a="zur-suche" aria-label="${L('Suchen', 'Search')}" title="${L('Suchen', 'Search')}">${I('search')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button></header>`;
   return `<header class="kopf ${auf ? 'auf' : ''}">${logo()}${name}${br ? suchfeld(false) : ''}${auf ? werk : mini}<button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button><button class="klapp" data-a="kopf" aria-expanded="${auf}" aria-label="${auf ? L('Werkzeuge einklappen', 'Collapse tools') : L('Werkzeuge aufklappen', 'Expand tools')}">${I(auf ? 'right' : 'left')}</button></header>`;
 }
 function navLinks() {
@@ -146,16 +168,16 @@ function flLeiste() {
   return `<aside class="${cls}" style="${ort}"><div class="fl-knoepfe" role="menu"><button class="fl-zu" data-a="fl-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button>${k('data-a="oben"', I('up'), L('Nach oben', 'To top'))}${Z.view !== 'start' ? k('data-a="zurueck"', I('left'), L('Zurück', 'Back')) : ''}${NAV.map(([v, n, i]) => k(`data-go="${v}"`, I(i), L(...n), akt === v)).join('')}<hr><div class="fl-werk" role="group" aria-label="${L('Werkzeuge', 'Tools')}">${w('data-ton="hell"', I('sun'), L('Hell', 'Light'), !dunkel())}${w('data-ton="dunkel"', I('moon'), L('Dunkel', 'Dark'), dunkel())}${w('data-a="menue" data-m="farbe"', '<span class="fleck farbknopf"></span>', L('Farbe', 'Colour'))}${w('data-a="menue" data-m="schrift"', '<span class="aa" aria-hidden="true">A<b>A</b></span>', L('Schrift', 'Text'))}${w('data-a="menue" data-m="sprache"', I('lang'), L('Sprache', 'Language'))}${w(`data-a="alk" title="${L('Ohne Alkohol: Getränke mit Alkohol ausblenden', 'Alcohol-free: hide drinks with alcohol')}"`, I('noalc'), L('Ohne Alk.', 'No alc.'), ohneAlk())}${w(`data-a="sichern" class="breit" title="${L('Sicherung als Datei speichern', 'Save a backup file')}"`, I('download'), L('Sichern', 'Backup'))}</div></div></aside>`;
 }
 function menue() {
-  if (Z.menue === 'sprache') return `<div class="sprachmenue" role="menu"><h3>${L('Sprache der App', 'App language')}</h3><button role="menuitemradio" aria-checked="${!E.sprache}" data-lang="">${L('Wie das Gerät', 'Same as device')}${!E.sprache ? I('check') : ''}</button>${SPRACHEN.map(([k, n]) => `<button role="menuitemradio" aria-checked="${E.sprache === k}" data-lang="${k}">${n}${E.sprache === k ? I('check') : ''}</button>`).join('')}<p>${L('Vollständig sind Deutsch und Englisch. In den anderen Sprachen sind Kategorien und Gläser übersetzt, die übrige Oberfläche erscheint vorerst auf Englisch.', 'German and English are complete. In the other languages categories and glasses are translated; the rest of the interface is in English for now.')}</p></div>`;
+  if (Z.menue === 'sprache') return `<div class="sprachmenue" role="menu"><h3>${L('Sprache der App', 'App language')}</h3><button role="menuitemradio" aria-checked="${!E.sprache}" data-lang="">${L('Wie das Gerät', 'Same as device')}${!E.sprache ? I('check') : ''}</button>${SPRACHEN.map(([k, n]) => `<button role="menuitemradio" aria-checked="${E.sprache === k}" data-lang="${k}">${n}${E.sprache === k ? I('check') : ''}</button>`).join('')}</div>`;
   if (Z.menue === 'schrift') return `<div class="farbmenue schriftfeld" role="dialog" aria-label="${L('Schriftgröße', 'Text size')}"><h3>${L('Schriftgröße', 'Text size')}</h3>${schriftRegler(E.schrift, sprache())}<p>${L('Die Schrift ändert sich sofort, während du schiebst. Gilt für die ganze App, auch für die Mix-Ansicht.', 'The text changes right away while you slide. Applies to the whole app, including the mix view.')}</p><button data-a="schrift-100">${L('Zurück auf 100 %', 'Back to 100 %')}</button></div>`;
   if (Z.menue === 'farbe') return `<div class="farbmenue" role="menu"><h3>${L('Farbe der App', 'App colour')}</h3>${Object.entries(FARBEN).map(([k, f]) => `<button role="menuitemradio" aria-checked="${E.farbe === k}" data-farbe="${k}"><span class="fleck" style="background:linear-gradient(135deg,${f.k[0]},${f.k[2]})"></span>${farbName(k)}</button>`).join('')}<hr><h3>${L('Hell oder dunkel', 'Light or dark')}</h3>${['hell', 'dunkel'].map((k) => `<button role="menuitemradio" aria-checked="${E.ton === k}" data-ton="${k}">${I(k === 'dunkel' ? 'moon' : 'sun')}${tonName(k, sprache())}</button>`).join('')}</div>`;
   return '';
 }
 function leiste() {
   const l = lage(), alle = l.getraenke.filter(G.istSichtbar).length;
-  const gl = l.getraenke, alleBild = katBild(gl, A.kategorien, 'alle');
+  const gl = l.getraenke, alleBild = katBild(gl, A.kategorien, 'alle'), ordner = ordListe().filter((o) => o.anzahl > 0);   /* ein leerer Ordner steht nicht in der Leiste */
   const stk = (id, bildHtml, name, n) => `<button class="chip stk" data-kat="${esc(id)}" aria-pressed="${Z.kat === id}"><span class="stk-bild">${bildHtml}</span><span class="stk-name">${esc(name)} <span class="zahl">${n}</span></span></button>`;
-  return `<div class="leiste stickers" role="group" aria-label="${L('Kategorien', 'Categories')}">${stk('all', alleBild ? `<img class="sticker" src="${esc(alleBild.img)}" alt="" loading="lazy">` : I('book'), L('Alle', 'All'), alle)}${kats().map(({ c, n }) => stk(c.id, katSticker(c, gl), katText(c), n)).join('')}</div>`;
+  return `<div class="leiste stickers" role="group" aria-label="${L('Kategorien', 'Categories')}">${stk('all', alleBild ? `<img class="sticker" src="${esc(alleBild.img)}" alt="" loading="lazy">` : I('book'), L('Alle', 'All'), alle)}${kats().map(({ c, n }) => stk(c.id, katSticker(c, gl), katText(c), n)).join('')}${ordner.map((o) => `<button class="chip stk ord" data-kat="ordner:${esc(o.id)}" aria-pressed="${Z.kat === 'ordner:' + o.id}" title="${L('Ordner', 'Folder')}"><span class="stk-bild">${o.bild ? `<img class="sticker" src="${esc(o.bild)}" alt="" loading="lazy">` : ''}<i class="ord-marke">${o.ico ? esc(o.ico) : I('folder')}</i></span><span class="stk-name">${esc(ordTitel(o))} <span class="zahl">${o.anzahl}</span></span></button>`).join('')}</div>`;
 }
 function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.labGen && r.labStatus && r.labStatus !== 'accepted' ? `<span class="marke rechts">${I('lab')}${L('Labor', 'Lab')}${r.labScore ? ' · ' + zahl(r.labScore.toFixed(1)) : ''}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
 function kartenHtml() {
@@ -173,17 +195,17 @@ const semStatus = (t) => { sem.status = t; const el = $('#sinn-status'); if (el)
 function semTreffer() {
   const q = Z.suche.trim().toLowerCase(); if (!E.sinn || !q || sem.fuer !== q) return [];
   const da = new Set(sichtbar().map((r) => r.uid)), erlaubt = new Set(G.filterOhneAlkohol(A.getraenke, ohneAlk()).map((r) => r.uid));
-  return sem.ids.map(getr).filter((r) => r && G.istSichtbar(r) && !da.has(r.uid) && erlaubt.has(r.uid) && (Z.kat === 'all' || katVonRezept(r) === Z.kat));
+  return sem.ids.map(getr).filter((r) => r && G.istSichtbar(r) && !da.has(r.uid) && erlaubt.has(r.uid) && inWahl(r));
 }
 /* Ladebalken (Klaus 23.11., Kern 0.17): jede Wartezeit zeigt Balken und Zeile, damit die App nie abgestürzt wirkt. */
 const W = wartenEinrichten(document);
 function semBereit() {
   return W.mit(L('Sinn-Suche: Sprachmodell wird geladen …', 'Meaning search: loading the language model …'), async (w) => {
-    const ab = modellFortschritt((a, g, t) => { w.anteil(a); if (t) w.text(L(`Sprachmodell wird geladen: ${g} von ${t} MB`, `Loading the language model: ${g} of ${t} MB`)); });
+    const ab = modellFortschritt((a, g, t) => { w.anteil(a); if (t) w.text(fuelle(L('Sprachmodell wird geladen: {0} von {1} MB', 'Loading the language model: {0} of {1} MB'), g, t)); });
     try { await ladeBausteine('../sbkim/'); await window.SbkimEmbedding.init(); } finally { ab(); }
     w.anteil(null); w.text(L('Sinn-Suche wird vorbereitet …', 'Preparing meaning search …'));
     const rs = A.getraenke.filter(G.istSichtbar), sig = rs.map((r) => r.uid + ':' + r.name).join(',');
-    if (!sem.korpus || sem.sig !== sig) { sem.korpus = await semKorpus(rs.map(sicht), (r) => katNameVon(r), { einbetten: (t) => window.SbkimEmbedding.embedPassage(t), fortschritt: (i, n) => { const t = L(`Sinn-Suche wird vorbereitet: ${i} von ${n} Getränken`, `Preparing meaning search: ${i} of ${n} drinks`); semStatus(t); w.text(t); w.anteil(n ? i / n : null); } }); sem.sig = sig; }
+    if (!sem.korpus || sem.sig !== sig) { sem.korpus = await semKorpus(rs.map(sicht), (r) => katNameVon(r), { einbetten: (t) => window.SbkimEmbedding.embedPassage(t), fortschritt: (i, n) => { const t = fuelle(L('Sinn-Suche wird vorbereitet: {0} von {1} Getränken', 'Preparing meaning search: {0} of {1} drinks'), i, n); semStatus(t); w.text(t); w.anteil(n ? i / n : null); } }); sem.sig = sig; }
     return sem.korpus;
   });
 }
@@ -195,7 +217,7 @@ async function semLauf(f) {
     const c = await semBereit(); if (Z.suche.trim().toLowerCase() !== f) return;
     sem.ids = await sucheBedeutung(window.SbkimMatch, f, c); sem.fuer = f; if (Z.suche.trim().toLowerCase() !== f) return;
     const dazu = semTreffer().length;
-    sem.status = dazu ? L(`${dazu} zusätzlich nach Bedeutung gefunden`, `${dazu} more found by meaning`) : L('Sinn-Suche an, keine weiteren Treffer', 'Meaning search on, no further results');
+    sem.status = dazu ? fuelle(L('{0} zusätzlich nach Bedeutung gefunden', '{0} more found by meaning'), dazu) : L('Sinn-Suche an, keine weiteren Treffer', 'Meaning search on, no further results');
     const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml();
   } catch (e) { console.warn('Sinn-Suche:', (e && e.message) || e); semStatus(L('Die Sinn-Suche ist gerade nicht verfügbar. Die Wortsuche läuft weiter.', 'Meaning search is not available right now. Word search keeps working.')); } finally { sem.laeuft = false; }
 }
@@ -204,7 +226,7 @@ function willkommen() {
 }
 function vStart(br) {
   const leer = !A.getraenke.some(G.istSichtbar), versteckt = A.getraenke.filter((r) => G.istSichtbar(r) && G.hatAlkohol(r)).length;
-  return `<div class="innen-p"><h2 class="titel">${L('Was mixen wir heute?', 'What shall we mix today?')}</h2>${br ? '' : suchfeld(true)}${leer ? willkommen() : `${leiste()}<div id="kartenort">${kartenHtml()}</div>${ohneAlk() && versteckt ? `<p class="hinweis">${I('check')}${L(`Ohne Alkohol ist an: ${versteckt} ${versteckt === 1 ? 'Getränk' : 'Getränke'} mit Alkohol ${versteckt === 1 ? 'ist' : 'sind'} ausgeblendet.`, `Alcohol-free is on: ${versteckt} drink${versteckt === 1 ? '' : 's'} with alcohol hidden.`)}</p>` : ''}`}</div>`;
+  return `<div class="innen-p"><h2 class="titel">${L('Was mixen wir heute?', 'What shall we mix today?')}</h2>${br ? '' : suchfeld(true)}${leer ? willkommen() : `${leiste()}<div id="kartenort">${kartenHtml()}</div>${ohneAlk() && versteckt ? `<p class="hinweis">${I('check')}${(versteckt === 1 ? L('Ohne Alkohol ist an: 1 Getränk mit Alkohol ist ausgeblendet.', 'Alcohol-free is on: 1 drink with alcohol hidden.') : fuelle(L('Ohne Alkohol ist an: {0} Getränke mit Alkohol sind ausgeblendet.', 'Alcohol-free is on: {0} drinks with alcohol hidden.'), versteckt))}</p>` : ''}`}</div>`;
 }
 
 /* ── Getränk ── */
@@ -220,16 +242,22 @@ function zutatenListe(r) { return `<ul class="zutaten">${zutatenVon(r).map((z) =
 function schritteListe(r) { return `<ol class="schritte">${(r.steps || []).map((s) => `<li><span>${esc(s.txt)}</span></li>`).join('') || `<li><span>${L('Noch keine Schritte.', 'No steps yet.')}</span></li>`}</ol>`; }
 function fakten(r) { return `<div class="fakten">${r.glass ? `<span class="fakt">${I('glass')}${esc(glasText(r.glass))}</span>` : ''}${r.temp ? `<span class="fakt">${I(r.temp === 'warm' || r.temp === 'hot' ? 'coffee' : 'snow')}${esc(G.tempName(r.temp, sprache()))}</span>` : ''}${r.prepTime ? `<span class="fakt">${I('timer')}${Number(r.prepTime)} min</span>` : ''}${G.hatAlkohol(r) ? `<span class="fakt alk">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : `<span class="fakt ok">${I('noalc')}${L('ohne Alkohol', 'alcohol-free')}</span>`}${sterne(r)}</div>`; }
 function portion(r) {
-  const e = einheitWahl(), was = r.servings === 1 || Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings');
-  return `<div class="portion"><b>${Z.port} ${Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings')}</b><div class="stepper"><button data-a="minus" aria-label="${L('Weniger', 'Fewer')}">${I('minus')}</button><output>${Z.port}</output><button data-a="plus" aria-label="${L('Mehr', 'More')}">${I('plus')}</button></div></div><div class="einheiten" role="group" aria-label="${L('Einheit', 'Unit')}">${[['orig', L('wie notiert', 'as written')], ['ml', 'ml'], ['cl', 'cl'], ['oz', 'oz']].map(([k, n]) => `<button data-e="${k}" aria-pressed="${e === k}">${n}</button>`).join('')}</div>`;
+  const e = einheitWahl();
+  return `<div class="portion"><b>${Z.port === 1 ? L('1 Portion', '1 serving') : fuelle(L('{0} Portionen', '{0} servings'), Z.port)}</b><div class="stepper"><button data-a="minus" aria-label="${L('Weniger', 'Fewer')}">${I('minus')}</button><output>${Z.port}</output><button data-a="plus" aria-label="${L('Mehr', 'More')}">${I('plus')}</button></div></div><div class="einheiten" role="group" aria-label="${L('Einheit', 'Unit')}">${[['orig', L('wie notiert', 'as written')], ['ml', 'ml'], ['cl', 'cl'], ['oz', 'oz']].map(([k, n]) => `<button data-e="${k}" aria-pressed="${e === k}">${n}</button>`).join('')}</div>`;
 }
 function geraeteKacheln(liste, hell) { return liste.length ? `<div class="geraete ${hell ? 'hell' : ''}">${liste.map((g) => `<span class="gk">${G.geraetSvg(g)}<small>${esc(G.geraetName(g, sprache()))}</small></span>`).join('')}</div>` : ''; }
 /* Klaus 23.11.: kurze Knöpfe, eine Zeile. „Teilen“ und „Bearbeiten“ stehen hinter dem Winkel. */
 function aktionen(r, br) { return `<div class="reihe akt" style="margin-top:14px"><button class="knopf" data-go="mix">${I('shaker')}${L('Mixen', 'Mix')}</button><button class="knopf hell" data-a="einkauf-dazu" title="${L('Auf die Einkaufsliste', 'Add to shopping list')}">${I('cart')}${L('Einkaufen', 'Shop')}</button><button class="knopf hell nursym" data-a="planen" aria-label="${L('In den Wochenplan', 'Into the week plan')}" title="${L('In den Wochenplan', 'Into the week plan')}">${I('plan')}</button></div>`; }
 /* Bewertung am Getränk (wie in der alten App: r.rating.stars). Ein Tipp auf denselben Stern nimmt sie zurück. */
 function sterne(r) { const n = (r.rating && Number(r.rating.stars)) || 0; return `<span class="sterne" role="group" aria-label="${L('Bewertung', 'Rating')}: ${n} ${L('von 5', 'of 5')}">${[1, 2, 3, 4, 5].map((i) => `<button class="stern ${i <= n ? 'an' : ''}" data-a="stern" data-n="${i}" aria-pressed="${i <= n}" aria-label="${i} ${i === 1 ? L('Stern', 'star') : L('Sterne', 'stars')}">${I('star')}</button>`).join('')}</span>`; }
+/* Nährwerte je Portion (r.nutrition wie in der bisherigen App): eine eingeklappte Zeile, aufgeklappt die Werte. „geschätzt“, wenn sie von der KI kommen. */
+function naehrHtml(r) {
+  const z = naehrwertZeilen(r.nutrition, sprache()); if (!z.length) return '';
+  return `<details class="naehr" data-naehr><summary>${I('flamme')}<span>${z[0].wert} kcal ${L('je Portion', 'per serving')}${r.nutrition.quelle === 'ki' ? ' · ' + L('geschätzt', 'estimated') : ''}</span></summary><ul>${z.slice(1).map((x) => `<li><span>${esc(x.name)}</span><b>${x.wert} ${esc(x.einheit)}</b></li>`).join('')}</ul></details>`;
+}
 function vGetraenk(br) {
-  const r = sicht(getr(Z.uid)); if (!r) { Z.view = 'start'; return vStart(br); }
+  const roh = getr(Z.uid); if (!roh) { Z.view = 'start'; return vStart(br); }
+  const r = zeig(roh);
   const ger = G.geraeteFuerGetraenk(r);
   const gerAbs = ger.length ? `<div class="abschnitt"><h3>${L('Gerätschaften', 'Equipment')}</h3>${geraeteKacheln(ger, true)}</div>` : '';
   const notiz = r.notes ? `<div class="abschnitt"><h3>${L('Notizen', 'Notes')}</h3><p class="notiz">${esc(r.notes)}</p></div>` : '';
@@ -238,11 +266,14 @@ function vGetraenk(br) {
   const wk = (akt, i, t, kl = '') => `<button class="chip ${kl}" data-a="${akt}" aria-label="${esc(t)}" title="${esc(t)}">${I(i)}<span class="wk-t">${t}</span></button>`;   /* am Handy nur das Symbol (Klaus 23.11.: „kein Button-Kino“), am Monitor mit Wort */
   /* Kein Knopf auf dem Foto (Klaus 23.11., wie im Rezeptbuch): rechts in der Namenszeile ein weißer Winkel, der die Werkzeuge
      über dem Bild aufklappt, ohne neue Zeile und ohne etwas zu verschieben; „Zurück“ als Winkel links vom Namen. */
-  const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
-  if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div>`;
+  const imOrd = findeOrdner(A.ordner, ordnerVonRezept(r, A.ordner)), ordHtml = imOrd ? ` <span class="im-ordner">${I('folder')}${esc(ordTitel(imOrd))}</span>` : '';
+  /* Liegt eine Übersetzung in der Sprache der Oberfläche am Getränk, steht neben der Kategorie ein kleiner Umschalter aufs Original. */
+  const umsch = kernSicht(roh, sprache()) !== roh ? ` <button class="umsch" data-a="original" aria-pressed="${!!Z.original}" title="${Z.original ? L('Übersetzung zeigen', 'Show translation') : L('Original zeigen', 'Show original')}">${I('uebersetzen')}${L('Original', 'Original')}</button>` : '';
+  const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('ordner-zuordnen', 'folder', L('Ordner', 'Folder'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}${wk('gmenue', 'mehr', L('Mehr: Drucken, QR-Code, Übersetzen …', 'More: print, QR code, translate …'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
+  if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}${ordHtml}${umsch}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}${naehrHtml(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div>`;
   const fk = Z.fokus;
   const liste = fk ? '' : `<div class="liste">${leiste()}${sichtbar().map((x) => `<button class="zeile" data-d="${esc(x.uid)}" ${x.uid === r.uid ? 'aria-current="true"' : ''}><span class="mini">${bild(x)}</span><span><strong>${esc(x.name)}</strong><small>${esc(katNameVon(x))}${x.prepTime ? ` · ${Number(x.prepTime)} min` : ''}</small></span></button>`).join('')}</div>`;
-  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div></div></div></div>`;
+  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}${ordHtml}${umsch}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('ordner-zuordnen', 'folder', L('Ordner', 'Folder'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('gmenue', 'mehr', L('Mehr: Drucken, QR-Code, Übersetzen …', 'More: print, QR code, translate …'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div>${naehrHtml(r)}</div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div></div></div></div>`;
 }
 
 /* ── Mix-Ansicht ── Welche Zutaten nennt der Schritt? Über den Namen (Wortanfang, mindestens 4 Buchstaben). */
@@ -253,13 +284,13 @@ function zutatenImSchritt(r, text) {
   return zutatenVon(r).filter((z) => String(z.name).toLowerCase().split(/[^\p{L}]+/u).some((w) => w.length >= 4 && !FUELLWORT.has(w) && (staemme.some((st) => w.includes(st)) || woerter.some((sw) => sw.includes(w.slice(0, 5))))));
 }
 function vMix(br) {
-  const r = sicht(getr(Z.uid)); if (!r) return '';
+  const r = zeig(getr(Z.uid)); if (!r) return '';
   const schritte = r.steps && r.steps.length ? r.steps : [{ txt: L('Für dieses Getränk sind noch keine Schritte notiert.', 'No steps written for this drink yet.') }];
   const st = Math.min(Z.step, schritte.length - 1), s = schritte[st], braucht = zutatenImSchritt(r, s.txt), ger = G.geraeteFuerSchritt(s.txt);
   const letzter = st === schritte.length - 1, gr = 'mittel', kz = !br && !Z.mixKopf;
   const zut = braucht.length ? braucht.map((z) => `<span><b>${esc(mengeText(z))}</b>${esc(z.name)}</span>`).join('') : '';
-  const kopfz = `<div class="mixkopf"><div class="fort">${schritte.map((_, i) => `<i class="${i < st ? 'an' : i === st ? 'jetzt' : ''}"></i>`).join('')}</div><div class="oben">${kz ? '' : `<b>${esc(r.name)} · ${Z.port} ${Z.port === 1 ? L('Portion', 'serving') : L('Portionen', 'servings')}</b>`}${br ? '' : `<button data-a="mixkopf" aria-expanded="${!kz}" aria-label="${kz ? L('Kopfzeile aufklappen', 'Expand header') : L('Kopfzeile einklappen', 'Collapse header')}">${I(kz ? 'down' : 'up')}</button>`}<button data-a="mix-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div></div>`;
-  const b = `<div class="mixbild">${bild(r)}<span class="mixnr">${L(`Schritt ${st + 1} von ${schritte.length}`, `Step ${st + 1} of ${schritte.length}`)}</span></div>`;
+  const kopfz = `<div class="mixkopf"><div class="fort">${schritte.map((_, i) => `<i class="${i < st ? 'an' : i === st ? 'jetzt' : ''}"></i>`).join('')}</div><div class="oben">${kz ? '' : `<b>${esc(r.name)} · ${Z.port === 1 ? L('1 Portion', '1 serving') : fuelle(L('{0} Portionen', '{0} servings'), Z.port)}</b>`}${br ? '' : `<button data-a="mixkopf" aria-expanded="${!kz}" aria-label="${kz ? L('Kopfzeile aufklappen', 'Expand header') : L('Kopfzeile einklappen', 'Collapse header')}">${I(kz ? 'down' : 'up')}</button>`}<button data-a="mix-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div></div>`;
+  const b = `<div class="mixbild">${bild(r)}<span class="mixnr">${fuelle(L('Schritt {0} von {1}', 'Step {0} of {1}'), st + 1, schritte.length)}</span></div>`;
   const kn = `<div><div class="knoepfe"><button class="zurueckk" data-a="sz" ${st === 0 ? 'disabled style="opacity:.4"' : ''}>${I('left')}${L('Zurück', 'Back')}</button><button class="weiter" data-a="${letzter ? 'fertig' : 'sv'}">${letzter ? I('check') + L('Fertig', 'Done') : L('Weiter', 'Next') + I('right')}</button></div><p class="wach">${I('sun')}${Z.wach ? L('Bildschirm bleibt an', 'Screen stays on') : L('Tippen oder wischen zum Blättern', 'Tap or swipe to page')}${br ? ` · <span class="taste">←</span><span class="taste">→</span> ${L('blättern', 'page')} · <span class="taste">Esc</span> ${L('schließt', 'closes')}` : ''}</p></div>`;
   if (!br) return `<div class="mix ${Z.richt || 'vor'} gr-${gr} ${kz ? 'kopfzu' : ''}" role="dialog" aria-label="${esc(r.name)}">${kopfz}<div class="mitte">${b}<p class="satz">${esc(s.txt)}</p>${zut ? `<div class="braucht">${zut}</div>` : ''}${geraeteKacheln(ger)}</div>${kn}</div>`;
   return `<div class="mix ${Z.richt || 'vor'} gr-${gr}" role="dialog" aria-label="${esc(r.name)}">${kopfz}<div class="mitte"><div class="mixlinks">${b}<p class="satz">${esc(s.txt)}</p></div><div class="seitlich"><h3>${L('Für diesen Schritt', 'For this step')}</h3><ul>${braucht.length ? braucht.map((z) => `<li><b>${esc(mengeText(z))}</b>${esc(z.name)}</li>`).join('') : `<li class="leise">${L('Keine Zutat genannt', 'No ingredient named')}</li>`}</ul>${ger.length ? `<h3 style="margin-top:18px">${L('Dafür brauchst du', 'You need')}</h3>${geraeteKacheln(ger)}` : ''}</div></div>${kn}</div>`;
@@ -283,7 +314,7 @@ function vEinkauf(br) {
   const posten = (p) => `<button class="posten ${Z.pop === p.id ? 'pop' : ''}" role="checkbox" aria-checked="${!!p.ok}" data-h="${p.id}"><span class="kasten">${p.ok ? I('check') : ''}</span><span class="was">${esc(p.name)}<small>${L('für', 'for')} ${esc(p.fuer.join(', '))}</small></span><span class="wieviel">${esc(p.wert !== null ? zahl(G.zahlFormatieren(p.wert)) + (p.unit ? ' ' + p.unit : '') : [p.text, p.unit].filter(Boolean).join(' '))}</span></button>`;
   const gruppen = ladenFolge().map((gid) => { const g = EK.GRUPPEN.find((x) => x.id === gid), l = ps.filter((p) => gruppeVon(p.name) === gid); return l.length ? `<div class="gruppe-e" data-g="${gid}"><h3 title="${L('Lange drücken und ziehen, um die Reihenfolge zu ändern', 'Long-press and drag to reorder')}">${I('griff', 'griffz')}${I(g.symbol)}${esc(gruppeName(g))}</h3>${l.map(posten).join('')}</div>` : ''; }).join('');
   const lae = A.einkaufLaeden, laeden = ps.length ? `<div class="laeden" role="group" aria-label="${L('Laden', 'Shop')}">${Object.keys(lae.laeden).map((n) => `<button class="chip" data-a="ek-laden" data-l="${esc(n)}" aria-pressed="${n === lae.laden}">${I('markt')}${esc(n)}</button>`).join('')}<button class="chip" data-a="ek-laden-neu">${I('plus')}${L('Laden', 'Shop')}</button>${frag(L('Jeder Laden merkt sich seine Reihenfolge der Gruppen. Eine Gruppe an der Überschrift lange drücken oder mit der Maus ziehen.', 'Each shop keeps its own order of groups. Long-press a group heading or drag it with the mouse.'))}</div>` : '';
-  const kopfz = `<h2 class="titel">${L('Einkaufsliste', 'Shopping list')}</h2><p class="unter">${ps.length ? L(`${offen} von ${ps.length} offen`, `${offen} of ${ps.length} open`) : L('Noch leer. Im Getränk oder in einer Getränkekarte auf „Auf die Einkaufsliste“ tippen.', 'Empty. Tap “Add to shopping list” in a drink or a drinks list.')}</p>`;
+  const kopfz = `<h2 class="titel">${L('Einkaufsliste', 'Shopping list')}</h2><p class="unter">${ps.length ? fuelle(L('{0} von {1} offen', '{0} of {1} open'), offen, ps.length) : L('Noch leer. Im Getränk oder in einer Getränkekarte auf „Auf die Einkaufsliste“ tippen.', 'Empty. Tap “Add to shopping list” in a drink or a drinks list.')}</p>`;
   const werk = ps.length ? `<div class="reihe" style="margin-top:10px"><button class="knopf hell" data-a="einkauf-teilen">${I('share')}${L('Teilen', 'Share')}</button><button class="knopf hell" data-a="einkauf-erledigt">${I('check')}${L('Erledigtes entfernen', 'Remove done')}</button><button class="knopf hell" data-a="einkauf-leeren">${I('trash')}${L('Liste leeren', 'Clear list')}</button></div>` : '';
   return `<div class="innen-p">${kopfz}${werk}${laeden}${br ? `<div class="einkauf-breit" id="ek-liste">${gruppen}</div>` : `<div id="ek-liste">${gruppen}</div>`}</div>`;
 }
@@ -294,10 +325,10 @@ function vKarte(br) {
   A.anlaesse = A.anlaesse || [];
   const an = A.anlaesse.find((x) => x.id === Z.anlass);
   if (!an) {
-    return `<div class="innen-p"><h2 class="titel">${L('Getränkekarten', 'Drinks lists')}</h2><p class="unter">${L('Für einen Anlass zusammenstellen, was es wann zu trinken gibt.', 'Put together what to drink and when, for an occasion.')}</p><div class="reihe" style="margin-top:12px"><button class="knopf" data-a="anlass-neu">${I('plus')}${L('Neue Getränkekarte', 'New drinks list')}</button><button class="knopf hell" data-go="plan">${I('plan')}${L('Wochenplan', 'Week plan')}</button></div>${A.anlaesse.map((x) => `<button class="slot" data-anlass="${x.id}"><span class="mitte"><strong>${esc(x.titel)}</strong><small>${esc([x.datum, x.gaeste ? x.gaeste + ' ' + L('Gäste', 'guests') : ''].filter(Boolean).join(' · '))}</small></span><span class="anz">${x.posten.length}</span></button>`).join('')}</div>`;
+    return `<div class="innen-p"><h2 class="titel">${L('Getränkekarten', 'Drinks lists')}</h2><p class="unter">${L('Für einen Anlass zusammenstellen, was es wann zu trinken gibt.', 'Put together what to drink and when, for an occasion.')}</p><div class="reihe" style="margin-top:12px"><button class="knopf" data-a="anlass-neu">${I('plus')}${L('Neue Getränkekarte', 'New drinks list')}</button><button class="knopf hell" data-go="plan">${I('plan')}${L('Wochenplan', 'Week plan')}</button></div>${A.anlaesse.map((x) => `<button class="slot" data-anlass="${x.id}"><span class="mitte"><strong>${esc(x.titel)}</strong><small>${esc([x.datum, x.gaeste ? fuelle(L('{0} Gäste', '{0} guests'), x.gaeste) : ''].filter(Boolean).join(' · '))}</small></span><span class="anz">${x.posten.length}</span></button>`).join('')}</div>`;
   }
   const gaenge = ABSCHNITTE.map(([de, en], ai) => { const l = an.posten.filter((p) => p.abschnitt === ai); return l.length ? `<div class="gang"><h3>${L(de, en)}</h3>${l.map((p) => { const r = getr(p.uid); return r ? `<div class="slot"><button class="mini" data-d="${esc(r.uid)}" aria-label="${esc(r.name)}">${bild(r)}</button><span class="mitte"><strong>${esc(r.name)}</strong><small>${esc(katNameVon(r))}</small></span><span class="stepper klein"><button data-a="posten-minus" data-p="${p.id}" aria-label="${L('Weniger', 'Fewer')}">${I('minus')}</button><output>${p.anzahl}</output><button data-a="posten-plus" data-p="${p.id}" aria-label="${L('Mehr', 'More')}">${I('plus')}</button></span><button class="rund klein" data-a="posten-weg" data-p="${p.id}" aria-label="${L('Entfernen', 'Remove')}">${I('x')}</button></div>` : ''; }).join('')}</div>` : ''; }).join('');
-  const links = `<button class="zurueckzeile" data-a="anlass-zu">${I('left')}${L('Alle Getränkekarten', 'All drinks lists')}</button><div class="anlass"><h2>${esc(an.titel)}</h2><p>${an.datum ? `<span>${I('plan')}${esc(an.datum)}</span>` : ''}${an.gaeste ? `<span>${I('users')}${Number(an.gaeste)} ${L('Gäste', 'guests')}</span>` : ''}</p></div>${gaenge || `<p class="leer">${L('Noch kein Getränk auf dieser Karte.', 'No drink on this list yet.')}</p>`}<div class="reihe" style="margin-top:16px"><button class="knopf" data-a="posten-neu">${I('plus')}${L('Getränk hinzufügen', 'Add drink')}</button><button class="knopf hell" data-a="anlass-einkauf">${I('cart')}${L('Alles auf die Einkaufsliste', 'All to the shopping list')}</button><button class="knopf hell" data-a="anlass-bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button><button class="knopf hell" data-a="anlass-weg">${I('trash')}${L('Löschen', 'Delete')}</button></div>`;
+  const links = `<button class="zurueckzeile" data-a="anlass-zu">${I('left')}${L('Alle Getränkekarten', 'All drinks lists')}</button><div class="anlass"><h2>${esc(an.titel)}</h2><p>${an.datum ? `<span>${I('plan')}${esc(an.datum)}</span>` : ''}${an.gaeste ? `<span>${I('users')}${fuelle(L('{0} Gäste', '{0} guests'), Number(an.gaeste))}</span>` : ''}</p></div>${gaenge || `<p class="leer">${L('Noch kein Getränk auf dieser Karte.', 'No drink on this list yet.')}</p>`}<div class="reihe" style="margin-top:16px"><button class="knopf" data-a="posten-neu">${I('plus')}${L('Getränk hinzufügen', 'Add drink')}</button><button class="knopf hell" data-a="anlass-einkauf">${I('cart')}${L('Alles auf die Einkaufsliste', 'All to the shopping list')}</button><button class="knopf hell" data-a="anlass-bearbeiten">${I('pencil')}${L('Bearbeiten', 'Edit')}</button><button class="knopf hell" data-a="anlass-weg">${I('trash')}${L('Löschen', 'Delete')}</button></div>`;
   if (!br) return `<div class="innen-p">${links}</div>`;
   const blatt = `<div class="menuekarte"><div class="kl">${L('Getränkekarte', 'Drinks list')}</div><h2>${esc(an.titel)}</h2><div class="dat">${esc(an.datum || '')}</div><hr>${ABSCHNITTE.map(([de, en], ai) => { const l = an.posten.filter((p) => p.abschnitt === ai && getr(p.uid)); return l.length ? `<h4>${L(de, en)}</h4>${l.map((p) => `<p>${esc(getr(p.uid).name)}</p>`).join('')}` : ''; }).join('')}</div>`;
   return `<div class="innen-p"><div class="menue-breit"><div>${links}</div><div><p class="unter" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">${L('So sieht die Karte aus', 'This is how the list looks')}<button class="chip" data-a="drucken">${I('print')}${L('Drucken', 'Print')}</button></p>${blatt}</div></div></div>`;
@@ -342,21 +373,21 @@ function vLabor() {
    <div class="reihe" style="margin-top:10px;align-items:center"><label class="haken" title="${esc(L('Eine Bewertung genügt, um ein Getränk anzunehmen oder unter Beobachtung zu stellen. Sonst braucht es drei.', 'One rating is enough to accept a drink or put it under watch. Otherwise it takes three.'))}"><input type="checkbox" data-a="lab-solo" ${labSolo() ? 'checked' : ''}> ${L('Einzelpersonen-Modus', 'Single-person mode')}</label></div></div>`;
   const e = lb.entwurf;
   const vorschau = e ? `<div class="laborform entwurf"><h3>${I('lab')}${esc(e.titel)}<span class="status">${L('Vorschau', 'Preview')}</span></h3>${e.beschreibung ? `<p class="ftext">${esc(e.beschreibung)}</p>` : ''}
-   <p class="klein">${[e.zubereitungszeit_min ? `${Number(e.zubereitungszeit_min)} min` : '', e.portionen ? L(`${Number(e.portionen)} Portionen`, `${Number(e.portionen)} servings`) : '', e.glastyp ? glasText(e.glastyp) : '', e.alkohol ? L('mit Alkohol', 'with alcohol') : L('alkoholfrei', 'alcohol-free')].filter(Boolean).map(esc).join(' · ')}</p>
+   <p class="klein">${[e.zubereitungszeit_min ? `${Number(e.zubereitungszeit_min)} min` : '', e.portionen ? fuelle(L('{0} Portionen', '{0} servings'), Number(e.portionen)) : '', e.glastyp ? glasText(e.glastyp) : '', e.alkohol ? L('mit Alkohol', 'with alcohol') : L('alkoholfrei', 'alcohol-free')].filter(Boolean).map(esc).join(' · ')}</p>
    <ul class="zutaten klein-l">${e.zutaten.map((z) => `<li><b>${esc(z.menge || '')}</b> ${esc(z.name)}</li>`).join('')}</ul><ol class="klein-l">${e.schritte.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
    <div class="reihe"><button class="knopf" data-a="lab-sichern">${I('check')}${L('Ins Labor übernehmen', 'Move into the lab')}</button><button class="knopf hell" data-a="lab-verwerfen">${I('x')}${L('Verwerfen', 'Discard')}</button></div></div>` : '';
   const pool = LAB.imLabor(A.getraenke), weg = LAB.entfernteAusLabor(A.getraenke);
   const dimMittel = (r, d) => { const l = r.labRatings || []; return l.length ? l.reduce((s2, x) => s2 + x[d], 0) / l.length : 0; };
   const karteLab = (r) => { const n = (r.labRatings || []).length, x = LAB.LAB_STATUS[r.labStatus] || LAB.LAB_STATUS.experimentell;
     return `<div class="laborkarte" data-lab="${esc(r.uid)}"><button class="mini" data-d="${esc(r.uid)}" aria-label="${esc(r.name)}">${bild(r)}</button><div class="mitte"><strong>${esc(r.name)}${r.labFavorite ? ` ${I('star')}` : ''}</strong><small>${esc(katNameVon(r))} · ${L('Fassung', 'Version')} ${(r.labRevision || 0) + 1}</small>
-     <div class="wertung"><span class="status" style="--st:${x.farbe}">${labStatusText(r.labStatus)}</span><b>${n ? zahl(r.labScore.toFixed(1)) : '–'}</b><span class="klein">${L(`${n} von ${LAB.mindestBewertungen(labSolo())} Bewertungen`, `${n} of ${LAB.mindestBewertungen(labSolo())} ratings`)}</span></div>
+     <div class="wertung"><span class="status" style="--st:${x.farbe}">${labStatusText(r.labStatus)}</span><b>${n ? zahl(r.labScore.toFixed(1)) : '–'}</b><span class="klein">${fuelle(L('{0} von {1} Bewertungen', '{0} of {1} ratings'), n, LAB.mindestBewertungen(labSolo()))}</span></div>
      ${n ? `<div class="dims">${LAB.DIMENSIONEN.map((d) => `<span>${L(d.de, d.en)}</span>${sterneHtml(dimMittel(r, d.id))}`).join('')}</div>` : ''}
      ${r.labRevisionPending ? `<p class="klein">${I('wand')} ${L('Die KI überarbeitet gerade …', 'The AI is revising …')}</p>` : ''}
      ${r.labRevisionDraft ? `<div class="entwurfbox"><b>${L('Überarbeiteter Entwurf', 'Revised draft')}: ${esc(r.labRevisionDraft.titel)}</b><small>${esc(r.labRevisionDraft.zutaten.map((z) => [z.menge, z.name].filter(Boolean).join(' ')).join(', '))}</small><div class="laborknoepfe"><button class="chip" data-a="lab-rev-ja" data-u="${esc(r.uid)}">${I('check')}${L('Annehmen', 'Accept')}</button><button class="chip" data-a="lab-rev-nein" data-u="${esc(r.uid)}">${I('x')}${L('Ablehnen', 'Reject')}</button></div></div>` : ''}
      <div class="laborknoepfe"><button class="chip" data-a="lab-bewerten" data-u="${esc(r.uid)}">${I('star')}${L('Bewerten', 'Rate')}</button><button class="chip" data-a="lab-annehmen" data-u="${esc(r.uid)}">${I('check')}${L('Ins Buch', 'To the book')}</button><button class="chip" data-a="lab-ueberarbeiten" data-u="${esc(r.uid)}" ${r.labRevisionPending || r.labRevisionDraft ? 'disabled' : ''}>${I('wand')}${L('Überarbeiten', 'Revise')}</button><button class="chip" data-a="lab-favorit" data-u="${esc(r.uid)}" aria-pressed="${!!r.labFavorite}" title="${L('Vor dem Rauswurf schützen', 'Protect from removal')}">${I('star')}${r.labFavorite ? L('Geschützt', 'Protected') : L('Schützen', 'Protect')}</button><button class="chip" data-a="lab-entfernen" data-u="${esc(r.uid)}">${I('trash')}${L('Verwerfen', 'Discard')}</button></div>
      ${(r.labLog || []).length ? `<details class="protokoll"><summary>${L('Protokoll', 'Log')}</summary>${r.labLog.slice(-6).reverse().map((l) => `<p>${esc(new Date(l.ts).toLocaleDateString(sprache() === 'de' ? 'de-DE' : 'en-GB'))}: ${esc(l.detail)}</p>`).join('')}</details>` : ''}</div></div>`; };
   const poolHtml = `<div class="abschnitt" style="${br ? 'margin-top:0' : ''}"><h3 title="${esc(L('Ab 3,5 Punkten kommt ein Getränk ins Buch, unter 2,5 unter Beobachtung. Bleibt es schlecht, überarbeitet die KI es; fällt auch die neue Fassung durch, wird es verworfen, außer es ist geschützt. Gewichtung: Geschmack 40 %, Zubereitung 25 %, Originalität 20 %, Beschreibung 15 %.', 'From 3.5 points a drink enters the book, below 2.5 it goes under watch. If it stays poor, the AI revises it; if the new version fails too, it is discarded unless protected. Weights: taste 40 %, practicality 25 %, originality 20 %, description 15 %.'))}">${L('Im Labor', 'In the lab')} · ${pool.length}</h3>${pool.map(karteLab).join('') || `<p class="leer">${A.getraenke.some((r) => r.labLog) ? L('Alle Labor-Getränke sind angenommen oder verworfen. Angenommene stehen im Buch.', 'All lab drinks are accepted or discarded. Accepted ones are in the book.') : L('Noch nichts im Labor. Erfinde oben dein erstes Getränk.', 'Nothing in the lab yet. Invent your first drink above.')}</p>`}
-   ${weg.length ? `<button class="chip" data-a="lab-entfernte" aria-expanded="${lb.entfernteAuf}" style="margin-top:10px">${I(lb.entfernteAuf ? 'down' : 'right')}${L(`Entfernte Getränke (${weg.length})`, `Removed drinks (${weg.length})`)}</button>${lb.entfernteAuf ? weg.map((r) => { const s2 = (r.labLog || []).filter((l) => l.type === 'status').slice(-1)[0]; return `<div class="laborkarte entfernt"><div class="mitte"><strong>${esc(r.name)}</strong><small>${esc(katNameVon(r))}${s2 ? ' · ' + esc(s2.detail) : ''}</small><div class="laborknoepfe"><button class="chip" data-a="lab-zurueck" data-u="${esc(r.uid)}">${I('back')}${L('Wiederherstellen', 'Restore')}</button></div></div></div>`; }).join('') : ''}` : ''}</div>`;
+   ${weg.length ? `<button class="chip" data-a="lab-entfernte" aria-expanded="${lb.entfernteAuf}" style="margin-top:10px">${I(lb.entfernteAuf ? 'down' : 'right')}${fuelle(L('Entfernte Getränke ({0})', 'Removed drinks ({0})'), weg.length)}</button>${lb.entfernteAuf ? weg.map((r) => { const s2 = (r.labLog || []).filter((l) => l.type === 'status').slice(-1)[0]; return `<div class="laborkarte entfernt"><div class="mitte"><strong>${esc(r.name)}</strong><small>${esc(katNameVon(r))}${s2 ? ' · ' + esc(s2.detail) : ''}</small><div class="laborknoepfe"><button class="chip" data-a="lab-zurueck" data-u="${esc(r.uid)}">${I('back')}${L('Wiederherstellen', 'Restore')}</button></div></div></div>`; }).join('') : ''}` : ''}</div>`;
   const kopfz = `<h2 class="titel">${L('Mix-Labor', 'Mix lab')}${frag(L('Hier erfindet die KI neue Getränke. Du bewertest sie; gut bewertete kommen ins Buch, schwache überarbeitet die KI.', 'Here the AI invents new drinks. You rate them; good ones go into the book, weak ones are revised by the AI.'))}</h2>`;
   if (!br) return `<div class="innen-p">${kopfz}${form}${vorschau}${poolHtml}</div>`;
   return `<div class="innen-p">${kopfz}<div class="labor-breit"><div>${form}${vorschau}</div><div>${poolHtml}</div></div></div>`;
@@ -406,13 +437,13 @@ function vBilder() {
   const B = Z.bilder, mit = A.getraenke.filter((r) => G.istSichtbar(r) && r.img), ohne = A.getraenke.filter((r) => G.istSichtbar(r) && !r.img);
   const gez = mit.filter((r) => B.filter === 'alle' || (B.filter === 'beispiele' ? r.beispiel : !r.beispiel));
   for (const u of [...B.wahl]) if (!gez.some((r) => r.uid === u)) B.wahl.delete(u);
-  return `<div class="innen-p"><button class="zurueckzeile" data-go="mehr">${I('left')}${L('Einstellungen', 'Settings')}</button><h2 class="titel">${L('Bilder', 'Pictures')}${frag(L('Tippe Bilder an, um sie auszuwählen. „Löschen“ entfernt nur das Bild; das Getränk mit seinem Text bleibt. Vorher wird der Stand im Tresor abgelegt.', 'Tap pictures to select them. “Delete” removes only the picture; the drink and its text stay. The current state is stored in the vault first.'))}</h2><p class="unter">${L(`${mit.length} Bilder · ${ohne.length} Getränke ohne Bild`, `${mit.length} pictures · ${ohne.length} drinks without a picture`)}</p>
+  return `<div class="innen-p"><button class="zurueckzeile" data-go="mehr">${I('left')}${L('Einstellungen', 'Settings')}</button><h2 class="titel">${L('Bilder', 'Pictures')}${frag(L('Tippe Bilder an, um sie auszuwählen. „Löschen“ entfernt nur das Bild; das Getränk mit seinem Text bleibt. Vorher wird der Stand im Tresor abgelegt.', 'Tap pictures to select them. “Delete” removes only the picture; the drink and its text stay. The current state is stored in the vault first.'))}</h2><p class="unter">${fuelle(L('{0} Bilder · {1} Getränke ohne Bild', '{0} pictures · {1} drinks without a picture'), mit.length, ohne.length)}</p>
    <div class="laeden">${[['alle', L('Alle', 'All')], ['eigene', L('Eigene', 'Own')], ['beispiele', L('Beispiele', 'Examples')]].map(([f, t]) => `<button class="chip" data-a="bilder-filter" data-f="${f}" aria-pressed="${B.filter === f}">${t}</button>`).join('')}<button class="chip" data-a="bilder-gross" aria-pressed="${B.gross}">${I('full')}${B.gross ? L('Groß', 'Large') : L('Klein', 'Small')}</button></div>
-   <div class="reihe" style="margin:10px 0"><button class="knopf rot" data-a="bilder-weg" ${B.wahl.size ? '' : 'disabled'}>${I('trash')}${L(`Löschen (${B.wahl.size})`, `Delete (${B.wahl.size})`)}</button><button class="knopf hell" data-a="bilder-alle-wahl" ${gez.length ? '' : 'disabled'}>${B.wahl.size === gez.length && gez.length ? L('Auswahl aufheben', 'Clear selection') : L('Alle auswählen', 'Select all')}</button><button class="knopf hell rotschrift" data-a="bilder-alle-weg" ${mit.length ? '' : 'disabled'}>${L('Alle Bilder löschen', 'Delete all pictures')}</button></div>
+   <div class="reihe" style="margin:10px 0"><button class="knopf rot" data-a="bilder-weg" ${B.wahl.size ? '' : 'disabled'}>${I('trash')}${fuelle(L('Löschen ({0})', 'Delete ({0})'), B.wahl.size)}</button><button class="knopf hell" data-a="bilder-alle-wahl" ${gez.length ? '' : 'disabled'}>${B.wahl.size === gez.length && gez.length ? L('Auswahl aufheben', 'Clear selection') : L('Alle auswählen', 'Select all')}</button><button class="knopf hell rotschrift" data-a="bilder-alle-weg" ${mit.length ? '' : 'disabled'}>${L('Alle Bilder löschen', 'Delete all pictures')}</button></div>
    <div class="bildgitter ${B.gross ? 'gross' : ''}">${gez.map((r) => `<button class="bildkachel" data-a="bild-wahl" data-uid="${esc(r.uid)}" aria-pressed="${B.wahl.has(r.uid)}"><img src="${esc(r.img)}" alt="" loading="lazy"><span class="hk">${B.wahl.has(r.uid) ? I('check') : ''}</span><span class="bn">${esc(r.name)}</span></button>`).join('') || `<p class="leer">${L('Keine Bilder in dieser Auswahl.', 'No pictures in this selection.')}</p>`}</div>
    ${ohne.length ? `<h3 class="eh">${L('Getränke ohne Bild', 'Drinks without a picture')}</h3><div class="eliste">${ohne.map((r) => `<button class="ezeile" data-a="bild-dazu" data-uid="${esc(r.uid)}">${I('camera')}<span><b>${esc(r.name)}</b><small>${L('Bild einfügen, KI-Bild oder Gratis-Foto', 'Add picture, AI picture or free photo')}</small></span>${I('right')}</button>`).join('')}</div>` : ''}</div>`;
 }
-async function bilderLoeschen(uids, grund) { await tresorAuto(grund); const w = new Set(uids); for (const r of A.getraenke) if (w.has(r.uid)) { r.img = ''; delete r.imgCrop; r.modified = Date.now(); } Z.bilder.wahl.clear(); sichern(); melde(L(`${w.size} Bilder gelöscht, die Getränke bleiben. Der vorige Stand liegt im Tresor.`, `${w.size} pictures deleted, the drinks stay. The previous state is in the vault.`)); }
+async function bilderLoeschen(uids, grund) { await tresorAuto(grund); const w = new Set(uids); for (const r of A.getraenke) if (w.has(r.uid)) { r.img = ''; delete r.imgCrop; r.modified = Date.now(); } Z.bilder.wahl.clear(); sichern(); melde(fuelle(L('{0} Bilder gelöscht, die Getränke bleiben. Der vorige Stand liegt im Tresor.', '{0} pictures deleted, the drinks stay. The previous state is in the vault.'), w.size)); }
 
 /* ── Einstellungen ── */
 /* Klaus 23.11. abends: keine langen Scroll-Listen, einfache Links zu den Themen. Sieben Themen mit Farbfeld; ein Tipp klappt eines auf.
@@ -424,11 +455,11 @@ function vMehr() {
     ['aussehen', 'auge', WF.blau, L('Darstellung', 'Appearance'), '',
       z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"') + z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch', 'automatic'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"') + z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' %', 'data-a="menue" data-m="schrift"') + z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"') + z(I('info'), L('Hinweis-Blasen', 'Tooltips'), E.hinweiseAus ? L('aus', 'off') : L('an', 'on'), `data-a="hinweise" aria-pressed="${!E.hinweiseAus}"`)],
     ['ordnung', 'folder', WF.gelb, L('Ordnung', 'Order'), '',
-      z(I('box'), L('Kategorien', 'Categories'), String(kats().length), 'data-a="kategorien"') + z(I('image'), L('Bilder', 'Pictures'), String(bilder), 'data-go="bilder"') + z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an', 'on') : L('aus', 'off'), `data-a="alk" aria-pressed="${ohneAlk()}"`)],
+      z(I('box'), L('Kategorien', 'Categories'), String(kats().length), 'data-a="kategorien"') + z(I('folder'), ordMehr(), String(A.ordner.length), 'data-a="ordner"') + z(I('image'), L('Bilder', 'Pictures'), String(bilder), 'data-go="bilder"') + z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an', 'on') : L('aus', 'off'), `data-a="alk" aria-pressed="${ohneAlk()}"`)],
     ['sichern', 'safe', WF.gruen, L('Sichern', 'Backup'), L('Die Getränke liegen nur in diesem Gerät. Eine Sicherung als Datei schützt sie und bringt sie auf ein anderes Gerät; beim Einspielen werden Doppelte erkannt. Der Tresor hält dazu mehrere Stände im Gerät und hilft, wenn etwas falsch gelöscht wurde. KI-Schlüssel kommen nie in eine Sicherung.', 'The drinks are stored on this device only. A backup file protects them and takes them to another device; duplicates are detected when restoring. The vault additionally keeps several states on the device and helps when something was deleted by mistake. AI keys never go into a backup.'),
       z(I('download'), L('Sicherung speichern', 'Save a backup'), `${alle}`, 'data-a="sichern"') + z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), '', 'data-a="einspielen"') + z(I('safe'), L('Tresor', 'Vault'), '', 'data-a="tresor"') + z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), '', 'data-a="uebernehmen"')],
     ['ki', 'sparkle', WF.violett, L('KI-Schlüssel', 'AI keys'), L('KI läuft nur mit deinem eigenen Schlüssel und nur, wenn du es auslöst. Anthropic (Claude) arbeitet im Labor und liest Fotos und Webseiten, OpenAI malt Bilder, Mistral liest Text (EU). Ein Schlüssel bleibt in diesem Gerät und kommt in keine Sicherung; die Kosten rechnet der Anbieter direkt mit dir ab.', 'AI runs only with your own key and only when you start it. Anthropic (Claude) works in the lab and reads photos and web pages, OpenAI draws pictures, Mistral reads text (EU). A key stays on this device and is in no backup; the provider bills you directly.'),
-      `<div id="schl-liste">${Object.keys(ANBIETER).map((a) => z(I('schluessel'), ANBIETER[a].name, SK[a] ? L('gespeichert', 'saved') : L('noch keiner', 'none yet'), `data-a="schluessel" data-anbieter="${a}"`)).join('')}</div>`],
+      `<div id="schl-liste">${Object.keys(ANBIETER).map((a) => z(I('schluessel'), ANBIETER[a].name, SK[a] ? L('gespeichert', 'saved') : L('noch keiner', 'none yet'), `data-a="schluessel" data-anbieter="${a}"`)).join('')}</div>` + z(I('uebersetzen'), L('Alle übersetzen', 'Translate all'), '', 'data-a="alle-ueb"')],
     ['beispiele', 'box', WF.petrol, L('Beispiele', 'Examples'), '',
       z(I('box'), L('Beispiele laden', 'Load examples'), '', 'data-a="beispiele"') + (bsp ? z(I('trash'), L('Beispiele löschen', 'Delete examples'), String(bsp), 'data-a="beispiele-weg"') : '')],
     ['aufraeumen', 'trash', WF.koralle, L('Aufräumen', 'Clean up'), '', z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('mit Rückfrage', 'asks first'), 'data-a="leeren"')],
@@ -454,7 +485,7 @@ function frageP(titel, html, jaText) { return new Promise((fertig) => { const f 
 function frage(titel, text, jaText, ja, gefahr) { Z.fenster = { titel, html: `<p class="ftext">${text}</p><div class="reihe ende"><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf ${gefahr ? 'rot' : ''}" data-a="fenster-ja">${jaText}</button></div>`, ja }; zeichne(); }
 
 function editor(r, vorlage = false) {
-  const LEER = { name: '', cat: Z.kat !== 'all' ? Z.kat : 'mock', glass: 'highball', temp: 'kalt', servings: 1, prepTime: 5, ings: [], steps: [], notes: '', img: '' };
+  const LEER = { name: '', cat: katOffen() || 'mock', folder: ordWahl(), glass: 'highball', temp: 'kalt', servings: 1, prepTime: 5, ings: [], steps: [], notes: '', img: '' };
   const neu = !r || vorlage; r = r ? (vorlage ? { ...LEER, ...r } : r) : LEER;   // vorlage: neues Getränk, vorausgefüllt (Text-Import)
   const katListe = K.alleKategorien(A.getraenke, A.kategorien).filter((c) => c.art !== 'ohne');
   const opt = (l, wert, name) => l.map((x) => `<option value="${esc(x.id)}" ${x.id === wert ? 'selected' : ''}>${esc(name(x))}</option>`).join('');
@@ -463,6 +494,7 @@ function editor(r, vorlage = false) {
    <label>${L('Name', 'Name')}<input class="feld" name="name" required value="${esc(r.name)}"></label>
    <div class="zweier"><label>${L('Kategorie', 'Category')}<select class="feld" name="cat">${opt(katListe, r.cat, katText)}<option value="" ${!r.cat ? 'selected' : ''}>${L('ohne Kategorie', 'no category')}</option></select></label>
    <label>${L('Glas', 'Glass')}<select class="feld" name="glass">${glasBekannt ? '' : `<option value="${esc(r.glass)}" selected>${esc(r.glass)}</option>`}${opt(G.GLAESER, r.glass, (g) => g[sprache()] || g.de)}</select></label></div>
+   ${A.ordner.length ? `<label>${L('Ordner', 'Folder')}<select class="feld" name="folder"><option value="">${L('kein Ordner', 'no folder')}</option>${A.ordner.map((o) => `<option value="${esc(o.id)}" ${String(o.id) === ordnerVonRezept(r, A.ordner) ? 'selected' : ''}>${esc(ordTitel(o))}</option>`).join('')}</select></label>` : ''}
    <div class="dreier"><label>${L('Temperatur', 'Temperature')}<select class="feld" name="temp"><option value="">–</option>${opt(G.TEMPERATUREN, r.temp, (t) => t[sprache()] || t.de)}</select></label>
    <label>${L('Portionen', 'Servings')}<input class="feld" name="servings" type="number" min="1" max="99" value="${Number(r.servings) || 1}"></label>
    <label>${L('Minuten', 'Minutes')}<input class="feld" name="prepTime" type="number" min="0" max="9999" value="${r.prepTime == null ? '' : Number(r.prepTime)}"></label></div>
@@ -478,7 +510,8 @@ function editorSpeichern(form) {
   const d = new FormData(form), f = Z.fenster, name = String(d.get('name') || '').trim();
   if (!name) return;
   const zeilen = (k) => String(d.get(k) || '').split('\n').map((x) => x.trim()).filter(Boolean);
-  const felder = { name, cat: String(d.get('cat') || ''), glass: String(d.get('glass') || ''), temp: String(d.get('temp') || '') || undefined, servings: Math.max(1, Number(d.get('servings')) || 1), prepTime: d.get('prepTime') === '' ? null : Math.max(0, Number(d.get('prepTime')) || 0), alcohol: d.get('alcohol') === 'on', ings: zeilen('ings').map((t, i) => ({ id: i, ck: false, note: '', ...G.zutatAusText(t) })), steps: zeilen('steps').map((t, i) => ({ id: i, txt: t })), notes: String(d.get('notes') || '').trim(), img: f.img || '', modified: Date.now() };
+  const fo = d.has('folder') ? String(d.get('folder') || '') : null;   /* das Feld gibt es nur, wenn es Ordner gibt */
+  const felder = { name, cat: String(d.get('cat') || ''), ...(fo !== null && (fo === '' || findeOrdner(A.ordner, fo)) ? { folder: fo } : {}), glass: String(d.get('glass') || ''), temp: String(d.get('temp') || '') || undefined, servings: Math.max(1, Number(d.get('servings')) || 1), prepTime: d.get('prepTime') === '' ? null : Math.max(0, Number(d.get('prepTime')) || 0), alcohol: d.get('alcohol') === 'on', ings: zeilen('ings').map((t, i) => ({ id: i, ck: false, note: '', ...G.zutatAusText(t) })), steps: zeilen('steps').map((t, i) => ({ id: i, txt: t })), notes: String(d.get('notes') || '').trim(), img: f.img || '', modified: Date.now() };
   let r = f.uid && getr(f.uid);
   if (r) Object.assign(r, felder);
   else { r = G.getraenkNormalisieren({ ...felder, id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, created: Date.now(), uid: G.neueUid(A.knoten) }); A.getraenke.unshift(r); }
@@ -562,7 +595,7 @@ async function scanGewaehlt(dateien) {
 /* Aus dem gelesenen Rezept wird ein Getränk: Alkohol aus den Zutaten erkannt, Kategorie aus der Antwort oder nach dem Alkohol. */
 function getraenkAusRezept(r) {
   const alk = G.alkoholBefund({ ings: r.ings }).alkohol;
-  return { name: r.name, servings: r.servings || 1, prepTime: r.prepTime || null, ings: r.ings.map((z) => ({ amt: z.amt, unit: z.unit, name: z.note ? `${z.name} (${z.note})` : z.name })), steps: r.steps, alcohol: alk, cat: r.cat || (alk ? 'ckt' : (Z.kat !== 'all' ? Z.kat : 'mock')), img: r.img || '', notes: (r.flavors || []).join(', ') };
+  return { name: r.name, servings: r.servings || 1, prepTime: r.prepTime || null, ings: r.ings.map((z) => ({ amt: z.amt, unit: z.unit, name: z.note ? `${z.name} (${z.note})` : z.name })), steps: r.steps, alcohol: alk, cat: r.cat || (alk ? 'ckt' : (katOffen() || 'mock')), img: r.img || '', notes: (r.flavors || []).join(', ') };
 }
 const getraenkAusScan = (roh, bild) => getraenkAusRezept(rezeptAusScan(roh, { kategorien: scanKats(), bild, sprache: sprache() }));
 /* ── Web-Import (Kern: import/web.mjs). Direkt von der Seite, ohne Dienst dazwischen; im Browser hilft sonst Kopieren und Einfügen. ── */
@@ -650,24 +683,24 @@ async function beispieleFenster() {
   try { ps = await W.mit(L('Pakete werden gesucht …', 'Looking for packages …'), paketeLaden); } catch (e) { Z.fenster.html = `<p class="ftext">${L('Die Paketliste ließ sich nicht laden. Bist du online?', 'The package list could not be loaded. Are you online?')}</p>`; return zeichne(); }
   Z.pakete = ps;
   const zeigbar = ps.filter((p) => !(p.alkohol && ohneAlk())), versteckt = ps.length - zeigbar.length;
-  Z.fenster.html = `${zeigbar.map((p) => `<button class="slot" data-paket="${esc(p.id)}" title="${L('Wird erst beim Antippen geladen; in den Einstellungen wieder löschbar', 'Loads only when tapped; can be deleted again in the settings')}"><span class="mitte"><strong>${esc(p.titel)}</strong><small>${(p.bytes / 1048576).toFixed(1).replace('.', sprache() === 'de' ? ',' : '.')} MB${p.alkohol ? ' · ' + L('mit Alkohol', 'with alcohol') : ' · ' + L('ohne Alkohol', 'alcohol-free')}</small></span>${I('download')}</button>`).join('') || `<p class="leer">${L('Zurzeit gibt es kein Paket für diese Einstellung.', 'There is no package for this setting at the moment.')}</p>`}${versteckt ? `<p class="hinweis">${I('noalc')}${L(`„Ohne Alkohol“ ist an: ${versteckt} Paket mit Alkohol wird nicht angeboten.`, `“Alcohol-free” is on: ${versteckt} package with alcohol is not offered.`)}</p>` : ''}`;
+  Z.fenster.html = `${zeigbar.map((p) => `<button class="slot" data-paket="${esc(p.id)}" title="${L('Wird erst beim Antippen geladen; in den Einstellungen wieder löschbar', 'Loads only when tapped; can be deleted again in the settings')}"><span class="mitte"><strong>${esc(p.titel)}</strong><small>${(p.bytes / 1048576).toFixed(1).replace('.', sprache() === 'de' ? ',' : '.')} MB${p.alkohol ? ' · ' + L('mit Alkohol', 'with alcohol') : ' · ' + L('ohne Alkohol', 'alcohol-free')}</small></span>${I('download')}</button>`).join('') || `<p class="leer">${L('Zurzeit gibt es kein Paket für diese Einstellung.', 'There is no package for this setting at the moment.')}</p>`}${versteckt ? `<p class="hinweis">${I('noalc')}${fuelle(L('„Ohne Alkohol“ ist an: {0} Paket mit Alkohol wird nicht angeboten.', '“Alcohol-free” is on: {0} package with alcohol is not offered.'), versteckt)}</p>` : ''}`;
   zeichne();
 }
 async function paketEinspielen(id) {
   const p = (Z.pakete || []).find((x) => x.id === id); if (!p) return;
   Z.fenster.html = `<p class="ftext">${L('Paket wird geladen …', 'Loading package …')}</p>`; zeichne();
   try {
-    const roh = await W.mit(L(`„${p.titel}“ wird geladen …`, `Loading “${p.titel}” …`), async (w) => { const ant = await fetch('../beispiele/' + p.datei); if (!ant.ok) throw new Error(String(ant.status)); return new TextDecoder().decode(await bytesMitAnteil(ant, (a) => w.anteil(a))); });
+    const roh = await W.mit(fuelle(L('„{0}“ wird geladen …', 'Loading “{0}” …'), p.titel), async (w) => { const ant = await fetch('../beispiele/' + p.datei); if (!ant.ok) throw new Error(String(ant.status)); return new TextDecoder().decode(await bytesMitAnteil(ant, (a) => w.anteil(a))); });
     const e = G.beispielPaketEinspielen(A, roh, p.id, { knoten: A.knoten });
     A = { ...A, ...e.sammlung }; sichern(); Z.fenster = null; Z.view = 'start'; Z.kat = 'all';
-    melde(e.neu.length ? L(`+${e.neu.length} Getränke`, `+${e.neu.length} drinks`) : L('Schon in deiner Sammlung', 'Already in your collection'));
+    melde(e.neu.length ? fuelle(L('+{0} Getränke', '+{0} drinks'), e.neu.length) : L('Schon in deiner Sammlung', 'Already in your collection'));
   } catch (err) { Z.fenster.html = `<p class="ftext">${L('Das Paket ließ sich nicht laden.', 'The package could not be loaded.')}</p>`; zeichne(); }
 }
 function beispieleWeg() {
   const p = G.beispielePruefen(A);
   if (!p.unveraendert.length && !p.veraendert.length) return melde(L('Es sind keine Beispiele in deiner Sammlung.', 'There are no examples in your collection.'));
-  const text = L(`${p.unveraendert.length} Beispiele werden gelöscht.`, `${p.unveraendert.length} examples will be deleted.`) + (p.veraendert.length ? ' ' + L(`${p.veraendert.length} hast du verändert (${p.veraendert.map((r) => esc(r.name)).join(', ')}). Sie bleiben stehen und gehören jetzt dir.`, `You changed ${p.veraendert.length} (${p.veraendert.map((r) => esc(r.name)).join(', ')}). They stay and are yours now.`) : '');
-  frage(L('Alle Beispiele löschen', 'Delete all examples'), text, L('Löschen', 'Delete'), async () => { await tresorAuto(L('vor „Beispiele löschen“', 'before deleting examples')); const e = G.beispieleLoeschen(A, {}); A = { ...A, ...e.sammlung }; sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L(`−${e.entfernt.length} Beispiele`, `−${e.entfernt.length} examples`)); }, true);
+  const text = fuelle(L('{0} Beispiele werden gelöscht.', '{0} examples will be deleted.'), p.unveraendert.length) + (p.veraendert.length ? ' ' + fuelle(L('{0} hast du verändert ({1}). Sie bleiben stehen und gehören jetzt dir.', 'You changed {0} ({1}). They stay and are yours now.'), p.veraendert.length, p.veraendert.map((r) => esc(r.name)).join(', ')) : '');
+  frage(L('Alle Beispiele löschen', 'Delete all examples'), text, L('Löschen', 'Delete'), async () => { await tresorAuto(L('vor „Beispiele löschen“', 'before deleting examples')); const e = G.beispieleLoeschen(A, {}); A = { ...A, ...e.sammlung }; sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(fuelle(L('−{0} Beispiele', '−{0} examples'), e.entfernt.length)); }, true);
 }
 
 /* ── Bild-Blatt (wie im Rezeptbuch): ganzes Bild, Ausschnitt, ersetzen, KI-Bild, Gratis-Foto. Gelöscht wird ein Bild hier nicht. */
@@ -703,12 +736,12 @@ const sicherungObjekt = () => JSON.parse(sicherungText());
 async function tresorAuto(grund) { try { if (A.getraenke.some(G.istSichtbar)) await tr.ablegen(sicherungObjekt(), 'auto', grund); } catch (e) { /* der Tresor darf nie etwas aufhalten */ } }
 async function tresorFenster() {
   const l = await tr.liste(), zeit = (ts) => new Date(ts).toLocaleString(sprache() === 'de' ? 'de-DE' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-  Z.fenster = { titel: L('Tresor', 'Vault'), html: `<form id="trform" class="reihe" autocomplete="off"><input class="feld" name="name" style="flex:1;min-width:0" placeholder="${L('Name, z. B. vor dem Aufräumen', 'Name, e.g. before tidying')}"><button class="knopf" type="submit">${I('safe')}${L('Jetzt ablegen', 'Store now')}</button>${frag(L('Stände deiner Sammlung in diesem Gerät: bis zu 5 automatische (vor großen Änderungen) und 10 benannte. Gegen das Leeren des Browsers hilft nur die Sicherung als Datei.', 'States of your collection on this device: up to 5 automatic (before big changes) and 10 named. Only a backup file protects against clearing the browser.'))}</form>${l.map((x) => `<div class="slot"><span class="mitte"><strong>${esc(x.name)}</strong><small>${zeit(x.ts)} · ${x.anzahl} ${L('Getränke', 'drinks')} · ${x.art === 'auto' ? L('automatisch', 'automatic') : L('benannt', 'named')}</small></span><button class="chip" data-a="tresor-holen" data-id="${esc(x.id)}">${L('Zurückholen', 'Restore')}</button><button class="rund klein" data-a="tresor-weg" data-id="${esc(x.id)}" aria-label="${L('Löschen', 'Delete')}">${I('trash')}</button></div>`).join('') || `<p class="leer">${L('Noch nichts im Tresor.', 'Nothing in the vault yet.')}</p>`}` };
+  Z.fenster = { titel: L('Tresor', 'Vault'), html: `<form id="trform" class="reihe" autocomplete="off"><input class="feld" name="name" style="flex:1;min-width:0" placeholder="${L('Name, z. B. vor dem Aufräumen', 'Name, e.g. before tidying')}"><button class="knopf" type="submit">${I('safe')}${L('Jetzt ablegen', 'Store now')}</button>${frag(L('Stände deiner Sammlung in diesem Gerät: bis zu 5 automatische (vor großen Änderungen) und 10 benannte. Gegen das Leeren des Browsers hilft nur die Sicherung als Datei.', 'States of your collection on this device: up to 5 automatic (before big changes) and 10 named. Only a backup file protects against clearing the browser.'))}</form>${l.map((x) => `<div class="slot"><span class="mitte"><strong>${esc(x.name)}</strong><small>${zeit(x.ts)} · ${fuelle(L('{0} Getränke', '{0} drinks'), x.anzahl)} · ${x.art === 'auto' ? L('automatisch', 'automatic') : L('benannt', 'named')}</small></span><button class="chip" data-a="tresor-holen" data-id="${esc(x.id)}">${L('Zurückholen', 'Restore')}</button><button class="rund klein" data-a="tresor-weg" data-id="${esc(x.id)}" aria-label="${L('Löschen', 'Delete')}">${I('trash')}</button></div>`).join('') || `<p class="leer">${L('Noch nichts im Tresor.', 'Nothing in the vault yet.')}</p>`}` };
   zeichne();
 }
 async function tresorHolen(id) {
   const s = await tr.hol(id); if (!s) return melde(L('Dieser Stand ist nicht mehr da.', 'This state is gone.'));
-  frage(L('Stand zurückholen', 'Restore state'), L(`Deine jetzige Sammlung wird durch diesen Stand ersetzt (${(s.recipes || []).length} Getränke). Der jetzige Stand wird vorher automatisch im Tresor abgelegt.`, `Your current collection is replaced by this state (${(s.recipes || []).length} drinks). The current state is stored in the vault first.`), L('Zurückholen', 'Restore'), async () => {
+  frage(L('Stand zurückholen', 'Restore state'), fuelle(L('Deine jetzige Sammlung wird durch diesen Stand ersetzt ({0} Getränke). Der jetzige Stand wird vorher automatisch im Tresor abgelegt.', 'Your current collection is replaced by this state ({0} drinks). The current state is stored in the vault first.'), (s.recipes || []).length), L('Zurückholen', 'Restore'), async () => {
     await tresorAuto(L('vor dem Zurückholen', 'before restoring'));
     const g = G.sicherungLesen(s, { knoten: A.knoten });
     A = { ...G.leereSammlung(A), getraenke: g.getraenke, ordner: g.ordner, karten: g.karten, einkauf: Array.isArray(s.einkauf) ? s.einkauf : [], anlaesse: Array.isArray(s.anlaesse) ? s.anlaesse : [], kategorien: A.kategorien, einstellungen: A.einstellungen, knoten: A.knoten };
@@ -734,7 +767,10 @@ async function einspielenDatei(datei) {
     if (roh && roh.kategorienZustand) { const f = G.katZustandZuKern(roh.kategorienZustand), k = A.kategorien; A.kategorien = { ...k, eigene: [...k.eigene, ...f.eigene.filter((c) => !k.eigene.some((x) => x.id === c.id))], namen: { ...f.namen, ...k.namen } }; }   // die eigenen Namen gewinnen
     sichern(); Z.view = 'start'; Z.kat = 'all';
     const ohne = (e.ohneKategorie || []).length;
-    melde(L(`${e.neu.length} Getränke hinzugefügt${e.uebersprungen && e.uebersprungen.length ? `, ${e.uebersprungen.length} waren schon da` : ''}${ohne ? `, ${ohne} ohne Kategorie` : ''}.`, `${e.neu.length} drinks added${e.uebersprungen && e.uebersprungen.length ? `, ${e.uebersprungen.length} already there` : ''}.`));
+    /* Vier ganze Sätze statt eines zusammengesetzten: {0} neu, {1} schon da, {2} ohne Kategorie (das nennt der englische Satz nicht). */
+    const schon = (e.uebersprungen || []).length;
+    melde(fuelle(ohne ? (schon ? L('{0} Getränke hinzugefügt, {1} waren schon da, {2} ohne Kategorie.', '{0} drinks added, {1} already there.') : L('{0} Getränke hinzugefügt, {2} ohne Kategorie.', '{0} drinks added.'))
+      : (schon ? L('{0} Getränke hinzugefügt, {1} waren schon da.', '{0} drinks added, {1} already there.') : L('{0} Getränke hinzugefügt.', '{0} drinks added.')), e.neu.length, schon, ohne));
   } catch (err) { melde(L('Diese Datei ist keine Sicherung, die ich lesen kann.', 'This file is not a backup I can read.')); }
 }
 async function ausAlterApp(still) {
@@ -746,7 +782,7 @@ async function ausAlterApp(still) {
   if (!(A.karten || []).length) A.karten = alt.karten;
   if (still) { A.kategorien = alt.kategorien; A.einstellungen = { ...A.einstellungen, ...alt.einstellungen }; }
   sichern();
-  if (!still || e.neu.length) melde(e.neu.length ? L(`${e.neu.length} Getränke aus der bisherigen App übernommen. Dort bleibt alles, wie es ist.`, `${e.neu.length} drinks taken over from the previous app. Nothing changed there.`) : L('Alles aus der bisherigen App ist schon hier.', 'Everything from the previous app is already here.'));
+  if (!still || e.neu.length) melde(e.neu.length ? fuelle(L('{0} Getränke aus der bisherigen App übernommen. Dort bleibt alles, wie es ist.', '{0} drinks taken over from the previous app. Nothing changed there.'), e.neu.length) : L('Alles aus der bisherigen App ist schon hier.', 'Everything from the previous app is already here.'));
   return e.neu.length;
 }
 
@@ -768,13 +804,15 @@ function kachelnPacken() {
 function zeichne(frisch) {
   if (wartend && Z.fenster !== wartend.f) { const w = wartend; wartend = null; w.fertig(false); }
   inForm();
+  if (uebLauf && !(Z.fenster && Z.fenster.uebLauf === uebLauf)) { uebLauf.stopp = true; uebLauf.ab.abort(); }   /* Fenster zu = abbrechen */
+  if (ordWahl() && !ordListe().some((o) => o.id === ordWahl() && o.anzahl > 0)) Z.kat = 'all';   /* der gewählte Ordner ist leer oder weg */
   const br = breit(), v = Z.view, mix = v === 'mix';
   const basis = mix ? 'getraenk' : v;
   const h = basis === 'start' ? vStart(br) : basis === 'getraenk' ? vGetraenk(br) : basis === 'einkauf' ? vEinkauf(br) : basis === 'karte' ? vKarte(br) : basis === 'labor' ? vLabor() : basis === 'bilder' ? vBilder() : basis === 'plan' ? vPlan() : vMehr();
   const ohneKopf = !br && basis === 'getraenk', fokus = br && Z.fokus && basis === 'getraenk';
   const alt = $('.haupt'), roll = alt && zeichne.letzte === basis + '|' + Z.uid + '|' + Z.anlass ? alt.scrollTop : 0;
   const such = document.activeElement && document.activeElement.id === 'suche' ? document.activeElement.selectionStart : null;
-  $('#app').innerHTML = `<div class="mx ${br ? 'breit' : 'handy'} fl-${E.fl.seite} ${frisch ? 'frisch' : ''} ${dunkel() ? 'dunkel' : ''} ${E.navZu ? 'navzu' : ''} ${fokus ? 'fokus' : ''}">${ohneKopf ? '<div></div>' : kopf(br)}${br && !fokus ? navLinks() : ''}<main class="haupt" id="haupt">${h}</main>${br || mix ? '' : flLeiste()}${mix ? vMix(br) : ''}${menue()}${fenster()}${bildVoll()}${Z.toast ? `<div class="mxtoast" role="status">${I('check')}${esc(Z.toast)}</div>` : ''}</div>`;
+  $('#app').innerHTML = `<div class="mx ${br ? 'breit' : 'handy'} fl-${E.fl.seite} ${frisch ? 'frisch' : ''} ${dunkel() ? 'dunkel' : ''} ${E.navZu ? 'navzu' : ''} ${fokus ? 'fokus' : ''}">${ohneKopf ? '<div></div>' : kopf(br)}${br && !fokus ? navLinks() : ''}<main class="haupt" id="haupt">${h}</main>${br || mix ? '' : flLeiste()}${mix ? vMix(br) : ''}${menue()}${fenster()}${bildVoll()}${Z.toast ? (Z.toastKnopf ? `<div class="mxtoast mit" role="status">${I('check')}<span>${esc(Z.toast)}</span><button data-a="toast-tun">${esc(Z.toastKnopf)}</button></div>` : `<div class="mxtoast" role="status">${I('check')}${esc(Z.toast)}</div>`) : ''}</div>`;
   kernStil();
   zeichne.letzte = basis + '|' + Z.uid + '|' + Z.anlass;
   if (roll) $('.haupt').scrollTop = roll;
@@ -789,7 +827,7 @@ function setze(f, frisch) {
 }
 function geh(v) { history.pushState({ v }, ''); setze(() => { Z.view = v; Z.flAuf = false; Z.menue = null; if (v === 'mix') { Z.step = 0; Z.richt = 'vor'; wachAn(); } if (v !== 'karte') Z.anlass = null; }, true); }
 function zurueck() { if (Z.bildVoll) { Z.bildVoll = false; if (Z.nachBild) { Z.nachBild = false; Z.bildWerk = false; return bildBlatt(); } return zeichne(); } if (Z.fenster) return fZu(); if (Z.menue) { Z.menue = null; return zeichne(); } if (Z.view === 'mix') return mixZu(); if (Z.view === 'karte' && Z.anlass) return setze(() => { Z.anlass = null; }, true); if (Z.view !== 'start') return setze(() => { Z.view = Z.view === 'getraenk' ? 'start' : 'start'; Z.fokus = false; }, true); }
-function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; Z.bildWerk = false; }, true); }
+function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; Z.bildWerk = false; Z.original = false; }, true); }
 
 /* Bildschirm wach halten, solange die Mix-Ansicht offen ist (wo das Gerät es erlaubt). */
 let wachSperre = null;
@@ -812,17 +850,155 @@ function katFenster() {
 function katWegFenster(id) {
   const c = K.alleKategorien(A.getraenke, A.kategorien).find((x) => x.id === id), n = katZahl(A.getraenke, id);
   const ziele = K.alleKategorien(A.getraenke, A.kategorien).filter((x) => x.art !== 'ohne' && x.id !== id);
-  Z.fenster = { titel: L(`Wohin mit ${n} Getränken?`, `Where should ${n} drinks go?`), html: `<p class="ftext">${L(`„${esc(katText(c))}“ wird gelöscht. Die Getränke bleiben und bekommen die Kategorie, die du hier wählst.`, `“${esc(katText(c))}” will be deleted. The drinks stay and get the category you pick here.`)}</p><div class="eliste">${ziele.map((x) => `<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="${esc(x.id)}"><span class="kat-zeichen klein">${katSticker(x)}</span><span><b>${esc(katText(x))}</b><small></small></span></button>`).join('')}<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="">${I('frage')}<span><b>${L('ohne Kategorie', 'no category')}</b><small>${L('sie erscheinen unter „Ohne Kategorie“', 'they appear under “No category”')}</small></span></button></div><div class="reihe ende"><button class="knopf hell" data-a="kategorien">${L('Abbrechen', 'Cancel')}</button></div>` };
+  Z.fenster = { titel: fuelle(L('Wohin mit {0} Getränken?', 'Where should {0} drinks go?'), n), html: `<p class="ftext">${fuelle(L('„{0}“ wird gelöscht. Die Getränke bleiben und bekommen die Kategorie, die du hier wählst.', '“{0}” will be deleted. The drinks stay and get the category you pick here.'), esc(katText(c)))}</p><div class="eliste">${ziele.map((x) => `<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="${esc(x.id)}"><span class="kat-zeichen klein">${katSticker(x)}</span><span><b>${esc(katText(x))}</b><small></small></span></button>`).join('')}<button class="ezeile" data-a="kat-weg-ziel" data-kid="${esc(id)}" data-ziel="">${I('frage')}<span><b>${L('ohne Kategorie', 'no category')}</b><small>${L('sie erscheinen unter „Ohne Kategorie“', 'they appear under “No category”')}</small></span></button></div><div class="reihe ende"><button class="knopf hell" data-a="kategorien">${L('Abbrechen', 'Cancel')}</button></div>` };
 }
 function katLoeschenMit(id, ziel) {
   const c = K.alleKategorien(A.getraenke, A.kategorien).find((x) => x.id === id), name = c ? katText(c) : id;
   const l = K.loeschen(A.getraenke, A.kategorien, id, ziel); A.getraenke = l.rezepte; A.kategorien = l.kat; if (Z.kat === id) Z.kat = 'all'; sichern(); katFenster();
-  melde(l.verschoben ? L(`„${name}“ gelöscht, ${l.verschoben} Getränke umgehängt.`, `“${name}” deleted, ${l.verschoben} drinks moved.`) : L(`„${name}“ gelöscht.`, `“${name}” deleted.`));
+  melde(l.verschoben ? fuelle(L('„{0}“ gelöscht, {1} Getränke umgehängt.', '“{0}” deleted, {1} drinks moved.'), name, l.verschoben) : fuelle(L('„{0}“ gelöscht.', '“{0}” deleted.'), name));
+}
+
+/* ── Menü am Getränk (Vorbild: Mein Rezeptbuch): hinter dem Winkel → „Mehr“. Eine Liste, je Zeile ein Zeichen und ein Wort.
+   KI-Zeilen sagen in der Zeile selbst, was an wen hinausgeht; gesendet wird erst beim Tipp. Die Einheiten stehen schon am Getränk. ── */
+const kiWas = (art, r) => wasKurz(art, r, sprache());   /* nur das Was, aus dem Kern – stimmt in jeder Sprache */
+const kiZeile = (a, i, t, art, r) => `<button class="ezeile" data-a="${a}" title="${esc(helferHinaus(art, r, sprache()))}">${I(i)}<span><b>${t}</b><small>Anthropic · ${esc(kiWas(art, r))}</small></span><i class="ki-marke">KI</i></button>`;
+function getraenkMenue() {
+  const r = getr(Z.uid); if (!r) return; const z = (a, i, t) => `<button class="ezeile" data-a="${a}">${I(i)}<span><b>${t}</b></span>${I('right')}</button>`;
+  Z.fenster = { titel: zeig(r).name, html: `<div class="eliste menue" id="gmenue">${z('gm-drucken', 'print', L('Drucken', 'Print'))}${z('gm-qr', 'qr', L('Teilen per QR-Code', 'Share by QR code'))}${kiZeile('gm-uebersetzen', 'uebersetzen', L('Übersetzen', 'Translate'), 'uebersetzung', r)}${kiZeile('gm-recht', 'abc', L('Rechtschreibung prüfen', 'Check spelling'), 'rechtschreibung', r)}${kiZeile('gm-naehr', 'flamme', L('Nährwerte schätzen', 'Estimate nutrition'), 'naehrwerte', r)}</div>` };
+}
+const getraenkSetzen = (neu) => { A.getraenke = A.getraenke.map((x) => (x.uid === neu.uid ? { ...neu, modified: Date.now() } : x)); sichern(); };
+/* Druckblatt (Kern: ausgabe/druck.mjs). Gedruckt wird, was am Bildschirm steht: Portionen und Einheiten wie gewählt, Übersetzung oder Original.
+   Glas, Temperatur und „mit/ohne Alkohol“ stehen als Schilder in der Kopfzeile (der Kern hat dafür nur das Feld `flavors`). */
+function druckGetraenk(roh) {
+  const r = zeig(roh), schilder = [r.glass ? glasText(r.glass) : '', r.temp ? G.tempName(r.temp, sprache()) : '', G.hatAlkohol(r) ? L('mit Alkohol', 'with alcohol') : L('ohne Alkohol', 'alcohol-free')].filter(Boolean);
+  return druckRezept({ ...r, translations: undefined, servings: Z.port, ings: zutatenVon(r).map((x) => ({ ...x, amt: zahl(x.amt || '') })), flavors: schilder }, { portionen: Z.port, sprache: sprache(), kategorieName: katNameVon(roh), fuss: 'Mein Mixarium' });
+}
+/* Teilen per QR-Code (Kern: teilen/qr.mjs): der Link im Format der bisherigen App, ohne Bild. Wer ihn öffnet, bekommt das Getränk im Formular. */
+async function qrFenster() {
+  const r = getr(Z.uid); if (!r) return; const v = zeig(r);
+  let link = ''; try { link = await teilLink(v, location.origin + location.pathname); } catch (e) { link = ''; }
+  if (!link || !passtInQr(link, 'L')) return melde(L('Zu lang für einen QR-Code', 'Too long for a QR code'));
+  Z.teil = link;
+  Z.fenster = { titel: v.name, kopfHtml: `<h2 class="mit-frag">${I('qr')}<span>${esc(v.name)}</span></h2>`,
+    html: `<div class="qr-bild" id="qr-bild" title="${L('Mit der Kamera eines anderen Geräts scannen: das Getränk öffnet sich dort im Mixarium. Ohne Bild.', 'Scan with the camera of another device: the drink opens there in the Mixarium. Without picture.')}">${qrSvg(link, { stufe: 'L', groesse: 300, titel: v.name })}</div><div class="reihe" style="margin-top:12px">${navigator.share ? `<button class="knopf gross" data-a="qr-teilen">${I('share')}${L('Link teilen', 'Share link')}</button>` : ''}<button class="knopf hell gross" data-a="qr-kopieren">${I('kopieren')}${L('Link kopieren', 'Copy link')}</button></div>` };
+  zeichne();
+}
+async function geteiltOeffnen(adresse) {
+  let r = null; try { r = await ausTeilLink(adresse); } catch (e) { r = null; }
+  if (!r || !r.name) return melde(L('Der geteilte Link ließ sich nicht lesen', 'The shared link could not be read'));
+  editor({ ...getraenkAusRezept({ ...r, cat: scanKats().some((c) => c.id === r.cat) ? r.cat : '' }), hinweis: L('Geteiltes Getränk. Bitte prüfen.', 'Shared drink. Please check.') }, true);
+}
+/* Nährwerte und Rechtschreibung: je ein Aufruf an Claude (Kern: ki/helfer.mjs). Die KI schlägt vor, übernommen wird, was angehakt ist. */
+async function kiAmGetraenk(art) {
+  const r = getr(Z.uid); if (!r) return;
+  await schlLaden(); if (!SK.anthropic) return schluesselFenster('anthropic', 'gmenue');
+  Z.fenster = null; zeichne();
+  const opt = { schluessel: SK.anthropic, stufe: E.scan.stufe, sprache: sprache() };
+  try {
+    if (art === 'naehrwerte') { const w = await W.mit(L('Nährwerte werden geschätzt …', 'Estimating nutrition …'), () => naehrwerte(r, opt)); getraenkSetzen(naehrwerteAnRezept(getr(r.uid) || r, w)); return melde(L('Nährwerte geschätzt', 'Nutrition estimated')); }
+    const e = await W.mit(L('Rechtschreibung wird geprüft …', 'Checking spelling …'), () => rechtschreibung(r, opt)), n = e.aenderungen.length;
+    if (!n) return melde(L('Keine Fehler gefunden', 'No mistakes found'));
+    Z.fenster = { titel: L('Rechtschreibung', 'Spelling'), recht: e, uid: r.uid, kopfHtml: `<h2 class="mit-frag">${I('abc')}<span>${n === 1 ? L('1 Vorschlag', '1 suggestion') : fuelle(L('{0} Vorschläge', '{0} suggestions'), n)}</span></h2>`,
+      html: `<form id="rechtform"><ul class="recht-liste">${e.aenderungen.map((x, i) => `<li><label><input type="checkbox" name="n" value="${i}" checked><span><s>${esc(x.alt)}</s> <b>${esc(x.neu)}</b></span></label></li>`).join('')}</ul><div class="reihe"><button class="knopf gross" type="submit">${I('check')}${L('Übernehmen', 'Apply')}</button></div></form>` };
+    zeichne();
+  } catch (f) { melde(f.message); }
+}
+/* Übersetzen, einzeln: Ziel ist eine der acht Sprachen; das Ergebnis liegt in translations[ziel]. Die Ansicht zeigt die Fassung der Oberflächensprache. */
+function uebersetzFenster() {
+  const r = getr(Z.uid); if (!r) return; const was = helferHinaus('uebersetzung', r, sprache()), folge = [...SPRACHEN].sort((a, b) => (b[0] === sprache()) - (a[0] === sprache()));
+  Z.fenster = { titel: L('Übersetzen', 'Translate'), kopfHtml: `<h2 class="mit-frag">${I('uebersetzen')}<span>${L('Übersetzen', 'Translate')}</span><i class="ki-marke">KI</i></h2>`,
+    html: `<div class="tagwahl" id="ueb-wahl" role="group" aria-label="${L('Zielsprache', 'Target language')}">${folge.map(([k, n]) => { const da = uebersetzungPasst(r, (r.translations || {})[k]); return `<button class="chip" data-a="gm-ueb-los" data-ziel="${k}" ${da ? 'data-da' : ''} title="${esc(da ? L('Schon übersetzt; ein Tipp übersetzt neu.', 'Already translated; a tap translates again.') + ' ' + was : was)}">${esc(n)}${da ? I('check') : ''}</button>`; }).join('')}</div>` };
+}
+async function uebersetzeEins(ziel) {
+  const r = getr(Z.uid); if (!r) return;
+  await schlLaden(); if (!SK.anthropic) return schluesselFenster('anthropic', 'gmenue');
+  Z.fenster = null; zeichne();
+  try { const t = await W.mit(fuelle(L('Wird übersetzt: {0} …', 'Translating: {0} …'), sprName(ziel)), () => uebersetze(r, ziel, { schluessel: SK.anthropic, stufe: E.scan.stufe, sprache: sprache() }));
+    getraenkSetzen(uebersetzungAnRezept(getr(r.uid) || r, ziel, t, sprache())); Z.original = false; melde(fuelle(L('Übersetzt: {0}', 'Translated: {0}'), sprName(ziel))); }
+  catch (f) { melde(f.message); }
+}
+/* ── Alle übersetzen (Einstellungen → KI): EIN Fenster. Ziel wählen; es nennt, wie viele Getränke diese Übersetzung noch nicht haben, und die
+   geschätzten Kosten (Kern: kostenSchaetzung). Der Ladebalken zeigt den Stand. Schon Übersetzte werden übersprungen, ein Fehlschlag hält den
+   Rest nicht auf; „Abbrechen“ oder das Schließen des Fensters hört sofort auf (auch der laufende Aufruf). „Ohne Alkohol“ gilt auch hier. ── */
+const uebOffen = (ziel) => G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter((r) => G.istSichtbar(r) && !uebersetzungPasst(r, (r.translations || {})[ziel]));
+const UEB_KOPF = () => `<h2 class="mit-frag">${I('uebersetzen')}<span>${L('Alle übersetzen', 'Translate all')}</span><i class="ki-marke">KI</i></h2>`;
+let uebLauf = null;
+function alleUebFenster(ziel) {
+  ziel = Z.uebZiel = SPRACHEN.some((x) => x[0] === ziel) ? ziel : (Z.uebZiel || (SPRACHEN.some((x) => x[0] === sprache()) ? sprache() : 'en'));
+  const offen = uebOffen(ziel), n = offen.length, k = kostenSchaetzung(offen, [ziel], E.scan.stufe, sprache()), ort = sprache() === 'de' ? 'de-DE' : 'en-GB';
+  const preis = k.usd == null ? '' : ' · ' + (k.usd < 0.01 ? L('unter 0,01 $', 'under $0.01') : fuelle(L('rund {0} $', 'around ${0}'), k.usd.toLocaleString(ort, { minimumFractionDigits: 2, maximumFractionDigits: 2 })));
+  Z.fenster = { titel: L('Alle übersetzen', 'Translate all'), alleUeb: true, kopfHtml: UEB_KOPF(),
+    html: `<div class="tagwahl" id="alle-ziel" role="group" aria-label="${L('Zielsprache', 'Target language')}">${SPRACHEN.map(([c, name]) => `<button class="chip" data-a="alle-ueb-ziel" data-ziel="${c}" aria-pressed="${c === ziel}">${esc(name)}</button>`).join('')}</div>`
+      + (n ? `<p class="scan-was" id="alle-kosten" title="${esc(k.text)}">${fuelle(L('etwa {0} Token', 'about {0} tokens'), (Math.ceil(k.token / 100) * 100).toLocaleString(ort))}${preis}</p><div class="reihe"><button class="knopf gross" data-a="alle-ueb-los" title="${esc(helferHinaus('uebersetzung', offen[0], sprache()))}">${I('uebersetzen')}<span>${n === 1 ? L('1 Getränk übersetzen', 'Translate 1 drink') : fuelle(L('{0} Getränke übersetzen', 'Translate {0} drinks'), n)}</span><small id="alle-was">Anthropic · ${esc(kiWas('uebersetzung', offen[0]))}</small></button></div>`
+        : `<p class="scan-was" id="alle-fertig">${I('check')}${L('Schon alles übersetzt', 'Everything is translated')}</p>`) };
+}
+async function alleUebersetzen() {
+  const ziel = Z.uebZiel, offen = uebOffen(ziel), n = offen.length; if (!n || uebLauf) return;
+  await schlLaden(); if (!SK.anthropic) return schluesselFenster('anthropic', 'alle-ueb');
+  const lauf = uebLauf = { stopp: false, ab: new AbortController() }; let ok = 0, fehler = 0, grund = '';
+  /* Das Fenster bleibt offen, solange übersetzt wird; in der freien Zeile steht am Handy der Ladebalken des Kerns. */
+  Z.fenster = { titel: L('Alle übersetzen', 'Translate all'), uebLauf: lauf, kopfHtml: UEB_KOPF(), html: `<div class="ueb-lauf" id="ueb-lauf"></div><div class="reihe ende"><button class="knopf hell" data-a="alle-ueb-stopp">${I('x')}${L('Abbrechen', 'Cancel')}</button></div>` };
+  zeichne();
+  try { await W.mit(L('Getränke werden übersetzt …', 'Translating the drinks …'), async (w) => {
+    for (let i = 0; i < n && !lauf.stopp; i++) { const r = getr(offen[i].uid); if (!r) continue;
+      w.anteil(i / n); w.text(fuelle(L('{0} von {1}: {2}', '{0} of {1}: {2}'), i + 1, n, r.name));
+      try { const t = await uebersetze(r, ziel, { schluessel: SK.anthropic, stufe: E.scan.stufe, sprache: sprache(), hol: (u, o) => fetch(u, { ...o, signal: lauf.ab.signal }) }); const jetzt = getr(r.uid); if (lauf.stopp || !jetzt) break; getraenkSetzen(uebersetzungAnRezept(jetzt, ziel, t, sprache())); ok++; }
+      catch (f) { if (lauf.stopp) break; fehler++; grund = f.message; if (f.schluesselAbgelehnt || f.keinSchluessel || f.status === 402 || f.status === 429) break; }   /* ohne Schlüssel oder Guthaben scheitert auch der Rest */
+    }
+  }); } finally { uebLauf = null; }   /* was auch geschieht: der nächste Lauf darf beginnen */
+  if (Z.fenster && Z.fenster.uebLauf === lauf) Z.fenster = null;
+  melde(!ok && fehler ? grund : fuelle(L('+{0} übersetzt', '+{0} translated'), ok) + (fehler ? ' · ' + (fehler === 1 ? L('1 Fehler', '1 failed') : fuelle(L('{0} Fehler', '{0} failed'), fehler)) : '') + (lauf.stopp ? ' · ' + L('abgebrochen', 'cancelled') : ''));
+}
+
+/* ── Ordner verwalten (Vorbild: Mein Rezeptbuch). Dieselben Zeilen wie bei den Kategorien: Griff, Zeichen, Name, Zahl, Löschen.
+   Die Zahl öffnet den Ordner auf der Startseite. Gelöscht wird nur der Ordner: die Getränke bleiben mit ihrer Kategorie. ── */
+const ORD_ERKL = () => L('Ordner sind eigene Sammlungen neben den Kategorien, zum Beispiel „Sommerfest“ oder „Für Gäste“. Ein Getränk liegt in höchstens einem Ordner und behält seine Kategorie. Wird ein Ordner gelöscht, bleiben die Getränke.', 'Folders are your own collections next to the categories, e.g. “Summer party” or “For guests”. A drink is in one folder at most and keeps its category. If a folder is deleted, the drinks stay.');
+function ordnerFenster() {
+  const zeile = (o) => `<div class="kat-zeile ord-zeile" data-oid="${esc(o.id)}"><span class="griff" aria-hidden="true" title="${L('Zum Verschieben lange drücken oder ziehen', 'Long-press or drag to move')}">${I('griff')}</span><span class="kat-zeichen">${o.bild ? `<img class="sticker" src="${esc(o.bild)}" alt="" loading="lazy">` : o.ico ? `<span class="kemoji" aria-hidden="true">${esc(o.ico)}</span>` : I('folder')}</span><input class="feld ord-name" data-oid="${esc(o.id)}" value="${esc(ordnerName(o))}" placeholder="${L('Name des Ordners', 'Folder name')}" aria-label="${L('Name des Ordners', 'Folder name')}" autocomplete="off"><button class="chip ord-auf" data-kat="ordner:${esc(o.id)}" data-geh="1" ${o.anzahl ? '' : 'disabled'} aria-label="${esc(fuelle(L('{0} Getränke in „{1}“ ansehen', 'View {0} drinks in “{1}”'), o.anzahl, ordTitel(o)))}">${o.anzahl}</button><button class="rund klein" data-a="ordner-weg" data-oid="${esc(o.id)}" aria-label="${esc(fuelle(L('Ordner „{0}“ löschen', 'Delete folder “{0}”'), ordTitel(o)))}">${I('trash')}</button></div>`;
+  Z.fenster = { titel: ordMehr(), ord: true, kopfHtml: `<h2 class="mit-frag">${I('folder')}<span>${ordMehr()}</span>${frag(ORD_ERKL() + ' ' + L('Zum Ordnen eine Zeile am Griff lange drücken oder mit der Maus ziehen. Ein Getränk legst du über seine Werkzeuge (Winkel am Namen) in einen Ordner.', 'To reorder, long-press a row at the handle or drag it with the mouse. Put a drink into a folder via its tools (the chevron at the name).'))}</h2>`,
+    html: `<div class="kat-liste" id="ord-liste">${ordListe().map(zeile).join('') || `<p class="leer" id="ord-leer">${L('Noch kein Ordner.', 'No folder yet.')}</p>`}</div><div class="reihe" style="margin-top:12px"><button class="knopf" data-a="ordner-neu">${I('plus')}${L('Neuer Ordner', 'New folder')}</button></div>` };
+}
+function ordnerWahlFenster(uid) {
+  const r = getr(uid); if (!r) return; const jetzt = ordnerVonRezept(r, A.ordner);
+  const zeilen = A.ordner.map((o) => `<button class="ezeile" data-a="ordner-setzen" data-oid="${esc(o.id)}" data-uid="${esc(uid)}" aria-pressed="${String(o.id) === jetzt}">${o.ico ? `<i class="ezeichen" aria-hidden="true">${esc(o.ico)}</i>` : I('folder')}<span><b>${esc(ordTitel(o))}</b></span>${String(o.id) === jetzt ? I('check') : ''}</button>`).join('')
+    + (jetzt ? `<button class="ezeile" data-a="ordner-setzen" data-oid="" data-uid="${esc(uid)}">${I('x')}<span><b>${L('aus dem Ordner nehmen', 'take out of the folder')}</b></span></button>` : '');
+  Z.fenster = { titel: L('In einen Ordner legen', 'Put into a folder'), kopfHtml: `<h2 class="mit-frag">${I('folder')}<span>${L('In einen Ordner legen', 'Put into a folder')}</span>${frag(ORD_ERKL())}</h2>`,
+    html: `${zeilen ? `<div class="eliste" id="ord-wahl">${zeilen}</div>` : ''}<form id="ordneuform" class="webzeile" data-uid="${esc(uid)}" style="margin-top:10px">${I('plus')}<input name="n" placeholder="${L('Neuen Ordner anlegen', 'Create new folder')}" aria-label="${L('Neuer Ordner', 'New folder')}" autocomplete="off" enterkeyhint="done"><button class="feldknopf akz" aria-label="${L('Anlegen und hineinlegen', 'Create and put in')}" title="${L('Anlegen und hineinlegen', 'Create and put in')}">${I('check')}</button></form>` };
+}
+function ordnerSetzen(uid, oid) {
+  const o = findeOrdner(A.ordner, oid); A.getraenke = legeIn(A.getraenke, A.ordner, uid, oid); sichern(); Z.fenster = null;
+  melde(o ? fuelle(L('Im Ordner „{0}“', 'In the folder “{0}”'), ordTitel(o)) : L('Aus dem Ordner genommen', 'Taken out of the folder'));
 }
 
 /* ── Bedienung ── */
 const TUN = {
   kategorien() { katFenster(); },
+  ordner() { ordnerFenster(); },
+  'ordner-neu'() { const a = ordAnlegen(A.ordner, ''); A.ordner = a.ordner; sichern(); ordnerFenster(); zeichne(); const f = document.querySelector(`.ord-name[data-oid="${a.id}"]`); if (f) f.focus(); return false; },
+  /* Rückgängig stellt genau diesen Ordner und seine Zuordnungen wieder her (kein alter Stand: was inzwischen dazukam, bleibt). */
+  'ordner-weg'(b) { const id = b.dataset.oid, o = findeOrdner(A.ordner, id); if (!o) return; const stelle = A.ordner.indexOf(o), l = ordLoeschen(A.getraenke, A.ordner, id), drin = new Set(A.getraenke.filter((x, i) => x !== l.rezepte[i]).map((x) => x.uid));
+    A.getraenke = l.rezepte; A.ordner = l.ordner; sichern(); ordnerFenster();
+    melde(l.betroffen === 1 ? L('1 Getränk bleibt', '1 drink stays') : l.betroffen ? fuelle(L('{0} Getränke bleiben', '{0} drinks stay'), l.betroffen) : L('Ordner gelöscht', 'Folder deleted'), L('Rückgängig', 'Undo'), () => {
+      if (!findeOrdner(A.ordner, id)) A.ordner = [...A.ordner.slice(0, stelle), o, ...A.ordner.slice(stelle)];
+      A.getraenke = A.getraenke.map((x) => (drin.has(x.uid) && !x.folder ? { ...x, folder: String(id) } : x)); sichern(); if (Z.fenster && Z.fenster.ord) ordnerFenster(); });
+    return false; },
+  'ordner-zuordnen'() { ordnerWahlFenster(Z.uid); },
+  'ordner-setzen'(b) { ordnerSetzen(b.dataset.uid, b.dataset.oid); return false; },
+  gmenue() { getraenkMenue(); },
+  'gm-drucken'() { const r = getr(Z.uid); if (!r) return false; Z.fenster = null; zeichne(); drucke(druckGetraenk(r), { sprache: sprache() }).catch((f) => melde(f.message)); return false; },
+  'gm-qr'() { qrFenster(); return false; },
+  'qr-kopieren'() { (navigator.clipboard ? navigator.clipboard.writeText(Z.teil || '') : Promise.reject(new Error('ohne Zwischenablage'))).then(() => melde(L('Link kopiert', 'Link copied')), () => melde(L('Kopieren ging nicht', 'Copying failed'))); return false; },
+  'qr-teilen'() { const r = getr(Z.uid); if (navigator.share) navigator.share({ title: r ? zeig(r).name : '', url: Z.teil }).catch(() => {}); return false; },
+  'gm-uebersetzen'() { uebersetzFenster(); },
+  'gm-ueb-los'(b) { uebersetzeEins(b.dataset.ziel); return false; },
+  'gm-recht'() { kiAmGetraenk('rechtschreibung'); return false; },
+  'gm-naehr'() { kiAmGetraenk('naehrwerte'); return false; },
+  original() { Z.original = !Z.original; },
+  'alle-ueb'() { alleUebFenster(); },
+  'alle-ueb-ziel'(b) { alleUebFenster(b.dataset.ziel); },
+  'alle-ueb-los'() { alleUebersetzen(); return false; },
+  'alle-ueb-stopp'() { Z.fenster = null; },   /* zeichne() bemerkt das geschlossene Fenster und bricht den Lauf ab */
+  'toast-tun'() { const t = toastTun; toastTun = null; Z.toast = ''; Z.toastKnopf = ''; clearTimeout(melde.uhr); if (t) t(); },
   'einst-auf'(b) { const g = b.dataset.g; if (Z.einstAuf.has(g)) Z.einstAuf.delete(g); else Z.einstAuf.add(g); },
   hinweise() { E.hinweiseAus = !E.hinweiseAus; einstSichern(); melde(E.hinweiseAus ? L('Hinweis-Blasen aus', 'Tooltips off') : L('Hinweis-Blasen an', 'Tooltips on')); },
   'lab-kat'(b) { Z.lab.zutaten = ($('#labzutaten') && $('#labzutaten').value) || Z.lab.zutaten; Z.lab.kat = b.dataset.k; },
@@ -836,7 +1012,7 @@ const TUN = {
   'lab-annehmen'(b) { const r = getr(b.dataset.u); if (!r) return; LAB.annehmen(r); sichern(); melde(L('Im Buch', 'In the book')); },
   'lab-favorit'(b) { const r = getr(b.dataset.u); if (!r) return; const an = LAB.favorit(r); sichern(); melde(an ? L('Geschützt', 'Protected') : L('Schutz aus', 'Protection off')); },
   'lab-entfernen'(b) { const r = getr(b.dataset.u); if (!r) return; if (r.labFavorite) { melde(L('Erst den Schutz aufheben', 'Remove protection first')); return; }
-    frage(L('Aus dem Labor verwerfen', 'Discard from the lab'), L(`„${esc(r.name)}“ wird verworfen. Es bleibt unter „Entfernte Getränke“ und lässt sich wiederherstellen.`, `“${esc(r.name)}” will be discarded. It stays under “Removed drinks” and can be restored.`), L('Verwerfen', 'Discard'), () => { LAB.entfernen(r); sichern(); fZu(); }, true); return false; },
+    frage(L('Aus dem Labor verwerfen', 'Discard from the lab'), fuelle(L('„{0}“ wird verworfen. Es bleibt unter „Entfernte Getränke“ und lässt sich wiederherstellen.', '“{0}” will be discarded. It stays under “Removed drinks” and can be restored.'), esc(r.name)), L('Verwerfen', 'Discard'), () => { LAB.entfernen(r); sichern(); fZu(); }, true); return false; },
   'lab-zurueck'(b) { const r = getr(b.dataset.u); if (!r) return; LAB.wiederherstellen(r); sichern(); melde(L('Zurück im Labor', 'Back in the lab')); },
   'lab-entfernte'() { Z.lab.entfernteAuf = !Z.lab.entfernteAuf; },
   'lab-ueberarbeiten'(b) { const r = getr(b.dataset.u); if (r) labUeberarbeiten(r); return false; },
@@ -874,7 +1050,7 @@ const TUN = {
   'plan-heute'() { Z.planTag = new Date(); },
   'plan-einkauf'() { const w = woche(Z.planTag); let n = 0, da = 0;
     for (const t of w.tage) for (const uid of A.plan[tagIso(t)] || []) { const r = getr(uid); if (!r) continue; const v = sicht(r); if (A.einkauf.some((p) => !p.ok && p.fuer.includes(v.name))) { da++; continue; } einkaufDazu(v, Number(r.servings) || 1, v.name); n++; }
-    sichern(); melde(n ? L(`${n} Getränke auf die Einkaufsliste gesetzt.`, `${n} drinks added to the shopping list.`) : L('Alle Getränke der Woche stehen schon auf der Liste.', 'All drinks of the week are already on the list.')); },
+    sichern(); melde(n ? fuelle(L('{0} Getränke auf die Einkaufsliste gesetzt.', '{0} drinks added to the shopping list.'), n) : L('Alle Getränke der Woche stehen schon auf der Liste.', 'All drinks of the week are already on the list.')); },
   /* Text-Import ohne KI (Kern: import/text.mjs, kennt seit 0.15 auch oz, Barlöffel, Dash …). Das Ergebnis steht im Formular
      zum Prüfen; gespeichert wird erst dort. Nichts geht ins Netz. */
   'text-import'() { Z.flAuf = false; neuBlatt('text'); return false; },
@@ -883,14 +1059,14 @@ const TUN = {
     diktatAus();
     const ings = r.ings.map((z) => ({ amt: z.amt, unit: z.unit, name: z.note ? `${z.name} (${z.note})` : z.name }));
     const alk = G.alkoholBefund({ ings }).alkohol;
-    editor({ name: r.name || '', servings: r.servings || 1, prepTime: r.prepTime || null, ings, steps: r.steps, alcohol: alk, cat: alk ? 'ckt' : (Z.kat !== 'all' ? Z.kat : 'mock'),
+    editor({ name: r.name || '', servings: r.servings || 1, prepTime: r.prepTime || null, ings, steps: r.steps, alcohol: alk, cat: alk ? 'ckt' : (katOffen() || 'mock'),
       hinweis: r.sicher ? L('Aus dem Text übernommen. Bitte prüfen und speichern.', 'Taken from the text. Please check and save.') : L('Ohne Überschriften „Zutaten“/„Zubereitung“ geraten. Bitte genau prüfen.', 'Guessed without “Ingredients”/“Method” headings. Please check carefully.') }, true);
     return false; },
   'bilder-filter'(b) { Z.bilder.filter = b.dataset.f; }, 'bilder-gross'() { Z.bilder.gross = !Z.bilder.gross; },
   'bild-wahl'(b) { const w = Z.bilder.wahl, u = b.dataset.uid; if (w.has(u)) w.delete(u); else w.add(u); },
   'bilder-alle-wahl'() { const w = Z.bilder.wahl, alle = [...document.querySelectorAll('.bildkachel')].map((x) => x.dataset.uid); if (w.size === alle.length) w.clear(); else alle.forEach((u) => w.add(u)); },
-  'bilder-weg'() { const u = [...Z.bilder.wahl]; if (!u.length) return false; frage(L('Bilder löschen', 'Delete pictures'), L(`${u.length} Bilder werden entfernt. Die Getränke mit ihrem Text bleiben.`, `${u.length} pictures will be removed. The drinks and their text stay.`), L('Löschen', 'Delete'), () => { Z.fenster = null; bilderLoeschen(u, L('vor „Bilder löschen“', 'before deleting pictures')); }, true); return false; },
-  'bilder-alle-weg'() { const u = A.getraenke.filter((r) => r.img).map((r) => r.uid); frage(L('Alle Bilder löschen', 'Delete all pictures'), L(`${u.length} Bilder werden entfernt. Die Getränke mit ihrem Text bleiben.`, `${u.length} pictures will be removed. The drinks and their text stay.`), L('Alle Bilder löschen', 'Delete all pictures'), () => { Z.fenster = null; bilderLoeschen(u, L('vor „Alle Bilder löschen“', 'before deleting all pictures')); }, true); return false; },
+  'bilder-weg'() { const u = [...Z.bilder.wahl]; if (!u.length) return false; frage(L('Bilder löschen', 'Delete pictures'), fuelle(L('{0} Bilder werden entfernt. Die Getränke mit ihrem Text bleiben.', '{0} pictures will be removed. The drinks and their text stay.'), u.length), L('Löschen', 'Delete'), () => { Z.fenster = null; bilderLoeschen(u, L('vor „Bilder löschen“', 'before deleting pictures')); }, true); return false; },
+  'bilder-alle-weg'() { const u = A.getraenke.filter((r) => r.img).map((r) => r.uid); frage(L('Alle Bilder löschen', 'Delete all pictures'), fuelle(L('{0} Bilder werden entfernt. Die Getränke mit ihrem Text bleiben.', '{0} pictures will be removed. The drinks and their text stay.'), u.length), L('Alle Bilder löschen', 'Delete all pictures'), () => { Z.fenster = null; bilderLoeschen(u, L('vor „Alle Bilder löschen“', 'before deleting all pictures')); }, true); return false; },
   'bild-dazu'(b) { Z.uid = b.dataset.uid; Z.bildWerk = false; bildBlatt(); return false; },
   'kat-neu'() { const a = katAnlegen(A.kategorien, L('Neue Kategorie', 'New category')); A.kategorien = a.kat; sichern(); katFenster(); zeichne(); const f = document.querySelector(`.kat-name[data-kid="${a.id}"]`); if (f) { f.focus(); f.select(); } return false; },
   'kat-weg'(b) { const id = b.dataset.kid; if (katZahl(A.getraenke, id)) katWegFenster(id); else katLoeschenMit(id, null); },
@@ -903,7 +1079,7 @@ const TUN = {
     A.kategorien = { ...A.kategorien, namen, eigene: A.kategorien.eigene.map((c) => (c.id === id && !e ? (({ emoji, ...rest }) => rest)(c) : c)) }; sichern(); katFenster(); },
   'ek-laden'(b) { A.einkaufLaeden = { ...A.einkaufLaeden, laden: b.dataset.l }; sichern(); },
   'ek-laden-neu'() { Z.fenster = { titel: L('Neuer Laden', 'New shop'), html: `<form id="ladenform" class="felder" autocomplete="off"><label>${L('Name', 'Name')}<input class="feld" name="n" required placeholder="${L('z. B. Getränkemarkt', 'e.g. drinks store')}"></label><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Anlegen', 'Create')}</button></div></form>` }; },
-  alk() { A.einstellungen.ohneAlkohol = !ohneAlk(); const r = getr(Z.uid); if (ohneAlk() && r && G.hatAlkohol(r)) { Z.view = 'start'; Z.uid = null; } if (!kats().some((x) => x.c.id === Z.kat)) Z.kat = 'all'; sichern(); },
+  alk() { A.einstellungen.ohneAlkohol = !ohneAlk(); const r = getr(Z.uid); if (ohneAlk() && r && G.hatAlkohol(r)) { Z.view = 'start'; Z.uid = null; } if (!ordWahl() && !kats().some((x) => x.c.id === Z.kat)) Z.kat = 'all'; sichern(); },
   kopf() { Z.kopfAuf = !Z.kopfAuf; Z.menue = null; },
   navzu() { E.navZu = !E.navZu; einstSichern(); },
   menue(b) { Z.menue = Z.menue === b.dataset.m ? null : b.dataset.m; Z.flAuf = false; },
@@ -922,7 +1098,7 @@ const TUN = {
   'bild-datei'() { $('#bbdatei').click(); return false; },
   'ki-bild'() { bildErzeugen(false); return false; }, 'gratis-bild'() { bildErzeugen(true); return false; },
   schluessel(b) { schluesselFenster((b && b.dataset.anbieter) || 'openai'); return false; },
-  'schluessel-weg'(b) { const a = b.dataset.anbieter; S.weg(a).then(() => { SK[a] = ''; Z.fenster = null; melde(L('Schlüssel gelöscht.', 'Key deleted.')); }); return false; },
+  'schluessel-weg'(b) { const a = b.dataset.anbieter; S.weg(a).then(() => { SK[a] = ''; Z.fenster = null; melde(L('Schlüssel gelöscht', 'Key deleted')); }); return false; },
   tresor() { tresorFenster(); return false; },
   'tresor-holen'(b) { tresorHolen(b.dataset.id); return false; },
   'tresor-weg'(b) { tr.loeschen(b.dataset.id).then(tresorFenster); return false; },
@@ -937,13 +1113,13 @@ const TUN = {
   neu() { Z.flAuf = false; neuBlatt(''); return false; },
   bearbeiten() { editor(getr(Z.uid)); return false; },
   'ed-bildweg'() { Z.fenster.img = ''; $('#edbild').innerHTML = platzbild({ name: 'x' }); return false; },
-  'ed-loeschen'() { const r = getr(Z.fenster.uid); frage(L('Getränk löschen', 'Delete drink'), L(`„${esc(r.name)}“ wird aus deiner Sammlung entfernt.`, `“${esc(r.name)}” will be removed from your collection.`), L('Löschen', 'Delete'), () => { A.getraenke = A.getraenke.filter((x) => x.uid !== r.uid); (A.anlaesse || []).forEach((a) => { a.posten = a.posten.filter((p) => p.uid !== r.uid); }); sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L('Gelöscht.', 'Deleted.')); }, true); return false; },
+  'ed-loeschen'() { const r = getr(Z.fenster.uid); frage(L('Getränk löschen', 'Delete drink'), fuelle(L('„{0}“ wird aus deiner Sammlung entfernt.', '“{0}” will be removed from your collection.'), esc(r.name)), L('Löschen', 'Delete'), () => { A.getraenke = A.getraenke.filter((x) => x.uid !== r.uid); (A.anlaesse || []).forEach((a) => { a.posten = a.posten.filter((p) => p.uid !== r.uid); }); sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L('Gelöscht.', 'Deleted.')); }, true); return false; },
   'fenster-zu'() { Z.fenster = null; }, 'fenster-ja'() { const f = Z.fenster; if (f && f.ja) f.ja(); return false; },
-  'einkauf-dazu'() { const r = sicht(getr(Z.uid)); einkaufDazu(r, Z.port, r.name); sichern(); melde(L('Zutaten stehen auf der Einkaufsliste.', 'Ingredients are on the shopping list.')); return false; },
+  'einkauf-dazu'() { const r = zeig(getr(Z.uid)); einkaufDazu(r, Z.port, r.name); sichern(); melde(L('Zutaten stehen auf der Einkaufsliste.', 'Ingredients are on the shopping list.')); return false; },
   'einkauf-erledigt'() { A.einkauf = A.einkauf.filter((p) => !p.ok); sichern(); },
   'einkauf-leeren'() { frage(L('Liste leeren', 'Clear list'), L('Alle Posten werden entfernt.', 'All items will be removed.'), L('Leeren', 'Clear'), () => { A.einkauf = []; sichern(); fZu(); }, true); return false; },
   'einkauf-teilen'() { teilen(L('Einkaufsliste', 'Shopping list'), ladenFolge().map((g) => { const l = A.einkauf.filter((p) => !p.ok && gruppeVon(p.name) === g); return l.length ? gruppeName(EK.GRUPPEN.find((x) => x.id === g)) + '\n' + l.map((p) => '– ' + (p.wert !== null ? zahl(G.zahlFormatieren(p.wert)) + (p.unit ? ' ' + p.unit : '') : [p.text, p.unit].filter(Boolean).join(' ')) + ' ' + p.name).join('\n') : ''; }).filter(Boolean).join('\n\n')); return false; },
-  teilen() { const r = sicht(getr(Z.uid)); teilen(r.name, r.name + '\n\n' + zutatenVon(r).map((z) => '– ' + [mengeText(z), z.name].filter(Boolean).join(' ')).join('\n') + '\n\n' + (r.steps || []).map((s, i) => `${i + 1}. ${s.txt}`).join('\n')); return false; },
+  teilen() { const r = zeig(getr(Z.uid)); teilen(r.name, r.name + '\n\n' + zutatenVon(r).map((z) => '– ' + [mengeText(z), z.name].filter(Boolean).join(' ')).join('\n') + '\n\n' + (r.steps || []).map((s, i) => `${i + 1}. ${s.txt}`).join('\n')); return false; },
   bildvoll() { Z.fenster = null; Z.bildVoll = true; history.pushState({ v: 'bild' }, ''); },
   'bildvoll-zu'() { history.back(); return false; },
   /* Klaus 23.11.: ein Tipp aufs Bild öffnet das Vollbild, von dort ein Tipp das Bild-Blatt. Ohne Bild gleich das Bild-Blatt. */
@@ -953,11 +1129,11 @@ const TUN = {
   sichern() { sichernDatei(); return false; },
   einspielen() { $('#datei').click(); return false; },
   uebernehmen() { ausAlterApp(false).then(() => zeichne(true)); return false; },
-  leeren() { Z.fenster = { titel: L('Sammlung leeren', 'Empty the collection'), html: `<p class="ftext">${L('Das entfernt alle Getränke, Getränkekarten und die Einkaufsliste aus dieser App. Einstellungen bleiben. Speichere vorher eine Sicherung, dann kannst du alles wieder einspielen.', 'This removes all drinks, drinks lists and the shopping list from this app. Settings stay. Save a backup first, then you can restore everything.')}</p><div class="reihe ende"><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf hell" data-a="sichern">${I('download')}${L('Erst sichern', 'Back up first')}</button><button class="knopf rot" data-a="fenster-ja">${L('Jetzt leeren', 'Empty now')}</button></div>`, async ja() { await tresorAuto(L('vor „Sammlung leeren“', 'before emptying')); const e = G.sammlungLeeren(A); A = { ...e.sammlung, anlaesse: [] }; sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; Z.kat = 'all'; melde(L(`${e.entfernt.getraenke} Getränke entfernt. Die App ist leer.`, `${e.entfernt.getraenke} drinks removed. The app is empty.`)); } }; },
-  ueber() { Z.fenster = { titel: 'Mein Mixarium', html: `<p class="ftext">${L(`Fassung ${FASSUNG}. Das ist die neue Gestaltung zum Ansehen und Beurteilen. Deine Daten liegen nur auf diesem Gerät. Ohne dein Zutun geht nichts ins Netz: geladen wird nur, wenn du ein Beispielpaket antippst.`, `Version ${FASSUNG}. This is the new design to look at and judge. Your data stays on this device only. Nothing goes online without you: something loads only when you tap an example package.`)}</p>` }; },
+  leeren() { Z.fenster = { titel: L('Sammlung leeren', 'Empty the collection'), html: `<p class="ftext">${L('Das entfernt alle Getränke, Getränkekarten und die Einkaufsliste aus dieser App. Einstellungen bleiben. Speichere vorher eine Sicherung, dann kannst du alles wieder einspielen.', 'This removes all drinks, drinks lists and the shopping list from this app. Settings stay. Save a backup first, then you can restore everything.')}</p><div class="reihe ende"><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf hell" data-a="sichern">${I('download')}${L('Erst sichern', 'Back up first')}</button><button class="knopf rot" data-a="fenster-ja">${L('Jetzt leeren', 'Empty now')}</button></div>`, async ja() { await tresorAuto(L('vor „Sammlung leeren“', 'before emptying')); const e = G.sammlungLeeren(A); A = { ...e.sammlung, anlaesse: [] }; sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; Z.kat = 'all'; melde(fuelle(L('{0} Getränke entfernt. Die App ist leer.', '{0} drinks removed. The app is empty.'), e.entfernt.getraenke)); } }; },
+  ueber() { Z.fenster = { titel: 'Mein Mixarium', html: `<p class="ftext">${fuelle(L('Fassung {0}. Das ist die neue Gestaltung zum Ansehen und Beurteilen. Deine Daten liegen nur auf diesem Gerät. Ohne dein Zutun geht nichts ins Netz: geladen wird nur, wenn du ein Beispielpaket antippst.', 'Version {0}. This is the new design to look at and judge. Your data stays on this device only. Nothing goes online without you: something loads only when you tap an example package.'), FASSUNG)}</p>` }; },
   'anlass-neu'() { anlassFenster(null); return false; }, 'anlass-bearbeiten'() { anlassFenster(A.anlaesse.find((x) => x.id === Z.anlass)); return false; },
   'anlass-zu'() { Z.anlass = null; },
-  'anlass-weg'() { const an = A.anlaesse.find((x) => x.id === Z.anlass); frage(L('Getränkekarte löschen', 'Delete drinks list'), L(`„${esc(an.titel)}“ wird entfernt. Die Getränke selbst bleiben.`, `“${esc(an.titel)}” will be removed. The drinks themselves stay.`), L('Löschen', 'Delete'), () => { A.anlaesse = A.anlaesse.filter((x) => x.id !== an.id); Z.anlass = null; sichern(); fZu(); }, true); return false; },
+  'anlass-weg'() { const an = A.anlaesse.find((x) => x.id === Z.anlass); frage(L('Getränkekarte löschen', 'Delete drinks list'), fuelle(L('„{0}“ wird entfernt. Die Getränke selbst bleiben.', '“{0}” will be removed. The drinks themselves stay.'), esc(an.titel)), L('Löschen', 'Delete'), () => { A.anlaesse = A.anlaesse.filter((x) => x.id !== an.id); Z.anlass = null; sichern(); fZu(); }, true); return false; },
   'anlass-einkauf'() { const an = A.anlaesse.find((x) => x.id === Z.anlass); let n = 0; for (const p of an.posten) { const r = getr(p.uid); if (r) { einkaufDazu(r, p.anzahl, an.titel); n++; } } sichern(); melde(n ? L('Alles steht auf der Einkaufsliste.', 'Everything is on the shopping list.') : L('Auf dieser Karte ist noch kein Getränk.', 'There is no drink on this list yet.')); return false; },
   'posten-neu'() { postenFenster(); return false; },
   'posten-plus'(b) { const p = postenVon(b); p.anzahl = Math.min(999, p.anzahl + 1); sichern(); }, 'posten-minus'(b) { const p = postenVon(b); p.anzahl = Math.max(1, p.anzahl - 1); sichern(); },
@@ -984,13 +1160,13 @@ document.addEventListener('click', (ev) => {
   if (!b) return;
   const d = b.dataset;
   if (d.a === 'fenster-zu-aussen') { if (ev.target === b) fZu(); return; }
-  if (d.lang !== undefined) { E.sprache = d.lang || null; Z.menue = null; einstSichern(); return zeichne(true); }
+  if (d.lang !== undefined) { E.sprache = d.lang || null; Z.menue = null; einstSichern(); document.documentElement.lang = sprache(); tabellenLaden().then(() => zeichne(true)); return; }
   if (d.farbe) { E.farbe = d.farbe; einstSichern(); return zeichne(); }
   if (b.closest('.fl-werk')) Z.flAuf = false;   /* ein Werkzeug aus der Leiste gewählt: Leiste zu */
   if (d.ton) { E.ton = d.ton; einstSichern(); return zeichne(); }
   if (d.go) return geh(d.go);
   if (d.d) { if (Z.fenster) Z.fenster = null; return oeffne(d.d); }
-  if (d.kat) return setze(() => { Z.kat = d.kat; }, true);
+  if (d.kat) { if (d.geh) { Z.fenster = null; Z.kat = d.kat; Z.uid = null; return geh('start'); } return setze(() => { Z.kat = d.kat; }, true); }
   if (d.e) return setze(() => { Z.einheit = d.e; });
   if (d.h) { const p = A.einkauf.find((x) => String(x.id) === d.h); p.ok = !p.ok; Z.pop = p.ok ? p.id : null; sichern(); zeichne(); Z.pop = null; return; }
   if (d.paket) return paketEinspielen(d.paket);
@@ -1004,8 +1180,11 @@ document.addEventListener('submit', (ev) => {
   if (ev.target.id === 'ed') return editorSpeichern(ev.target);
   if (ev.target.id === 'webform') return webHolen();
   if (ev.target.id === 'entdform') return entdeckenHolen(false);
+  if (ev.target.id === 'rechtform') { const f = Z.fenster, r = f && getr(f.uid), wahl = new FormData(ev.target).getAll('n').map(Number); if (!r || !f.recht) return;
+    getraenkSetzen(rechtschreibungAnwenden(r, f.recht.aenderungen.filter((_, i) => wahl.includes(i)))); Z.fenster = null; return melde(wahl.length === 1 ? L('1 übernommen', '1 applied') : fuelle(L('{0} übernommen', '{0} applied'), wahl.length)); }
+  if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
-    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert.', 'Key saved.') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); }); return; }
+    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
     const f = LAB.bewerten(r, { taste: d.get('taste'), practicality: d.get('practicality'), originality: d.get('originality'), description: d.get('description') }, String(d.get('fb') || ''), { solo: labSolo() });
     Z.fenster = null; sichern();
@@ -1019,8 +1198,9 @@ document.addEventListener('input', (ev) => {
   if (ev.target.dataset && ev.target.dataset.lro) { const o = $('#lro-' + ev.target.dataset.lro); if (o) o.textContent = ev.target.value; return; }
   if (ev.target.id === 'asx' || ev.target.id === 'asy') { $('#asbild').style.objectPosition = `${$('#asx').value}% ${$('#asy').value}%`; return; }
   if (ev.target.id === 'schriftregler') { E.schrift = schriftSetzen($('.mx'), ev.target.value); $('#schriftzahl').textContent = E.schrift + ' %'; clearTimeout(einstSichern.uhr); einstSichern.uhr = setTimeout(einstSichern, 300); return; }
-  if (ev.target.id === 'suche') { Z.suche = ev.target.value; semPlanen(); const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = `${z} ${z === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}`; } } });
+  if (ev.target.id === 'suche') { Z.suche = ev.target.value; semPlanen(); const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = z === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), z); } } });
 document.addEventListener('change', async (ev) => {
+  if (ev.target.classList && ev.target.classList.contains('ord-name')) { A.ordner = ordUmbenennen(A.ordner, ev.target.dataset.oid, ev.target.value); sichern(); ordnerFenster(); return; }
   if (ev.target.classList && ev.target.classList.contains('kat-name')) { const f = ev.target, id = f.dataset.kid, eig = A.kategorien.eigene.some((c) => c.id === id);
     if (eig && f.value.trim()) A.kategorien = { ...katUmbenennen(A.kategorien, id, ''), eigene: A.kategorien.eigene.map((c) => (c.id === id ? { ...c, de: f.value.trim() } : c)) }; else if (!eig) A.kategorien = katUmbenennen(A.kategorien, id, f.value);
     sichern(); katFenster(); return; }
@@ -1050,13 +1230,14 @@ document.addEventListener('contextmenu', (ev) => { if (ev.target.closest && ev.t
 /* Kategorie oder Warengruppe verschieben: lange drücken (350 ms) oder mit der Maus ziehen. Übernommen aus Mein Rezeptbuch. */
 let gz = null;
 const gzAn = () => { if (!gz || gz.weit) return; gz.weit = true; gz.gr.classList.add('zieht'); };
-document.addEventListener('pointerdown', (ev) => { const h = ev.target.closest && ev.target.closest('.gruppe-e h3, .kat-zeile .griff'); if (!h) return; const gr = h.closest('.gruppe-e, .kat-zeile'); gz = { gr, art: gr.classList.contains('kat-zeile') ? 'kat' : 'ek', y: ev.clientY, weit: false, ziel: null, uhr: setTimeout(gzAn, 350) }; try { h.setPointerCapture(ev.pointerId); } catch (e) { /* geht auch ohne */ } });
+document.addEventListener('pointerdown', (ev) => { const h = ev.target.closest && ev.target.closest('.gruppe-e h3, .kat-zeile .griff'); if (!h) return; const gr = h.closest('.gruppe-e, .kat-zeile'); gz = { gr, art: gr.classList.contains('ord-zeile') ? 'ord' : gr.classList.contains('kat-zeile') ? 'kat' : 'ek', y: ev.clientY, weit: false, ziel: null, uhr: setTimeout(gzAn, 350) }; try { h.setPointerCapture(ev.pointerId); } catch (e) { /* geht auch ohne */ } });
 document.addEventListener('pointermove', (ev) => { if (!gz) return; if (!gz.weit && Math.abs(ev.clientY - gz.y) < 8) return; gzAn(); gz.gr.style.transform = `translateY(${ev.clientY - gz.y}px)`;
-  const andere = [...document.querySelectorAll(gz.art === 'kat' ? '.kat-zeile' : '.gruppe-e')].filter((g) => g !== gz.gr); andere.forEach((g) => g.classList.remove('ziel-vor', 'ziel-nach')); let ziel = null, vor = true;
+  const andere = [...document.querySelectorAll(gz.art === 'ek' ? '.gruppe-e' : '.kat-zeile')].filter((g) => g !== gz.gr); andere.forEach((g) => g.classList.remove('ziel-vor', 'ziel-nach')); let ziel = null, vor = true;
   for (const g of andere) { const r = g.getBoundingClientRect(); ziel = g; if (ev.clientY < r.top + r.height / 2) { vor = true; break; } vor = false; }
-  if (ziel) { ziel.classList.add(vor ? 'ziel-vor' : 'ziel-nach'); gz.ziel = { id: ziel.dataset.g || ziel.dataset.kid, vor, nach: ziel.nextElementSibling === gz.gr ? ziel.nextElementSibling && ziel.nextElementSibling.nextElementSibling : ziel.nextElementSibling }; } });
+  if (ziel) { ziel.classList.add(vor ? 'ziel-vor' : 'ziel-nach'); gz.ziel = { id: ziel.dataset.g || ziel.dataset.kid || ziel.dataset.oid, vor, nach: ziel.nextElementSibling === gz.gr ? ziel.nextElementSibling && ziel.nextElementSibling.nextElementSibling : ziel.nextElementSibling }; } });
 const gzLos = () => { if (!gz) return; const g = gz; gz = null; clearTimeout(g.uhr); if (!g.weit) return;
-  if (g.ziel) { const vorId = g.ziel.vor ? g.ziel.id : ((g.ziel.nach && (g.ziel.nach.dataset.g || g.ziel.nach.dataset.kid)) || null);
+  if (g.ziel) { const vorId = g.ziel.vor ? g.ziel.id : ((g.ziel.nach && (g.ziel.nach.dataset.g || g.ziel.nach.dataset.kid || g.ziel.nach.dataset.oid)) || null);
+    if (g.art === 'ord') { A.ordner = ordUmsortieren(A.ordner, g.gr.dataset.oid, vorId); ordnerFenster(); } else
     if (g.art === 'kat') { A.kategorien = K.umsortieren(A.getraenke, A.kategorien, g.gr.dataset.kid, vorId); katFenster(); }
     else { const lae = A.einkaufLaeden; A.einkaufLaeden = { ...lae, laeden: { ...lae.laeden, [lae.laden]: EK.gruppeVerschieben(lae.laeden[lae.laden] || [], g.gr.dataset.g, vorId) } }; }
     sichern(); }
@@ -1085,13 +1266,16 @@ async function start() {
   if (!A) A = G.leereSammlung();
   A.einkauf = A.einkauf || []; A.anlaesse = A.anlaesse || []; A.einstellungen = A.einstellungen || { ohneAlkohol: false, sprache: null };
   breitWar = breit();
+  document.documentElement.lang = sprache(); await tabellenLaden();   /* vor dem ersten Zeichnen; für Deutsch und Englisch ist das nichts */
   hinweiseEinrichten(document, { aus: () => !!E.hinweiseAus });   // Hinweis-Blasen wie in der alten App (Kern 0.16), ausschaltbar
   const geteilt = new URLSearchParams(location.search), geteilteAdresse = webAdresse(geteilt.get('url') || '') || webAdresse(geteilt.get('text') || '');   /* über „Teilen“ an die installierte App geschickt */
-  if (location.search) history.replaceState(history.state, '', location.pathname);
+  const geteiltesGetraenk = /^#share=/.test(location.hash) ? location.href : '';   /* Link aus einem QR-Code (Format der bisherigen App) */
+  if (location.search || location.hash) history.replaceState(history.state, '', location.pathname);
   zeichne(true);
   $('#start').remove();
   if (geteilteAdresse) { Z.web = { adresse: geteilteAdresse, text: '', stand: '', seitentext: '' }; neuBlatt('web'); }
   if (erster) { try { await ausAlterApp(true); } catch (e) { /* nichts Altes da */ } if (!A.getraenke.some(G.istSichtbar) && !geteilt.has('leer')) await startGetraenke(); sichern(); zeichne(true); lager.dauerhaft(); }
+  if (geteiltesGetraenk) await geteiltOeffnen(geteiltesGetraenk);
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 start();
