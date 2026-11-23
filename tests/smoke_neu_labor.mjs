@@ -51,6 +51,7 @@ pruefe('das Labor zeigt das Formular: Kategorien, sechs Geschmäcker, Zutatenfel
 await p.click('[data-a=lab-kat][data-k=mock]'); await p.click('[data-a=lab-geschmack][data-g=frisch]'); await p.click('[data-a=lab-geschmack][data-g=herb]'); await p.fill('#labzutaten', 'Gurke');
 await p.click('[data-a=lab-erfinden]'); await ruhe(p);
 pruefe('ohne Schlüssel fragt das Labor nach dem Anthropic-Schlüssel und schickt nichts', await p.locator('#akform').count() === 1 && anfragen.length === 0);
+pruefe('Schlüssel-Fenster (Klaus 23.11.): die Erklärung steht hinter einem „?“, kein Absatz darüber', await p.locator('#akform .frag').count() === 1 && !(await p.locator('.fenster, [role=dialog]').first().innerText().catch(() => '')).includes('Er bleibt nur auf diesem Gerät'));
 antworten.push({ stop_reason: 'end_turn', text: 'Gern! ' + rezept('Gurken-Smash') + ' Prost.' });
 await p.fill('#akform [name=k]', 'sk-ant-probe-123'); await p.click('#akform [type=submit]'); await p.waitForSelector('.laborform.entwurf', { timeout: 8000 }).catch(() => {});
 pruefe('nach dem Speichern des Schlüssels erfindet das Labor sofort: die Vorschau steht da', (await p.locator('.laborform.entwurf h3').innerText().catch(() => '')).includes('Gurken-Smash'));
@@ -126,6 +127,11 @@ await p.context().close();
 console.log('Monitor 1280 px');
 p = await seite(1280, 860); await p.route(/^https?:\/\/(?!localhost)/, (r) => { fehler.push('Netz nach draußen: ' + r.request().url()); r.abort(); });
 await p.goto(U + 'neu/'); await p.waitForSelector('.mx'); await ruhe(p); await p.click('.nav [data-go=labor]'); await ruhe(p);
+{ const w = p.locator('.nav [data-a=navzu]'); const lbl = await w.getAttribute('aria-label'); await w.hover(); await p.waitForTimeout(650);
+  pruefe('Hinweis-Blase (Kern 0.16, wie in der alten App): ein Symbol-Knopf zeigt seine Beschriftung', await p.evaluate(() => { const b = document.getElementById('hinweis-blase'); return b && b.style.opacity === '1' ? b.textContent : ''; }) === lbl, lbl);
+  await p.mouse.move(640, 840); await p.click('.nav [data-go=mehr]'); await ruhe(p); await p.click('[data-a=hinweise]'); await ruhe(p); await p.click('.nav [data-go=labor]'); await ruhe(p);
+  await p.locator('.nav [data-a=navzu]').hover(); await p.waitForTimeout(650);
+  pruefe('Hinweis-Blasen ausgeschaltet: keine Blase', await p.evaluate(() => { const b = document.getElementById('hinweis-blase'); return !b || b.style.display === 'none' || b.style.opacity !== '1'; }) && await p.evaluate(() => __mixarium.einstellungen.hinweiseAus === true)); await p.mouse.move(640, 840); }
 pruefe('am Monitor: Formular links, Pool rechts', await Zs(p, () => { const f = document.querySelector('.labor-breit > div:first-child').getBoundingClientRect(), q = document.querySelector('.labor-breit > div:last-child').getBoundingClientRect(); return q.left > f.right - 1 && Math.abs(q.top - f.top) < 4; }));
 await p.context().close();
 
