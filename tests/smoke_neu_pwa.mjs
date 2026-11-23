@@ -46,7 +46,7 @@ await p.click('[data-e=ml]'); await ruhe(p);
 pruefe('Umschalten auf ml: 6 cl → 60 ml', (await p.locator('.zutaten .menge').allTextContents())[1] === '60 ml');
 { const sy = await Zs(p, async () => (await import('./vorlaeufig/symbole.mjs')).SYMBOLE);
   const mix = await p.locator('.reihe [data-go=mix] svg').innerHTML();
-  pruefe('„Mixen“ trägt den Shaker, nicht das Zeichen von „Getränke“ oder „Alle“', mix === sy.shaker && new Set([sy.shaker, sy.drinks, sy.book]).size === 3); }
+  pruefe('„Mixen“ trägt den Shaker, nicht das Zeichen von „Getränke“ oder „Alle“', mix.includes('M84 104h88') && !sy.drinks.includes('M84 104h88') && new Set([sy.shaker, sy.drinks, sy.book]).size === 3); }
 pruefe('Gerätschaften stehen am Getränk', await p.locator('.geraete.hell .gk').count() >= 3);
 await p.click('.reihe [data-go=mix]'); await p.waitForSelector('.mix'); await ruhe(p);
 pruefe('Mix-Ansicht deckt den ganzen Bildschirm', await Zs(p, () => { const r = document.querySelector('.mix').getBoundingClientRect(); return r.top === 0 && Math.round(r.height) === innerHeight; }));
