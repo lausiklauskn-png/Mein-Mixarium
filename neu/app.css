@@ -679,3 +679,36 @@ h1,h2,h3,p{margin:0}
 .mx .bildkachel[aria-pressed="true"]{outline:3px solid var(--akz);outline-offset:-3px}
 .mx .bildkachel[aria-pressed="true"] .hk{background:var(--akz)}
 .mx .bildkachel .bn{position:absolute;inset:auto 0 0 0;padding:14px 6px 4px;font-size:10.5px;line-height:1.2;color:#fff;background:linear-gradient(to top,rgba(0,0,0,.75),transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+
+/* Wochenplan (Vorbild Mein Rezeptbuch) */
+.mx .w-kopf{display:flex;align-items:center;gap:8px;margin:6px 0 12px;max-width:720px}
+.mx .w-kopf strong{flex:1;text-align:center;font-size:15px}
+.mx .w-kopf strong small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.mx .w-tage{max-width:720px}
+.mx .w-tag{display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:start;padding:6px 0;border-bottom:1px solid var(--linie)}
+.mx .w-tag .d{text-align:center;line-height:1.1;padding-top:6px}
+.mx .w-tag .d small{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.mx .w-tag .d b{font-size:19px;font-variant-numeric:tabular-nums}
+.mx .w-tag.heute .d b{color:var(--akz)}
+.mx .w-slots{display:grid;gap:6px;min-width:0}
+.mx .w-slot{display:flex;align-items:center;background:var(--fl);border:1px solid var(--linie);border-radius:14px;min-width:0;overflow:hidden}
+.mx .w-auf{display:flex;align-items:center;gap:10px;flex:1;min-width:0;padding:5px;text-align:left}
+.mx .w-bild{width:40px;height:40px;border-radius:10px;overflow:hidden;flex:none;display:block}
+.mx .w-bild .foto,.mx .w-bild svg{width:100%;height:100%;object-fit:cover;display:block}
+.mx .w-auf>span:last-child{min-width:0;font-size:14px;font-weight:600;line-height:1.25}
+.mx .w-auf small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.mx .w-weg{width:36px;height:36px;display:grid;place-items:center;color:var(--muted);flex:none}
+.mx .w-weg .ico{width:15px;height:15px}
+.mx .w-leer{display:flex;align-items:center;gap:8px;border:1.5px dashed var(--linie);border-radius:12px;padding:6px 10px;color:var(--muted);font-size:13px;min-height:38px;width:100%}
+.mx .w-leer .ico{width:17px;height:17px}
+.mx .w-leer.mehr{border:0;min-height:26px;padding:0 6px;font-size:12px;width:auto;justify-self:start}
+.mx .tagwahl{display:flex;flex-wrap:wrap;gap:6px}
+.mx.breit .w-kopf,.mx.breit .w-tage{max-width:none}
+.mx.breit .w-tage{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+.mx.breit .w-tag{display:flex;flex-direction:column;border:0;padding:0;gap:8px}
+.mx.breit .w-tag .d{text-align:left;padding:0}
+.mx.breit .w-slot{flex-direction:column;align-items:stretch;position:relative}
+.mx.breit .w-auf{flex-direction:column;align-items:stretch;padding:0;gap:0}
+.mx.breit .w-bild{width:100%;height:110px;border-radius:0}
+.mx.breit .w-auf>span:last-child{padding:6px 8px 8px;font-size:13px}
+.mx.breit .w-weg{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9);color:#14273a}
