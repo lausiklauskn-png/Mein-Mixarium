@@ -1,0 +1,18 @@
+{
+ "version": 1,
+ "pakete": [
+  {
+   "id": "getraenke-mit-alkohol-fuer-mixarium",
+   "titel": "Getränke mit Alkohol: 8 Rezepte",
+   "datei": "getraenke-mit-alkohol-fuer-mixarium.json",
+   "art": "rezepte",
+   "alkohol": true,
+   "anzahl": 8,
+   "bytes": 1564537,
+   "sha256": "a8ce482836e110bd19b83e778696acb2aef58bcb264b60d451639b0c5e97124c",
+   "fuer": [
+    "mixarium-voll"
+   ]
+  }
+ ]
+}
