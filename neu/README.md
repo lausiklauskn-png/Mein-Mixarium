@@ -27,13 +27,14 @@ abhaken, teilen); Getränkekarten für einen Anlass; Tresor; Bild-Blatt mit Auss
 mit einem Tipp löschen; Sicherung speichern und einspielen (Format der alten App, `version: 10`); Sammlung leeren;
 Übernahme aus der bisherigen App beim ersten Start (nur lesen); offline nach dem ersten Laden; fliegende Leiste am Handy,
 Leiste links am Monitor, „Nur dieses Getränk“.
+Ordner (eigene Sammlungen neben den Kategorien; Kern `modell/ordner.mjs`): anlegen, umbenennen, ordnen, löschen (die Getränke
+bleiben), ein Getränk über seine Werkzeuge hineinlegen oder herausnehmen; ein Ordner frisst die Kategorie nicht.
 
 ## Was noch fehlt (benannte Grenzen)
 
 - Stand der Nacht 23./24.11.: `../docs/UEBERGABE_GEMEINSAME_SITZUNG.md`, Abschnitt „Nacht“ (Labor, KI-Bild, Foto-Scan und die
   Schlüssel sind eingebaut).
-- **Ordner, Kategorien umbenennen/anlegen/sortieren, Bewertung, Bildausschnitt wählen, Bücher/PDF, QR-Teilen, Tresor mit
-  mehreren Sicherungen, Wochenplan** – Daten werden übernommen und bleiben erhalten, die Oberfläche dafür fehlt noch.
+- **Bücher/PDF** – Daten werden übernommen und bleiben erhalten, die Oberfläche dafür fehlt noch.
 - **Oberfläche nur Deutsch und Englisch.** Kategorien und Gläser sind in 8 Sprachen übersetzt.
 - **SBKIM/Mycel** ist hier nicht eingebunden (nicht sichtbar, kein Netz). Das Einhängen als unsichtbares, freischaltbares
   Modul kommt mit dem Kern.
@@ -45,6 +46,7 @@ Leiste links am Monitor, „Nur dieses Getränk“.
 
 ```bash
 node tests/smoke_neu_pwa.mjs              # echter Browser, Handy und Monitor
+node tests/smoke_neu_ordner.mjs           # Ordner; Gegenprobe: python3 -u tests/gegenprobe_neu_ordner.py
 npm test                                  # Getränke-Schicht
 node tools/kern-nachziehen.mjs --pruefen  # Kern stimmt mit dem Pin überein
 ```

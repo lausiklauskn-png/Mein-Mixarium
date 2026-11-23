@@ -15,7 +15,8 @@ import { kiBild, gratisBild, KOSTEN } from '../kern/ki/bild.mjs';
 import { sicht as kernSicht } from '../kern/modell/rezept.mjs';
 import { diktat, diktatAus, diktatMoeglich } from '../kern/oberflaeche/diktat.mjs';
 import { kategorienMit, beschriftung as katBeschr, anzahl as katZahl, anlegen as katAnlegen, umbenennen as katUmbenennen, KATEGORIEN_FEST, katBild, bildWaehlen } from '../kern/modell/kategorien.mjs';
-import { katVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
+import { katVonRezept, ordnerVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
+import { anlegen as ordAnlegen, umbenennen as ordUmbenennen, loeschen as ordLoeschen, legeIn, umsortieren as ordUmsortieren, uebersicht as ordUebersicht, findeOrdner, ordnerName } from '../kern/modell/ordner.mjs';
 import { einkaufMit } from '../kern/modell/einkauf.mjs';
 import { rezeptAusText } from '../kern/import/text.mjs';
 import { woche, tagIso, planen, entplanen, ausAltemMenu } from '../kern/modell/plan.mjs';
@@ -78,13 +79,23 @@ const zahl = (t) => (sprache() === 'de' ? String(t).replace('.', ',') : String(t
 let speicherUhr = 0;
 function sichern() { clearTimeout(speicherUhr); speicherUhr = setTimeout(() => { lager.schreibe(A).catch(() => melde(L('Speichern ist fehlgeschlagen. Bitte eine Sicherung anlegen.', 'Saving failed. Please make a backup.'))); }, 150); }
 function einstSichern() { lager.setz('einst', E).catch(() => {}); }
-function melde(t) { Z.toast = t; zeichne(); clearTimeout(melde.uhr); melde.uhr = setTimeout(() => { Z.toast = ''; const o = $('.mxtoast'); if (o) o.remove(); }, 2600); }
+/* Meldung, eine Zeile. Mit `knopf` trägt sie einen Knopf (z. B. „Rückgängig“) und bleibt länger stehen. */
+let toastTun = null;
+function melde(t, knopf = '', tun = null) { Z.toast = t; Z.toastKnopf = knopf; toastTun = knopf ? tun : null; zeichne(); clearTimeout(melde.uhr); melde.uhr = setTimeout(() => { Z.toast = ''; Z.toastKnopf = ''; toastTun = null; const o = $('.mxtoast'); if (o) o.remove(); }, knopf ? 7000 : 2600); }
 
 /* ── Auswahl ── */
+/* Ordner (Kern: modell/ordner.mjs; Vorbild Mein Rezeptbuch): eigene Sammlungen neben den Kategorien. Ist in der Leiste ein Ordner
+   gewählt, steht Z.kat auf 'ordner:<Kennung>'. Ein Ordner frisst die Kategorie nicht; ein Ordner, den es nicht gibt, ist keiner.
+   Gezählt wird, was zu sehen ist: „Ohne Alkohol“ gilt auch im Ordner. */
+const ordWahl = () => (Z.kat.startsWith('ordner:') ? Z.kat.slice(7) : '');
+const ordListe = () => ordUebersicht(G.filterOhneAlkohol(A.getraenke, ohneAlk()), A.ordner);
+const ordTitel = (o) => ordnerName(o) || L('Ordner', 'Folder');
+const inWahl = (r) => Z.kat === 'all' || (ordWahl() ? ordnerVonRezept(r, A.ordner) === ordWahl() : katVonRezept(r) === Z.kat);
+const katOffen = () => (Z.kat !== 'all' && !ordWahl() ? Z.kat : '');   /* die gewählte Kategorie; ein Ordner ist keine */
 function sichtbar() {
   const q = Z.suche.trim().toLowerCase();
   return G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter((r) => G.istSichtbar(r)
-    && (Z.kat === 'all' || katVonRezept(r) === Z.kat)
+    && inWahl(r)
     && (!q || String(r.name).toLowerCase().includes(q) || (r.ings || []).some((z) => String(z.name).toLowerCase().includes(q)) || (r.tags || []).some((t) => String(t).toLowerCase().includes(q))));
 }
 function kats() { const gl = G.filterOhneAlkohol(A.getraenke, ohneAlk()); return K.alleKategorien(gl, A.kategorien).map((c) => ({ c, n: katZahl(gl, c.id) })).filter((x) => x.n > 0); }
@@ -153,9 +164,9 @@ function menue() {
 }
 function leiste() {
   const l = lage(), alle = l.getraenke.filter(G.istSichtbar).length;
-  const gl = l.getraenke, alleBild = katBild(gl, A.kategorien, 'alle');
+  const gl = l.getraenke, alleBild = katBild(gl, A.kategorien, 'alle'), ordner = ordListe().filter((o) => o.anzahl > 0);   /* ein leerer Ordner steht nicht in der Leiste */
   const stk = (id, bildHtml, name, n) => `<button class="chip stk" data-kat="${esc(id)}" aria-pressed="${Z.kat === id}"><span class="stk-bild">${bildHtml}</span><span class="stk-name">${esc(name)} <span class="zahl">${n}</span></span></button>`;
-  return `<div class="leiste stickers" role="group" aria-label="${L('Kategorien', 'Categories')}">${stk('all', alleBild ? `<img class="sticker" src="${esc(alleBild.img)}" alt="" loading="lazy">` : I('book'), L('Alle', 'All'), alle)}${kats().map(({ c, n }) => stk(c.id, katSticker(c, gl), katText(c), n)).join('')}</div>`;
+  return `<div class="leiste stickers" role="group" aria-label="${L('Kategorien', 'Categories')}">${stk('all', alleBild ? `<img class="sticker" src="${esc(alleBild.img)}" alt="" loading="lazy">` : I('book'), L('Alle', 'All'), alle)}${kats().map(({ c, n }) => stk(c.id, katSticker(c, gl), katText(c), n)).join('')}${ordner.map((o) => `<button class="chip stk ord" data-kat="ordner:${esc(o.id)}" aria-pressed="${Z.kat === 'ordner:' + o.id}" title="${L('Ordner', 'Folder')}"><span class="stk-bild">${o.bild ? `<img class="sticker" src="${esc(o.bild)}" alt="" loading="lazy">` : ''}<i class="ord-marke">${o.ico ? esc(o.ico) : I('folder')}</i></span><span class="stk-name">${esc(ordTitel(o))} <span class="zahl">${o.anzahl}</span></span></button>`).join('')}</div>`;
 }
 function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.labGen && r.labStatus && r.labStatus !== 'accepted' ? `<span class="marke rechts">${I('lab')}${L('Labor', 'Lab')}${r.labScore ? ' · ' + zahl(r.labScore.toFixed(1)) : ''}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
 function kartenHtml() {
@@ -173,7 +184,7 @@ const semStatus = (t) => { sem.status = t; const el = $('#sinn-status'); if (el)
 function semTreffer() {
   const q = Z.suche.trim().toLowerCase(); if (!E.sinn || !q || sem.fuer !== q) return [];
   const da = new Set(sichtbar().map((r) => r.uid)), erlaubt = new Set(G.filterOhneAlkohol(A.getraenke, ohneAlk()).map((r) => r.uid));
-  return sem.ids.map(getr).filter((r) => r && G.istSichtbar(r) && !da.has(r.uid) && erlaubt.has(r.uid) && (Z.kat === 'all' || katVonRezept(r) === Z.kat));
+  return sem.ids.map(getr).filter((r) => r && G.istSichtbar(r) && !da.has(r.uid) && erlaubt.has(r.uid) && inWahl(r));
 }
 /* Ladebalken (Klaus 23.11., Kern 0.17): jede Wartezeit zeigt Balken und Zeile, damit die App nie abgestürzt wirkt. */
 const W = wartenEinrichten(document);
@@ -238,11 +249,12 @@ function vGetraenk(br) {
   const wk = (akt, i, t, kl = '') => `<button class="chip ${kl}" data-a="${akt}" aria-label="${esc(t)}" title="${esc(t)}">${I(i)}<span class="wk-t">${t}</span></button>`;   /* am Handy nur das Symbol (Klaus 23.11.: „kein Button-Kino“), am Monitor mit Wort */
   /* Kein Knopf auf dem Foto (Klaus 23.11., wie im Rezeptbuch): rechts in der Namenszeile ein weißer Winkel, der die Werkzeuge
      über dem Bild aufklappt, ohne neue Zeile und ohne etwas zu verschieben; „Zurück“ als Winkel links vom Namen. */
-  const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
-  if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div>`;
+  const imOrd = findeOrdner(A.ordner, ordnerVonRezept(r, A.ordner)), ordHtml = imOrd ? ` <span class="im-ordner">${I('folder')}${esc(ordTitel(imOrd))}</span>` : '';
+  const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('ordner-zuordnen', 'folder', L('Ordner', 'Folder'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
+  if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}${ordHtml}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div>`;
   const fk = Z.fokus;
   const liste = fk ? '' : `<div class="liste">${leiste()}${sichtbar().map((x) => `<button class="zeile" data-d="${esc(x.uid)}" ${x.uid === r.uid ? 'aria-current="true"' : ''}><span class="mini">${bild(x)}</span><span><strong>${esc(x.name)}</strong><small>${esc(katNameVon(x))}${x.prepTime ? ` · ${Number(x.prepTime)} min` : ''}</small></span></button>`).join('')}</div>`;
-  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div></div></div></div>`;
+  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}${ordHtml}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('ordner-zuordnen', 'folder', L('Ordner', 'Folder'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div></div></div></div>`;
 }
 
 /* ── Mix-Ansicht ── Welche Zutaten nennt der Schritt? Über den Namen (Wortanfang, mindestens 4 Buchstaben). */
@@ -424,7 +436,7 @@ function vMehr() {
     ['aussehen', 'auge', WF.blau, L('Darstellung', 'Appearance'), '',
       z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"') + z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch', 'automatic'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"') + z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' %', 'data-a="menue" data-m="schrift"') + z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"') + z(I('info'), L('Hinweis-Blasen', 'Tooltips'), E.hinweiseAus ? L('aus', 'off') : L('an', 'on'), `data-a="hinweise" aria-pressed="${!E.hinweiseAus}"`)],
     ['ordnung', 'folder', WF.gelb, L('Ordnung', 'Order'), '',
-      z(I('box'), L('Kategorien', 'Categories'), String(kats().length), 'data-a="kategorien"') + z(I('image'), L('Bilder', 'Pictures'), String(bilder), 'data-go="bilder"') + z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an', 'on') : L('aus', 'off'), `data-a="alk" aria-pressed="${ohneAlk()}"`)],
+      z(I('box'), L('Kategorien', 'Categories'), String(kats().length), 'data-a="kategorien"') + z(I('folder'), L('Ordner', 'Folders'), String(A.ordner.length), 'data-a="ordner"') + z(I('image'), L('Bilder', 'Pictures'), String(bilder), 'data-go="bilder"') + z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an', 'on') : L('aus', 'off'), `data-a="alk" aria-pressed="${ohneAlk()}"`)],
     ['sichern', 'safe', WF.gruen, L('Sichern', 'Backup'), L('Die Getränke liegen nur in diesem Gerät. Eine Sicherung als Datei schützt sie und bringt sie auf ein anderes Gerät; beim Einspielen werden Doppelte erkannt. Der Tresor hält dazu mehrere Stände im Gerät und hilft, wenn etwas falsch gelöscht wurde. KI-Schlüssel kommen nie in eine Sicherung.', 'The drinks are stored on this device only. A backup file protects them and takes them to another device; duplicates are detected when restoring. The vault additionally keeps several states on the device and helps when something was deleted by mistake. AI keys never go into a backup.'),
       z(I('download'), L('Sicherung speichern', 'Save a backup'), `${alle}`, 'data-a="sichern"') + z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), '', 'data-a="einspielen"') + z(I('safe'), L('Tresor', 'Vault'), '', 'data-a="tresor"') + z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), '', 'data-a="uebernehmen"')],
     ['ki', 'sparkle', WF.violett, L('KI-Schlüssel', 'AI keys'), L('KI läuft nur mit deinem eigenen Schlüssel und nur, wenn du es auslöst. Anthropic (Claude) arbeitet im Labor und liest Fotos und Webseiten, OpenAI malt Bilder, Mistral liest Text (EU). Ein Schlüssel bleibt in diesem Gerät und kommt in keine Sicherung; die Kosten rechnet der Anbieter direkt mit dir ab.', 'AI runs only with your own key and only when you start it. Anthropic (Claude) works in the lab and reads photos and web pages, OpenAI draws pictures, Mistral reads text (EU). A key stays on this device and is in no backup; the provider bills you directly.'),
@@ -454,7 +466,7 @@ function frageP(titel, html, jaText) { return new Promise((fertig) => { const f 
 function frage(titel, text, jaText, ja, gefahr) { Z.fenster = { titel, html: `<p class="ftext">${text}</p><div class="reihe ende"><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf ${gefahr ? 'rot' : ''}" data-a="fenster-ja">${jaText}</button></div>`, ja }; zeichne(); }
 
 function editor(r, vorlage = false) {
-  const LEER = { name: '', cat: Z.kat !== 'all' ? Z.kat : 'mock', glass: 'highball', temp: 'kalt', servings: 1, prepTime: 5, ings: [], steps: [], notes: '', img: '' };
+  const LEER = { name: '', cat: katOffen() || 'mock', folder: ordWahl(), glass: 'highball', temp: 'kalt', servings: 1, prepTime: 5, ings: [], steps: [], notes: '', img: '' };
   const neu = !r || vorlage; r = r ? (vorlage ? { ...LEER, ...r } : r) : LEER;   // vorlage: neues Getränk, vorausgefüllt (Text-Import)
   const katListe = K.alleKategorien(A.getraenke, A.kategorien).filter((c) => c.art !== 'ohne');
   const opt = (l, wert, name) => l.map((x) => `<option value="${esc(x.id)}" ${x.id === wert ? 'selected' : ''}>${esc(name(x))}</option>`).join('');
@@ -463,6 +475,7 @@ function editor(r, vorlage = false) {
    <label>${L('Name', 'Name')}<input class="feld" name="name" required value="${esc(r.name)}"></label>
    <div class="zweier"><label>${L('Kategorie', 'Category')}<select class="feld" name="cat">${opt(katListe, r.cat, katText)}<option value="" ${!r.cat ? 'selected' : ''}>${L('ohne Kategorie', 'no category')}</option></select></label>
    <label>${L('Glas', 'Glass')}<select class="feld" name="glass">${glasBekannt ? '' : `<option value="${esc(r.glass)}" selected>${esc(r.glass)}</option>`}${opt(G.GLAESER, r.glass, (g) => g[sprache()] || g.de)}</select></label></div>
+   ${A.ordner.length ? `<label>${L('Ordner', 'Folder')}<select class="feld" name="folder"><option value="">${L('kein Ordner', 'no folder')}</option>${A.ordner.map((o) => `<option value="${esc(o.id)}" ${String(o.id) === ordnerVonRezept(r, A.ordner) ? 'selected' : ''}>${esc(ordTitel(o))}</option>`).join('')}</select></label>` : ''}
    <div class="dreier"><label>${L('Temperatur', 'Temperature')}<select class="feld" name="temp"><option value="">–</option>${opt(G.TEMPERATUREN, r.temp, (t) => t[sprache()] || t.de)}</select></label>
    <label>${L('Portionen', 'Servings')}<input class="feld" name="servings" type="number" min="1" max="99" value="${Number(r.servings) || 1}"></label>
    <label>${L('Minuten', 'Minutes')}<input class="feld" name="prepTime" type="number" min="0" max="9999" value="${r.prepTime == null ? '' : Number(r.prepTime)}"></label></div>
@@ -478,7 +491,8 @@ function editorSpeichern(form) {
   const d = new FormData(form), f = Z.fenster, name = String(d.get('name') || '').trim();
   if (!name) return;
   const zeilen = (k) => String(d.get(k) || '').split('\n').map((x) => x.trim()).filter(Boolean);
-  const felder = { name, cat: String(d.get('cat') || ''), glass: String(d.get('glass') || ''), temp: String(d.get('temp') || '') || undefined, servings: Math.max(1, Number(d.get('servings')) || 1), prepTime: d.get('prepTime') === '' ? null : Math.max(0, Number(d.get('prepTime')) || 0), alcohol: d.get('alcohol') === 'on', ings: zeilen('ings').map((t, i) => ({ id: i, ck: false, note: '', ...G.zutatAusText(t) })), steps: zeilen('steps').map((t, i) => ({ id: i, txt: t })), notes: String(d.get('notes') || '').trim(), img: f.img || '', modified: Date.now() };
+  const fo = d.has('folder') ? String(d.get('folder') || '') : null;   /* das Feld gibt es nur, wenn es Ordner gibt */
+  const felder = { name, cat: String(d.get('cat') || ''), ...(fo !== null && (fo === '' || findeOrdner(A.ordner, fo)) ? { folder: fo } : {}), glass: String(d.get('glass') || ''), temp: String(d.get('temp') || '') || undefined, servings: Math.max(1, Number(d.get('servings')) || 1), prepTime: d.get('prepTime') === '' ? null : Math.max(0, Number(d.get('prepTime')) || 0), alcohol: d.get('alcohol') === 'on', ings: zeilen('ings').map((t, i) => ({ id: i, ck: false, note: '', ...G.zutatAusText(t) })), steps: zeilen('steps').map((t, i) => ({ id: i, txt: t })), notes: String(d.get('notes') || '').trim(), img: f.img || '', modified: Date.now() };
   let r = f.uid && getr(f.uid);
   if (r) Object.assign(r, felder);
   else { r = G.getraenkNormalisieren({ ...felder, id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, created: Date.now(), uid: G.neueUid(A.knoten) }); A.getraenke.unshift(r); }
@@ -562,7 +576,7 @@ async function scanGewaehlt(dateien) {
 /* Aus dem gelesenen Rezept wird ein Getränk: Alkohol aus den Zutaten erkannt, Kategorie aus der Antwort oder nach dem Alkohol. */
 function getraenkAusRezept(r) {
   const alk = G.alkoholBefund({ ings: r.ings }).alkohol;
-  return { name: r.name, servings: r.servings || 1, prepTime: r.prepTime || null, ings: r.ings.map((z) => ({ amt: z.amt, unit: z.unit, name: z.note ? `${z.name} (${z.note})` : z.name })), steps: r.steps, alcohol: alk, cat: r.cat || (alk ? 'ckt' : (Z.kat !== 'all' ? Z.kat : 'mock')), img: r.img || '', notes: (r.flavors || []).join(', ') };
+  return { name: r.name, servings: r.servings || 1, prepTime: r.prepTime || null, ings: r.ings.map((z) => ({ amt: z.amt, unit: z.unit, name: z.note ? `${z.name} (${z.note})` : z.name })), steps: r.steps, alcohol: alk, cat: r.cat || (alk ? 'ckt' : (katOffen() || 'mock')), img: r.img || '', notes: (r.flavors || []).join(', ') };
 }
 const getraenkAusScan = (roh, bild) => getraenkAusRezept(rezeptAusScan(roh, { kategorien: scanKats(), bild, sprache: sprache() }));
 /* ── Web-Import (Kern: import/web.mjs). Direkt von der Seite, ohne Dienst dazwischen; im Browser hilft sonst Kopieren und Einfügen. ── */
@@ -768,13 +782,14 @@ function kachelnPacken() {
 function zeichne(frisch) {
   if (wartend && Z.fenster !== wartend.f) { const w = wartend; wartend = null; w.fertig(false); }
   inForm();
+  if (ordWahl() && !ordListe().some((o) => o.id === ordWahl() && o.anzahl > 0)) Z.kat = 'all';   /* der gewählte Ordner ist leer oder weg */
   const br = breit(), v = Z.view, mix = v === 'mix';
   const basis = mix ? 'getraenk' : v;
   const h = basis === 'start' ? vStart(br) : basis === 'getraenk' ? vGetraenk(br) : basis === 'einkauf' ? vEinkauf(br) : basis === 'karte' ? vKarte(br) : basis === 'labor' ? vLabor() : basis === 'bilder' ? vBilder() : basis === 'plan' ? vPlan() : vMehr();
   const ohneKopf = !br && basis === 'getraenk', fokus = br && Z.fokus && basis === 'getraenk';
   const alt = $('.haupt'), roll = alt && zeichne.letzte === basis + '|' + Z.uid + '|' + Z.anlass ? alt.scrollTop : 0;
   const such = document.activeElement && document.activeElement.id === 'suche' ? document.activeElement.selectionStart : null;
-  $('#app').innerHTML = `<div class="mx ${br ? 'breit' : 'handy'} fl-${E.fl.seite} ${frisch ? 'frisch' : ''} ${dunkel() ? 'dunkel' : ''} ${E.navZu ? 'navzu' : ''} ${fokus ? 'fokus' : ''}">${ohneKopf ? '<div></div>' : kopf(br)}${br && !fokus ? navLinks() : ''}<main class="haupt" id="haupt">${h}</main>${br || mix ? '' : flLeiste()}${mix ? vMix(br) : ''}${menue()}${fenster()}${bildVoll()}${Z.toast ? `<div class="mxtoast" role="status">${I('check')}${esc(Z.toast)}</div>` : ''}</div>`;
+  $('#app').innerHTML = `<div class="mx ${br ? 'breit' : 'handy'} fl-${E.fl.seite} ${frisch ? 'frisch' : ''} ${dunkel() ? 'dunkel' : ''} ${E.navZu ? 'navzu' : ''} ${fokus ? 'fokus' : ''}">${ohneKopf ? '<div></div>' : kopf(br)}${br && !fokus ? navLinks() : ''}<main class="haupt" id="haupt">${h}</main>${br || mix ? '' : flLeiste()}${mix ? vMix(br) : ''}${menue()}${fenster()}${bildVoll()}${Z.toast ? (Z.toastKnopf ? `<div class="mxtoast mit" role="status">${I('check')}<span>${esc(Z.toast)}</span><button data-a="toast-tun">${esc(Z.toastKnopf)}</button></div>` : `<div class="mxtoast" role="status">${I('check')}${esc(Z.toast)}</div>`) : ''}</div>`;
   kernStil();
   zeichne.letzte = basis + '|' + Z.uid + '|' + Z.anlass;
   if (roll) $('.haupt').scrollTop = roll;
@@ -820,9 +835,41 @@ function katLoeschenMit(id, ziel) {
   melde(l.verschoben ? L(`„${name}“ gelöscht, ${l.verschoben} Getränke umgehängt.`, `“${name}” deleted, ${l.verschoben} drinks moved.`) : L(`„${name}“ gelöscht.`, `“${name}” deleted.`));
 }
 
+/* ── Ordner verwalten (Vorbild: Mein Rezeptbuch). Dieselben Zeilen wie bei den Kategorien: Griff, Zeichen, Name, Zahl, Löschen.
+   Die Zahl öffnet den Ordner auf der Startseite. Gelöscht wird nur der Ordner: die Getränke bleiben mit ihrer Kategorie. ── */
+const ORD_ERKL = () => L('Ordner sind eigene Sammlungen neben den Kategorien, zum Beispiel „Sommerfest“ oder „Für Gäste“. Ein Getränk liegt in höchstens einem Ordner und behält seine Kategorie. Wird ein Ordner gelöscht, bleiben die Getränke.', 'Folders are your own collections next to the categories, e.g. “Summer party” or “For guests”. A drink is in one folder at most and keeps its category. If a folder is deleted, the drinks stay.');
+function ordnerFenster() {
+  const zeile = (o) => `<div class="kat-zeile ord-zeile" data-oid="${esc(o.id)}"><span class="griff" aria-hidden="true" title="${L('Zum Verschieben lange drücken oder ziehen', 'Long-press or drag to move')}">${I('griff')}</span><span class="kat-zeichen">${o.bild ? `<img class="sticker" src="${esc(o.bild)}" alt="" loading="lazy">` : o.ico ? `<span class="kemoji" aria-hidden="true">${esc(o.ico)}</span>` : I('folder')}</span><input class="feld ord-name" data-oid="${esc(o.id)}" value="${esc(ordnerName(o))}" placeholder="${L('Name des Ordners', 'Folder name')}" aria-label="${L('Name des Ordners', 'Folder name')}" autocomplete="off"><button class="chip ord-auf" data-kat="ordner:${esc(o.id)}" data-geh="1" ${o.anzahl ? '' : 'disabled'} aria-label="${esc(fuelle(L('{0} Getränke in „{1}“ ansehen', 'View {0} drinks in “{1}”'), o.anzahl, ordTitel(o)))}">${o.anzahl}</button><button class="rund klein" data-a="ordner-weg" data-oid="${esc(o.id)}" aria-label="${esc(fuelle(L('Ordner „{0}“ löschen', 'Delete folder “{0}”'), ordTitel(o)))}">${I('trash')}</button></div>`;
+  Z.fenster = { titel: L('Ordner', 'Folders'), ord: true, kopfHtml: `<h2 class="mit-frag">${I('folder')}<span>${L('Ordner', 'Folders')}</span>${frag(ORD_ERKL() + ' ' + L('Zum Ordnen eine Zeile am Griff lange drücken oder mit der Maus ziehen. Ein Getränk legst du über seine Werkzeuge (Winkel am Namen) in einen Ordner.', 'To reorder, long-press a row at the handle or drag it with the mouse. Put a drink into a folder via its tools (the chevron at the name).'))}</h2>`,
+    html: `<div class="kat-liste" id="ord-liste">${ordListe().map(zeile).join('') || `<p class="leer" id="ord-leer">${L('Noch kein Ordner.', 'No folder yet.')}</p>`}</div><div class="reihe" style="margin-top:12px"><button class="knopf" data-a="ordner-neu">${I('plus')}${L('Neuer Ordner', 'New folder')}</button></div>` };
+}
+function ordnerWahlFenster(uid) {
+  const r = getr(uid); if (!r) return; const jetzt = ordnerVonRezept(r, A.ordner);
+  const zeilen = A.ordner.map((o) => `<button class="ezeile" data-a="ordner-setzen" data-oid="${esc(o.id)}" data-uid="${esc(uid)}" aria-pressed="${String(o.id) === jetzt}">${o.ico ? `<i class="ezeichen" aria-hidden="true">${esc(o.ico)}</i>` : I('folder')}<span><b>${esc(ordTitel(o))}</b></span>${String(o.id) === jetzt ? I('check') : ''}</button>`).join('')
+    + (jetzt ? `<button class="ezeile" data-a="ordner-setzen" data-oid="" data-uid="${esc(uid)}">${I('x')}<span><b>${L('aus dem Ordner nehmen', 'take out of the folder')}</b></span></button>` : '');
+  Z.fenster = { titel: L('In einen Ordner legen', 'Put into a folder'), kopfHtml: `<h2 class="mit-frag">${I('folder')}<span>${L('In einen Ordner legen', 'Put into a folder')}</span>${frag(ORD_ERKL())}</h2>`,
+    html: `${zeilen ? `<div class="eliste" id="ord-wahl">${zeilen}</div>` : ''}<form id="ordneuform" class="webzeile" data-uid="${esc(uid)}" style="margin-top:10px">${I('plus')}<input name="n" placeholder="${L('Neuen Ordner anlegen', 'Create new folder')}" aria-label="${L('Neuer Ordner', 'New folder')}" autocomplete="off" enterkeyhint="done"><button class="feldknopf akz" aria-label="${L('Anlegen und hineinlegen', 'Create and put in')}" title="${L('Anlegen und hineinlegen', 'Create and put in')}">${I('check')}</button></form>` };
+}
+function ordnerSetzen(uid, oid) {
+  const o = findeOrdner(A.ordner, oid); A.getraenke = legeIn(A.getraenke, A.ordner, uid, oid); sichern(); Z.fenster = null;
+  melde(o ? fuelle(L('Im Ordner „{0}“', 'In the folder “{0}”'), ordTitel(o)) : L('Aus dem Ordner genommen', 'Taken out of the folder'));
+}
+
 /* ── Bedienung ── */
 const TUN = {
   kategorien() { katFenster(); },
+  ordner() { ordnerFenster(); },
+  'ordner-neu'() { const a = ordAnlegen(A.ordner, ''); A.ordner = a.ordner; sichern(); ordnerFenster(); zeichne(); const f = document.querySelector(`.ord-name[data-oid="${a.id}"]`); if (f) f.focus(); return false; },
+  /* Rückgängig stellt genau diesen Ordner und seine Zuordnungen wieder her (kein alter Stand: was inzwischen dazukam, bleibt). */
+  'ordner-weg'(b) { const id = b.dataset.oid, o = findeOrdner(A.ordner, id); if (!o) return; const stelle = A.ordner.indexOf(o), l = ordLoeschen(A.getraenke, A.ordner, id), drin = new Set(A.getraenke.filter((x, i) => x !== l.rezepte[i]).map((x) => x.uid));
+    A.getraenke = l.rezepte; A.ordner = l.ordner; sichern(); ordnerFenster();
+    melde(l.betroffen === 1 ? L('1 Getränk bleibt', '1 drink stays') : l.betroffen ? fuelle(L('{0} Getränke bleiben', '{0} drinks stay'), l.betroffen) : L('Ordner gelöscht', 'Folder deleted'), L('Rückgängig', 'Undo'), () => {
+      if (!findeOrdner(A.ordner, id)) A.ordner = [...A.ordner.slice(0, stelle), o, ...A.ordner.slice(stelle)];
+      A.getraenke = A.getraenke.map((x) => (drin.has(x.uid) && !x.folder ? { ...x, folder: String(id) } : x)); sichern(); if (Z.fenster && Z.fenster.ord) ordnerFenster(); });
+    return false; },
+  'ordner-zuordnen'() { ordnerWahlFenster(Z.uid); },
+  'ordner-setzen'(b) { ordnerSetzen(b.dataset.uid, b.dataset.oid); return false; },
+  'toast-tun'() { const t = toastTun; toastTun = null; Z.toast = ''; Z.toastKnopf = ''; clearTimeout(melde.uhr); if (t) t(); },
   'einst-auf'(b) { const g = b.dataset.g; if (Z.einstAuf.has(g)) Z.einstAuf.delete(g); else Z.einstAuf.add(g); },
   hinweise() { E.hinweiseAus = !E.hinweiseAus; einstSichern(); melde(E.hinweiseAus ? L('Hinweis-Blasen aus', 'Tooltips off') : L('Hinweis-Blasen an', 'Tooltips on')); },
   'lab-kat'(b) { Z.lab.zutaten = ($('#labzutaten') && $('#labzutaten').value) || Z.lab.zutaten; Z.lab.kat = b.dataset.k; },
@@ -883,7 +930,7 @@ const TUN = {
     diktatAus();
     const ings = r.ings.map((z) => ({ amt: z.amt, unit: z.unit, name: z.note ? `${z.name} (${z.note})` : z.name }));
     const alk = G.alkoholBefund({ ings }).alkohol;
-    editor({ name: r.name || '', servings: r.servings || 1, prepTime: r.prepTime || null, ings, steps: r.steps, alcohol: alk, cat: alk ? 'ckt' : (Z.kat !== 'all' ? Z.kat : 'mock'),
+    editor({ name: r.name || '', servings: r.servings || 1, prepTime: r.prepTime || null, ings, steps: r.steps, alcohol: alk, cat: alk ? 'ckt' : (katOffen() || 'mock'),
       hinweis: r.sicher ? L('Aus dem Text übernommen. Bitte prüfen und speichern.', 'Taken from the text. Please check and save.') : L('Ohne Überschriften „Zutaten“/„Zubereitung“ geraten. Bitte genau prüfen.', 'Guessed without “Ingredients”/“Method” headings. Please check carefully.') }, true);
     return false; },
   'bilder-filter'(b) { Z.bilder.filter = b.dataset.f; }, 'bilder-gross'() { Z.bilder.gross = !Z.bilder.gross; },
@@ -903,7 +950,7 @@ const TUN = {
     A.kategorien = { ...A.kategorien, namen, eigene: A.kategorien.eigene.map((c) => (c.id === id && !e ? (({ emoji, ...rest }) => rest)(c) : c)) }; sichern(); katFenster(); },
   'ek-laden'(b) { A.einkaufLaeden = { ...A.einkaufLaeden, laden: b.dataset.l }; sichern(); },
   'ek-laden-neu'() { Z.fenster = { titel: L('Neuer Laden', 'New shop'), html: `<form id="ladenform" class="felder" autocomplete="off"><label>${L('Name', 'Name')}<input class="feld" name="n" required placeholder="${L('z. B. Getränkemarkt', 'e.g. drinks store')}"></label><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Anlegen', 'Create')}</button></div></form>` }; },
-  alk() { A.einstellungen.ohneAlkohol = !ohneAlk(); const r = getr(Z.uid); if (ohneAlk() && r && G.hatAlkohol(r)) { Z.view = 'start'; Z.uid = null; } if (!kats().some((x) => x.c.id === Z.kat)) Z.kat = 'all'; sichern(); },
+  alk() { A.einstellungen.ohneAlkohol = !ohneAlk(); const r = getr(Z.uid); if (ohneAlk() && r && G.hatAlkohol(r)) { Z.view = 'start'; Z.uid = null; } if (!ordWahl() && !kats().some((x) => x.c.id === Z.kat)) Z.kat = 'all'; sichern(); },
   kopf() { Z.kopfAuf = !Z.kopfAuf; Z.menue = null; },
   navzu() { E.navZu = !E.navZu; einstSichern(); },
   menue(b) { Z.menue = Z.menue === b.dataset.m ? null : b.dataset.m; Z.flAuf = false; },
@@ -990,7 +1037,7 @@ document.addEventListener('click', (ev) => {
   if (d.ton) { E.ton = d.ton; einstSichern(); return zeichne(); }
   if (d.go) return geh(d.go);
   if (d.d) { if (Z.fenster) Z.fenster = null; return oeffne(d.d); }
-  if (d.kat) return setze(() => { Z.kat = d.kat; }, true);
+  if (d.kat) { if (d.geh) { Z.fenster = null; Z.kat = d.kat; Z.uid = null; return geh('start'); } return setze(() => { Z.kat = d.kat; }, true); }
   if (d.e) return setze(() => { Z.einheit = d.e; });
   if (d.h) { const p = A.einkauf.find((x) => String(x.id) === d.h); p.ok = !p.ok; Z.pop = p.ok ? p.id : null; sichern(); zeichne(); Z.pop = null; return; }
   if (d.paket) return paketEinspielen(d.paket);
@@ -1004,6 +1051,7 @@ document.addEventListener('submit', (ev) => {
   if (ev.target.id === 'ed') return editorSpeichern(ev.target);
   if (ev.target.id === 'webform') return webHolen();
   if (ev.target.id === 'entdform') return entdeckenHolen(false);
+  if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
     S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert.', 'Key saved.') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
@@ -1021,6 +1069,7 @@ document.addEventListener('input', (ev) => {
   if (ev.target.id === 'schriftregler') { E.schrift = schriftSetzen($('.mx'), ev.target.value); $('#schriftzahl').textContent = E.schrift + ' %'; clearTimeout(einstSichern.uhr); einstSichern.uhr = setTimeout(einstSichern, 300); return; }
   if (ev.target.id === 'suche') { Z.suche = ev.target.value; semPlanen(); const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = `${z} ${z === 1 ? L('Getränk', 'drink') : L('Getränke', 'drinks')}`; } } });
 document.addEventListener('change', async (ev) => {
+  if (ev.target.classList && ev.target.classList.contains('ord-name')) { A.ordner = ordUmbenennen(A.ordner, ev.target.dataset.oid, ev.target.value); sichern(); ordnerFenster(); return; }
   if (ev.target.classList && ev.target.classList.contains('kat-name')) { const f = ev.target, id = f.dataset.kid, eig = A.kategorien.eigene.some((c) => c.id === id);
     if (eig && f.value.trim()) A.kategorien = { ...katUmbenennen(A.kategorien, id, ''), eigene: A.kategorien.eigene.map((c) => (c.id === id ? { ...c, de: f.value.trim() } : c)) }; else if (!eig) A.kategorien = katUmbenennen(A.kategorien, id, f.value);
     sichern(); katFenster(); return; }
@@ -1050,13 +1099,14 @@ document.addEventListener('contextmenu', (ev) => { if (ev.target.closest && ev.t
 /* Kategorie oder Warengruppe verschieben: lange drücken (350 ms) oder mit der Maus ziehen. Übernommen aus Mein Rezeptbuch. */
 let gz = null;
 const gzAn = () => { if (!gz || gz.weit) return; gz.weit = true; gz.gr.classList.add('zieht'); };
-document.addEventListener('pointerdown', (ev) => { const h = ev.target.closest && ev.target.closest('.gruppe-e h3, .kat-zeile .griff'); if (!h) return; const gr = h.closest('.gruppe-e, .kat-zeile'); gz = { gr, art: gr.classList.contains('kat-zeile') ? 'kat' : 'ek', y: ev.clientY, weit: false, ziel: null, uhr: setTimeout(gzAn, 350) }; try { h.setPointerCapture(ev.pointerId); } catch (e) { /* geht auch ohne */ } });
+document.addEventListener('pointerdown', (ev) => { const h = ev.target.closest && ev.target.closest('.gruppe-e h3, .kat-zeile .griff'); if (!h) return; const gr = h.closest('.gruppe-e, .kat-zeile'); gz = { gr, art: gr.classList.contains('ord-zeile') ? 'ord' : gr.classList.contains('kat-zeile') ? 'kat' : 'ek', y: ev.clientY, weit: false, ziel: null, uhr: setTimeout(gzAn, 350) }; try { h.setPointerCapture(ev.pointerId); } catch (e) { /* geht auch ohne */ } });
 document.addEventListener('pointermove', (ev) => { if (!gz) return; if (!gz.weit && Math.abs(ev.clientY - gz.y) < 8) return; gzAn(); gz.gr.style.transform = `translateY(${ev.clientY - gz.y}px)`;
-  const andere = [...document.querySelectorAll(gz.art === 'kat' ? '.kat-zeile' : '.gruppe-e')].filter((g) => g !== gz.gr); andere.forEach((g) => g.classList.remove('ziel-vor', 'ziel-nach')); let ziel = null, vor = true;
+  const andere = [...document.querySelectorAll(gz.art === 'ek' ? '.gruppe-e' : '.kat-zeile')].filter((g) => g !== gz.gr); andere.forEach((g) => g.classList.remove('ziel-vor', 'ziel-nach')); let ziel = null, vor = true;
   for (const g of andere) { const r = g.getBoundingClientRect(); ziel = g; if (ev.clientY < r.top + r.height / 2) { vor = true; break; } vor = false; }
-  if (ziel) { ziel.classList.add(vor ? 'ziel-vor' : 'ziel-nach'); gz.ziel = { id: ziel.dataset.g || ziel.dataset.kid, vor, nach: ziel.nextElementSibling === gz.gr ? ziel.nextElementSibling && ziel.nextElementSibling.nextElementSibling : ziel.nextElementSibling }; } });
+  if (ziel) { ziel.classList.add(vor ? 'ziel-vor' : 'ziel-nach'); gz.ziel = { id: ziel.dataset.g || ziel.dataset.kid || ziel.dataset.oid, vor, nach: ziel.nextElementSibling === gz.gr ? ziel.nextElementSibling && ziel.nextElementSibling.nextElementSibling : ziel.nextElementSibling }; } });
 const gzLos = () => { if (!gz) return; const g = gz; gz = null; clearTimeout(g.uhr); if (!g.weit) return;
-  if (g.ziel) { const vorId = g.ziel.vor ? g.ziel.id : ((g.ziel.nach && (g.ziel.nach.dataset.g || g.ziel.nach.dataset.kid)) || null);
+  if (g.ziel) { const vorId = g.ziel.vor ? g.ziel.id : ((g.ziel.nach && (g.ziel.nach.dataset.g || g.ziel.nach.dataset.kid || g.ziel.nach.dataset.oid)) || null);
+    if (g.art === 'ord') { A.ordner = ordUmsortieren(A.ordner, g.gr.dataset.oid, vorId); ordnerFenster(); } else
     if (g.art === 'kat') { A.kategorien = K.umsortieren(A.getraenke, A.kategorien, g.gr.dataset.kid, vorId); katFenster(); }
     else { const lae = A.einkaufLaeden; A.einkaufLaeden = { ...lae, laeden: { ...lae.laeden, [lae.laden]: EK.gruppeVerschieben(lae.laeden[lae.laden] || [], g.gr.dataset.g, vorId) } }; }
     sichern(); }

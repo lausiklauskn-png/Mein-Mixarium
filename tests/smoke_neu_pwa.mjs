@@ -76,7 +76,7 @@ pruefe('auf dem Foto liegt kein Knopf: nur die zwei Winkel in der Namenszeile', 
 const lageHeld = () => Zs(p, () => { const r = document.querySelector('.held').getBoundingClientRect(), n = document.querySelector('.held h2').getBoundingClientRect(); return [Math.round(r.height), Math.round(n.top)].join(); });
 const heldVor = await lageHeld();
 await p.click('.wk-pf:not(.zur)'); await ruhe(p);
-pruefe('der Winkel klappt die Werkzeuge über dem Bild auf, ohne etwas zu verschieben', await p.locator('.rwerk .chip').count() === 4 && await lageHeld() === heldVor);
+pruefe('der Winkel klappt die Werkzeuge über dem Bild auf, ohne etwas zu verschieben', await p.locator('.rwerk .chip').count() >= 4 && await p.locator('.rwerk [data-a=bearbeiten], .rwerk [data-a=bildblatt], .rwerk [data-a=teilen], .rwerk [data-a=loeschen]').count() === 4 && await lageHeld() === heldVor);   /* seit den Ordnern stehen dort mehr als vier Werkzeuge: gezählt wird nicht, die vier bekannten müssen da sein */
 pruefe('die Werkzeuge sind kleine runde Symbole in EINER Reihe (kein „Button-Kino“), jedes mit Namen als Hinweis', await Zs(p, () => { const l = [...document.querySelectorAll('.rwerk .chip')].map((c) => c.getBoundingClientRect()); return l.every((r) => r.width <= 40 && r.height <= 40) && new Set(l.map((r) => Math.round(r.top))).size === 1 && [...document.querySelectorAll('.rwerk .chip')].every((c) => c.title && c.getAttribute('aria-label')); }));
 await p.click('.wk-pf:not(.zur)'); await ruhe(p);
 await p.click('.held h2'); await ruhe(p);
