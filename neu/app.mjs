@@ -28,7 +28,8 @@ import { schluessel as schluesselLager, ANBIETER, erklaerung as schlErklaerung, 
 import { STUFEN } from '../kern/ki/claude.mjs';
 import { vorbereiten, erkennen, rezeptAusScan, wasGehtHinaus, istPdf, istBild } from '../kern/import/scan.mjs';
 import { reiniger, vermerken, vermerkHtml, haltHtml, HALT_JA, HALT_TITEL, meldung as kiMeldung } from '../kern/ki/reinigung.mjs';
-import { dateiPruefen, pruefHtml, PRUEF_ERKLAERUNG } from '../kern/pruefung/datei.mjs';
+import { dateiPruefen, pruefHtml, PRUEF_ERKLAERUNG, kiAnweisungen } from '../kern/pruefung/datei.mjs';
+import { webAdresse, holeSeite, ausEingefuegtem, ohneKi, fuerKi, mitKi, holeBild } from '../kern/import/web.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -42,7 +43,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor20';
+export const FASSUNG = '10.0.0-vor21';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -56,7 +57,7 @@ const KAT_SYM = { all: 'drinks', mock: 'drinks', afckt: 'drinks', ckt: 'wine', s
 /* ── Zustand ── E: Einstellungen des Geräts · A: die Sammlung · Z: was gerade zu sehen ist (flüchtig) */
 let E = { sprache: null, farbe: 'blau', ton: 'geraet', schrift: 100, einheit: 'auto', fl: { seite: 'r', oben: 64 }, navZu: true, scan: { anbieter: 'anthropic', stufe: 'schnell' } };
 let A = null;
-const Z = { scan: null, lab: { kat: 'mock', geschmack: [], zutaten: '', entwurf: null, laeuft: false, fehler: '', entfernteAuf: false }, planTag: new Date(), bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
+const Z = { scan: null, web: null, lab: { kat: 'mock', geschmack: [], zutaten: '', entwurf: null, laeuft: false, fehler: '', entfernteAuf: false }, planTag: new Date(), bilder: { gross: false, filter: 'alle', wahl: new Set() }, view: 'start', uid: null, step: 0, port: 1, einheit: null, kat: 'all', suche: '', kopfAuf: false, flAuf: false, fokus: false, mixKopf: true, menue: null, fenster: null, toast: '', anlass: null, willkommen: false, pakete: null };
 
 const sprache = () => E.sprache || (A && A.einstellungen && A.einstellungen.sprache) || ((navigator.language || 'de').slice(0, 2));
 const L = (de, en) => spText(sprache(), de, en);   /* Deutsch und Englisch im Code; die übrigen Sprachen über Tabellen des Kerns, sonst Englisch */
@@ -226,15 +227,16 @@ function vGetraenk(br) {
   const ger = G.geraeteFuerGetraenk(r);
   const gerAbs = ger.length ? `<div class="abschnitt"><h3>${L('Gerätschaften', 'Equipment')}</h3>${geraeteKacheln(ger, true)}</div>` : '';
   const notiz = r.notes ? `<div class="abschnitt"><h3>${L('Notizen', 'Notes')}</h3><p class="notiz">${esc(r.notes)}</p></div>` : '';
+  const quelle = r.source ? `<p class="quelle">${L('Quelle', 'Source')}: ${esc(r.source)}</p>` : '';
   const winkel = (d) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
   const wk = (akt, i, t, kl = '') => `<button class="chip ${kl}" data-a="${akt}">${I(i)}${t}</button>`;
   /* Kein Knopf auf dem Foto (Klaus 23.11., wie im Rezeptbuch): rechts in der Namenszeile ein weißer Winkel, der die Werkzeuge
      über dem Bild aufklappt, ohne neue Zeile und ohne etwas zu verschieben; „Zurück“ als Winkel links vom Namen. */
   const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
-  if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${vermerkHtml(r, sprache())}</div>`;
+  if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div>`;
   const fk = Z.fokus;
   const liste = fk ? '' : `<div class="liste">${leiste()}${sichtbar().map((x) => `<button class="zeile" data-d="${esc(x.uid)}" ${x.uid === r.uid ? 'aria-current="true"' : ''}><span class="mini">${bild(x)}</span><span><strong>${esc(x.name)}</strong><small>${esc(katNameVon(x))}${x.prepTime ? ` · ${Number(x.prepTime)} min` : ''}</small></span></button>`).join('')}</div>`;
-  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bildblatt', 'image', L('Bild', 'Picture'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${vermerkHtml(r, sprache())}</div></div></div></div>`;
+  return `<div class="md ${fk ? 'fokus' : ''}">${liste}<div class="detail"><div class="detail-kopf"><div class="held ganz" data-a="held" role="button" tabindex="0" title="${L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture')}">${bild(r, 'ganz')}</div><div class="seite"><p class="unter">${esc(katNameVon(r))}</p><div class="tzeile mon"><h2>${esc(r.name)}</h2><button class="wk-pf mon" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7')}</button></div>${Z.bildWerk ? `<div class="rwerk mon">${wk('bildblatt', 'image', L('Bild', 'Picture'))}<button class="chip" data-a="fokus" aria-pressed="${fk}">${I('panel')}${fk ? L('Liste zeigen', 'Show list') : L('Nur dieses Getränk', 'Only this drink')}</button>${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : ''}${fakten(r)}${aktionen(r, true)}</div></div><div class="detail-rumpf"><div><div class="abschnitt" style="margin-top:0"><h3>${L('Zutaten', 'Ingredients')}</h3>${portion(r)}<div style="margin-top:12px">${zutatenListe(r)}</div></div>${gerAbs}</div><div><div class="abschnitt" style="margin-top:0"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div></div></div></div>`;
 }
 
 /* ── Mix-Ansicht ── Welche Zutaten nennt der Schritt? Über den Namen (Wortanfang, mindestens 4 Buchstaben). */
@@ -460,15 +462,17 @@ function editorSpeichern(form) {
   let r = f.uid && getr(f.uid);
   if (r) Object.assign(r, felder);
   else { r = G.getraenkNormalisieren({ ...felder, id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, created: Date.now(), uid: G.neueUid(A.knoten) }); A.getraenke.unshift(r); }
+  if (f.quelle && !f.uid) r.source = f.quelle;
   if (f.kiEntfernt && f.kiEntfernt.length) vermerken(r, f.kiEntfernt, 'scan');   /* was vor der KI herausgenommen wurde, steht am Getränk */
   sichern(); Z.fenster = null; Z.uid = r.uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; melde(L('Gespeichert.', 'Saved.'));
 }
 /* ── Blatt hinter „+“ (wie im Rezeptbuch): jeder Weg zu einem neuen Getränk an einem Ort ── */
-const NEU_TABS = [['selbst', 'pencil', ['Selbst', 'Write']], ['scan', 'scan', ['Foto-Scan', 'Photo scan']], ['text', 'datei', ['Text', 'Text']], ['datei', 'folder', ['Datei', 'File']], ['pakete', 'box', ['Pakete', 'Packages']]];
+const NEU_TABS = [['selbst', 'pencil', ['Selbst', 'Write']], ['scan', 'scan', ['Foto-Scan', 'Photo scan']], ['web', 'welt', ['Web', 'Web']], ['text', 'datei', ['Text', 'Text']], ['datei', 'folder', ['Datei', 'File']], ['pakete', 'box', ['Pakete', 'Packages']]];
 function neuBlatt(tab = 'selbst') {
   const inhalt = {
     selbst: () => `<p class="ftext">${L('Name, Zutaten und Schritte selbst eintragen, mit Foto.', 'Enter name, ingredients and steps yourself, with a photo.')}</p><div class="reihe"><button class="knopf" data-a="neu-form">${I('pencil')}${L('Getränk schreiben', 'Write a drink')}</button></div>`,
     scan: scanInhalt,
+    web: webInhalt,
     text: () => `<div class="reihe"><button class="knopf" data-a="text-import">${I('pencil')}${L('Text einfügen', 'Paste text')}</button>${frag(L('Rezepttext einfügen, etwa aus einer Mail, einer Notiz oder von einer Webseite. Die App teilt ohne KI in Zutaten und Schritte; du siehst das Ergebnis im Formular und speicherst dort.', 'Paste a recipe text, e.g. from an e-mail, a note or a web page. The app splits it into ingredients and steps without AI; you check the result in the form and save there.'))}</div>`,
     datei: () => `<div class="reihe"><button class="knopf" data-a="einspielen">${I('upload')}${L('Datei wählen', 'Choose file')}</button>${frag(L('Eine Sicherung oder Getränkedatei (JSON) einspielen. Doppelte werden erkannt, eigene Kategorien kommen mit.', 'Restore a backup or drinks file (JSON). Duplicates are detected, your own categories come along.'))}</div>`,
     pakete: () => `<div class="reihe"><button class="knopf" data-a="beispiele">${I('box')}${L('Beispiele laden', 'Load examples')}</button>${frag(L('Pakete mit fertigen Getränken zum Ausprobieren. Sie lassen sich in den Einstellungen mit einem Tipp wieder löschen.', 'Packages of ready-made drinks to try. They can be deleted again with one tap in the settings.'))}</div>`,
@@ -498,9 +502,51 @@ async function scanGewaehlt(dateien) {
   neuBlatt('scan');
 }
 /* Aus dem gelesenen Rezept wird ein Getränk: Alkohol aus den Zutaten erkannt, Kategorie aus der Antwort oder nach dem Alkohol. */
-function getraenkAusScan(roh, bild) {
-  const r = rezeptAusScan(roh, { kategorien: scanKats(), bild, sprache: sprache() }), alk = G.alkoholBefund({ ings: r.ings }).alkohol;
-  return { name: r.name, servings: r.servings || 1, prepTime: r.prepTime || null, ings: r.ings.map((z) => ({ amt: z.amt, unit: z.unit, name: z.name })), steps: r.steps, alcohol: alk, cat: r.cat || (alk ? 'ckt' : (Z.kat !== 'all' ? Z.kat : 'mock')), img: r.img, notes: r.flavors.join(', ') };
+function getraenkAusRezept(r) {
+  const alk = G.alkoholBefund({ ings: r.ings }).alkohol;
+  return { name: r.name, servings: r.servings || 1, prepTime: r.prepTime || null, ings: r.ings.map((z) => ({ amt: z.amt, unit: z.unit, name: z.note ? `${z.name} (${z.note})` : z.name })), steps: r.steps, alcohol: alk, cat: r.cat || (alk ? 'ckt' : (Z.kat !== 'all' ? Z.kat : 'mock')), img: r.img || '', notes: (r.flavors || []).join(', ') };
+}
+const getraenkAusScan = (roh, bild) => getraenkAusRezept(rezeptAusScan(roh, { kategorien: scanKats(), bild, sprache: sprache() }));
+/* ── Web-Import (Kern: import/web.mjs). Direkt von der Seite, ohne Dienst dazwischen; im Browser hilft sonst Kopieren und Einfügen. ── */
+function webInhalt() {
+  const w = Z.web || (Z.web = { adresse: '', text: '', stand: '', seitentext: '' });
+  let h = `<form id="webform" class="webzeile"><input class="feld" id="web-adresse" name="u" inputmode="url" value="${esc(w.adresse)}" placeholder="${L('Adresse der Seite, https://…', 'Address of the page, https://…')}" aria-label="${L('Adresse der Seite', 'Address of the page')}" autocomplete="off" autocapitalize="off" enterkeyhint="go"></form>
+   <div class="reihe"><button class="knopf" data-a="web-holen">${I('download')}${L('Getränk holen', 'Get drink')}</button>${frag(L('Die App ruft die Seite direkt ab und liest die Rezeptdaten, die viele Seiten mitliefern, ohne KI. Die Adresse geht nur an die Seite selbst, an keinen Dienst dazwischen. Im Browser lassen manche Seiten das nicht zu; dann hilft Kopieren und Einfügen.', 'The app fetches the page directly and reads the recipe data many pages provide, without AI. The address goes only to the page itself, to no service in between. In the browser some pages do not allow this; then copy and paste helps.'))}</div>`;
+  if (w.stand === 'gesperrt') h += `<p class="web-hin" id="web-gesperrt">${L('Diese Seite lässt sich im Browser nicht direkt lesen. Öffne sie, markiere alles, kopiere und füge es unten ein.', 'This page cannot be read directly in the browser. Open it, select everything, copy and paste it below.')}</p><div class="reihe"><a class="knopf hell" href="${esc(w.adresse)}" target="_blank" rel="noopener noreferrer">${I('link')}${L('Seite öffnen', 'Open page')}</a></div>`;
+  if (w.stand === 'ohneDaten') return h + `<p class="web-hin" id="web-ohne">${L('Die Seite liefert keine Rezeptdaten mit. Ihr Text lässt sich ohne KI aufteilen oder von Claude lesen.', 'The page provides no recipe data. Its text can be split without AI or read by Claude.')}</p><p class="scan-was" id="web-was">${esc(fuerKi(w.seitentext, sprache()).satz)}</p>
+     <div class="reihe"><button class="knopf hell" data-a="web-ohne-ki">${L('Ohne KI aufteilen', 'Split without AI')}</button><button class="knopf" data-a="web-mit-ki">${I('sparkle')}${L('Mit Claude lesen', 'Read with Claude')}</button>${frag(L('„Ohne KI“ erkennt die Überschriften „Zutaten“ und „Zubereitung“. „Mit Claude“ schickt den sichtbaren Text der Seite an Anthropic; verborgene Teile der Seite gehen nicht mit. Es gilt die Stufe aus dem Foto-Scan.', '“Without AI” recognises the headings “Ingredients” and “Method”. “With Claude” sends the visible text of the page to Anthropic; hidden parts of the page are not sent. The level from the photo scan applies.'))}</div>`;
+  return h + `<textarea class="feld" id="web-text" rows="4" placeholder="${L('Oder die Seite im Browser öffnen, alles markieren, kopieren und hier einfügen.', 'Or open the page in the browser, select everything, copy and paste it here.')}" aria-label="${L('Eingefügter Seitentext', 'Pasted page text')}">${esc(w.text)}</textarea>
+   <div class="reihe"><button class="knopf hell" data-a="web-eingefuegt">${L('Eingefügtes lesen', 'Read pasted text')}</button></div>`;
+}
+function webLesen() { const w = Z.web; if (!w) return; const a = $('#web-adresse'), t = $('#web-text'); if (a) w.adresse = a.value; if (t) w.text = t.value; }
+async function webHolen() {
+  const w = Z.web; if (!w) return; webLesen(); const a = webAdresse(w.adresse);
+  if (!a) return melde(L('Bitte eine Web-Adresse eintragen.', 'Please enter a web address.'));
+  w.adresse = a; w.stand = '';
+  try { webAuswerten(await W.mit(L('Seite wird gelesen …', 'Reading the page …'), () => holeSeite(a, { sprache: sprache() }))); }
+  catch (f) { if (f.gesperrt) { w.stand = 'gesperrt'; neuBlatt('web'); const t = $('#web-text'); if (t) t.focus(); } else melde(f.message); }
+}
+function webAuswerten(roh) {
+  const w = Z.web, e = ausEingefuegtem(roh, webAdresse(w.adresse), { kategorien: scanKats() });
+  if (e.rezept) return webInsFormular(e.rezept, L('Aus den Rezeptdaten der Seite gelesen. Bitte prüfen und speichern.', 'Read from the recipe data of the page. Please check and save.'));
+  if (!e.text) return melde(L('Bitte zuerst etwas einfügen.', 'Please paste something first.'));
+  w.seitentext = e.text; w.stand = 'ohneDaten'; neuBlatt('web');
+}
+async function webInsFormular(r, hinweis) {
+  let img = '';
+  if (r.bildAdresse) { const b = await W.mit(L('Bild der Seite wird geholt …', 'Getting the picture of the page …'), () => holeBild(r.bildAdresse)); if (b) { try { img = await bildAusDatei(b); } catch (e) { img = ''; } } }
+  const quelle = r.source || webAdresse((Z.web && Z.web.adresse) || '') || '';
+  Z.web = null; editor({ ...getraenkAusRezept({ ...r, img }), hinweis: hinweis + (r.bildAdresse && !img ? ' ' + L('Das Bild ließ sich nicht übernehmen.', 'The picture could not be taken over.') : '') }, true); Z.fenster.quelle = quelle;
+}
+async function webMitKi() {
+  const w = Z.web; if (!w || !w.seitentext) return;
+  await schlLaden(); if (!SK.anthropic) return schluesselFenster('anthropic', 'web');
+  const stellen = await kiAnweisungen(fuerKi(w.seitentext, sprache()).text);
+  if (stellen.length && !(await frageP(L('Anweisung an eine KI auf der Seite', 'Instruction to an AI on the page'), `<div data-web-halt><p class="ftext">${L('Im Text der Seite steht etwas, das sich an eine KI richtet, nicht an dich:', 'The text of the page contains something addressed to an AI, not to you:')}</p><ul class="ki-liste">${stellen.slice(0, 5).map((x) => `<li>${esc(x.satz || '')}</li>`).join('')}</ul></div>`, L('Trotzdem senden', 'Send anyway')))) { melde(kiMeldung('abgebrochen', sprache())); return neuBlatt('web'); }
+  Z.fenster = null; zeichne();
+  try { const kats = scanKats(), roh = await W.mit(L('Claude liest die Seite …', 'Claude is reading the page …'), () => mitKi(w.seitentext, { schluessel: SK.anthropic, stufe: E.scan.stufe, kategorien: kats, sprache: sprache() }));
+    await webInsFormular({ ...rezeptAusScan(roh, { kategorien: kats, sprache: sprache() }), source: webAdresse(w.adresse) || '' }, L('Von Claude gelesen. Bitte prüfen und speichern.', 'Read by Claude. Please check and save.')); }
+  catch (f) { melde(f.message); neuBlatt('web'); }
 }
 async function scanSenden() {
   const sc = Z.scan; if (!sc || !sc.dateien.length) return;
@@ -743,6 +789,10 @@ const TUN = {
     W.mit(L('Schlüssel wird geprüft …', 'Checking the key …'), () => pruefeSchluessel(a, wert, { sprache: sprache() })).then((p) => { const st = $('#schl-stand'); if (st) { st.textContent = p.text; st.dataset.ok = String(p.ok); } }); return false; },
   'neu-tab'(b) { diktatAus(); neuBlatt(b.dataset.t); return false; },
   'neu-form'() { editor(null); return false; },
+  'web-holen'() { webHolen(); return false; },
+  'web-eingefuegt'() { webLesen(); if (Z.web) webAuswerten(Z.web.text); return false; },
+  'web-ohne-ki'() { const w = Z.web, r = w && ohneKi(w.seitentext, webAdresse(w.adresse)); if (!r) { melde(L('Ohne KI ließ sich kein Getränk erkennen.', 'No drink could be recognised without AI.')); return false; } webInsFormular({ ...r, cat: '' }, r.sicher ? L('Ohne KI aufgeteilt. Bitte prüfen und speichern.', 'Split without AI. Please check and save.') : L('Ohne Überschriften aufgeteilt. Bitte genau prüfen.', 'Split without headings. Please check carefully.')); return false; },
+  'web-mit-ki'() { webMitKi(); return false; },
   'scan-kamera'() { $('#datei-kamera').click(); return false; }, 'scan-datei'() { $('#datei-scan').click(); return false; },
   'scan-anbieter'(b) { E.scan = { ...E.scan, anbieter: b.dataset.w }; einstSichern(); neuBlatt('scan'); return false; },
   'scan-stufe'(b) { E.scan = { ...E.scan, stufe: b.dataset.w }; einstSichern(); neuBlatt('scan'); return false; },
@@ -884,8 +934,9 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('submit', (ev) => {
   ev.preventDefault();
   if (ev.target.id === 'ed') return editorSpeichern(ev.target);
+  if (ev.target.id === 'webform') return webHolen();
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
-    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert.', 'Key saved.') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); }); return; }
+    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert.', 'Key saved.') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
     const f = LAB.bewerten(r, { taste: d.get('taste'), practicality: d.get('practicality'), originality: d.get('originality'), description: d.get('description') }, String(d.get('fb') || ''), { solo: labSolo() });
     Z.fenster = null; sichern();
@@ -959,8 +1010,11 @@ async function start() {
   A.einkauf = A.einkauf || []; A.anlaesse = A.anlaesse || []; A.einstellungen = A.einstellungen || { ohneAlkohol: false, sprache: null };
   breitWar = breit();
   hinweiseEinrichten(document, { aus: () => !!E.hinweiseAus });   // Hinweis-Blasen wie in der alten App (Kern 0.16), ausschaltbar
+  const geteilt = new URLSearchParams(location.search), geteilteAdresse = webAdresse(geteilt.get('url') || '') || webAdresse(geteilt.get('text') || '');   /* über „Teilen“ an die installierte App geschickt */
+  if (location.search) history.replaceState(history.state, '', location.pathname);
   zeichne(true);
   $('#start').remove();
+  if (geteilteAdresse) { Z.web = { adresse: geteilteAdresse, text: '', stand: '', seitentext: '' }; neuBlatt('web'); }
   if (erster) { try { await ausAlterApp(true); } catch (e) { /* nichts Altes da */ } sichern(); zeichne(true); lager.dauerhaft(); }
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
