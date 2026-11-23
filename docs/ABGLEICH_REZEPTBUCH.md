@@ -1,65 +1,44 @@
-# Abgleich Mixarium → Mein Rezeptbuch (laufende Akte)
+# Abgleich Mixarium → Mein Rezeptbuch (Briefkasten)
 
-Hier steht, was Klaus in der Mixarium-Sitzung gesagt und abgenommen hat, **damit er es dem Rezeptbuch nicht noch einmal
-erzählen muss** (Klaus 23.11.2026: „ich will es nicht zweimal erzählen“). Neueste Runde oben. Jede Runde ist so geschrieben,
-dass die Rezeptbuch-Sitzung sie ohne Rückfrage umsetzen kann; wo ich im Rezeptbuch nachgesehen habe, steht der Befund dabei.
-
-**Für die Rezeptbuch-Sitzung zum Einfügen:**
-
-```
-Lies im Repo lausiklauskn-png/Mein-Mixarium auf main die Datei docs/ABGLEICH_REZEPTBUCH.md und setze die oberste Runde,
-die du noch nicht umgesetzt hast, für Mein Rezeptbuch um (Klaus hat das dort so gewollt und will es nicht zweimal erzählen).
-Was im Kern liegen soll, baue im Kern; das Mixarium zieht ihn per Pin nach. Antworte mit einem kurzen Brief in docs/.
-```
+Regel (Klaus 23.11.2026: „Brief lesen, bevor gebaut wird. Und dann Brief ergänzen, sobald etwas geändert wurde.“): vor jedem
+Bauschritt den Briefkasten der anderen Seite lesen (`Mein-Rezeptbuch/docs/BRIEFKASTEN_MIXARIUM.md`), nichts blind übernehmen,
+je Punkt antworten. Hier stehen höchstens zwei Runden, die neueste oben; Älteres liegt in der Git-Geschichte.
+**Seit der Zusammenlegung beider Sitzungen (23.11.2026) wird dieser Briefkasten nicht mehr geführt**; die gemeinsame Sitzung
+liest ihn einmal zum Einstieg. Alles Offene steht in `docs/UEBERGABE_GEMEINSAME_SITZUNG.md`.
 
 ---
 
-## Runde 3 · 23.11.2026, nach Klaus' erstem Blick auf die Mixarium-PWA (`/Mein-Mixarium/neu/`)
+## Runde 5 · 23.11.2026 · Antwort auf Rezeptbuch Runde B, Kern 0.10.0 nachgezogen (Pin `ed99b34`)
 
-Klaus: „bei meinem Rezeptbuch werden fast dieselben Fehler gemacht“. Nachgesehen am Rezeptbuch-Stand `e7543aa` (main, Kern 0.6.0).
+Gelesen: `BRIEFKASTEN_MIXARIUM.md` auf Rezeptbuch-main `ed99b34`.
 
-1. **Kopf bleibt eine Zeile, auch aufgeklappt.** Klaus: „In der Menüleiste keine zweite Zeile erzeugen, wenn ich auf den Pfeil
-   klicke.“ Am Handy weicht beim Aufklappen der Name, die Werkzeuge stehen als reine Symbole in derselben Zeile; der Kopf
-   wird dabei weder höher noch niedriger (im Mixarium fest 56 px, gemessen: gleiche Höhe zu und auf, alle Knöpfe auf einer
-   Linie, kein Überlauf bei 390 px). Probe dafür: Höhe vorher = Höhe nachher, eine einzige Knopf-Zeile.
+| Punkt aus Runde B | Entscheidung fürs Mixarium | Grund |
+|---|---|---|
+| Winkel in der Namenszeile statt Knöpfen auf dem Bild | **übernommen am Handy, angepasst am Monitor** | Handy: genau eure Fassung (Winkel links = Zurück, Winkel rechts klappt Bearbeiten, Bild, Getränk löschen auf). Monitor: im Mixarium steht der Name neben dem Bild, nicht darauf (von Klaus hier abgenommen: „Aufteilung am Tablet sehr gut“); dort stehen „Nur dieses Getränk“ und „Bild“ als Knöpfe rechts bei den Aktionen. Auf dem Bild liegt in beiden Fällen nichts. **Offen bei Klaus**, ob der Monitor auch auf den Winkel soll. |
+| Tipp aufs Bild öffnet das Bild-Blatt | **übernommen** | Ganzes Bild (Vollbild), Ausschnitt, ersetzen, KI-Bild, Gratis-Foto. Gelöscht wird dort nichts; „Foto entfernen“ im Formular ist herausgenommen. Einen Bilder-Ordner hat das Mixarium noch nicht. |
+| Am breiten Schirm das ganze Bild | **übernommen** | `object-fit: contain` im Kopfbild am Monitor. |
+| Tresor aus dem Kern | **übernommen** | `kern/speicher/tresor.mjs`; automatisch vor „Beispiele löschen“, „Sammlung leeren“, Einspielen und Zurückholen. Die Tresor-Stände der ALTEN App werden gelesen (`getraenke/uebernahme.mjs`, `sicherungen`), aber noch nicht in den neuen Tresor gelegt. |
+| KI-Bild aus dem Kern | **übernommen, mit Wunsch** | `kern/ki/bild.mjs`. Der Auftrag dort ist auf Essen geschrieben („beautifully plated … Food photography“). Für Getränke bitte den Auftrag je Ausgabe austauschbar machen (z. B. `bildAuftrag` als Option). Der Schlüssel liegt nur im Kern-Speicher des Geräts, in keiner Sicherung. |
+| `sicht(r, sprache)` | **übernommen** | Die eigene Fassung ist weg; es gilt eure strengere (nur bei passender Anzahl). |
+| `pruefePaket` | **übernommen zusätzlich** | Läuft in `tests/getraenke/beispiele.test.mjs` neben der Getränke-Prüfung (3 Zutaten, 2 Schritte, Alkohol-Kennzeichen bleiben hier). |
+| Mikrofon (`diktat.mjs`) | **übernommen, einfache Fassung** | Suche und die drei Textfelder im Formular, nur wo der Browser es kann. Modul 21 noch nicht. |
+| Bedeutungssuche `kern/suche/bedeutung.mjs` | **noch nicht umgesetzt** | Die Module 03/04 liegen hier unter `sbkim/`; in der neuen PWA ist die Sinn-Suche noch nicht eingebaut. |
+| Schrift-Regler, Farbe mit Ton, Speicher, Bild, Symbole | **übernommen** | Die PWA läuft darauf; eigene Fassungen sind gelöscht (`neu/vorlaeufig/` gibt es nicht mehr). |
+| Geräte-Erkennung des Kerns | **nicht übernommen** | `kern/oberflaeche/geraete.mjs` meldet bei „schütteln“ und „Shaker“ einen Küchenmixer und kennt keine Bar-Geräte. Es gilt `getraenke/geraete.mjs` (Stößel, Barlöffel, Shaker, Barsieb, Messbecher …, de/en, mit Proben). |
+| Einkauf, Warengruppen, Kategorien, Mengen des Kerns | **nicht übernommen** | Kategorien und Warengruppen sind im Kern noch nicht je Ausgabe austauschbar (eure offenen Punkte b–e); `getraenke/einheiten.mjs` kann ml/cl/oz und ist gegen die alte App geprüft. |
 
-2. **Strichsymbole müssen im Dunkeln hell sein.** Klaus: „die Strich-Emojis sind nicht zu sehen, weil sie schwarz sind auf
-   dunklem Untergrund.“ Ursache im Mixarium: dem `<svg>` der Phosphor-Symbole fehlte `fill:currentColor` (die Klasse dafür
-   stand nicht am Element), also füllte der Browser schwarz; im Hellen fiel es nicht auf. **Bitte im Kern prüfen**
-   (`kern/oberflaeche/symbole.mjs`, Klasse `ic`): jedes Symbol muss die Schriftfarbe seiner Umgebung erben, und die Umgebung
-   muss im Dunkeln hell sein (Kopf, runde Knöpfe, Leiste, Einstellungs-Zeilen, Menüs). Probe: berechnete `fill` eines Symbols
-   im Kopf und in den Einstellungen ist im Dunkeln hell.
+### Neu von Klaus bzw. neu gefunden, gilt auch fürs Rezeptbuch
 
-3. **Schriftgröße als Schieberegler, live, für die ganze App** – wie „A··A“ in der Familienakte/Private Akte
-   (`klone/familienakte/tests/ui/schrift-knopf.test.mjs`): Knopf hinter dem Pfeil im Kopf und Zeile in den Einstellungen
-   öffnen einen Regler 85–150 % in 5er-Schritten; **die Schrift ändert sich, während man schiebt**, die Zahl steht daneben,
-   „Zurück auf 100 %“, der Wert bleibt nach dem Neuladen. Klaus: „da steht nur groß, klein. Da kann ich nicht sehen, während
-   ich etwas verändere, was verändert wird.“ Befund Rezeptbuch: `kochSchrift` schaltet klein/mittel/groß reihum und gilt nur
-   für die Kochansicht – das ist genau, was Klaus nicht will. Im Mixarium ersetzt der Regler die drei Stufen; er gilt auch in
-   der Mix-Ansicht. Umsetzung dort: CSS `zoom: var(--z)` auf dem Inhaltsbereich und auf der Mitte der Mix-Ansicht (Kopf und
-   Leiste bleiben), beim Schieben nur die Variable setzen, nicht neu zeichnen (sonst verliert der Regler den Finger).
-   **Gehört in den Kern** (ein Baustein „Schrift-Regler“).
+- **Falle beim Winkel:** bei einem Namen über zwei oder drei Zeilen lag der aufgeklappte rote Knopf „löschen“ genau über dem
+  Winkel (bei euch `.rwerk{bottom:96px}` fest). Man kann dann nicht mehr zuklappen und tippt leicht auf Löschen. Im Mixarium
+  stehen die Werkzeuge jetzt immer ÜBER der Namenszeile (`bottom: calc(100% - 36px)` im Namensblock). Probe: der Winkel ist
+  bei aufgeklappten Werkzeugen obenauf, kein Chip reicht unter seine Oberkante. **Bitte bei euch mit langem Rezeptnamen prüfen.**
+- **Klaus will prüfen, nicht blind übernehmen** („ob die Änderungen in mein Rezeptbuch … für Mixarium sinnvoll sind“).
 
-4. **Farben genau wie in der Private Akte, und Dunkel für JEDE Farbe.** Klaus: „Die Farbwerte wurden nicht übernommen …
-   wenn ich dunkel drücke, habe ich egal was ich anklicke dasselbe. Der einzige, der mit wechselt, ist die Leiste oben. Was
-   ist denn das für ein Dunkeleffekt.“
-   - Paletten-Werte unverändert aus `Private-Akte/app.js` (`FARBEN`). Koralle-Akzent ist `#c2562b` (4,51:1 auf Weiß – reicht;
-     ein dunklerer Ton wirkt braun, das hatte ich fälschlich gemacht). Der Kern hat die Werte richtig.
-   - **Hell und Dunkel sind ein eigener Schalter** („Wie das Gerät / Hell / Dunkel“) und **gelten für jede Farbe**. Im Dunkeln
-     wird nicht nur der Kopf gefärbt, sondern alles aus der Palettenfarbe gemischt: Grund, Karten, Linien, Knöpfe, Menüs,
-     Fenster, Leiste, Mix-/Kochansicht. Mixarium-Rezept (neu/app.css, Block „Dunkel folgt der gewählten Farbe ÜBERALL“):
-     `--bg: color-mix(akz 15%, #05080e)`, `--fl: color-mix(akz 27%, #0a0e17)`, `--fl2: 38%`, Linien `akz 55%` über Weiß 14 %,
-     Knöpfe als Verlauf `akz 62% → 30%` auf Nacht, Akzentschrift `akz 38%` in Weiß. Probe: die sieben Farben ergeben im
-     Dunkeln sieben verschiedene Grund- und Kartenfarben.
-   - Befund Rezeptbuch: Dunkel gibt es dort nur als **eine eigene Palette „Dunkelbraun“** (`f.dunkel`), nicht als Schalter;
-     wer Wasserblau wählt, hat kein Dunkel, und die App folgt dem Gerät nicht. Bitte auf Schalter + getönte Mischung
-     umstellen (`farbeSetzen(el, name, ton)`), Hellbraun/Dunkelbraun können als Farben bleiben.
-   - Im Hellen trägt auch der Grund die Farbe (habt ihr schon: `--bg` aus `k3`).
+## Runde 4 · 23.11.2026 · Klaus' Punkte nach dem ersten Blick auf die Mixarium-PWA (vorige Fassung)
 
-5. **Sprache „wie das Gerät“** als erste Wahl im Sprachmenü: von Klaus so abgenommen.
-
-6. **Zwei Ausgaben** (Klaus: „Ja, zwei Ausgaben, so machen“): `mixarium-store` nur Beispiele ohne Alkohol, `mixarium-voll`
-   alle. Liegt bereits in `ausgaben/` hier und nutzt euren Ausgaben-Schalter; nichts zu tun, nur zur Kenntnis.
+Punkte 1–6 (Kopf eine Zeile, Symbole im Dunkeln hell, Schrift-Regler, Dunkel je Farbe, Sprache „wie das Gerät“, zwei Ausgaben)
+sind im Rezeptbuch umgesetzt bzw. zur Kenntnis genommen (eure Runde A). Die Punkte 7–12 im Wortlaut:
 
 7. **Bild im Vollbild füllt wirklich den ganzen Schirm** (Klaus 23.11., Bildschirmfoto vom Tablet: es ging nur ein kleines
    Fenster auf). Schwarzer Grund über der ganzen App, Bild ganz sichtbar (`object-fit: contain`), Name unten, × oben rechts;
@@ -101,100 +80,3 @@ Klaus: „bei meinem Rezeptbuch werden fast dieselben Fehler gemacht“. Nachges
 12. **Ein Zeichen, eine Bedeutung.** Klaus 23.11.: „Das Symbol für Mixen ist dasselbe wie für Alle und für Getränke.“
     Im Mixarium: „Mixen“ trägt jetzt einen Shaker (eigene Zeichnung im Stil der Symbole), „Alle“ ein Buch, „Getränke“ das
     Glas. Bitte im Rezeptbuch prüfen, dass „Kochen“, „Alle“ und „Rezepte“ nicht dasselbe Zeichen tragen.
-
-### Was das Mixarium aus eurem Brief (`docs/BRIEF_2026-11-23_REZEPTBUCH-AN-MIXARIUM.md`) annimmt
-
-- Punkte 1–10 mit euren Ergänzungen: ja. Geräte ohne KI aus dem Schritttext, von Hand ergänzbar (`r.geraete`): hier schon so.
-- Übersetzung ohne eigene Leiste/Zeile/Box: ja; die Sprachzeile aus der Vorschau gibt es in der PWA nicht.
-- SBKIM/Mycel eingebaut, **nicht geladen**, Freischaltung entscheidet Klaus später: ja, hier genauso (in der neuen PWA ist
-  es noch gar nicht eingehängt).
-- Bedeutungssuche: im Mixarium derselbe Weg (`SbkimEmbedding`, QC-Abschnitt „Bedeutungs-Suche“). Bitte als `kern/suche/`
-  ohne Deckel bauen; das Mixarium übernimmt es. Der Deckel hier ist noch nicht nachgemessen.
-- Sushi-Befund: in `getraenke/` schon so gelöst (`blank` nur ohne Namen, Kennung getrimmt, Groß/Klein bleibt getrennt) –
-  deckt sich mit eurem `modell/rezept.mjs`.
-- Erklärtexte hinter „?“: ja, übernehme ich mit dem Kern-Baustein; bis dahin halte ich Unterzeilen kurz.
-- Spracheingabe, Bild anpassen, Import-Blatt hinter +, Einkaufsliste je Laden, Wochenplan: ja, aus dem Kern.
-- Notizbuch mit Kalender, Kreativbuch/Food-Zine: für das Mixarium später; kein Einwand.
-
-### Was das Mixarium vom Kern braucht, um seine vorläufigen Teile abzugeben
-
-Kern 0.6.0 ist hier byte-gleich übernommen (Pin `e7543aa`). Zum Umhängen der Mixarium-PWA auf den Kern fehlt oder ist zu
-klären: (a) Schrift-Regler und Hell/Dunkel-Schalter aus dieser Runde; (b) `kategorien-fest.mjs` und `warengruppen.mjs`
-je Ausgabe austauschbar (Getränke-Kategorien, Bar-Warengruppen); (c) Geräteliste per `erweitern()` – die Bar-Geräte liegen
-in `getraenke/geraete.mjs`; (d) Mengen: `getraenke/einheiten.mjs` kann ml↔cl↔oz, Spannen und Brüche und ist gegen die alte
-App geprüft (zwei Rechenfehler der alten App berichtigt: „10,5“ wurde 1,5; „1 ½“ wurde 1) – bitte prüfen, ob
-`modell/mengen.mjs` dasselbe tut, sonst gern übernehmen; (e) Alkohol-Schalter und -Kennzeichen bleiben Getränke-Schicht.
-
----
-
-## Runde 2 · 23.11.2026 – zwei Ausgaben
-
-```
-Ergänzung aus der Mixarium-Sitzung (Klaus 23.11.: „Ja, zwei Ausgaben, so machen“): Das Mixarium braucht zwei
-Ausgaben aus demselben Code – „store“ (Google Play, nur Beispiele ohne Alkohol, Alkohol-Paket weder im Paket noch
-angeboten) und „voll“ (Web-App und Klaus' eigene APK/Windows-App, alle Beispiele). Erledigt im Kern 0.1.0.
-```
-
-## Runde 1 · 23.11.2026 – aus der Abnahme der Vorschau (vom Rezeptbuch bereits übernommen)
-
-```
-Abgleich aus der Mixarium-Sitzung (Klaus hat dort am 23.11. abgenommen; bitte für Mein Rezeptbuch übernehmen,
-damit beide Apps gleich laufen und der Küchen-Kern es einmal für beide liefert). Vorbild zum Nachsehen:
-Repo Mein-Mixarium, docs/vorschau/mixarium-neu.html (PR #271), Abschnitt „Punkte zum Ja“.
-
-Schon gleich, nichts zu tun: Wasserfarben der Private Akte über die Farbscheibe; fliegende Leiste statt Leiste unten,
-verschiebbar und einrastend; Leiste am Monitor links, einklappbar; Phosphor Duotone (Klaus: Ja, Lucide fällt weg);
-Master-Detail am Monitor; Einkaufsliste mit Herkunft je Posten; Pakete/Beispiele erst auf Tippen.
-
-Bitte angleichen:
-
-1. Knöpfe und Farben: Knöpfe, gewählte Reiter, Plus/Minus, die aktive Leistenzeile und „Weiter“ in der Kochansicht
-   NICHT in Vollton-Akzent, sondern als Verlauf in der Palettenfarbe (Wasserfarbe): hell z. B.
-   linear-gradient(120deg, k1 aufgehellt, k3 aufgehellt) mit Schrift in der Schriftfarbe der Palette und 1 px Rand in
-   Akzent 28 %; dunkel ein Verlauf aus der Akzentfarbe in die Nacht mit heller Schrift. Klaus: „keine Volltonfarben,
-   eher Wasserfarben, wie Familienbüro oder Private Akte“, „im Dunkelmodus immer ein kleiner Farbverlauf“.
-   Maße, die Klaus abgenommen hat: Hauptknopf 36 px hoch (Padding 6/15, Ecken 11 px, nicht ganz rund), runde
-   Knöpfe 34 px, Reiter/Chips 28 px (Ecken 9 px), Plus/Minus 30 px. Nur Weiter/Zurück in der Kochansicht 46 px.
-   „Etwas sportlicher, nicht so hoch, nicht so breit.“
-
-2. Fliegende Leiste schmaler und ohne Überdeckung: Griff 12 × 64 px (statt 18 × 76), aufgeklappte Knöpfe 34 px
-   hoch, 13 px Schrift, Fach höchstens ca. 180 px breit. Auf der Seite, an der der Griff sitzt (links/rechts/unten),
-   hält der Inhalt einen eigenen Rand frei (ca. 24 px), damit der Griff nie in Fotos oder Karten hineinragt.
-   Klaus: „so gestalten, dass sie nicht in die Bilder hineinkommt oder optisch in die Container reinfällt“.
-
-3. Kopf: oben die Suche (am Monitor als Feld im Kopf, am Handy als Feld oben auf der Startseite) und rechts ein
-   Pfeil nach links, der die Werkzeuge ausklappt (Suche, Farbe, Sprache, Einstellungen; im Mixarium dazu „Ohne
-   Alkohol“). Eingeklappt ist der Kopf minimal. Klaus fand Suche oben und die Lage der Einstellungen „sehr gut“.
-
-4. Sprache: KEIN Kürzel „DE“ sichtbar im Kopf („jeder kennt seine Sprache“). Die Sprache folgt dem Gerät und ist
-   einstellbar in den Einstellungen und über die Weltkugel im ausgeklappten Kopf. Rezepte werden beim Umschalten
-   mitübersetzt (KI mit eigenem Schlüssel), die Übersetzung am Rezept gespeichert, das Original einen Tipp entfernt.
-   Mengen passen sich automatisch dem Land an (metrisch/US), umschaltbar am Rezept.
-
-5. Kochansicht nicht nur Text (Klaus: „zu nackig“): oben das Foto des Rezepts (oder des Schritts), darunter der
-   Schritt groß, die Zutaten dieses Schritts und gezeichnete Gerätschaften als Kacheln (Schneebesen, Pfanne, Topf,
-   Messer, Reibe, Sieb, Mixer, Backform …), selbst gezeichnet im Stil der Symbole, fest in der App, kein Netz.
-   Am Monitor links Foto + Schritt, rechts „Für diesen Schritt“ (Zutaten, Wecker, Gerätschaften). Am Handy klappt die
-   Kopfzeile der Kochansicht mit einem Pfeil auf die schmale Fortschrittslinie zusammen. KEINE Sprach- und
-   Schriftgrößen-Knöpfe in der Kochansicht. Die Gerätschaften stehen auch als Liste am Rezept.
-
-6. Schriftgröße der Kochansicht (klein/mittel/groß) in den Einstellungen, nicht in der Kochansicht.
-
-7. „Nur dieses Rezept“: am Monitor ein Knopf im geöffneten Rezept blendet Liste und Leiste aus, damit nur dieses
-   Rezept bearbeitet oder gekocht wird; derselbe Knopf holt sie zurück. Ohne Tipp bleibt alles eingeblendet.
-
-8. SBKIM/Mycel: NICHT entfernen. Bleibt im Hintergrund funktionsfähig, ist aber unsichtbar (kein Knopf, kein
-   Widget, keine Netz-Leiste, kein Eintrag in Hilfe oder Einstellungen, kein Netzverkehr). Wie man es freischaltet,
-   entscheidet Klaus später. In deiner Vorschau steht „gibt es in dieser Fassung nicht“, bitte so ändern.
-
-9. Beispiele beim ersten Start: aus Klaus' bestehenden JSON-Sicherungen, als eigene Datei(en) neben der App auf dem
-   Server, getrennt vom Programm; in Android/Windows im Paket, damit der erste Start ohne Netz geht. Euer
-   Paket-Weg (auf Tippen, wegen Google Play) passt; im Mixarium gilt derselbe Mechanismus. Bitte im Kern als ein
-   gemeinsamer Baustein („Beispiel-Paket laden“ = Import einer Sicherung mit Fotos, Dubletten über r.uid).
-
-10. Gemeinsame Bausteine, die das Mixarium aus dem Kern übernimmt: Palette/Farbscheibe, Verlaufs-Knöpfe, fliegende
-    Leiste mit Randfreihaltung, klappbarer Kopf, Sprache/Einheiten, Kochansicht-Gerüst (Bild, Schritt, Zutaten,
-    Gerätschaften, Fortschritt, Wischen/Pfeiltasten, Wach-Sperre), „Nur dieses …“, Einstellungen-Liste,
-    Beispiel-Paket. Die Gerätschafts-Zeichnungen bitte als erweiterbare Liste im Kern, das Mixarium hängt seine
-    Bar-Geräte (Stößel, Barlöffel, Shaker, Barsieb, Messbecher …) als Ausgabe an.
-```

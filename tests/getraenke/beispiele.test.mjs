@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import * as G from '../../getraenke/index.mjs';
+import { pruefePaket } from '../../kern/pruefung/paket.mjs';
 const lies = (f) => JSON.parse(readFileSync(new URL('../../beispiele/' + f, import.meta.url), 'utf8'));
 const katalog = lies('KATALOG.json');
 const KATS = new Set(G.KATEGORIEN.map((c) => c.id));
@@ -41,6 +42,7 @@ for (const p of katalog.pakete) {
       }
     }
   });
+  test(`${p.id}: auch die Paket-Prüfung des Küchen-Kerns findet nichts`, () => { const b = pruefePaket(g, { kategorien: KATS, minZutaten: 3, minSchritte: 2 }); assert.deepEqual(b, []); });
   test(`${p.id}: Alkohol-Kennzeichen passt zum Paket`, () => {
     for (const r of g) {
       if (p.alkohol) assert.ok(G.hatAlkohol(r), 'ohne Kennzeichen: ' + r.name);

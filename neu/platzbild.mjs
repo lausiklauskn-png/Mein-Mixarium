@@ -1,4 +1,4 @@
-// VORLÄUFIG – wandert in den Küchen-Kern (Platzhalterbild, wenn ein Rezept kein Foto hat).
+// Mein Mixarium · Platzhalterbild, wenn ein Getränk kein Foto hat (Glasform nach Glas und Kategorie: getränke-eigen).
 // Gezeichnetes Glas in einer Farbe, die fest zum Namen gehört. Kein Netz, keine Datei.
 const GL = {
   highball: ['M164 64 L236 64 L231 252 Q230 262 220 262 L180 262 Q170 262 169 252 Z', 104, ''],

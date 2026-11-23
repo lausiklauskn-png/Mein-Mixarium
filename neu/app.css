@@ -579,3 +579,39 @@ h1,h2,h3,p{margin:0}
 .mx .bildpfeil .ico{width:16px;height:16px}
 .mx .bildwerk .zurueck,.mx .bildwerk .vollbild{position:static;width:auto;height:30px;border-radius:9px;padding:0 10px;display:inline-flex;gap:6px;align-items:center;background:rgba(255,255,255,.94);color:#0f1d3a;font-size:13px;font-weight:600;animation:mx-vor .16s ease both}
 .mx .bildwerk .ico{width:16px;height:16px}
+/* ═══ Auf dem Küchen-Kern: Farbe, Ton und Schrift setzt der Kern (farbeSetzen, schriftSetzen). Hier nur die Zuordnung
+   seiner Variablen auf die Namen dieser Ausgabe. */
+.mx{--linie:var(--line);--muted:var(--mut);--schrift:var(--kopf-schrift);--akzsoft:var(--fl2)}
+.mx .schriftregler{display:flex;align-items:center;gap:10px}
+.mx .schriftregler input{flex:1;min-width:0;height:32px;accent-color:var(--akz)}
+.mx .schriftregler output{font-weight:700;font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
+/* Namenszeile auf dem Bild: Winkel links (Zurück) und rechts (Werkzeuge), wie in Mein Rezeptbuch */
+.mx .tzeile{display:flex;align-items:flex-start;gap:6px}
+.mx .tzeile h2{flex:1;min-width:0}
+.mx .wk-pf{flex:none;width:34px;height:34px;display:grid;place-items:center;color:#fff;border-radius:50%;margin:-3px -6px 0 0;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.mx .wk-pf.zur{margin:-3px 0 0 -8px}
+.mx .wk-pf:focus-visible{outline:2px solid #fff}
+.mx .held .ueber p{padding-left:32px}
+/* Die Werkzeuge stehen ÜBER der Namenszeile, egal wie viele Zeilen der Name hat – sie dürfen den Winkel nie verdecken
+   (sonst liegt „Getränk löschen“ unter dem Finger, der zuklappen will). */
+.mx .rwerk{position:absolute;right:10px;bottom:calc(100% - 36px);z-index:3;display:flex;flex-direction:column;align-items:stretch;gap:5px;animation:mx-auf .18s ease both}
+.mx .rwerk .chip{min-height:34px;white-space:nowrap;background:rgba(255,255,255,.94);color:#14273a;border:0;box-shadow:0 2px 8px rgba(0,0,0,.25);border-radius:10px}
+.mx .rwerk .chip .ico{width:16px;height:16px;color:#14273a}
+.mx .rwerk .chip.rot,.mx .rwerk .chip.rot .ico{color:#a3321f}
+.mx .held[data-a]{cursor:pointer}
+/* Am breiten Schirm das ganze Bild, kein Streifen */
+.mx .held.ganz{background:var(--fl2)}
+.mx .held.ganz .foto{object-fit:contain}
+/* Bild-Blatt und Ausschnitt */
+.mx .bb-bild{display:block;width:100%;border-radius:14px;overflow:hidden;background:var(--fl2);cursor:zoom-in}
+.mx .bb-bild img{display:block;width:100%;max-height:46vh;object-fit:contain}
+.mx .fenster .eliste{margin-top:10px}
+.mx .as-vor{aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:var(--fl2);margin-bottom:10px}
+.mx .as-vor img{width:100%;height:100%;object-fit:cover;display:block}
+.mx .fenster input[type=range]{width:100%;accent-color:var(--akz)}
+/* Mikrofon (Spracheingabe aus dem Kern) */
+.mx .mikro{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--akz)}
+.mx .mikro .ico{width:18px;height:18px}
+.mx .mikro.an{background:var(--rot);color:#fff}
+.mx .felder label{position:relative}
+.mx .felder label>.mikro{position:absolute;right:4px;top:-6px}
