@@ -190,6 +190,55 @@ if (will(4)) {
   await c.close();
 }
 
+if (will(5)) {
+  console.log('5 · Getränkebuch: als PDF drucken oder als Datei zum Blättern, ganz oder eine Auswahl; „Ohne Alkohol“ gilt');
+  /* Eine Limonade trägt ein Bild: sonst wäre „ohne Bilder“ in der Limonaden-Auswahl von selbst wahr. Der Rum-Ordner hält nur das Getränk mit Alkohol. */
+  const BUCH = [D(1, 'Gurkenlimo', { cat: 'limo', img: BILD }), D(2, 'Ingwer <b>Shot</b>', { cat: 'tee' }), D(3, 'Holunderlimo', { cat: 'limo' }), D(4, 'Minzwasser'), D(5, 'Rum-Punsch', { cat: 'ckt', alcohol: true, img: BILD, folder: 'o-rum' }, [['4', 'cl', 'Rum']])];
+  const ORDNER = [{ id: 'o-leer', name: 'Leerer Ordner' }, { id: 'o-rum', name: 'Rum-Ordner' }];
+  const wahlen = (q) => q.locator('#buch-wahl option').allInnerTexts().then((l) => l.map((t) => t.replace(/\s+/g, ' ').trim()));
+  /* Öffnet das Fenster über die Zeile in den Einstellungen; fehlt die Zeile, steht das als rote Zusicherung da, nicht als Absturz. */
+  const auf = async (q, art) => { if (!(await q.locator('.fenster').count())) { await zuEinst(q); } const z = q.locator(`.thema[data-g=sichern] [data-a=buch][data-art=${art}]`); if (!(await z.count())) return false; await z.click(); await q.waitForSelector('#buch-wahl'); return true; };
+  const lade = async (q) => { const [dl] = await Promise.all([q.waitForEvent('download', { timeout: 15000 }), q.click('[data-a=buch-los]')]); return { name: dl.suggestedFilename(), html: await readFile(await dl.path(), 'utf8') }; };
+  ({ p, c } = await seite({ getraenke: BUCH, ordner: ORDNER }));
+  await zuEinst(p);
+  const bz = (await p.locator('.thema[data-g=sichern] .ezeile[data-a=buch]').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
+  pruefe('unter „Sichern“ stehen zwei Zeilen: Getränkebuch drucken (mit Zahl), Buch zum Blättern; jede in einer Zeile bei 390 px', bz.length === 2 && /^Getränkebuch drucken ?5$/.test(bz[0]) && /^Buch zum Blättern ?als Datei$/.test(bz[1])
+    && await p.locator('.thema[data-g=sichern] .ezeile[data-a=buch] b').evaluateAll((l) => l.length === 2 && l.every((e) => e.getClientRects().length === 1 && e.scrollWidth <= e.clientWidth)), bz.join(' | '));
+  if (!(await auf(p, 'blaettern'))) pruefe('das Fenster fragt Titel, Auswahl (mit Zahlen) und „mit Bildern“, ohne Erklärtext', false, 'keine Zeile'); else {
+  const w1 = await wahlen(p);
+  pruefe('das Fenster fragt Titel, Auswahl (mit Zahlen) und „mit Bildern“, ohne Erklärtext', await p.inputValue('#buch-titel') === 'Mein Mixarium' && w1[0] === 'Alle Getränke · 5' && w1.includes('Limonaden · 2') && w1.includes('Leerer Ordner · 0') && w1.includes('Rum-Ordner · 1') && await p.locator('#buch-bilder').isChecked() && await p.locator('.fenster p').count() === 0, w1.join(' | '));
+  const reihe = await p.evaluate(() => { const k = [...document.querySelectorAll('.fenster .reihe .knopf')].map((e) => e.getBoundingClientRect()); return { n: k.length, eineZeile: k.length === 2 && Math.abs(k[0].top - k[1].top) < 2 && k.every((r) => r.height < 60), quer: document.documentElement.scrollWidth - innerWidth }; });
+  pruefe('bei 390 px stehen „Abbrechen“ und „Speichern“ in einer Zeile; nichts läuft quer', reihe.eineZeile && reihe.quer <= 0, JSON.stringify(reihe));
+  await p.fill('#buch-titel', 'Unser Barbuch'); const ganz = await lade(p);
+  pruefe('„Speichern“ lädt eine eigenständige Datei mit dem Titel und allen Getränken herunter', ganz.name === 'Unser-Barbuch.html' && ganz.html.includes('Unser Barbuch') && ['Gurkenlimo', 'Holunderlimo', 'Minzwasser', 'Rum-Punsch'].every((n) => ganz.html.includes(n)) && /Content-Security-Policy/i.test(ganz.html), ganz.name);
+  pruefe('das Deckblatt zählt Getränke, nicht Rezepte; Text steht entschärft darin, das Bild ist dabei', ganz.html.includes('5 Getränke') && !/Rezepte/.test(ganz.html) && ganz.html.includes('Ingwer &lt;b&gt;Shot&lt;/b&gt;') && !ganz.html.includes('Ingwer <b>Shot</b>') && ganz.html.includes(BILD));
+  pruefe('die Meldung nennt die Größe der Datei', /Buch gespeichert · \d/.test(await toastMit(p, /Buch gespeichert/)));
+  await auf(p, 'blaettern'); await p.selectOption('#buch-wahl', { label: 'Limonaden · 2' }); await p.uncheck('#buch-bilder'); const teil = await lade(p);
+  pruefe('eine Kategorie als Auswahl: nur ihre Getränke stehen im Buch', teil.html.includes('Gurkenlimo') && teil.html.includes('Holunderlimo') && !teil.html.includes('Minzwasser') && !teil.html.includes('Rum-Punsch') && teil.html.includes('2 Getränke'));
+  pruefe('ohne Bilder ist kein Bild in der Datei', !teil.html.includes('data:image/png'));
+  await auf(p, 'blaettern'); await p.selectOption('#buch-wahl', { label: 'Rum-Ordner · 1' }); const ord = await lade(p);
+  pruefe('ein Ordner als Auswahl: nur sein Getränk steht im Buch', ord.html.includes('Rum-Punsch') && !ord.html.includes('Gurkenlimo') && ord.html.includes('1 Getränk'));
+  await auf(p, 'blaettern'); await p.selectOption('#buch-wahl', { label: 'Leerer Ordner · 0' }); await p.fill('#buch-titel', 'Leer'); await p.click('[data-a=buch-los]');
+  const t = await toastMit(p, /kein Getränk/, 5000);
+  pruefe('eine leere Auswahl wird gesagt; das Fenster bleibt offen, mit Titel und Wahl', /In dieser Auswahl ist kein Getränk/.test(t) && await p.locator('#buch-wahl').count() === 1 && await p.inputValue('#buch-wahl') === 'o:o-leer' && await p.inputValue('#buch-titel') === 'Leer', t);
+  await p.click('[data-a=fenster-zu]'); await p.waitForSelector('.fenster', { state: 'detached' });
+  await p.evaluate(() => { window.__gedruckt = 0; const alt = HTMLIFrameElement.prototype.__lookupGetter__('contentWindow'); Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', { get() { const w = alt.call(this); if (w && this.hasAttribute('data-kern-druck')) w.print = () => { window.__gedruckt++; }; return w; } }); });
+  const seitenVor = c.pages().length; await auf(p, 'pdf'); await p.selectOption('#buch-wahl', { index: 0 }); await p.fill('#buch-titel', 'Mein Mixarium'); await p.click('[data-a=buch-los]');
+  await bis(p, () => window.__gedruckt === 1, null, 15000);
+  const druck = await p.evaluate(() => { const f = document.querySelector('iframe[data-kern-druck]'); return f ? { html: f.srcdoc, sandbox: f.getAttribute('sandbox') || '' } : null; });
+  pruefe('„Drucken“ druckt das ganze Buch aus einem unsichtbaren Rahmen ohne Skripte; kein neues Fenster', !!druck && await p.evaluate(() => window.__gedruckt) === 1 && druck.html.includes('Mein Mixarium') && ['Gurkenlimo', 'Holunderlimo', 'Minzwasser', 'Rum-Punsch'].every((n) => druck.html.includes(n)) && !/allow-scripts/.test(druck.sandbox) && c.pages().length === seitenVor);
+  }
+  await c.close();
+  /* „Ohne Alkohol“: das Getränk mit Alkohol fehlt in Zahl, Auswahl und Buch; sein Ordner ist leer. */
+  ({ p, c } = await seite({ getraenke: BUCH, ordner: ORDNER, ohneAlkohol: true }));
+  if (!(await auf(p, 'blaettern'))) pruefe('„Ohne Alkohol“ ist an: kein Getränk mit Alkohol kommt ins Buch, auch nicht über seinen Ordner', false, 'keine Zeile'); else {
+  const w2 = await wahlen(p); const ohne = await lade(p);
+  await auf(p, 'blaettern'); await p.selectOption('#buch-wahl', 'o:o-rum');   /* nach Wert: steht die Zahl falsch, fällt die Zusicherung, nicht der Griff */ await p.click('[data-a=buch-los]'); const t2 = await toastMit(p, /kein Getränk/, 5000);
+  pruefe('„Ohne Alkohol“ ist an: kein Getränk mit Alkohol kommt ins Buch, auch nicht über seinen Ordner', w2[0] === 'Alle Getränke · 4' && !w2.some((x) => /Cocktails/.test(x)) && w2.includes('Rum-Ordner · 0') && ['Gurkenlimo', 'Holunderlimo', 'Minzwasser'].every((n) => ohne.html.includes(n)) && !ohne.html.includes('Rum-Punsch') && ohne.html.includes('4 Getränke') && /kein Getränk/.test(t2), w2.join(' | ') + ' · ' + t2);
+  }
+  await c.close();
+}
+
 if (will(6)) {
   console.log('6 · Vom Glas: ein Foto eines fertigen Getränks, Claude schlägt ein Rezept vor');
   ({ p, c, netz } = await seite({ getraenke: [D(1, 'Zitronen-Spritz')], einst: { scan: { anbieter: 'mistral', stufe: 'schnell' } } }));
