@@ -120,6 +120,8 @@ export function sammle(wurzel = WURZEL) {
       const re = new RegExp('(?:const|let|var)\\s+([\\w$]+)\\s*=\\s*\\(\\s*([\\w$]+)\\s*,\\s*([\\w$]+)\\s*\\)\\s*=>\\s*' + tName + '\\s*\\([^,()]*(?:\\([^()]*\\))?\\s*,\\s*\\2\\s*,\\s*\\3\\s*\\)', 'g');
       for (const m of q.matchAll(re)) if (L.ebene[m.index]) { namen.push([m[1].replace(/\$/g, '\\$'), 0]); kurzOrt.push([m.index, m.index + m[0].length]); }
     }
+    /* Eine Datei, die den Text-Helfer als Parameter bekommt (neu/handbuch.mjs: `export const handbuch = (L) => [ … ]`), ruft L('de', 'en') ohne Import. */
+    else if (/export\s+const\s+[\w$]+\s*=\s*\(\s*L\s*\)\s*=>/.test(q)) namen.push(['L', 0]);
     for (const [name, vorn] of namen) {
       for (const m of q.matchAll(new RegExp('(?<![\\w$.])' + name + '\\s*\\(', 'g'))) {
         if (!L.ebene[m.index] || kurzOrt.some(([v, b]) => m.index >= v && m.index < b)) continue;   // Kommentar, Text – oder die Festlegung des Kurznamens

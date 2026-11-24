@@ -249,6 +249,32 @@ if (will(20)) {
   await c.close();
 }
 
+if (will(21)) {
+  console.log('21 · Handbuch: Themen zum Aufklappen, in jeder Sprache');
+  /* Fehlt die Zeile, wird das als rote Zusicherung gemeldet, nicht als Absturz am Klick. */
+  const oeffne = async (q) => { await zuEinst(q); const z = q.locator('.thema[data-g=ueber] [data-a=handbuch]'); if (!(await z.count())) return false; await z.click(); await q.waitForSelector('#handbuch'); return true; };
+  const absaetze = (q) => q.locator('#handbuch p').evaluateAll((l) => l.map((e) => e.textContent.trim()));
+  ({ p, c } = await seite({ getraenke: [D(1, 'Limo')] }));
+  if (!(await oeffne(p))) { pruefe('unter „Über“ öffnet „Handbuch“ ein Fenster mit Themen, alle eingeklappt', false, 'keine Zeile „Handbuch“'); await c.close(); } else {
+  const themen = await p.locator('#handbuch details').count(), offen = await p.locator('#handbuch details[open]').count();
+  pruefe('unter „Über“ öffnet „Handbuch“ ein Fenster mit Themen, alle eingeklappt', themen >= 10 && offen === 0 && /Handbuch/.test(await p.locator('.fenster').first().innerText()), `${themen} Themen, ${offen} offen`);
+  pruefe('jedes Thema trägt ein Symbol und einen Titel', await p.locator('#handbuch summary').evaluateAll((l) => l.every((s) => s.querySelector('svg') && s.textContent.trim().length > 2)));
+  await p.locator('#handbuch summary').nth(2).click();
+  pruefe('ein Tipp klappt ein Thema auf und zeigt seine Absätze', await p.locator('#handbuch details[open] p').count() >= 2 && (await p.locator('#handbuch details[open] p').first().innerText()).length > 40);
+  const lage = await p.evaluate(() => { const h = document.getElementById('handbuch'); return { quer: document.documentElement.scrollWidth - innerWidth, hoch: h.getBoundingClientRect().height, rollt: getComputedStyle(h).overflowY }; });
+  pruefe('bei 390 px läuft nichts quer; die Themen rollen im Fenster', lage.quer <= 0 && lage.rollt === 'auto' && lage.hoch > 100, JSON.stringify(lage));
+  const deutsch = await absaetze(p);
+  await c.close();
+  /* Ohne Eintrag in der Tabelle fällt die App auf ENGLISCH zurück, nicht auf Deutsch: verglichen wird mit beiden. */
+  ({ p, c } = await seite({ getraenke: [D(1, 'Limo')], einst: { sprache: 'en' } })); await oeffne(p);
+  const englisch = await absaetze(p); await c.close();
+  ({ p, c } = await seite({ getraenke: [D(1, 'Limo')], einst: { sprache: 'es' } })); await oeffne(p);
+  const es = await absaetze(p), gleich = es.filter((x) => deutsch.includes(x) || englisch.includes(x));
+  pruefe('auf Spanisch ist jeder Absatz übersetzt (keiner steht auf Deutsch oder Englisch da)', englisch.length === deutsch.length && es.length === deutsch.length && gleich.length === 0 && (await p.locator('#handbuch summary').first().innerText()).trim() === 'Primeros pasos', gleich.slice(0, 2).join(' · '));
+  await c.close();
+  }
+}
+
 pruefe('keine Fehler in der Konsole, kein Aufruf nach draußen außer den gestellten', fehler.length === 0, fehler.slice(0, 3).join(' · '));
 await b.close(); server.close();
 console.log(`\n${gruen} grün · ${rot} ROT`); process.exitCode = rot ? 1 : 0;

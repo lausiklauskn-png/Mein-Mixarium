@@ -36,6 +36,7 @@ import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, recht
 import { druckRezept, drucke } from '../kern/ausgabe/druck.mjs';
 import { teilLink, ausTeilLink, qrSvg, passtInQr } from '../kern/teilen/qr.mjs';
 import { zusatz } from './zusatz.mjs';
+import { handbuch } from './handbuch.mjs';
 import { installation, istApple, aktualisieren } from '../kern/oberflaeche/app-pflege.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
@@ -50,7 +51,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor26';
+export const FASSUNG = '10.0.0-vor27';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -472,7 +473,7 @@ function vMehr() {
       z(I('box'), L('Beispiele laden', 'Load examples'), '', 'data-a="beispiele"') + (bsp ? z(I('trash'), L('Beispiele löschen', 'Delete examples'), String(bsp), 'data-a="beispiele-weg"') : '')],
     ['aufraeumen', 'trash', WF.koralle, L('Aufräumen', 'Clean up'), '', z(I('warn'), L('Sammlung leeren', 'Empty the collection'), L('mit Rückfrage', 'asks first'), 'data-a="leeren"')],
     ['ueber', 'info', WF.grau, L('Über', 'About'), '',
-      z(I('info'), 'Mein Mixarium', FASSUNG, 'data-a="ueber"') + `<a class="ezeile" href="../impressum.html">${I('book')}<span><b>${L('Impressum', 'Legal notice')}</b></span>${I('right')}</a>`],
+      z(I('book'), L('Handbuch', 'Manual'), '', 'data-a="handbuch"') + z(I('info'), 'Mein Mixarium', FASSUNG, 'data-a="ueber"') + `<a class="ezeile" href="../impressum.html">${I('book')}<span><b>${L('Impressum', 'Legal notice')}</b></span>${I('right')}</a>`],
   ];
   return `<div class="innen-p"><h2 class="titel">${L('Einstellungen', 'Settings')}</h2><div class="themen">${themen.map(([id, i, kc, titel, hilfe, zeilen]) => { const auf = Z.einstAuf.has(id);
     return `<div class="thema ${auf ? 'auf' : ''}" data-g="${id}" style="--kc:${kc}"><div class="gkopf-zeile"><button class="gkopf" data-a="einst-auf" data-g="${id}" aria-expanded="${auf}">${kfeld(i)}<span>${titel}</span>${I(auf ? 'up' : 'right')}</button>${auf && hilfe ? frag(hilfe) : ''}</div>${auf ? `<div class="eliste">${zeilen}</div>` : ''}</div>`; }).join('')}</div></div>`;
@@ -1142,6 +1143,7 @@ const TUN = {
   einspielen() { $('#datei').click(); return false; },
   uebernehmen() { ausAlterApp(false).then(() => zeichne(true)); return false; },
   leeren() { Z.fenster = { titel: L('Sammlung leeren', 'Empty the collection'), html: `<p class="ftext">${L('Das entfernt alle Getränke, Getränkekarten und die Einkaufsliste aus dieser App. Einstellungen bleiben. Speichere vorher eine Sicherung, dann kannst du alles wieder einspielen.', 'This removes all drinks, drinks lists and the shopping list from this app. Settings stay. Save a backup first, then you can restore everything.')}</p><div class="reihe ende"><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf hell" data-a="sichern">${I('download')}${L('Erst sichern', 'Back up first')}</button><button class="knopf rot" data-a="fenster-ja">${L('Jetzt leeren', 'Empty now')}</button></div>`, async ja() { await tresorAuto(L('vor „Sammlung leeren“', 'before emptying')); const e = G.sammlungLeeren(A); A = { ...e.sammlung, anlaesse: [] }; sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; Z.kat = 'all'; melde(fuelle(L('{0} Getränke entfernt. Die App ist leer.', '{0} drinks removed. The app is empty.'), e.entfernt.getraenke)); } }; },
+  handbuch() { Z.fenster = { titel: L('Handbuch', 'Manual'), html: `<div class="handbuch" id="handbuch">${handbuch(L).map(([i, titel, abs]) => `<details><summary>${I(i)}<span>${esc(titel)}</span></summary>${abs.map((a) => `<p>${esc(a)}</p>`).join('')}</details>`).join('')}</div>` }; },   /* auf den Blättern steht kein Erklärtext; nachlesen kann man hier (Vorbild Rezeptbuch) */
   ueber() { Z.fenster = { titel: 'Mein Mixarium', html: `<p class="ftext">${fuelle(L('Fassung {0}. Das ist die neue Gestaltung zum Ansehen und Beurteilen. Deine Daten liegen nur auf diesem Gerät. Ohne dein Zutun geht nichts ins Netz: geladen wird nur, wenn du ein Beispielpaket antippst.', 'Version {0}. This is the new design to look at and judge. Your data stays on this device only. Nothing goes online without you: something loads only when you tap an example package.'), FASSUNG)}</p>` }; },
   'anlass-neu'() { anlassFenster(null); return false; }, 'anlass-bearbeiten'() { anlassFenster(A.anlaesse.find((x) => x.id === Z.anlass)); return false; },
   'anlass-zu'() { Z.anlass = null; },
