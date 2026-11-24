@@ -1,5 +1,5 @@
 // Mein Mixarium · Zusätze: Stücke, die für sich stehen, damit die Hauptdatei (app.mjs) nicht weiter wächst.
-// Prüfung des Bildauftrags · KI-Bilder für alle ohne Bild · KI-Richter der Suche · Tresor-Stände der bisherigen App.
+// Prüfung des Bildauftrags · KI-Bilder für alle ohne Bild · KI-Richter der Suche · Tresor-Stände der bisherigen App · Getränkebuch.
 // app.mjs reicht ihre Werkzeuge herein und ruft die Stücke an wenigen, benannten Stellen (such dort nach „ZU.“).
 // Die Aktionen hängen sich selbst in TUN; Rückgabe false heißt wie dort: nicht neu zeichnen.
 import { pruefeBildAuftrag, sammelBilder, sammelKosten, ohneBild } from '../kern/ki/bild.mjs';
@@ -7,12 +7,16 @@ import { kiAnweisungen } from '../kern/pruefung/datei.mjs';
 import { richte, kandidat, richterHinaus, RICHTER_MAX } from '../kern/suche/richter.mjs';
 import { leseAltenTresor, alteStaendeInTresor } from '../kern/speicher/alt-tresor.mjs';
 import { text as spText, fuelle } from '../kern/oberflaeche/sprache.mjs';
+import { katVonRezept, ordnerVonRezept } from '../kern/modell/rezept.mjs';
+import { buchInhalt, buchPdf, buchBlaettern, buchGroesse, buchGroesseText } from '../kern/ausgabe/buch.mjs';
+import { drucke } from '../kern/ausgabe/druck.mjs';
 
 /** app: { sprache(), esc, I, Z, TUN, SK, W, melde, sichern, zeichne, schluesselFenster(a, danach), bildAusDatei(blob), tresorAuto(grund),
  *         bildAn(uid, img), sichtbare() → die Getränke, die zu sehen sind („Ohne Alkohol“ gilt: nichts Ausgeblendetes geht an eine KI),
  *         warte(fenster, fertig) → ruft fertig, sobald dieses Fenster nicht mehr offen ist,
  *         tr → der Tresor des Kerns, E() → Einstellungen des Geräts, einstSichern(),
- *         sinnTreffer() → Treffer der Sinn-Suche (nur Sichtbares), sicht(r) → Fassung in der Sprache der Oberfläche, katName(r) } */
+ *         sinnTreffer() → Treffer der Sinn-Suche (nur Sichtbares), sicht(r) → Fassung in der Sprache der Oberfläche, katName(r),
+ *         buchKats() → [{ id, name }] in der Reihenfolge der Leiste, ordner() → die Ordner, ordTitel(o) } */
 export function zusatz(app) {
   const { esc, I, Z, TUN, SK, W, melde, zeichne } = app;
   const L = (de, en) => spText(app.sprache(), de, en);
@@ -113,7 +117,40 @@ export function zusatz(app) {
     return e.dazu;
   }
 
+  /* ── Getränkebuch: alle Getränke, eine Kategorie oder ein Ordner als PDF zum Drucken oder als Datei zum Blättern (kern/ausgabe/buch.mjs).
+     Ins Buch kommt nur, was zu sehen ist: steht „Ohne Alkohol“ an, bleibt jedes Getränk mit Alkohol draußen. ── */
+  const anzahl = (n) => (n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n));
+  /** Die zwei Zeilen für die Einstellungen (Thema „Sichern“: die Getränke kommen aus dem Gerät, auf Papier oder als Datei). z: der Zeilen-Baustein der App. */
+  const buchZeilen = (z) => z(I('print'), L('Getränkebuch drucken', 'Print drinks book'), String(app.sichtbare().length), 'data-a="buch" data-art="pdf"') + z(I('book'), L('Buch zum Blättern', 'Book to leaf through'), L('als Datei', 'as a file'), 'data-a="buch" data-art="blaettern"');
+  const bw = { titel: 'Mein Mixarium', wahl: '', bilder: true };   /* bleibt stehen, solange die App offen ist; eine leere Auswahl zeichnet das Fenster neu */
+  function buchHtml(art) {
+    const rs = app.sichtbare(), zahl = new Map(), oz = new Map();
+    for (const r of rs) { const k = katVonRezept(r), o = ordnerVonRezept(r, app.ordner()); zahl.set(k, (zahl.get(k) || 0) + 1); if (o) oz.set(o, (oz.get(o) || 0) + 1); }
+    const opt = (v, t) => `<option value="${esc(v)}" ${bw.wahl === v ? 'selected' : ''}>${esc(t)}</option>`;
+    return `<div class="felder"><input class="feld" id="buch-titel" value="${esc(bw.titel)}" aria-label="${esc(L('Titel', 'Title'))}" autocomplete="off">
+      <select class="feld" id="buch-wahl" aria-label="${esc(L('Auswahl', 'Selection'))}">${opt('', L('Alle Getränke', 'All drinks') + ' · ' + rs.length)}${app.buchKats().filter((c) => zahl.get(c.id)).map((c) => opt('k:' + c.id, c.name + ' · ' + zahl.get(c.id))).join('')}${app.ordner().map((o) => opt('o:' + o.id, app.ordTitel(o) + ' · ' + (oz.get(String(o.id)) || 0))).join('')}</select>
+      <label class="haken"><input type="checkbox" id="buch-bilder" ${bw.bilder ? 'checked' : ''}> ${L('mit Bildern', 'with pictures')}</label></div>
+      <div class="reihe ende"><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" data-a="buch-los" data-art="${art}">${art === 'pdf' ? I('print') + L('Drucken', 'Print') : I('download') + L('Speichern', 'Save')}</button></div>`;
+  }
+  TUN.buch = (b) => { const art = b.dataset.art === 'pdf' ? 'pdf' : 'blaettern'; Z.fenster = { titel: art === 'pdf' ? L('Getränkebuch als PDF', 'Drinks book as a PDF') : L('Getränkebuch zum Blättern', 'Drinks book to leaf through'), buch: art, html: buchHtml(art) }; };
+  TUN['buch-los'] = (b) => {
+    const art = b.dataset.art, f = Z.fenster, w = document.getElementById('buch-wahl').value;
+    bw.titel = document.getElementById('buch-titel').value.trim() || 'Mein Mixarium'; bw.wahl = w; bw.bilder = document.getElementById('buch-bilder').checked;
+    const rs = app.sichtbare(), opt = { titel: bw.titel, kategorien: app.buchKats(), ordner: app.ordner(), sprache: app.sprache(), mitBildern: bw.bilder, anzahlText: anzahl,
+      auswahl: !w ? null : w.startsWith('k:') ? { kat: w.slice(2) } : { ordner: w.slice(2) } };
+    if (!buchInhalt(rs, opt).anzahl) { if (f) f.html = buchHtml(art); melde(L('In dieser Auswahl ist kein Getränk', 'No drink in this selection')); return false; }   /* das Fenster bleibt offen, mit der Wahl */
+    Z.fenster = null; zeichne(); buchSetzen(art, rs, opt); return false;
+  };
+  async function buchSetzen(art, rs, opt) {
+    try {
+      if (art === 'pdf') await W.mit(L('Buch wird gesetzt …', 'Setting the book …'), () => drucke(buchPdf(rs, opt), { sprache: app.sprache() }));
+      else { const html = await W.mit(L('Buch wird gesetzt …', 'Setting the book …'), async () => buchBlaettern(rs, opt));
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = (opt.titel.replace(/[^\p{L}\p{N} _-]+/gu, '').trim().replace(/\s+/g, '-') || 'Getraenkebuch') + '.html'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+        melde(fuelle(L('Buch gespeichert · {0}', 'Book saved · {0}'), buchGroesseText(buchGroesse(html), app.sprache()))); }
+    } catch (f) { melde(f.message); }
+  }
+
   /* Was nach dem Speichern eines Schlüssels von selbst weitergeht (Kennung = Name der Aktion in TUN). */
   const danach = ['sammel-bilder', 'richter'];
-  return { bildFreigabe, sammelKnopf, sinnBlock, altTresor, danach, wahl, stellenHtml };
+  return { bildFreigabe, sammelKnopf, sinnBlock, altTresor, danach, wahl, stellenHtml, buchZeilen };
 }

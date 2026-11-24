@@ -49,6 +49,7 @@ export const handbuch = (L) => [
   ['safe', L('Sichern', 'Backup'), [
     L('Die Getränke liegen nur in diesem Gerät. Wird der Browser geleert, sind sie weg. Eine Sicherung als Datei schützt davor und bringt sie auf ein anderes Gerät.', 'The drinks are stored on this device only. If the browser is cleared, they are gone. A backup file protects against that and takes them to another device.'),
     L('Der Tresor hält dazu mehrere Stände im Gerät. Er hilft, wenn etwas falsch gelöscht oder eingelesen wurde. KI-Schlüssel kommen nie in eine Sicherung.', 'The vault also keeps several states on the device. It helps when something was deleted or imported by mistake. AI keys never go into a backup.'),
+    L('„Getränkebuch drucken“ und „Buch zum Blättern“ machen aus allen Getränken, einer Kategorie oder einem Ordner ein Buch: als PDF zum Drucken oder als Datei zum Blättern, mit oder ohne Bilder. Ist „Ohne Alkohol“ an, kommt kein Getränk mit Alkohol hinein.', '“Print drinks book” and “Book to leaf through” turn all drinks, one category or one folder into a book: as a PDF to print or as a file to leaf through, with or without pictures. If “Alcohol-free” is on, no drink with alcohol goes into it.'),
   ]],
   ['auge', L('Darstellung und Sprache', 'Appearance and language'), [
     L('Farbe, Hell oder Dunkel, Schriftgröße und hoher Kontrast stellst du in den Einstellungen unter „Darstellung“ ein.', 'You set colour, light or dark, text size and high contrast in the settings under “Appearance”.'),
