@@ -10,6 +10,7 @@ export const handbuch = (L) => [
   ['plus', L('Neues Getränk', 'New drink'), [
     L('Schreiben: Name, Zutaten und Schritte selbst eintragen. Das Mikrofon in den Textfeldern schreibt mit, wenn dein Browser es kann.', 'Write: enter name, ingredients and steps yourself. The microphone in the text fields takes dictation if your browser supports it.'),
     L('Foto: ein Rezept fotografieren oder eine Datei wählen (auch PDF, auch mehrere). Die KI liest es und füllt das Formular; du prüfst und speicherst.', 'Photo: take a picture of a recipe or choose a file (PDF and several files work too). The AI reads it and fills in the form; you check and save.'),
+    L('Vom Glas: ein fertiges Getränk fotografieren. Claude schlägt ein Rezept dazu vor. Das ist ein Vorschlag, kein abgelesenes Rezept.', 'From the glass: take a picture of a finished drink. Claude suggests a recipe for it. This is a suggestion, not a recipe that was read.'),
     L('Web: die Adresse einer Rezeptseite einfügen. Text: ein Rezept als Text einfügen, ganz ohne KI. Datei: eine Sicherung oder die Datei einer anderen App einlesen.', 'Web: paste the address of a recipe page. Text: paste a recipe as text, without any AI. File: read a backup or a file from another app.'),
     L('Entdecken: bekannte Drinks bei thecocktaildb.com suchen. Hinaus geht nur der Suchtext. Beispiele: fertige Pakete mit Getränken laden.', 'Discover: search well-known drinks at thecocktaildb.com. Only the search text is sent. Examples: load ready-made packages of drinks.'),
   ]],
