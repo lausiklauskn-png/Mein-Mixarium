@@ -617,4 +617,11 @@ export default {
   'intensiv': 'насыщенный',
   'Nach Wort nichts gefunden · {0} nach Bedeutung': 'По словам ничего · по смыслу: {0}',
   'Auch nach Bedeutung nichts gefunden': 'По смыслу тоже ничего',
+  'Als App installieren': 'Установить как приложение',
+  'Tippen: App aktualisieren': 'Нажмите: обновить приложение',
+  'Fassung {0} – tippen zum Aktualisieren': 'Версия {0} – нажмите, чтобы обновить',
+  'Teilen → „Zum Home-Bildschirm“': 'Поделиться → «На экран „Домой“»',
+  'Browser-Menü ⋮ → „App installieren“': 'Меню браузера ⋮ → «Установить приложение»',
+  'Neueste Fassung wird geholt …': 'Загружается последняя версия …',
+  'Ohne Netz – die App bleibt, wie sie ist': 'Нет сети – приложение остаётся как есть',
 };

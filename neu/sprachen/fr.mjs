@@ -617,4 +617,11 @@ export default {
   'intensiv': 'intense',
   'Nach Wort nichts gefunden · {0} nach Bedeutung': 'Rien par mot · {0} par le sens',
   'Auch nach Bedeutung nichts gefunden': 'Rien non plus par le sens',
+  'Als App installieren': 'Installer comme app',
+  'Tippen: App aktualisieren': 'Toucher : mettre l’app à jour',
+  'Fassung {0} – tippen zum Aktualisieren': 'Version {0} – toucher pour mettre à jour',
+  'Teilen → „Zum Home-Bildschirm“': 'Partager → « Sur l’écran d’accueil »',
+  'Browser-Menü ⋮ → „App installieren“': 'Menu du navigateur ⋮ → « Installer l’app »',
+  'Neueste Fassung wird geholt …': 'Recherche de la dernière version …',
+  'Ohne Netz – die App bleibt, wie sie ist': 'Hors ligne – l’app reste telle quelle',
 };
