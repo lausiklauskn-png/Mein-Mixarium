@@ -51,7 +51,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor28';
+export const FASSUNG = '10.0.0-vor29';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
