@@ -683,4 +683,13 @@ export default {
   'fruchtig': '果香',
   'cremig': '绵密',
   'intensiv': '浓郁',
+  'Datei einspielen': '导入文件',
+  '1 Getränk in der Datei': '文件中有 1 种饮品',
+  '{0} Getränke in der Datei': '文件中有 {0} 种饮品',
+  'Hinzufügen': '添加',
+  'Ersetzen': '替换',
+  'Keine Getränke in der Datei, nichts ersetzt': '文件中没有饮品，未替换',
+  'vor dem Ersetzen': '替换之前',
+  'Ersetzt: {0} Getränke': '已替换：{0} 种饮品',
+  'Beim Einspielen einer Datei wählst du „Hinzufügen“ oder „Ersetzen“. Ersetzen tauscht Getränke, Ordner, Getränkekarten und Einkauf gegen die Datei; der jetzige Stand kommt vorher in den Tresor, Einstellungen und KI-Schlüssel bleiben.': '导入文件时可以选择“添加”或“替换”。替换会用文件中的饮品、文件夹、饮品单和购物清单替换现有内容；当前状态会先存入备份库，设置和 AI 密钥保持不变。',
 };

@@ -683,4 +683,13 @@ export default {
   'fruchtig': 'frutado',
   'cremig': 'cremoso',
   'intensiv': 'intenso',
+  'Datei einspielen': 'Carregar um ficheiro',
+  '1 Getränk in der Datei': '1 bebida no ficheiro',
+  '{0} Getränke in der Datei': '{0} bebidas no ficheiro',
+  'Hinzufügen': 'Adicionar',
+  'Ersetzen': 'Substituir',
+  'Keine Getränke in der Datei, nichts ersetzt': 'Nenhuma bebida no ficheiro, nada substituído',
+  'vor dem Ersetzen': 'antes de substituir',
+  'Ersetzt: {0} Getränke': 'Substituído: {0} bebidas',
+  'Beim Einspielen einer Datei wählst du „Hinzufügen“ oder „Ersetzen“. Ersetzen tauscht Getränke, Ordner, Getränkekarten und Einkauf gegen die Datei; der jetzige Stand kommt vorher in den Tresor, Einstellungen und KI-Schlüssel bleiben.': 'Ao carregar um ficheiro escolhes “Adicionar” ou “Substituir”. Substituir troca bebidas, pastas, cartas de bebidas e compras pelas do ficheiro; o estado atual vai antes para o cofre, as definições e as chaves de IA ficam.',
 };

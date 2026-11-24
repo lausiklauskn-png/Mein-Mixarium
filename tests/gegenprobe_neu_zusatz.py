@@ -58,9 +58,19 @@ F=[('alter-stand-doppelt', "    if (schon.has(s.alt)) continue;", "", 'kern/spei
    ('kopf-offline-loescht', "  if (!ok) return 'offline';", "", 'kern/oberflaeche/app-pflege.mjs', 'ohne Netz: eine kurze Meldung'),
    ('hb-ohne-zeile', "z(I('book'), L('Handbuch', 'Manual'), '', 'data-a=\"handbuch\"') + ", "", 'neu/app.mjs', 'unter „Über“ öffnet „Handbuch“'),
    ('hb-offen', "`<details><summary>${I(i)}", "`<details open><summary>${I(i)}", 'neu/app.mjs', 'alle eingeklappt'),
-   ('hb-spanisch-luecke', "  'Im Labor erfindet die KI neue Getränke nach Kategorie und Geschmack. Dafür braucht es Netz und deinen eigenen Anthropic-Schlüssel.': 'En el laboratorio la IA inventa bebidas nuevas según categoría y sabor. Para ello hace falta conexión y tu propia clave de Anthropic.',\n", "", 'neu/sprachen/es.mjs', 'auf Spanisch ist jeder Absatz übersetzt')]
+   ('hb-spanisch-luecke', "  'Im Labor erfindet die KI neue Getränke nach Kategorie und Geschmack. Dafür braucht es Netz und deinen eigenen Anthropic-Schlüssel.': 'En el laboratorio la IA inventa bebidas nuevas según categoría y sabor. Para ello hace falta conexión y tu propia clave de Anthropic.',\n", "", 'neu/sprachen/es.mjs', 'auf Spanisch ist jeder Absatz übersetzt'),
+   ('ersetzen-ohne-frage', "() => dateiGewaehlt(ev.target.files[0])", "() => ev.target.files[0].text().then(einspielenDatei)", 'neu/app.mjs', 'erscheint die Frage'),
+   ('ersetzen-dazu-hinten', "<button class=\"knopf\" data-a=\"datei-dazu\">${L('Hinzufügen', 'Add')}</button><button class=\"knopf hell\" data-a=\"datei-ersetzen\">${L('Ersetzen', 'Replace')}</button>", "<button class=\"knopf hell\" data-a=\"datei-ersetzen\">${L('Ersetzen', 'Replace')}</button><button class=\"knopf\" data-a=\"datei-dazu\">${L('Hinzufügen', 'Add')}</button>", 'neu/app.mjs', '„Hinzufügen“ steht vorne'),
+   ('ersetzen-zwei-zeilen', "<button class=\"knopf hell\" data-a=\"datei-ersetzen\">", "<button class=\"knopf hell\" style=\"flex-basis:100%\" data-a=\"datei-ersetzen\">", 'neu/app.mjs', 'Knöpfe der Frage in einer Zeile'),
+   ('ersetzen-dazu-ohne-rueckgaengig', "      e.neu.length ? L('Rückgängig', 'Undo') : '', () => { A = vorher; sichern(); zeichne(true); });", "      '', null);", 'neu/app.mjs', 'auch „Hinzufügen“ lässt sich'),
+   ('ersetzen-fuegt-hinzu', "  ersetzeSammlung(w.roh);\n", "  A = { ...A, ...G.sicherungEinspielen(A, w.roh, { knoten: A.knoten }).sammlung }; sichern();\n", 'neu/app.mjs', 'genau der Inhalt der Datei'),
+   ('ersetzen-ohne-tresor', "  await tresorAuto(L('vor dem Ersetzen', 'before replacing')); const vorher = A;", "  const vorher = A;", 'neu/app.mjs', 'in den Tresor'),
+   ('ersetzen-nimmt-schluessel', "  ersetzeSammlung(w.roh);\n", "  ersetzeSammlung(w.roh); await S.weg('anthropic');\n", 'neu/app.mjs', 'Einstellungen und KI-Schlüssel'),
+   ('ersetzen-rueckgaengig-tot', "L('Ersetzt: {0} Getränke', 'Replaced: {0} drinks'), A.getraenke.filter(G.istSichtbar).length), L('Rückgängig', 'Undo'), () => { A = vorher; sichern(); zeichne(true); });", "L('Ersetzt: {0} Getränke', 'Replaced: {0} drinks'), A.getraenke.filter(G.istSichtbar).length), L('Rückgängig', 'Undo'), () => {});", 'neu/app.mjs', '„Rückgängig“ stellt den Stand vor dem Ersetzen'),
+   ('ersetzen-leer-ersetzt', "  if (!w.n) return melde(L('Keine Getränke in der Datei, nichts ersetzt', 'No drinks in the file, nothing replaced'));\n", "", 'neu/app.mjs', 'ohne Getränke ersetzt nichts'),
+   ('ersetzen-beispiel-fragt', "    const e = G.beispielPaketEinspielen(A, roh, p.id, { knoten: A.knoten });", "    Z.fenster = null; return dateiGewaehlt({ text: async () => roh });\n    const e = G.beispielPaketEinspielen(A, roh, p.id, { knoten: A.knoten });", 'neu/app.mjs', 'Beispielpaket fragt nicht')]
 # Jeder Fall fährt nur seinen Abschnitt der Probe (NUR_TEIL); der Abschnitt hängt am ersten Wort des Namens.
-TEILE={'alter':'1','alte':'1','richter':'2','bild':'3','sammel':'4','buch':'5','glas':'6','kontrast':'7','handbuch':'7','kopf':'20','hb':'21'}
+TEILE={'alter':'1','alte':'1','richter':'2','bild':'3','sammel':'4','buch':'5','glas':'6','kontrast':'7','handbuch':'7','kopf':'20','hb':'21','ersetzen':'22'}
 def teil(name): return TEILE[name.split('-')[0]]
 nur=os.environ.get('NUR_FALL'); nur=nur.split(',') if nur else None; gefangen=0; durch=0; tot=0
 def anker(fall):

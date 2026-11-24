@@ -51,7 +51,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor29';
+export const FASSUNG = '10.0.0-vor30';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -753,11 +753,16 @@ async function tresorHolen(id) {
   const s = await tr.hol(id); if (!s) return melde(L('Dieser Stand ist nicht mehr da.', 'This state is gone.'));
   frage(L('Stand zurückholen', 'Restore state'), fuelle(L('Deine jetzige Sammlung wird durch diesen Stand ersetzt ({0} Getränke). Der jetzige Stand wird vorher automatisch im Tresor abgelegt.', 'Your current collection is replaced by this state ({0} drinks). The current state is stored in the vault first.'), (s.recipes || []).length), L('Zurückholen', 'Restore'), async () => {
     await tresorAuto(L('vor dem Zurückholen', 'before restoring'));
-    const g = G.sicherungLesen(s, { knoten: A.knoten });
-    A = { ...G.leereSammlung(A), getraenke: g.getraenke, ordner: g.ordner, karten: g.karten, einkauf: Array.isArray(s.einkauf) ? s.einkauf : [], anlaesse: Array.isArray(s.anlaesse) ? s.anlaesse : [], kategorien: A.kategorien, einstellungen: A.einstellungen, knoten: A.knoten };
-    A.kategorien = G.katZustandZuKern({ ...(s.kategorienZustand || A.kategorien), neu: g.kategorien }); if (s.einkaufLaeden) A.einkaufLaeden = s.einkaufLaeden; if (s.plan && typeof s.plan === 'object') A.plan = s.plan;
-    sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; Z.kat = 'all'; melde(L('Stand zurückgeholt.', 'State restored.')); zeichne(true);
+    ersetzeSammlung(s); melde(L('Stand zurückgeholt.', 'State restored.')); zeichne(true);
   });
+}
+/* Ersetzen (Datei und „Zurückholen“ im Tresor, ein Weg): Getränke, Ordner, Karten, Einkauf und Anlässe kommen aus der Sicherung,
+   Kategorien, Läden und Plan, wenn sie welche trägt. Einstellungen, Knoten und Schlüssel bleiben. Den Tresor legt der Aufrufer an. */
+function ersetzeSammlung(s) {
+  const g = G.sicherungLesen(s, { knoten: A.knoten });
+  A = { ...G.leereSammlung(A), getraenke: g.getraenke, ordner: g.ordner, karten: g.karten, einkauf: Array.isArray(s.einkauf) ? s.einkauf : [], anlaesse: Array.isArray(s.anlaesse) ? s.anlaesse : [], kategorien: A.kategorien, einstellungen: A.einstellungen, knoten: A.knoten };
+  A.kategorien = G.katZustandZuKern({ ...(s.kategorienZustand || A.kategorien), neu: g.kategorien }); if (s.einkaufLaeden) A.einkaufLaeden = s.einkaufLaeden; if (s.plan && typeof s.plan === 'object') A.plan = s.plan;
+  sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; Z.kat = 'all';
 }
 
 /* ── Sicherung ── Format wie die alte App (version 10), damit beide Richtungen gehen. */
@@ -768,10 +773,25 @@ function sichernDatei() {
   a.download = `mein-mixarium-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}h${p(d.getMinutes())}.json`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   melde(L('Sicherung gespeichert (Ordner „Downloads“).', 'Backup saved (Downloads folder).'));
 }
-async function einspielenDatei(datei) {
+/* Klaus 24.11.: nach dem Wählen einer Datei die Wahl „Hinzufügen“ (wie bisher, vorne) oder „Ersetzen“. Beispielpakete fragen nicht. */
+let dateiWahl = null;
+async function dateiGewaehlt(datei) {
+  let text, roh, n;
+  try { text = await datei.text(); roh = JSON.parse(text); n = G.sicherungLesen(roh, { knoten: A.knoten }).getraenke.filter(G.istSichtbar).length; } catch (err) { return melde(L('Diese Datei ist keine Sicherung, die ich lesen kann.', 'This file is not a backup I can read.')); }
+  dateiWahl = { text, roh, n };
+  Z.fenster = { titel: L('Datei einspielen', 'Restore a file'), html: `<p class="ftext" id="datei-inhalt">${n === 1 ? L('1 Getränk in der Datei', '1 drink in the file') : fuelle(L('{0} Getränke in der Datei', '{0} drinks in the file'), n)}</p><div class="reihe"><button class="knopf" data-a="datei-dazu">${L('Hinzufügen', 'Add')}</button><button class="knopf hell" data-a="datei-ersetzen">${L('Ersetzen', 'Replace')}</button><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button></div>` };
+}
+async function dateiErsetzen() {
+  const w = dateiWahl; dateiWahl = null; Z.fenster = null; if (!w) return;
+  if (!w.n) return melde(L('Keine Getränke in der Datei, nichts ersetzt', 'No drinks in the file, nothing replaced'));
+  await tresorAuto(L('vor dem Ersetzen', 'before replacing')); const vorher = A;
+  ersetzeSammlung(w.roh);
+  melde(fuelle(L('Ersetzt: {0} Getränke', 'Replaced: {0} drinks'), A.getraenke.filter(G.istSichtbar).length), L('Rückgängig', 'Undo'), () => { A = vorher; sichern(); zeichne(true); });
+}
+async function einspielenDatei(text) {
   try {
     await tresorAuto(L('vor dem Einspielen', 'before restoring a file'));
-    const text = await datei.text(), e = G.sicherungEinspielen(A, text, { knoten: A.knoten });
+    const vorher = A, e = G.sicherungEinspielen(A, text, { knoten: A.knoten });
     A = { ...A, ...e.sammlung }; inForm();
     let roh = null; try { roh = JSON.parse(text); } catch (f) { /* gelesen hat sie schon sicherungEinspielen */ }
     if (roh && roh.kategorienZustand) { const f = G.katZustandZuKern(roh.kategorienZustand), k = A.kategorien; A.kategorien = { ...k, eigene: [...k.eigene, ...f.eigene.filter((c) => !k.eigene.some((x) => x.id === c.id))], namen: { ...f.namen, ...k.namen } }; }   // die eigenen Namen gewinnen
@@ -780,7 +800,8 @@ async function einspielenDatei(datei) {
     /* Vier ganze Sätze statt eines zusammengesetzten: {0} neu, {1} schon da, {2} ohne Kategorie (das nennt der englische Satz nicht). */
     const schon = (e.uebersprungen || []).length;
     melde(fuelle(ohne ? (schon ? L('{0} Getränke hinzugefügt, {1} waren schon da, {2} ohne Kategorie.', '{0} drinks added, {1} already there.') : L('{0} Getränke hinzugefügt, {2} ohne Kategorie.', '{0} drinks added.'))
-      : (schon ? L('{0} Getränke hinzugefügt, {1} waren schon da.', '{0} drinks added, {1} already there.') : L('{0} Getränke hinzugefügt.', '{0} drinks added.')), e.neu.length, schon, ohne));
+      : (schon ? L('{0} Getränke hinzugefügt, {1} waren schon da.', '{0} drinks added, {1} already there.') : L('{0} Getränke hinzugefügt.', '{0} drinks added.')), e.neu.length, schon, ohne),
+      e.neu.length ? L('Rückgängig', 'Undo') : '', () => { A = vorher; sichern(); zeichne(true); });
   } catch (err) { melde(L('Diese Datei ist keine Sicherung, die ich lesen kann.', 'This file is not a backup I can read.')); }
 }
 async function ausAlterApp(still) {
@@ -1142,6 +1163,8 @@ const TUN = {
   beispiele() { beispieleFenster(); return false; }, 'beispiele-weg'() { beispieleWeg(); return false; },
   sichern() { sichernDatei(); return false; },
   einspielen() { $('#datei').click(); return false; },
+  'datei-dazu'() { const w = dateiWahl; dateiWahl = null; Z.fenster = null; if (w) W.mit(L('Datei wird eingelesen …', 'Reading the file …'), () => einspielenDatei(w.text)).then(() => zeichne(true)); },
+  'datei-ersetzen'() { dateiErsetzen().then(() => zeichne(true)); },
   uebernehmen() { ausAlterApp(false).then(() => zeichne(true)); return false; },
   leeren() { Z.fenster = { titel: L('Sammlung leeren', 'Empty the collection'), html: `<p class="ftext">${L('Das entfernt alle Getränke, Getränkekarten und die Einkaufsliste aus dieser App. Einstellungen bleiben. Speichere vorher eine Sicherung, dann kannst du alles wieder einspielen.', 'This removes all drinks, drinks lists and the shopping list from this app. Settings stay. Save a backup first, then you can restore everything.')}</p><div class="reihe ende"><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf hell" data-a="sichern">${I('download')}${L('Erst sichern', 'Back up first')}</button><button class="knopf rot" data-a="fenster-ja">${L('Jetzt leeren', 'Empty now')}</button></div>`, async ja() { await tresorAuto(L('vor „Sammlung leeren“', 'before emptying')); const e = G.sammlungLeeren(A); A = { ...e.sammlung, anlaesse: [] }; sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; Z.kat = 'all'; melde(fuelle(L('{0} Getränke entfernt. Die App ist leer.', '{0} drinks removed. The app is empty.'), e.entfernt.getraenke)); } }; },
   handbuch() { Z.fenster = { titel: L('Handbuch', 'Manual'), html: `<div class="handbuch" id="handbuch">${handbuch(L).map(([i, titel, abs]) => `<details><summary>${I(i)}<span>${esc(titel)}</span></summary>${abs.map((a) => `<p>${esc(a)}</p>`).join('')}</details>`).join('')}</div>` }; },   /* auf den Blättern steht kein Erklärtext; nachlesen kann man hier (Vorbild Rezeptbuch) */
@@ -1227,7 +1250,7 @@ document.addEventListener('change', async (ev) => {
   if (ev.target.id === 'edfoto' && ev.target.files[0]) { try { Z.fenster.img = await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0])); $('#edbild').innerHTML = `<img class="foto" src="${Z.fenster.img}" alt="">`; } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
   if (ev.target.id === 'bbdatei' && ev.target.files[0]) { try { bildSetzen(await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0]))); Z.fenster = null; melde(L('Bild gespeichert.', 'Picture saved.')); } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
   if ((ev.target.id === 'datei-scan' || ev.target.id === 'datei-kamera') && ev.target.files.length) { const d = [...ev.target.files]; ev.target.value = ''; return scanGewaehlt(d); }
-  if (ev.target.id === 'datei' && ev.target.files[0]) { await W.mit(L('Datei wird eingelesen …', 'Reading the file …'), () => einspielenDatei(ev.target.files[0])); ev.target.value = ''; zeichne(true); }
+  if (ev.target.id === 'datei' && ev.target.files[0]) { await W.mit(L('Datei wird eingelesen …', 'Reading the file …'), () => dateiGewaehlt(ev.target.files[0])); ev.target.value = ''; zeichne(true); }
 });
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') { if (Z.bildVoll) return history.back(); if (Z.fenster || Z.menue) return zurueck(); if (Z.view === 'mix') return history.back(); if (Z.flAuf) { Z.flAuf = false; return zeichne(); } }
