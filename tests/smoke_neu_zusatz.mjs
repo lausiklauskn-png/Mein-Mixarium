@@ -217,6 +217,38 @@ if (will(7)) {
   await c.close();
 }
 
+if (will(20)) {
+  console.log('20 · Kopfleiste: Installieren (weg nach der Installation) und Versionsnummer zum Aktualisieren');
+  const fassung = (await readFile(join(WURZEL, 'neu/app.mjs'), 'utf8')).match(/export const FASSUNG = '([^']+)'/)[1];
+  ({ p, c } = await seite({ getraenke: [D(1, 'Limo')] }));
+  pruefe('im Browser stehen oben der Knopf „Installieren“ und die Versionsnummer', await p.locator('.kopf [data-a=installieren]').count() === 1 && (await p.locator('.kopf .ver').innerText()).trim() === fassung, fassung);
+  for (const breite of [320, 390, 1280]) { await p.setViewportSize({ width: breite, height: 800 }); await p.waitForTimeout(200);
+    const lage = await p.evaluate(() => { const k = document.querySelector('.kopf').getBoundingClientRect(), b = [...document.querySelectorAll('.kopf button')].filter((e) => e.offsetParent).map((e) => e.getBoundingClientRect()); return { quer: document.documentElement.scrollWidth - innerWidth, raus: b.filter((r) => r.right > innerWidth + 0.5 || r.width < 20).length, hoch: Math.round(k.height), inst: !!document.querySelector('.kopf [data-a=installieren]')?.offsetParent }; });
+    pruefe(`bei ${breite} px passt alles in die Kopfleiste, der Knopf ist sichtbar, nichts läuft quer`, lage.quer <= 0 && lage.raus === 0 && lage.hoch <= 72 && lage.inst, JSON.stringify(lage)); }
+  await p.setViewportSize({ width: 390, height: 800 });
+  await p.click('.kopf [data-a=installieren]');
+  pruefe('ohne Angebot des Browsers sagt der Knopf in einer Zeile, wo man installiert', !!(await toastMit(p, /App installieren/)));
+  await p.evaluate(() => { window.__gefragt = 0; const ev = new Event('beforeinstallprompt'); ev.prompt = async () => { window.__gefragt++; }; ev.userChoice = Promise.resolve({ outcome: 'accepted' }); dispatchEvent(ev); });
+  await p.click('.kopf [data-a=installieren]');
+  pruefe('mit Angebot zeigt der Knopf das Fenster des Browsers; nach „Installieren“ ist er weg, die Versionsnummer bleibt', await bis(p, () => window.__gefragt === 1 && !document.querySelector('.kopf [data-a=installieren]') && !!document.querySelector('.kopf .ver')));
+  await c.close();
+  ({ p, c } = await seite({ getraenke: [D(1, 'Limo')] })); await p.evaluate(() => dispatchEvent(new Event('appinstalled')));
+  pruefe('über das Browser-Menü installiert: der Knopf geht auch weg', await bis(p, () => !document.querySelector('.kopf [data-a=installieren]')));
+  await c.close();
+  ({ p, c } = await seite({ getraenke: [D(1, 'Limo')], vorher: (q) => q.addInitScript(() => { const alt = matchMedia.bind(window); window.matchMedia = (m) => (/display-mode: standalone/.test(m) ? { matches: true, media: m, addEventListener() {}, removeEventListener() {} } : alt(m)); }) }));
+  pruefe('läuft die Seite als App, steht kein Knopf „Installieren“ da', await p.locator('.kopf [data-a=installieren]').count() === 0 && await p.locator('.kopf .ver').count() === 1);
+  await p.evaluate(async () => { await (await caches.open('mixarium-neu-alt')).put('x', new Response('a')); await (await caches.open('rezeptbuch-neu-x')).put('x', new Response('b')); window.__noch = 1; });
+  await p.route('**/neu/sw.js', (r) => r.abort());
+  await p.click('.kopf .ver');
+  pruefe('ohne Netz: eine kurze Meldung, nichts wird gelöscht, die Seite bleibt', !!(await toastMit(p, /Ohne Netz – die App bleibt, wie sie ist/)) && await p.evaluate(async () => window.__noch === 1 && (await caches.keys()).includes('mixarium-neu-alt')));
+  await p.unroute('**/neu/sw.js');
+  await Promise.all([p.waitForNavigation({ timeout: 15000 }).catch(() => null), p.click('.kopf .ver')]); await p.waitForSelector('.mx .titel');
+  const nach = await p.evaluate(async () => ({ noch: window.__noch, keys: await caches.keys() }));
+  pruefe('mit Netz: ein Tipp auf die Versionsnummer leert den Speicher dieser App (nicht den der anderen) und lädt neu', nach.noch === undefined && !nach.keys.includes('mixarium-neu-alt') && nach.keys.includes('rezeptbuch-neu-x'), JSON.stringify(nach));
+  pruefe('die Getränke bleiben dabei erhalten', (await sammlung(p)).getraenke.length === 1);
+  await c.close();
+}
+
 pruefe('keine Fehler in der Konsole, kein Aufruf nach draußen außer den gestellten', fehler.length === 0, fehler.slice(0, 3).join(' · '));
 await b.close(); server.close();
 console.log(`\n${gruen} grün · ${rot} ROT`); process.exitCode = rot ? 1 : 0;

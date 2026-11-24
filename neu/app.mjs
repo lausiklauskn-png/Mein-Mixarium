@@ -36,6 +36,7 @@ import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, recht
 import { druckRezept, drucke } from '../kern/ausgabe/druck.mjs';
 import { teilLink, ausTeilLink, qrSvg, passtInQr } from '../kern/teilen/qr.mjs';
 import { zusatz } from './zusatz.mjs';
+import { installation, istApple, aktualisieren } from '../kern/oberflaeche/app-pflege.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -49,7 +50,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor24';
+export const FASSUNG = '10.0.0-vor26';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -141,18 +142,21 @@ function bild(r, klasse = '') {
   if (r.img) { const c = r.imgCrop || {}; return `<img class="foto ${klasse}" src="${esc(r.img)}" alt="" loading="lazy" decoding="async" style="object-position:${Number(c.x) >= 0 ? Number(c.x) : 50}% ${Number(c.y) >= 0 ? Number(c.y) : 50}%">`; }
   return platzbild(r);
 }
-function logo() { return `<svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b8cff"/><stop offset="1" stop-color="#6b3fc4"/></linearGradient></defs><path d="M25 6h14v4h-2v14l15 24a6 6 0 0 1-5 9H17a6 6 0 0 1-5-9l15-24V10h-2z" fill="rgba(91,140,255,.16)" stroke="url(#lg)" stroke-width="3" stroke-linejoin="round"/><path d="M17 44c8-6 14 4 30-2l4 6a5 5 0 0 1-4 7H17a5 5 0 0 1-4-7z" fill="url(#lg)"/><path d="M52 6l1.6 4.4L58 12l-4.4 1.6L52 18l-1.6-4.4L46 12l4.4-1.6z" fill="#5b8cff"/></svg>`; }
+function logo() { return `<img class="logo" src="../icons/mixarium-neu-192.png?v=1" alt="" width="34" height="34">`; }   /* das App-Zeichen (Klaus 24.11.), wie auf dem Startbildschirm */
 /* Spracheingabe (Küchen-Kern, `diktat`): nur wo der Browser sie kann. Der Ton geht zur Erkennung an den Dienst des Browsers. */
 const mikro = (ziel) => (diktatMoeglich() ? `<button type="button" class="mikro" data-a="diktat" data-ziel="${ziel}" aria-pressed="false" aria-label="${L('Diktieren', 'Dictate')}" title="${L('Diktieren', 'Dictate')}">${I('mic')}</button>` : '');
 function suchfeld(voll) { return `<label class="suchfeld" ${voll ? 'style="width:100%;margin-top:12px"' : ''}>${I('search')}<input id="suche" type="search" value="${esc(Z.suche)}" placeholder="${L('Getränk oder Zutat suchen', 'Search drink or ingredient')}" aria-label="${L('Suchen', 'Search')}" autocomplete="off">${mikro('#suche')}<button type="button" class="sinn" data-a="sinn" aria-pressed="${!!E.sinn}" aria-label="${L('Sinn-Suche: auch nach Bedeutung suchen', 'Meaning search: also search by meaning')}" title="${L('Sinn-Suche', 'Meaning search')}">${I('sparkle')}</button></label>`; }
+const INST = installation(() => zeichne());   /* Knopf „Installieren“ oben; weg, sobald die Seite als App läuft oder installiert wurde (Klaus 24.11.) */
+const kopfInstall = () => (INST.zeigen() ? `<button class="rund" data-a="installieren" aria-label="${L('Als App installieren', 'Install as an app')}" title="${L('Als App installieren', 'Install as an app')}">${I('download')}</button>` : '');
+const kopfFassung = () => `<button class="ver" data-a="aktualisieren" title="${L('Tippen: App aktualisieren', 'Tap: update the app')}" aria-label="${fuelle(L('Fassung {0} – tippen zum Aktualisieren', 'Version {0} – tap to update'), FASSUNG)}">${FASSUNG}</button>`;
 function kopf(br) {
   const auf = Z.kopfAuf, n = sichtbar().length;
   /* Aufgeklappt bleibt der Kopf EINE Zeile (Klaus 23.11.): am Handy weicht der Name, die Werkzeuge sind nur Symbole. */
   const alk = br ? `<button class="schalter ${ohneAlk() ? '' : 'aus'}" data-a="alk" aria-pressed="${ohneAlk()}">${I('noalc')}${ohneAlk() ? L('Ohne Alkohol', 'Alcohol-free') : L('Alkohol an', 'Alcohol on')}</button>` : `<button class="alkmini ${ohneAlk() ? '' : 'aus'}" data-a="alk" aria-pressed="${ohneAlk()}" aria-label="${L('Ohne Alkohol', 'Alcohol-free')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>`;
   const werk = `${alk}<button class="rund schriftknopf" data-a="menue" data-m="schrift" aria-label="${L('Schriftgröße', 'Text size')}" title="${L('Schriftgröße', 'Text size')}"><span aria-hidden="true">A<b>A</b></span></button><button class="rund" data-a="menue" data-m="sprache" aria-label="${L('Sprache', 'Language')}" title="${L('Sprache', 'Language')}">${I('lang')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund" data-go="mehr" aria-label="${L('Einstellungen', 'Settings')}" title="${L('Einstellungen', 'Settings')}">${I('settings')}</button>`;
   const mini = ohneAlk() ? `<button class="alkmini" data-a="alk" aria-pressed="true" aria-label="${L('Ohne Alkohol ist an', 'Alcohol-free is on')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>` : '';
-  const name = !br && auf ? '<span class="name"></span>' : `<div class="name">Mein Mixarium<small>${n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n)}</small></div>`;
-  if (!br) return `<header class="kopf">${logo()}<div class="name">Mein Mixarium<small>${n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n)}</small></div>${mini}<button class="rund" data-a="zur-suche" aria-label="${L('Suchen', 'Search')}" title="${L('Suchen', 'Search')}">${I('search')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button></header>`;
+  const name = !br && auf ? '<span class="name"></span>' : `<div class="name">Mein Mixarium<small>${n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n)}</small>${kopfFassung()}</div>${kopfInstall()}`;
+  if (!br) return `<header class="kopf">${logo()}<div class="name">Mein Mixarium<small>${n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n)}</small>${kopfFassung()}</div>${kopfInstall()}${mini}<button class="rund" data-a="zur-suche" aria-label="${L('Suchen', 'Search')}" title="${L('Suchen', 'Search')}">${I('search')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button></header>`;
   return `<header class="kopf ${auf ? 'auf' : ''}">${logo()}${name}${br ? suchfeld(false) : ''}${auf ? werk : mini}<button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button><button class="klapp" data-a="kopf" aria-expanded="${auf}" aria-label="${auf ? L('Werkzeuge einklappen', 'Collapse tools') : L('Werkzeuge aufklappen', 'Expand tools')}">${I(auf ? 'right' : 'left')}</button></header>`;
 }
 function navLinks() {
@@ -1087,6 +1091,8 @@ const TUN = {
   'ek-laden-neu'() { Z.fenster = { titel: L('Neuer Laden', 'New shop'), html: `<form id="ladenform" class="felder" autocomplete="off"><label>${L('Name', 'Name')}<input class="feld" name="n" required placeholder="${L('z. B. Getränkemarkt', 'e.g. drinks store')}"></label><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Anlegen', 'Create')}</button></div></form>` }; },
   alk() { A.einstellungen.ohneAlkohol = !ohneAlk(); const r = getr(Z.uid); if (ohneAlk() && r && G.hatAlkohol(r)) { Z.view = 'start'; Z.uid = null; } if (!ordWahl() && !kats().some((x) => x.c.id === Z.kat)) Z.kat = 'all'; sichern(); },
   kopf() { Z.kopfAuf = !Z.kopfAuf; Z.menue = null; },
+  async installieren() { if (INST.kannFragen()) await INST.fragen(); else melde(istApple() ? L('Teilen → „Zum Home-Bildschirm“', 'Share → “Add to Home Screen”') : L('Browser-Menü ⋮ → „App installieren“', 'Browser menu ⋮ → “Install app”')); },
+  async aktualisieren() { melde(L('Neueste Fassung wird geholt …', 'Fetching the latest version …')); const e = await aktualisieren({ cachePrefix: 'mixarium-neu-', probe: './sw.js' }); if (e === 'offline') melde(L('Ohne Netz – die App bleibt, wie sie ist', 'Offline – the app stays as it is')); else location.reload(); },
   navzu() { E.navZu = !E.navZu; einstSichern(); },
   menue(b) { Z.menue = Z.menue === b.dataset.m ? null : b.dataset.m; Z.flAuf = false; },
   'fl-auf'() { if (Date.now() - flGezogen < 500) return; Z.flAuf = true; },

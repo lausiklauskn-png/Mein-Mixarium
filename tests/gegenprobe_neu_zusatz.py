@@ -6,7 +6,7 @@ import subprocess, shutil, os, tempfile, sys
 F=[('alter-stand-doppelt', "    if (schon.has(s.alt)) continue;", "", 'kern/speicher/alt-tresor.mjs', 'kein alter Stand doppelt', "E.altTresor = true; app.einstSichern();", "app.einstSichern();", 'neu/zusatz.mjs'),
    ('alte-zeit-verloren', "await tr.ablegen(s.sicherung, s.art, s.name, { ts: s.ts, alt: s.alt });", "await tr.ablegen(s.sicherung, s.art, s.name, { alt: s.alt });", 'kern/speicher/alt-tresor.mjs', 'mit ihrem Namen, ihrer alten Zeit'),
    ('alte-bilder-fehlen', "(!r.img && r.id != null && b[r.id] ? { ...r, img: b[r.id] } : r)", "(r)", 'kern/speicher/alt-tresor.mjs', 'das Bild hängt wieder an seinem Getränk'),
-   ('alte-db-angelegt', "      a.onupgradeneeded = () => { neu = true; try { a.transaction.abort(); } catch { /* schon zu */ } };", "      a.onupgradeneeded = () => { neu = true; };", 'kern/speicher/alt-tresor.mjs', 'wird ihre Datenbank nicht angelegt', "    if (idb.databases) { const alle = await idb.databases(); if (!alle.some((x) => x.name === ort.db)) return []; }\n", "", 'kern/speicher/alt-tresor.mjs'),
+   ('alte-db-angelegt', "    a.onupgradeneeded = () => { neu = true; try { a.transaction.abort(); } catch { /* schon zu */ } };", "    a.onupgradeneeded = () => { neu = true; };", 'kern/speicher/alt-tresor.mjs', 'wird ihre Datenbank nicht angelegt', "  if (idb.databases) { const alle = await idb.databases(); if (!alle.some((x) => x.name === db)) return null; }\n", "", 'kern/speicher/alt-tresor.mjs'),
    ('alter-ort-falsch', "schluessel: 'mix9m_bvault'", "schluessel: 'mrz9m_bvault'", 'neu/zusatz.mjs', 'eine kurze Meldung sagt, dass zwei Stände übernommen sind'),
    ('alter-start-fehlt', "  ZU.altTresor().catch(() => {});", "", 'neu/app.mjs', 'eine kurze Meldung sagt, dass zwei Stände übernommen sind'),
    ('richter-ohne-schluessel', "    if (!SK.anthropic) { app.schluesselFenster('anthropic', 'richter'); return; }", "", 'neu/zusatz.mjs', 'ohne Anthropic-Schlüssel kommt das Schlüssel-Fenster'),
@@ -34,9 +34,14 @@ F=[('alter-stand-doppelt', "    if (schon.has(s.alt)) continue;", "", 'kern/spei
    ('kontrast-dunkel-blass', ".mx[data-kontrast]{--linie:var(--line);--muted:var(--mut);background:var(--bg)}", ".mx[data-kontrast]{background:var(--bg)}", 'neu/app.css', 'er gilt auch im dunklen Ton'),
    ('kontrast-grund-bunt', ".mx[data-kontrast]{--linie:var(--line);--muted:var(--mut);background:var(--bg)}", ".mx[data-kontrast]{--linie:var(--line);--muted:var(--mut)}", 'neu/app.css', 'der Grund ist glatt'),
    ('kontrast-feld-blass', ".mx[data-kontrast] .kfeld{color:var(--ink);border:2px solid currentColor;", ".mx[data-kontrast] .kfeld{border:2px solid currentColor;", 'neu/app.css', 'die Wasserfarben-Felder tragen ihr Symbol deutlich'),
-   ('sammel-bild-verloren', "bildAn: (uid, img) => bildSetzen(img, uid),", "bildAn: (uid, img) => bildSetzen(img),", 'neu/app.mjs', 'die Bilder hängen an ihren Getränken')]
+   ('sammel-bild-verloren', "bildAn: (uid, img) => bildSetzen(img, uid),", "bildAn: (uid, img) => bildSetzen(img),", 'neu/app.mjs', 'die Bilder hängen an ihren Getränken'),
+   ('kopf-bleibt-nach-install', "if (c?.outcome === 'accepted') fertig = true;", "", 'kern/oberflaeche/app-pflege.mjs', 'nach „Installieren“ ist er weg'),
+   ('kopf-menue-install-bleibt', "w.addEventListener('appinstalled', () => { frage = null; fertig = true; beiAenderung(); });", "", 'kern/oberflaeche/app-pflege.mjs', 'über das Browser-Menü installiert'),
+   ('kopf-als-app-knopf', "zeigen: () => !fertig && !laeuftAlsApp(w),", "zeigen: () => !fertig,", 'kern/oberflaeche/app-pflege.mjs', 'läuft die Seite als App'),
+   ('kopf-loescht-fremde', "cachePrefix: 'mixarium-neu-'", "cachePrefix: ''", 'neu/app.mjs', 'nicht den der anderen'),
+   ('kopf-offline-loescht', "  if (!ok) return 'offline';", "", 'kern/oberflaeche/app-pflege.mjs', 'ohne Netz: eine kurze Meldung')]
 # Jeder Fall fährt nur seinen Abschnitt der Probe (NUR_TEIL); der Abschnitt hängt am ersten Wort des Namens.
-TEILE={'alter':'1','alte':'1','richter':'2','bild':'3','sammel':'4','buch':'5','glas':'6','kontrast':'7','handbuch':'7'}
+TEILE={'alter':'1','alte':'1','richter':'2','bild':'3','sammel':'4','buch':'5','glas':'6','kontrast':'7','handbuch':'7','kopf':'20'}
 def teil(name): return TEILE[name.split('-')[0]]
 nur=os.environ.get('NUR_FALL'); nur=nur.split(',') if nur else None; gefangen=0; durch=0; tot=0
 def anker(fall):

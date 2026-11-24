@@ -950,3 +950,8 @@ h1,h2,h3,p{margin:0}
 .mx[data-kontrast]{--linie:var(--line);--muted:var(--mut);background:var(--bg)}
 .mx[data-kontrast] .kfeld{color:var(--ink);border:2px solid currentColor;background:color-mix(in srgb,var(--kc,var(--akz)) 22%,var(--fl))}
 .mx[data-kontrast] :is(small,.leise,.unter,.quelle,.zahl){opacity:1}
+
+.mx .logo{border-radius:9px;object-fit:cover}
+.mx .name .ver{display:block;border:0;background:none;color:inherit;font:inherit;font-size:10.5px;font-weight:500;line-height:1.1;opacity:.7;padding:0;letter-spacing:.02em;cursor:pointer;text-align:left}   /* Versionsnummer = aktualisieren (Klaus 24.11.) */
+.mx .name .ver:active{opacity:1}
+.mx .kopf .rund[data-a=installieren]{flex:none}
