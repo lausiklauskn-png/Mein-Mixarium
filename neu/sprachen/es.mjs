@@ -60,8 +60,6 @@ export default {
   'Sinn-Suche wird vorbereitet: {0} von {1} Getränken': 'Preparando la búsqueda por significado: {0} de {1} bebidas',
   'sucht nach Bedeutung …': 'buscando por significado …',
   'Sinn-Suche wird vorbereitet (beim ersten Mal lädt das Sprachmodell) …': 'Preparando la búsqueda por significado (la primera vez se carga el modelo de lenguaje) …',
-  '{0} zusätzlich nach Bedeutung gefunden': 'Por significado: {0} más',
-  'Sinn-Suche an, keine weiteren Treffer': 'Búsqueda por significado activa, sin más resultados',
   'Die Sinn-Suche ist gerade nicht verfügbar. Die Wortsuche läuft weiter.': 'La búsqueda por significado no está disponible ahora. La búsqueda por palabras sigue funcionando.',
   'Noch keine Getränke': 'Aún no hay bebidas',
   'Getränk': 'Bebida',
@@ -617,4 +615,6 @@ export default {
   'fruchtig': 'afrutado',
   'cremig': 'cremoso',
   'intensiv': 'intenso',
+  'Nach Wort nichts gefunden · {0} nach Bedeutung': 'Nada por palabra · {0} por significado',
+  'Auch nach Bedeutung nichts gefunden': 'Tampoco hay nada por significado',
 };

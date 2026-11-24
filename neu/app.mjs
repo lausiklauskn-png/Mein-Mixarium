@@ -20,7 +20,7 @@ import { anlegen as ordAnlegen, umbenennen as ordUmbenennen, loeschen as ordLoes
 import { einkaufMit } from '../kern/modell/einkauf.mjs';
 import { rezeptAusText } from '../kern/import/text.mjs';
 import { woche, tagIso, planen, entplanen, ausAltemMenu } from '../kern/modell/plan.mjs';
-import { ladeBausteine, korpus as semKorpus, sucheBedeutung } from '../kern/suche/bedeutung.mjs';
+import { ladeBausteine, korpus as semKorpus, sucheBedeutung, passage as semPassage } from '../kern/suche/bedeutung.mjs';
 import * as LAB from '../getraenke/labor.mjs';
 import { hinweiseEinrichten } from '../kern/oberflaeche/hinweis.mjs';
 import { wartenEinrichten, modellFortschritt, bytesMitAnteil } from '../kern/oberflaeche/warten.mjs';
@@ -49,7 +49,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor23';
+export const FASSUNG = '10.0.0-vor24';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -194,7 +194,7 @@ function kartenHtml() {
 const sem = { ids: [], fuer: '', status: '', uhr: null, laeuft: false, korpus: null, sig: '' };
 const semStatus = (t) => { sem.status = t; const el = $('#sinn-status'); if (el) el.textContent = t; };
 function semTreffer() {
-  const q = Z.suche.trim().toLowerCase(); if (!E.sinn || !q || sem.fuer !== q) return [];
+  const q = Z.suche.trim().toLowerCase(); if (!E.sinn || !q || sem.fuer !== q || sichtbar().length) return [];   /* Klaus 24.11.: zuerst Wortsuche; nach Bedeutung nur, wenn sie nichts findet */
   const da = new Set(sichtbar().map((r) => r.uid)), erlaubt = new Set(G.filterOhneAlkohol(A.getraenke, ohneAlk()).map((r) => r.uid));
   return sem.ids.map(getr).filter((r) => r && G.istSichtbar(r) && !da.has(r.uid) && erlaubt.has(r.uid) && inWahl(r));
 }
@@ -205,20 +205,23 @@ function semBereit() {
     const ab = modellFortschritt((a, g, t) => { w.anteil(a); if (t) w.text(fuelle(L('Sprachmodell wird geladen: {0} von {1} MB', 'Loading the language model: {0} of {1} MB'), g, t)); });
     try { await ladeBausteine('../sbkim/'); await window.SbkimEmbedding.init(); } finally { ab(); }
     w.anteil(null); w.text(L('Sinn-Suche wird vorbereitet …', 'Preparing meaning search …'));
-    const rs = A.getraenke.filter(G.istSichtbar), sig = rs.map((r) => r.uid + ':' + r.name).join(',');
+    const rs = A.getraenke.filter(G.istSichtbar), sig = rs.map((r) => r.uid + '\u0001' + semPassage(sicht(r), katNameVon(r))).join('\u0002');   /* der Index folgt dem Inhalt: ein bearbeitetes Getränk wird neu gerechnet */
     if (!sem.korpus || sem.sig !== sig) { sem.korpus = await semKorpus(rs.map(sicht), (r) => katNameVon(r), { einbetten: (t) => window.SbkimEmbedding.embedPassage(t), fortschritt: (i, n) => { const t = fuelle(L('Sinn-Suche wird vorbereitet: {0} von {1} Getränken', 'Preparing meaning search: {0} of {1} drinks'), i, n); semStatus(t); w.text(t); w.anteil(n ? i / n : null); } }); sem.sig = sig; }
     return sem.korpus;
   });
 }
-function semPlanen() { clearTimeout(sem.uhr); if (!E.sinn) return; const f = Z.suche.trim().toLowerCase(); if (!f) { sem.ids = []; sem.fuer = ''; return; } sem.uhr = setTimeout(() => semLauf(f), 350); }
+function semPlanen() { clearTimeout(sem.uhr); if (!E.sinn) return; const f = Z.suche.trim().toLowerCase(); if (!f) { sem.ids = []; sem.fuer = ''; return; }
+  if (sichtbar().length) { sem.ids = []; sem.fuer = ''; semStatus(''); return; }   /* die Wortsuche hat etwas gefunden: keine Bedeutungssuche */
+  sem.uhr = setTimeout(() => semLauf(f), 350); }
 async function semLauf(f) {
   if (!E.sinn) return; if (sem.laeuft) { sem.uhr = setTimeout(() => semLauf(f), 300); return; }
   sem.laeuft = true; semStatus(sem.korpus ? L('sucht nach Bedeutung …', 'searching by meaning …') : L('Sinn-Suche wird vorbereitet (beim ersten Mal lädt das Sprachmodell) …', 'Preparing meaning search (the language model loads the first time) …'));
   try {
     const c = await semBereit(); if (Z.suche.trim().toLowerCase() !== f) return;
     sem.ids = await sucheBedeutung(window.SbkimMatch, f, c); sem.fuer = f; if (Z.suche.trim().toLowerCase() !== f) return;
+    if (sichtbar().length) { sem.ids = []; sem.fuer = ''; semStatus(''); return; }   /* inzwischen findet die Wortsuche etwas */
     const dazu = semTreffer().length;
-    sem.status = dazu ? fuelle(L('{0} zusätzlich nach Bedeutung gefunden', '{0} more found by meaning'), dazu) : L('Sinn-Suche an, keine weiteren Treffer', 'Meaning search on, no further results');
+    sem.status = dazu ? fuelle(L('Nach Wort nichts gefunden · {0} nach Bedeutung', 'Nothing found by word · {0} by meaning'), dazu) : L('Auch nach Bedeutung nichts gefunden', 'Nothing found by meaning either');
     const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml();
   } catch (e) { console.warn('Sinn-Suche:', (e && e.message) || e); semStatus(L('Die Sinn-Suche ist gerade nicht verfügbar. Die Wortsuche läuft weiter.', 'Meaning search is not available right now. Word search keeps working.')); } finally { sem.laeuft = false; }
 }

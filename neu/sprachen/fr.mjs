@@ -60,8 +60,6 @@ export default {
   'Sinn-Suche wird vorbereitet: {0} von {1} Getränken': 'Préparation de la recherche par le sens : {0} sur {1} boissons',
   'sucht nach Bedeutung …': 'recherche par le sens …',
   'Sinn-Suche wird vorbereitet (beim ersten Mal lädt das Sprachmodell) …': 'Préparation de la recherche par le sens (le modèle de langue se charge la première fois) …',
-  '{0} zusätzlich nach Bedeutung gefunden': 'Par le sens : {0} de plus',
-  'Sinn-Suche an, keine weiteren Treffer': 'Recherche par le sens activée, pas d’autres résultats',
   'Die Sinn-Suche ist gerade nicht verfügbar. Die Wortsuche läuft weiter.': 'La recherche par le sens est indisponible pour le moment. La recherche par mots continue de fonctionner.',
   'Noch keine Getränke': 'Pas encore de boissons',
   'Getränk': 'Boisson',
@@ -617,4 +615,6 @@ export default {
   'fruchtig': 'fruité',
   'cremig': 'crémeux',
   'intensiv': 'intense',
+  'Nach Wort nichts gefunden · {0} nach Bedeutung': 'Rien par mot · {0} par le sens',
+  'Auch nach Bedeutung nichts gefunden': 'Rien non plus par le sens',
 };

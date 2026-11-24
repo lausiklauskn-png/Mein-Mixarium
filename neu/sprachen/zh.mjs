@@ -60,8 +60,6 @@ export default {
   'Sinn-Suche wird vorbereitet: {0} von {1} Getränken': '正在准备语义搜索：{0} / {1} 款饮品',
   'sucht nach Bedeutung …': '正在按含义搜索 …',
   'Sinn-Suche wird vorbereitet (beim ersten Mal lädt das Sprachmodell) …': '正在准备语义搜索（首次使用会加载语言模型） …',
-  '{0} zusätzlich nach Bedeutung gefunden': '按含义另外找到 {0} 款',
-  'Sinn-Suche an, keine weiteren Treffer': '语义搜索已开启，没有更多结果',
   'Die Sinn-Suche ist gerade nicht verfügbar. Die Wortsuche läuft weiter.': '语义搜索暂时不可用。关键词搜索仍可使用。',
   'Noch keine Getränke': '还没有饮品',
   'Getränk': '饮品',
@@ -617,4 +615,6 @@ export default {
   'fruchtig': '果香',
   'cremig': '绵密',
   'intensiv': '浓郁',
+  'Nach Wort nichts gefunden · {0} nach Bedeutung': '按词未找到 · 按含义 {0} 个',
+  'Auch nach Bedeutung nichts gefunden': '按含义也未找到',
 };
