@@ -683,4 +683,13 @@ export default {
   'fruchtig': 'фруктовый',
   'cremig': 'сливочный',
   'intensiv': 'насыщенный',
+  'Datei einspielen': 'Загрузить файл',
+  '1 Getränk in der Datei': '1 напиток в файле',
+  '{0} Getränke in der Datei': 'Напитков в файле: {0}',
+  'Hinzufügen': 'Добавить',
+  'Ersetzen': 'Заменить',
+  'Keine Getränke in der Datei, nichts ersetzt': 'В файле нет напитков, ничего не заменено',
+  'vor dem Ersetzen': 'перед заменой',
+  'Ersetzt: {0} Getränke': 'Заменено: напитков {0}',
+  'Beim Einspielen einer Datei wählst du „Hinzufügen“ oder „Ersetzen“. Ersetzen tauscht Getränke, Ordner, Getränkekarten und Einkauf gegen die Datei; der jetzige Stand kommt vorher in den Tresor, Einstellungen und KI-Schlüssel bleiben.': 'При загрузке файла ты выбираешь «Добавить» или «Заменить». «Заменить» меняет напитки, папки, карты напитков и покупки на данные из файла; текущее состояние сначала попадает в архив, настройки и ключи ИИ остаются.',
 };
