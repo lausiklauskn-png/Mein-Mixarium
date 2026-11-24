@@ -39,9 +39,12 @@ F=[('alter-stand-doppelt', "    if (schon.has(s.alt)) continue;", "", 'kern/spei
    ('kopf-menue-install-bleibt', "w.addEventListener('appinstalled', () => { frage = null; fertig = true; beiAenderung(); });", "", 'kern/oberflaeche/app-pflege.mjs', 'über das Browser-Menü installiert'),
    ('kopf-als-app-knopf', "zeigen: () => !fertig && !laeuftAlsApp(w),", "zeigen: () => !fertig,", 'kern/oberflaeche/app-pflege.mjs', 'läuft die Seite als App'),
    ('kopf-loescht-fremde', "cachePrefix: 'mixarium-neu-'", "cachePrefix: ''", 'neu/app.mjs', 'nicht den der anderen'),
-   ('kopf-offline-loescht', "  if (!ok) return 'offline';", "", 'kern/oberflaeche/app-pflege.mjs', 'ohne Netz: eine kurze Meldung')]
+   ('kopf-offline-loescht', "  if (!ok) return 'offline';", "", 'kern/oberflaeche/app-pflege.mjs', 'ohne Netz: eine kurze Meldung'),
+   ('hb-ohne-zeile', "z(I('book'), L('Handbuch', 'Manual'), '', 'data-a=\"handbuch\"') + ", "", 'neu/app.mjs', 'unter „Über“ öffnet „Handbuch“'),
+   ('hb-offen', "`<details><summary>${I(i)}", "`<details open><summary>${I(i)}", 'neu/app.mjs', 'alle eingeklappt'),
+   ('hb-spanisch-luecke', "  'Im Labor erfindet die KI neue Getränke nach Kategorie und Geschmack. Dafür braucht es Netz und deinen eigenen Anthropic-Schlüssel.': 'En el laboratorio la IA inventa bebidas nuevas según categoría y sabor. Para ello hace falta conexión y tu propia clave de Anthropic.',\n", "", 'neu/sprachen/es.mjs', 'auf Spanisch ist jeder Absatz übersetzt')]
 # Jeder Fall fährt nur seinen Abschnitt der Probe (NUR_TEIL); der Abschnitt hängt am ersten Wort des Namens.
-TEILE={'alter':'1','alte':'1','richter':'2','bild':'3','sammel':'4','buch':'5','glas':'6','kontrast':'7','handbuch':'7','kopf':'20'}
+TEILE={'alter':'1','alte':'1','richter':'2','bild':'3','sammel':'4','buch':'5','glas':'6','kontrast':'7','handbuch':'7','kopf':'20','hb':'21'}
 def teil(name): return TEILE[name.split('-')[0]]
 nur=os.environ.get('NUR_FALL'); nur=nur.split(',') if nur else None; gefangen=0; durch=0; tot=0
 def anker(fall):
