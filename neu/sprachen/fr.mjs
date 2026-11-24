@@ -683,4 +683,13 @@ export default {
   'fruchtig': 'fruité',
   'cremig': 'crémeux',
   'intensiv': 'intense',
+  'Datei einspielen': 'Charger un fichier',
+  '1 Getränk in der Datei': '1 boisson dans le fichier',
+  '{0} Getränke in der Datei': '{0} boissons dans le fichier',
+  'Hinzufügen': 'Ajouter',
+  'Ersetzen': 'Remplacer',
+  'Keine Getränke in der Datei, nichts ersetzt': 'Aucune boisson dans le fichier, rien remplacé',
+  'vor dem Ersetzen': 'avant le remplacement',
+  'Ersetzt: {0} Getränke': 'Remplacé : {0} boissons',
+  'Beim Einspielen einer Datei wählst du „Hinzufügen“ oder „Ersetzen“. Ersetzen tauscht Getränke, Ordner, Getränkekarten und Einkauf gegen die Datei; der jetzige Stand kommt vorher in den Tresor, Einstellungen und KI-Schlüssel bleiben.': 'En chargeant un fichier, tu choisis « Ajouter » ou « Remplacer ». Remplacer échange boissons, dossiers, cartes des boissons et courses contre ceux du fichier ; l’état actuel va d’abord au coffre, les réglages et les clés d’IA restent.',
 };

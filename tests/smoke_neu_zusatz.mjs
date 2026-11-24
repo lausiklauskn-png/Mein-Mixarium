@@ -352,6 +352,51 @@ if (will(21)) {
   }
 }
 
+if (will(22)) {
+  console.log('22 · Datei einspielen: „Hinzufügen“ oder „Ersetzen“; Ersetzen legt vorher in den Tresor und lässt sich zurücknehmen');
+  const DATEI = { version: 10, exported: '2026-11-24T08:00:00.000Z', recipes: [D(2, 'Gurken-Tonic'), D(3, 'Minz-Limo'), D(4, 'Ingwer-Schorle', { folder: 'o9' })], folders: [{ id: 'o9', name: 'Aus der Datei' }], menu: [], einkauf: [] };
+  const datei = (inhalt, name = 'sicherung.json') => ({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(inhalt)) });
+  const schl = (q) => q.evaluate(() => new Promise((ja) => { const a = indexedDB.open('KuechenKern-mixarium'); a.onsuccess = () => { const t = a.result.transaction('zustand').objectStore('zustand'), x = t.get('schluessel-anthropic'), y = t.get('einst'); y.onsuccess = () => { a.result.close(); ja({ schluessel: x.result, farbe: y.result && y.result.farbe }); }; }; }));
+  const uids = (s) => s.getraenke.map((r) => r.uid).sort().join(','), ords = (s) => s.ordner.map((o) => o.id).sort().join(',');
+  const ALT_G = [D(1, 'Limo'), D(2, 'Gurken-Tonic')], ALT_O = [{ id: 'o1', name: 'Mein Ordner' }], START = { getraenke: ALT_G, ordner: ALT_O, einst: { farbe: 'blau' }, schluessel: { anthropic: 'sk-ant-probe' } };
+  const einspielen = async (q, inhalt, name) => { await zuEinst(q); await q.click('[data-a=einspielen]').catch(() => {}); await q.setInputFiles('#datei', datei(inhalt, name)); await q.waitForSelector('#datei-inhalt', { timeout: 8000 }).catch(() => {}); };
+  ({ p, c } = await seite(START));
+  await einspielen(p, DATEI);
+  const knoepfe = await p.locator('.fenster .reihe button').evaluateAll((l) => l.map((x) => ({ a: x.dataset.a, oben: Math.round(x.getBoundingClientRect().top), rechts: Math.round(x.getBoundingClientRect().right) })));
+  pruefe('nach dem Wählen einer Datei erscheint die Frage: eine Zeile sagt, was drin ist; „Hinzufügen“ steht vorne; noch ist nichts eingespielt', /^3 Getränke in der Datei$/.test((await p.locator('#datei-inhalt').innerText().catch(() => '')).trim()) && knoepfe[0] && knoepfe[0].a === 'datei-dazu' && knoepfe.some((x) => x.a === 'datei-ersetzen') && uids(await sammlung(p)) === 'g-1,g-2', JSON.stringify(knoepfe));
+  pruefe('bei 390 px stehen die Knöpfe der Frage in einer Zeile', knoepfe.length >= 2 && new Set(knoepfe.map((x) => x.oben)).size === 1 && knoepfe.every((x) => x.rechts <= 390), JSON.stringify(knoepfe));
+  await p.click('[data-a=datei-dazu]').catch(() => {}); const tDazu = await toastMit(p, /hinzugefügt/);
+  let s = await sammlungWenn(p, (x) => x.getraenke.length === 4);
+  pruefe('„Hinzufügen“ wie bisher: zwei neu, das doppelte übersprungen, eigene Ordner bleiben', /^2 Getränke hinzugefügt, 1 waren schon da\./.test(tDazu) && uids(s) === 'g-1,g-2,g-3,g-4' && ords(s) === 'o1,o9', tDazu + ' · ' + uids(s) + ' · ' + ords(s));
+  pruefe('auch „Hinzufügen“ lässt sich mit „Rückgängig“ zurücknehmen', /Rückgängig/.test(tDazu) && await p.click('.mxtoast [data-a=toast-tun]').then(() => true, () => false) && uids(await sammlungWenn(p, (x) => x.getraenke.length === 2)) === 'g-1,g-2', tDazu);
+  await c.close();
+  ({ p, c } = await seite(START));
+  const t0 = await tresorAuf(p); await p.keyboard.press('Escape');
+  await einspielen(p, DATEI); await p.click('[data-a=datei-ersetzen]').catch(() => {}); const tErs = await toastMit(p, /Ersetzt/);
+  const zeile = await p.evaluate(() => { const t = document.querySelector('.mxtoast'), b = t && t.querySelector('button'); if (!t || !b) return null; const r = t.getBoundingClientRect(), k = b.getBoundingClientRect(), x = [...t.querySelectorAll('*')].filter((e) => e.children.length === 0 && e !== b && e.textContent.trim()); return { hoch: Math.round(r.height), knopf: Math.round(k.height), rechts: Math.round(r.right), ganz: x.every((e) => e.scrollWidth <= e.clientWidth + 1) }; });
+  s = await sammlungWenn(p, (x) => x.getraenke.length === 3);
+  pruefe('„Ersetzen“: danach steht genau der Inhalt der Datei da (Getränke, Ordner), die Meldung nennt die Zahl und „Rückgängig“', /^Ersetzt: 3 Getränke/.test(tErs) && /Rückgängig/.test(tErs) && uids(s) === 'g-2,g-3,g-4' && ords(s) === 'o9', tErs + ' · ' + uids(s) + ' · ' + ords(s));
+  pruefe('bei 390 px steht die Meldung nach dem Ersetzen in einer Zeile', !!zeile && zeile.ganz && zeile.hoch <= zeile.knopf + 24 && zeile.rechts <= 390, JSON.stringify(zeile));
+  const k1 = await schl(p);
+  pruefe('beim Ersetzen bleiben Einstellungen und KI-Schlüssel unverändert', k1.farbe === 'blau' && k1.schluessel === 'sk-ant-probe', JSON.stringify(k1));
+  await p.click('.mxtoast [data-a=toast-tun]').catch(() => {});
+  s = await sammlungWenn(p, (x) => x.getraenke.length === 2);
+  pruefe('„Rückgängig“ stellt den Stand vor dem Ersetzen wieder her', uids(s) === 'g-1,g-2' && ords(s) === 'o1', uids(s) + ' · ' + ords(s));
+  const t1 = await tresorAuf(p); await p.keyboard.press('Escape');
+  pruefe('vor dem Ersetzen kam der jetzige Stand in den Tresor (ein Stand mehr, mit den zwei alten Getränken)', t1.length === t0.length + 1 && t1.some((x) => /vor dem Ersetzen/.test(x) && /2 Getränke/.test(x)), `${t0.length} → ${t1.length} · ${t1.join(' | ')}`);
+  await einspielen(p, { version: 10, recipes: [] }, 'leer.json');
+  const leerZeile = (await p.locator('#datei-inhalt').innerText().catch(() => '')).trim();
+  await p.click('[data-a=datei-ersetzen]').catch(() => {}); const tLeer = await toastMit(p, /Keine Getränke/); await p.waitForTimeout(500);
+  pruefe('eine Datei ohne Getränke ersetzt nichts, das wird gesagt', /^0 Getränke in der Datei$/.test(leerZeile) && /Keine Getränke in der Datei, nichts ersetzt/.test(tLeer) && uids(await sammlung(p)) === 'g-1,g-2', leerZeile + ' · ' + tLeer + ' · ' + uids(await sammlung(p)));
+  await c.close();
+  /* Ein Beispielpaket fragt nicht: gestellt als kleines Paket unter dem Namen des echten. */
+  const BSP = JSON.stringify({ version: 10, recipes: [D(7, 'Beispiel-Limo'), D(8, 'Beispiel-Schorle')] });
+  ({ p, c } = await seite({ ...START, vorher: (q) => q.route('**/beispiele/getraenke-ohne-alkohol-start.json', (r) => r.fulfill({ contentType: 'application/json', body: BSP })) }));
+  await zuEinst(p); await p.click('[data-a=beispiele]'); await p.click('[data-paket=getraenke-ohne-alkohol-start]').catch(() => {}); const tBsp = await toastMit(p, /Getränke|Sammlung/);
+  pruefe('ein Beispielpaket fragt nicht: es wird immer hinzugefügt', !(await p.locator('[data-a=datei-ersetzen]').count()) && /^\+2 Getränke/.test(tBsp) && (await sammlungWenn(p, (x) => x.getraenke.length === 4)).getraenke.length === 4, tBsp);
+  await c.close();
+}
+
 pruefe('keine Fehler in der Konsole, kein Aufruf nach draußen außer den gestellten', fehler.length === 0, fehler.slice(0, 3).join(' · '));
 await b.close(); server.close();
 console.log(`\n${gruen} grün · ${rot} ROT`); process.exitCode = rot ? 1 : 0;

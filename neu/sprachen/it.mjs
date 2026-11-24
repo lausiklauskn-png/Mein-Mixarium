@@ -683,4 +683,13 @@ export default {
   'fruchtig': 'fruttato',
   'cremig': 'cremoso',
   'intensiv': 'intenso',
+  'Datei einspielen': 'Carica un file',
+  '1 Getränk in der Datei': '1 bevanda nel file',
+  '{0} Getränke in der Datei': '{0} bevande nel file',
+  'Hinzufügen': 'Aggiungi',
+  'Ersetzen': 'Sostituisci',
+  'Keine Getränke in der Datei, nichts ersetzt': 'Nessuna bevanda nel file, niente sostituito',
+  'vor dem Ersetzen': 'prima di sostituire',
+  'Ersetzt: {0} Getränke': 'Sostituito: {0} bevande',
+  'Beim Einspielen einer Datei wählst du „Hinzufügen“ oder „Ersetzen“. Ersetzen tauscht Getränke, Ordner, Getränkekarten und Einkauf gegen die Datei; der jetzige Stand kommt vorher in den Tresor, Einstellungen und KI-Schlüssel bleiben.': 'Caricando un file scegli «Aggiungi» o «Sostituisci». Sostituisci scambia bevande, cartelle, carte delle bevande e spesa con quelle del file; lo stato attuale va prima nell’archivio, impostazioni e chiavi IA restano.',
 };
