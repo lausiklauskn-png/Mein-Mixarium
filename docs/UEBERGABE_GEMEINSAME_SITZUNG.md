@@ -17,7 +17,7 @@ Halb Fertiges gibt es nicht: alles, was diese Sitzung angefangen hat, ist geprü
 
 **Fehlt noch (Rezeptbuch):** Food-Zine, Kreativbuch, KI-Buch, Notizbuch mit Kalender · Wochenplaner ohne Gänge/Ziehen · Wischen zwischen Bildschirmen · Installieren-Knopf im Kopf und Update-Hinweis · Bilder mehrerer Dateien auf einmal zuordnen. Zeile für Zeile: `docs/FUNKTIONSLISTE.md` (in der Nacht gegen den Code geprüft).
 
-**Fehlt noch (Mixarium):** Buch, „Vom Glas“ (Foto eines fertigen Getränks) · Bildausschnitt mit Zoom und Ziehen · Notizen je Zutat/Schritt · Herkunft wird nicht gestempelt. (Handbuch: vor27; Installieren-Knopf und Versionsnummer zum Aktualisieren: vor26.) Zeile für Zeile: `docs/FUNKTIONSLISTE.md`.
+**Fehlt noch (Mixarium):** Buch · Bildausschnitt mit Zoom und Ziehen · Notizen je Zutat/Schritt · Herkunft wird nicht gestempelt. („Vom Glas“: vor28; Handbuch: vor27; Installieren-Knopf und Versionsnummer zum Aktualisieren: vor26.) Zeile für Zeile: `docs/FUNKTIONSLISTE.md`.
 
 **Suchfeld (Klaus 24.11.):** in beiden Apps zuerst Wortsuche; nach Bedeutung nur, wenn die Wortsuche nichts findet; der Bedeutungs-Index rechnet ein bearbeitetes Rezept/Getränk neu.
 
@@ -29,6 +29,7 @@ stehen auf der gemeinsamen Seite (`Mein-Rezeptbuch/docs/UEBERGABE_GEMEINSAME_SIT
 
 | Fassung | Was | Proben |
 |---|---|---|
+| PWA 10.0.0-vor28 · Kern 0.24.0 | **„Vom Glas“** im Foto-Blatt: ein Foto eines fertigen Getränks, Claude schlägt ein Rezept vor (nur Anthropic, nur ein Bild, im Formular als Vorschlag gekennzeichnet). Kern 0.24 nachgezogen (das Food-Zine ist hier nicht eingebaut). | zusatz Teil 6 · 7 grün; Gegenprobe 6 Fälle gefangen |
 | PWA 10.0.0-vor27 · Kern 0.23.0 | **Handbuch** (Einstellungen → Über → Handbuch, `neu/handbuch.mjs`): 12 Themen zum Aufklappen, acht Sprachen. Der Sprach-Prüfer liest jetzt auch Dateien, die `L` als Parameter bekommen. | zusatz Teil 21 · 6 grün; Gegenprobe 3 Fälle gefangen (zwei blinde Stellen der Probe dabei gefunden und behoben) |
 | PWA 10.0.0-vor26 · Kern 0.23.0 | **Neues Zeichen**, **Installieren** oben in der Kopfleiste (weg nach der Installation), **Versionsnummer = aktualisieren** (nur der eigene Speicher wird geleert). | zusatz Teil 20 · 12 grün; Gegenprobe 5 gefangen |
 | Kern 0.18.0 (Pin `9c97d27`) · PWA 10.0.0-vor20 | **Das Plus öffnet ein Blatt** „Getränk hinzufügen“ wie im Rezeptbuch (Selbst, Foto-Scan, Text, Datei, Pakete). **Foto-Scan** (Foto aufnehmen, Dateien wählen, PDF, Stapel; Claude oder Mistral OCR + Claude; drei Stufen) mit **Reinigung vor der KI** und **„Datei prüfen“**. **Drei Schlüssel** in den Einstellungen (Anthropic, OpenAI, Mistral; speichern, prüfen, löschen) aus dem Kern; ein Schlüssel der bisherigen App (`mxkey9m`, `mxoaiimg9m`, `mxmistralkey9m`) gilt jetzt weiter und wird nur gelesen. Vor einem Stapel kommt der Stand in den Tresor. | `tests/smoke_neu_scan.mjs` (52) · `tests/gegenprobe_neu_scan.py` (6 Fälle) |
