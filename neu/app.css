@@ -934,3 +934,19 @@ h1,h2,h3,p{margin:0}
 .mx #alle-kosten{margin:10px 0 8px}
 .mx #alle-fertig{margin-top:12px}.mx #alle-fertig .ico{width:17px;height:17px;color:var(--ok)}
 .mx .ueb-lauf{min-height:46px}
+/* ── Zusätze (neu/zusatz.mjs) ── */
+/* KI-Bilder für alle: eine Zeile mit Anzahl, Kosten und Empfänger; beim Lauf ein Balken */
+.mx .fenster p.eine{margin:2px 0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx .fortschritt{height:6px;border-radius:3px;background:var(--fl2);overflow:hidden;margin:0 0 14px}
+.mx .fortschritt i{display:block;height:100%;width:0;background:var(--akz);transition:width .3s ease}
+/* KI-Richter der Suche: kleiner Knopf in der Zeile „Nach Bedeutung“; was weniger passt, klappt ein */
+.mx .eh-zeile{display:flex;align-items:center;gap:10px;margin:18px 0 6px}
+.mx .eh-zeile .eh{margin:0;flex:1;min-width:0}
+.mx .chip.ki small{font-weight:500;color:var(--muted);margin-left:2px;font-size:11.5px}
+.mx .chip.ok{color:var(--ok);border-color:var(--ok)}.mx .chip.ok .ico{color:var(--ok);width:15px;height:15px}
+.mx #sinn-rest{margin-top:12px}.mx #sinn-rest .karten{opacity:.85}
+/* Hoher Kontrast (Einstellungen → Darstellung): der Kern setzt Schrift, Grund, Linien und Akzent. Hier steht, was diese App dazu braucht:
+   Nebentext und Linien folgen dem Kern auch im Dunkeln, der Grund ist glatt, die Wasserfarben-Felder tragen ihr Symbol in voller Schrift und einen Rand. */
+.mx[data-kontrast]{--linie:var(--line);--muted:var(--mut);background:var(--bg)}
+.mx[data-kontrast] .kfeld{color:var(--ink);border:2px solid currentColor;background:color-mix(in srgb,var(--kc,var(--akz)) 22%,var(--fl))}
+.mx[data-kontrast] :is(small,.leise,.unter,.quelle,.zahl){opacity:1}

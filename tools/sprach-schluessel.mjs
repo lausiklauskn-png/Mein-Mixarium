@@ -16,7 +16,7 @@ export const CODES = ['es', 'fr', 'it', 'pt', 'ru', 'zh'];
 export const TABELLEN_ORT = 'neu/sprachen';
 const hat = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 /* Die Dateien der App. Der Kern (kern/) hat eigene Tabellen unter kern/sprachen/ und gehört nicht hierher. */
-const APP = ['neu/app.mjs', 'neu/alt.mjs', 'neu/platzbild.mjs', 'neu/getraenke-symbole.mjs'];
+const APP = ['neu/app.mjs', 'neu/zusatz.mjs', 'neu/handbuch.mjs', 'neu/alt.mjs', 'neu/platzbild.mjs', 'neu/getraenke-symbole.mjs'];
 const dateien = (wurzel) => APP.filter((d) => existsSync(join(wurzel, d))).concat(readdirSync(join(wurzel, 'getraenke')).filter((n) => n.endsWith('.mjs')).sort().map((n) => 'getraenke/' + n));
 /* Listen, deren Texte nicht als L('…', '…') im Code stehen, sondern erst zur Laufzeit bei L() ankommen.
    form 'paar': jedes ['Deutsch', 'English'] in der Konstante · form 'feld': jedes { de: '…', en: '…' } ohne weitere Sprache.

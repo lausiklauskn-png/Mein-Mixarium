@@ -20,7 +20,7 @@ import { anlegen as ordAnlegen, umbenennen as ordUmbenennen, loeschen as ordLoes
 import { einkaufMit } from '../kern/modell/einkauf.mjs';
 import { rezeptAusText } from '../kern/import/text.mjs';
 import { woche, tagIso, planen, entplanen, ausAltemMenu } from '../kern/modell/plan.mjs';
-import { ladeBausteine, korpus as semKorpus, sucheBedeutung } from '../kern/suche/bedeutung.mjs';
+import { ladeBausteine, korpus as semKorpus, sucheBedeutung, passage as semPassage } from '../kern/suche/bedeutung.mjs';
 import * as LAB from '../getraenke/labor.mjs';
 import { hinweiseEinrichten } from '../kern/oberflaeche/hinweis.mjs';
 import { wartenEinrichten, modellFortschritt, bytesMitAnteil } from '../kern/oberflaeche/warten.mjs';
@@ -35,6 +35,7 @@ import { webAdresse, holeSeite, ausEingefuegtem, ohneKi, fuerKi, mitKi, holeBild
 import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, rechtschreibungAnwenden, uebersetze, uebersetzungAnRezept, uebersetzungPasst, kostenSchaetzung, wasGehtHinaus as helferHinaus, wasKurz } from '../kern/ki/helfer.mjs';
 import { druckRezept, drucke } from '../kern/ausgabe/druck.mjs';
 import { teilLink, ausTeilLink, qrSvg, passtInQr } from '../kern/teilen/qr.mjs';
+import { zusatz } from './zusatz.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -48,7 +49,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor23';
+export const FASSUNG = '10.0.0-vor24';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -183,7 +184,7 @@ function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${
 function kartenHtml() {
   const l = sichtbar(), sinn = semTreffer(), an = E.sinn && Z.suche.trim();
   const status = an ? `<p class="sinn-status" id="sinn-status" role="status">${esc(sem.status)}</p>` : '';
-  const zusatz = sinn.length ? `<h3 class="eh">${L('Nach Bedeutung', 'By meaning')} <small>${sinn.length}</small></h3><div class="karten" id="sinn-treffer">${sinn.map(karte).join('')}</div>` : '';
+  const zusatz = ZU.sinnBlock(sinn, karte);   /* „Nach Bedeutung“ mit dem KI-Richter (neu/zusatz.mjs) */
   if (!l.length) return (sinn.length ? '' : `<p class="leer">${Z.suche ? L('Nichts gefunden. Anderes Wort versuchen oder die Kategorie „Alle“ wählen.', 'Nothing found. Try another word or choose “All”.') : L('In dieser Kategorie ist noch nichts.', 'Nothing in this category yet.')}</p>`) + status + zusatz;
   return `<div class="karten">${l.map(karte).join('')}</div>${status}${zusatz}`;
 }
@@ -193,7 +194,7 @@ function kartenHtml() {
 const sem = { ids: [], fuer: '', status: '', uhr: null, laeuft: false, korpus: null, sig: '' };
 const semStatus = (t) => { sem.status = t; const el = $('#sinn-status'); if (el) el.textContent = t; };
 function semTreffer() {
-  const q = Z.suche.trim().toLowerCase(); if (!E.sinn || !q || sem.fuer !== q) return [];
+  const q = Z.suche.trim().toLowerCase(); if (!E.sinn || !q || sem.fuer !== q || sichtbar().length) return [];   /* Klaus 24.11.: zuerst Wortsuche; nach Bedeutung nur, wenn sie nichts findet */
   const da = new Set(sichtbar().map((r) => r.uid)), erlaubt = new Set(G.filterOhneAlkohol(A.getraenke, ohneAlk()).map((r) => r.uid));
   return sem.ids.map(getr).filter((r) => r && G.istSichtbar(r) && !da.has(r.uid) && erlaubt.has(r.uid) && inWahl(r));
 }
@@ -204,20 +205,23 @@ function semBereit() {
     const ab = modellFortschritt((a, g, t) => { w.anteil(a); if (t) w.text(fuelle(L('Sprachmodell wird geladen: {0} von {1} MB', 'Loading the language model: {0} of {1} MB'), g, t)); });
     try { await ladeBausteine('../sbkim/'); await window.SbkimEmbedding.init(); } finally { ab(); }
     w.anteil(null); w.text(L('Sinn-Suche wird vorbereitet …', 'Preparing meaning search …'));
-    const rs = A.getraenke.filter(G.istSichtbar), sig = rs.map((r) => r.uid + ':' + r.name).join(',');
+    const rs = A.getraenke.filter(G.istSichtbar), sig = rs.map((r) => r.uid + '\u0001' + semPassage(sicht(r), katNameVon(r))).join('\u0002');   /* der Index folgt dem Inhalt: ein bearbeitetes Getränk wird neu gerechnet */
     if (!sem.korpus || sem.sig !== sig) { sem.korpus = await semKorpus(rs.map(sicht), (r) => katNameVon(r), { einbetten: (t) => window.SbkimEmbedding.embedPassage(t), fortschritt: (i, n) => { const t = fuelle(L('Sinn-Suche wird vorbereitet: {0} von {1} Getränken', 'Preparing meaning search: {0} of {1} drinks'), i, n); semStatus(t); w.text(t); w.anteil(n ? i / n : null); } }); sem.sig = sig; }
     return sem.korpus;
   });
 }
-function semPlanen() { clearTimeout(sem.uhr); if (!E.sinn) return; const f = Z.suche.trim().toLowerCase(); if (!f) { sem.ids = []; sem.fuer = ''; return; } sem.uhr = setTimeout(() => semLauf(f), 350); }
+function semPlanen() { clearTimeout(sem.uhr); if (!E.sinn) return; const f = Z.suche.trim().toLowerCase(); if (!f) { sem.ids = []; sem.fuer = ''; return; }
+  if (sichtbar().length) { sem.ids = []; sem.fuer = ''; semStatus(''); return; }   /* die Wortsuche hat etwas gefunden: keine Bedeutungssuche */
+  sem.uhr = setTimeout(() => semLauf(f), 350); }
 async function semLauf(f) {
   if (!E.sinn) return; if (sem.laeuft) { sem.uhr = setTimeout(() => semLauf(f), 300); return; }
   sem.laeuft = true; semStatus(sem.korpus ? L('sucht nach Bedeutung …', 'searching by meaning …') : L('Sinn-Suche wird vorbereitet (beim ersten Mal lädt das Sprachmodell) …', 'Preparing meaning search (the language model loads the first time) …'));
   try {
     const c = await semBereit(); if (Z.suche.trim().toLowerCase() !== f) return;
     sem.ids = await sucheBedeutung(window.SbkimMatch, f, c); sem.fuer = f; if (Z.suche.trim().toLowerCase() !== f) return;
+    if (sichtbar().length) { sem.ids = []; sem.fuer = ''; semStatus(''); return; }   /* inzwischen findet die Wortsuche etwas */
     const dazu = semTreffer().length;
-    sem.status = dazu ? fuelle(L('{0} zusätzlich nach Bedeutung gefunden', '{0} more found by meaning'), dazu) : L('Sinn-Suche an, keine weiteren Treffer', 'Meaning search on, no further results');
+    sem.status = dazu ? fuelle(L('Nach Wort nichts gefunden · {0} nach Bedeutung', 'Nothing found by word · {0} by meaning'), dazu) : L('Auch nach Bedeutung nichts gefunden', 'Nothing found by meaning either');
     const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml();
   } catch (e) { console.warn('Sinn-Suche:', (e && e.message) || e); semStatus(L('Die Sinn-Suche ist gerade nicht verfügbar. Die Wortsuche läuft weiter.', 'Meaning search is not available right now. Word search keeps working.')); } finally { sem.laeuft = false; }
 }
@@ -438,7 +442,7 @@ function vBilder() {
   const gez = mit.filter((r) => B.filter === 'alle' || (B.filter === 'beispiele' ? r.beispiel : !r.beispiel));
   for (const u of [...B.wahl]) if (!gez.some((r) => r.uid === u)) B.wahl.delete(u);
   return `<div class="innen-p"><button class="zurueckzeile" data-go="mehr">${I('left')}${L('Einstellungen', 'Settings')}</button><h2 class="titel">${L('Bilder', 'Pictures')}${frag(L('Tippe Bilder an, um sie auszuwählen. „Löschen“ entfernt nur das Bild; das Getränk mit seinem Text bleibt. Vorher wird der Stand im Tresor abgelegt.', 'Tap pictures to select them. “Delete” removes only the picture; the drink and its text stay. The current state is stored in the vault first.'))}</h2><p class="unter">${fuelle(L('{0} Bilder · {1} Getränke ohne Bild', '{0} pictures · {1} drinks without a picture'), mit.length, ohne.length)}</p>
-   <div class="laeden">${[['alle', L('Alle', 'All')], ['eigene', L('Eigene', 'Own')], ['beispiele', L('Beispiele', 'Examples')]].map(([f, t]) => `<button class="chip" data-a="bilder-filter" data-f="${f}" aria-pressed="${B.filter === f}">${t}</button>`).join('')}<button class="chip" data-a="bilder-gross" aria-pressed="${B.gross}">${I('full')}${B.gross ? L('Groß', 'Large') : L('Klein', 'Small')}</button></div>
+   <div class="laeden">${[['alle', L('Alle', 'All')], ['eigene', L('Eigene', 'Own')], ['beispiele', L('Beispiele', 'Examples')]].map(([f, t]) => `<button class="chip" data-a="bilder-filter" data-f="${f}" aria-pressed="${B.filter === f}">${t}</button>`).join('')}<button class="chip" data-a="bilder-gross" aria-pressed="${B.gross}">${I('full')}${B.gross ? L('Groß', 'Large') : L('Klein', 'Small')}</button>${ZU.sammelKnopf()}</div>
    <div class="reihe" style="margin:10px 0"><button class="knopf rot" data-a="bilder-weg" ${B.wahl.size ? '' : 'disabled'}>${I('trash')}${fuelle(L('Löschen ({0})', 'Delete ({0})'), B.wahl.size)}</button><button class="knopf hell" data-a="bilder-alle-wahl" ${gez.length ? '' : 'disabled'}>${B.wahl.size === gez.length && gez.length ? L('Auswahl aufheben', 'Clear selection') : L('Alle auswählen', 'Select all')}</button><button class="knopf hell rotschrift" data-a="bilder-alle-weg" ${mit.length ? '' : 'disabled'}>${L('Alle Bilder löschen', 'Delete all pictures')}</button></div>
    <div class="bildgitter ${B.gross ? 'gross' : ''}">${gez.map((r) => `<button class="bildkachel" data-a="bild-wahl" data-uid="${esc(r.uid)}" aria-pressed="${B.wahl.has(r.uid)}"><img src="${esc(r.img)}" alt="" loading="lazy"><span class="hk">${B.wahl.has(r.uid) ? I('check') : ''}</span><span class="bn">${esc(r.name)}</span></button>`).join('') || `<p class="leer">${L('Keine Bilder in dieser Auswahl.', 'No pictures in this selection.')}</p>`}</div>
    ${ohne.length ? `<h3 class="eh">${L('Getränke ohne Bild', 'Drinks without a picture')}</h3><div class="eliste">${ohne.map((r) => `<button class="ezeile" data-a="bild-dazu" data-uid="${esc(r.uid)}">${I('camera')}<span><b>${esc(r.name)}</b><small>${L('Bild einfügen, KI-Bild oder Gratis-Foto', 'Add picture, AI picture or free photo')}</small></span>${I('right')}</button>`).join('')}</div>` : ''}</div>`;
@@ -453,7 +457,7 @@ function vMehr() {
   const bsp = A.getraenke.filter((r) => r.beispiel).length, alle = A.getraenke.filter(G.istSichtbar).length, bilder = A.getraenke.filter((r) => G.istSichtbar(r) && r.img).length;
   const themen = [
     ['aussehen', 'auge', WF.blau, L('Darstellung', 'Appearance'), '',
-      z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"') + z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch', 'automatic'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"') + z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' %', 'data-a="menue" data-m="schrift"') + z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"') + z(I('info'), L('Hinweis-Blasen', 'Tooltips'), E.hinweiseAus ? L('aus', 'off') : L('an', 'on'), `data-a="hinweise" aria-pressed="${!E.hinweiseAus}"`)],
+      z(I('lang'), L('Sprache', 'Language'), E.sprache ? SPRACHEN.find((x) => x[0] === E.sprache)[1] : L('wie das Gerät', 'same as device'), 'data-a="menue" data-m="sprache"') + z(I('drop'), L('Einheiten', 'Units'), { auto: L('automatisch', 'automatic'), orig: L('wie notiert', 'as written'), ml: 'ml', cl: 'cl', oz: 'oz' }[E.einheit], 'data-a="einheit"') + z(I('aa'), L('Schriftgröße', 'Text size'), E.schrift + ' %', 'data-a="menue" data-m="schrift"') + z('<span class="fleck farbknopf"></span>', L('Farbe, hell und dunkel', 'Colour, light and dark'), farbName(E.farbe) + ' · ' + { hell: L('hell', 'light'), dunkel: L('dunkel', 'dark') }[E.ton], 'data-a="menue" data-m="farbe"') + z(I('kontrast'), L('Hoher Kontrast', 'High contrast'), E.kontrast ? L('an', 'on') : L('aus', 'off'), `data-a="kontrast" aria-pressed="${!!E.kontrast}"`) + z(I('info'), L('Hinweis-Blasen', 'Tooltips'), E.hinweiseAus ? L('aus', 'off') : L('an', 'on'), `data-a="hinweise" aria-pressed="${!E.hinweiseAus}"`)],
     ['ordnung', 'folder', WF.gelb, L('Ordnung', 'Order'), '',
       z(I('box'), L('Kategorien', 'Categories'), String(kats().length), 'data-a="kategorien"') + z(I('folder'), ordMehr(), String(A.ordner.length), 'data-a="ordner"') + z(I('image'), L('Bilder', 'Pictures'), String(bilder), 'data-go="bilder"') + z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an', 'on') : L('aus', 'off'), `data-a="alk" aria-pressed="${ohneAlk()}"`)],
     ['sichern', 'safe', WF.gruen, L('Sichern', 'Backup'), L('Die Getränke liegen nur in diesem Gerät. Eine Sicherung als Datei schützt sie und bringt sie auf ein anderes Gerät; beim Einspielen werden Doppelte erkannt. Der Tresor hält dazu mehrere Stände im Gerät und hilft, wenn etwas falsch gelöscht wurde. KI-Schlüssel kommen nie in eine Sicherung.', 'The drinks are stored on this device only. A backup file protects them and takes them to another device; duplicates are detected when restoring. The vault additionally keeps several states on the device and helps when something was deleted by mistake. AI keys never go into a backup.'),
@@ -717,15 +721,16 @@ function ausschnittFenster() {
   Z.fenster = { titel: L('Ausschnitt anpassen', 'Adjust section'), html: `<div class="as-vor"><img id="asbild" src="${esc(r.img)}" alt="" style="object-position:${x}% ${y}%"></div><div class="felder"><label>${L('nach links / rechts', 'left / right')}<input type="range" id="asx" min="0" max="100" value="${x}"></label><label>${L('nach oben / unten', 'up / down')}<input type="range" id="asy" min="0" max="100" value="${y}"></label></div><div class="reihe ende"><button class="knopf hell" data-a="bildblatt">${L('Zurück', 'Back')}</button><button class="knopf" data-a="ausschnitt-ok">${I('check')}${L('Übernehmen', 'Apply')}</button></div>` };
   zeichne();
 }
-function bildSetzen(img) { const r = getr(Z.uid); if (!r) return; r.img = img; r.imgCrop = { x: 50, y: 50, scale: 1 }; r.modified = Date.now(); sichern(); }
+function bildSetzen(img, uid = Z.uid) { const r = getr(uid); if (!r) return; r.img = img; r.imgCrop = { x: 50, y: 50, scale: 1 }; r.modified = Date.now(); sichern(); }
 async function bildErzeugen(gratis) {
   const r = getr(Z.uid); if (!r) return;
   let schluessel = '';
   if (!gratis) { schluessel = await S.hol('openai'); if (!schluessel) return schluesselFenster('openai', 'bild'); }
+  const frei = await ZU.bildFreigabe(sicht(r), gratis); if (!frei) return;   /* steht im Auftrag ein Befehl an eine KI, entscheidet erst der Mensch (neu/zusatz.mjs) */
   Z.fenster = null; zeichne();
   try {
     const img = await W.mit(gratis ? L('Gratis-Foto wird erzeugt …', 'Creating free photo …') : L('KI-Bild wird erzeugt (etwa 20 s) …', 'Creating AI picture (about 20 s) …'), async (w) => {
-      const roh = gratis ? await gratisBild(sicht(r), { art: 'getraenk' }) : await kiBild(schluessel, sicht(r), { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
+      const roh = gratis ? await gratisBild(frei, { art: 'getraenk' }) : await kiBild(schluessel, frei, { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
       w.text(L('Bild wird gespeichert …', 'Saving the picture …')); return bildAusDatei(await (await fetch(roh)).blob()); });
     bildSetzen(img); melde(L('Das neue Bild ist da.', 'The new picture is there.'));
   } catch (f) { melde(L('Das hat nicht geklappt: ', 'That did not work: ') + (f && f.message ? f.message : L('unbekannter Fehler', 'unknown error'))); }
@@ -736,7 +741,7 @@ const sicherungObjekt = () => JSON.parse(sicherungText());
 async function tresorAuto(grund) { try { if (A.getraenke.some(G.istSichtbar)) await tr.ablegen(sicherungObjekt(), 'auto', grund); } catch (e) { /* der Tresor darf nie etwas aufhalten */ } }
 async function tresorFenster() {
   const l = await tr.liste(), zeit = (ts) => new Date(ts).toLocaleString(sprache() === 'de' ? 'de-DE' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-  Z.fenster = { titel: L('Tresor', 'Vault'), html: `<form id="trform" class="reihe" autocomplete="off"><input class="feld" name="name" style="flex:1;min-width:0" placeholder="${L('Name, z. B. vor dem Aufräumen', 'Name, e.g. before tidying')}"><button class="knopf" type="submit">${I('safe')}${L('Jetzt ablegen', 'Store now')}</button>${frag(L('Stände deiner Sammlung in diesem Gerät: bis zu 5 automatische (vor großen Änderungen) und 10 benannte. Gegen das Leeren des Browsers hilft nur die Sicherung als Datei.', 'States of your collection on this device: up to 5 automatic (before big changes) and 10 named. Only a backup file protects against clearing the browser.'))}</form>${l.map((x) => `<div class="slot"><span class="mitte"><strong>${esc(x.name)}</strong><small>${zeit(x.ts)} · ${fuelle(L('{0} Getränke', '{0} drinks'), x.anzahl)} · ${x.art === 'auto' ? L('automatisch', 'automatic') : L('benannt', 'named')}</small></span><button class="chip" data-a="tresor-holen" data-id="${esc(x.id)}">${L('Zurückholen', 'Restore')}</button><button class="rund klein" data-a="tresor-weg" data-id="${esc(x.id)}" aria-label="${L('Löschen', 'Delete')}">${I('trash')}</button></div>`).join('') || `<p class="leer">${L('Noch nichts im Tresor.', 'Nothing in the vault yet.')}</p>`}` };
+  Z.fenster = { titel: L('Tresor', 'Vault'), html: `<form id="trform" class="reihe" autocomplete="off"><input class="feld" name="name" style="flex:1;min-width:0" placeholder="${L('Name, z. B. vor dem Aufräumen', 'Name, e.g. before tidying')}"><button class="knopf" type="submit">${I('safe')}${L('Jetzt ablegen', 'Store now')}</button>${frag(L('Stände deiner Sammlung in diesem Gerät: bis zu 5 automatische (vor großen Änderungen) und 10 benannte. Gegen das Leeren des Browsers hilft nur die Sicherung als Datei.', 'States of your collection on this device: up to 5 automatic (before big changes) and 10 named. Only a backup file protects against clearing the browser.'))}</form>${l.map((x) => `<div class="slot"><span class="mitte"><strong>${esc(x.name)}</strong><small>${zeit(x.ts)} · ${x.anzahl === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), x.anzahl)} · ${x.art === 'auto' ? L('automatisch', 'automatic') : L('benannt', 'named')}</small></span><button class="chip" data-a="tresor-holen" data-id="${esc(x.id)}">${L('Zurückholen', 'Restore')}</button><button class="rund klein" data-a="tresor-weg" data-id="${esc(x.id)}" aria-label="${L('Löschen', 'Delete')}">${I('trash')}</button></div>`).join('') || `<p class="leer">${L('Noch nichts im Tresor.', 'Nothing in the vault yet.')}</p>`}` };
   zeichne();
 }
 async function tresorHolen(id) {
@@ -789,7 +794,7 @@ async function ausAlterApp(still) {
 /* ── Zeichnen ── */
 /* Farbe, Ton und Schriftgröße setzt der Kern als CSS-Variablen auf das App-Element. `--pa` ist die reine Palettenfarbe
    (für eigene Mischungen dieser Ausgabe). */
-function kernStil() { const el = $('.mx'); farbeSetzen(el, E.farbe, E.ton); el.style.setProperty('--pa', (FARBEN[E.farbe] || FARBEN.blau).akz); E.schrift = schriftSetzen(el, E.schrift); }
+function kernStil() { const el = $('.mx'); farbeSetzen(el, E.farbe, E.ton, { kontrast: !!E.kontrast }); el.style.setProperty('--pa', (FARBEN[E.farbe] || FARBEN.blau).akz); E.schrift = schriftSetzen(el, E.schrift); }
 /* Kacheln dicht packen (Klaus 23.11.: „die kleineren sollen so aufrücken, dass keine Zwischenräume leer bleiben“):
    natürliche Breite messen, dann der Reihe nach immer die breiteste Kachel nehmen, die in die aktuelle Reihe noch passt
    (erste Passung, absteigend). Die Reihenfolge wird nur über `order` gesetzt; danach füllen die Kacheln ihre Reihe. */
@@ -1000,6 +1005,7 @@ const TUN = {
   'alle-ueb-stopp'() { Z.fenster = null; },   /* zeichne() bemerkt das geschlossene Fenster und bricht den Lauf ab */
   'toast-tun'() { const t = toastTun; toastTun = null; Z.toast = ''; Z.toastKnopf = ''; clearTimeout(melde.uhr); if (t) t(); },
   'einst-auf'(b) { const g = b.dataset.g; if (Z.einstAuf.has(g)) Z.einstAuf.delete(g); else Z.einstAuf.add(g); },
+  kontrast() { E.kontrast = !E.kontrast; einstSichern(); },   /* gesetzt wird er beim Zeichnen (kernStil); gilt hell und dunkel */
   hinweise() { E.hinweiseAus = !E.hinweiseAus; einstSichern(); melde(E.hinweiseAus ? L('Hinweis-Blasen aus', 'Tooltips off') : L('Hinweis-Blasen an', 'Tooltips on')); },
   'lab-kat'(b) { Z.lab.zutaten = ($('#labzutaten') && $('#labzutaten').value) || Z.lab.zutaten; Z.lab.kat = b.dataset.k; },
   'lab-geschmack'(b) { Z.lab.zutaten = ($('#labzutaten') && $('#labzutaten').value) || Z.lab.zutaten; const g = Z.lab.geschmack, x = b.dataset.g; Z.lab.geschmack = g.includes(x) ? g.filter((y) => y !== x) : [...g, x]; },
@@ -1140,6 +1146,10 @@ const TUN = {
   'posten-weg'(b) { const an = A.anlaesse.find((x) => x.id === Z.anlass); an.posten = an.posten.filter((p) => String(p.id) !== b.dataset.p); sichern(); },
   drucken() { print(); return false; },
 };
+/* Zusätze (neu/zusatz.mjs): Prüfung des Bildauftrags, KI-Bilder für alle ohne Bild, KI-Richter der Suche, Tresor-Stände der bisherigen App. Sie hängen ihre Aktionen selbst in TUN.
+   `sichtbare` ist, was zu sehen ist: nichts Ausgeblendetes („Ohne Alkohol“) geht an eine KI. */
+const ZU = zusatz({ sprache, esc, I, Z, TUN, SK, W, tr, E: () => E, einstSichern, melde, sichern, zeichne, schluesselFenster, bildAusDatei, tresorAuto, bildAn: (uid, img) => bildSetzen(img, uid),
+  sichtbare: () => G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter(G.istSichtbar), sinnTreffer: semTreffer, sicht, katName: katNameVon, warte: (f, fertig) => { wartend = { f, fertig }; } });
 const postenVon = (b) => A.anlaesse.find((x) => x.id === Z.anlass).posten.find((p) => String(p.id) === b.dataset.p);
 function anlassFenster(an) {
   Z.fenster = { titel: an ? L('Getränkekarte bearbeiten', 'Edit drinks list') : L('Neue Getränkekarte', 'New drinks list'), anlass: an ? an.id : null, html: `<form id="anform" class="felder" autocomplete="off"><label>${L('Anlass', 'Occasion')}<input class="feld" name="titel" required value="${esc(an ? an.titel : '')}" placeholder="${L('z. B. Sommerabend bei Oma', 'e.g. Summer evening at Grandma’s')}"></label><div class="zweier"><label>${L('Wann', 'When')}<input class="feld" name="datum" value="${esc(an ? an.datum || '' : '')}" placeholder="${L('z. B. Sa 29.11., 18 Uhr', 'e.g. Sat 29 Nov, 6 pm')}"></label><label>${L('Gäste', 'Guests')}<input class="feld" name="gaeste" type="number" min="0" max="999" value="${an && an.gaeste ? Number(an.gaeste) : ''}"></label></div><div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Speichern', 'Save')}</button></div></form>` }; zeichne();
@@ -1184,7 +1194,7 @@ document.addEventListener('submit', (ev) => {
     getraenkSetzen(rechtschreibungAnwenden(r, f.recht.aenderungen.filter((_, i) => wahl.includes(i)))); Z.fenster = null; return melde(wahl.length === 1 ? L('1 übernommen', '1 applied') : fuelle(L('{0} übernommen', '{0} applied'), wahl.length)); }
   if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
-    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } }); return; }
+    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } else if (ZU.danach.includes(danach)) { if (TUN[danach]() !== false) zeichne(); } }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
     const f = LAB.bewerten(r, { taste: d.get('taste'), practicality: d.get('practicality'), originality: d.get('originality'), description: d.get('description') }, String(d.get('fb') || ''), { solo: labSolo() });
     Z.fenster = null; sichern();
@@ -1276,6 +1286,7 @@ async function start() {
   if (geteilteAdresse) { Z.web = { adresse: geteilteAdresse, text: '', stand: '', seitentext: '' }; neuBlatt('web'); }
   if (erster) { try { await ausAlterApp(true); } catch (e) { /* nichts Altes da */ } if (!A.getraenke.some(G.istSichtbar) && !geteilt.has('leer')) await startGetraenke(); sichern(); zeichne(true); lager.dauerhaft(); }
   if (geteiltesGetraenk) await geteiltOeffnen(geteiltesGetraenk);
+  ZU.altTresor().catch(() => {});   /* Tresor-Stände der bisherigen App, einmal; dort wird nur gelesen */
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 start();
