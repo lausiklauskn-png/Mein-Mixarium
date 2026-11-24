@@ -190,6 +190,34 @@ if (will(4)) {
   await c.close();
 }
 
+if (will(6)) {
+  console.log('6 · Vom Glas: ein Foto eines fertigen Getränks, Claude schlägt ein Rezept vor');
+  ({ p, c, netz } = await seite({ getraenke: [D(1, 'Zitronen-Spritz')], einst: { scan: { anbieter: 'mistral', stufe: 'schnell' } } }));
+  /* Ein Verlauf statt einer Fläche: das Foto soll nach etwas aussehen, nicht auf wenige Bytes schrumpfen. */
+  const glasFoto = Buffer.from(await p.evaluate(async () => { const l = document.createElement('canvas'); l.width = 640; l.height = 480; const x = l.getContext('2d'), g = x.createLinearGradient(0, 0, 640, 480); g.addColorStop(0, '#e8a33a'); g.addColorStop(1, '#3a8fd6'); x.fillStyle = g; x.fillRect(0, 0, 640, 480); const u = new Uint8Array(await (await new Promise((r) => l.toBlob(r, 'image/jpeg', 0.9))).arrayBuffer()); let t = ''; for (const b of u) t += String.fromCharCode(b); return btoa(t); }), 'base64');
+  const fotoAuf = async () => { await p.waitForSelector('.fenster', { state: 'detached' }).catch(() => {}); await p.click('.kopf [data-a=neu]'); await p.click('.fenster [data-t=scan]'); await p.waitForSelector('.imp-p[data-weg=scan]'); };
+  await fotoAuf();
+  const kacheln = (await p.locator('.zwei-gross .knopf').allInnerTexts()).map((x) => x.trim()).join('|'), zeilen = await p.locator('.zwei-gross').evaluate((e) => new Set([...e.children].map((k) => Math.round(k.getBoundingClientRect().top))).size);
+  pruefe('im Foto-Weg stehen drei Kacheln in einer Zeile: Kamera, Datei, Vom Glas (der Hinweis sagt, was es tut)', kacheln === 'Kamera|Datei|Vom Glas' && zeilen === 1 && (await hinweis(p, '[data-a=scan-glas]')).includes('fertiges Getränk'), kacheln + ' · ' + zeilen + ' Zeilen');
+  await p.click('[data-a=scan-glas]'); await p.setInputFiles('#datei-kamera', { name: 'glas.jpg', mimeType: 'image/jpeg', buffer: glasFoto }); await p.waitForSelector('.scan-vor img', { timeout: 30000 });
+  const gk = (await p.locator('[data-a=scan-senden]').innerText()).replace(/\s+/g, ' ').trim(), gh = await hinweis(p, '[data-a=scan-senden]');
+  const knopfZeile = await p.locator('[data-a=scan-senden] span').evaluate((e) => e.getBoundingClientRect().height <= parseFloat(getComputedStyle(e).lineHeight || '20') * 1.5);
+  pruefe('der Knopf heißt „Rezept vorschlagen“ und nennt Anthropic und die Größe – auch wenn sonst Mistral gewählt ist; eine Zeile bei 390 px', /^Rezept vorschlagen Anthropic · \d+ KB$/.test(gk) && gh.includes('an Anthropic (Claude)') && !gh.includes('Mistral') && knopfZeile, gk + ' | ' + gh);
+  await p.click('[data-a=scan-senden]'); await p.waitForSelector('.schlform', { timeout: 6000 }).catch(() => {});
+  pruefe('ohne Anthropic-Schlüssel kommt das Schlüssel-Fenster, nichts geht hinaus', netz.claude.length === 0 && await p.locator('.schlform[data-anbieter=anthropic]').count() === 1);
+  if (await p.locator('.schlform [name=k]').count()) { await p.fill('.schlform [name=k]', 'sk-ant-probe-666666666666666666'); await p.click('.schlform button[type=submit]'); }
+  await p.waitForSelector('[data-a=scan-senden]', { timeout: 10000 }).catch(() => {});
+  netz.claudeAntwort = () => ({ name: 'Aperol-freier Spritz', servings: 1, prepTime: 5, category: 'mock', flavor: 'bitter-frisch', ingredients: [{ amt: '10', unit: 'cl', name: 'Bitter-Limonade' }, { amt: '5', unit: 'cl', name: 'Sprudelwasser' }], steps: ['Glas mit Eis füllen.', 'Alles aufgießen.'] });
+  await p.click('[data-a=scan-senden]').catch(() => {}); await p.waitForSelector('#ed', { timeout: 15000 }).catch(() => {});
+  const gc = netz.claude[0] ? netz.claude[0].messages[0].content : [];
+  pruefe('ein Aufruf an Claude mit dem Foto und dem Auftrag „fertiges Getränk“, auf Deutsch; an Mistral geht nichts', netz.claude.length === 1 && gc[0] && gc[0].type === 'image' && /finished dish or drink/.test(gc[1].text) && /German/.test(gc[1].text) && !fehler.some((x) => /mistral/i.test(x)), String(netz.claude.length));
+  pruefe('der Vorschlag steht im Formular zum Prüfen; der Hinweis nennt ihn einen Vorschlag', await p.locator('#ed').count() === 1 && await p.inputValue('#ed [name=name]').catch(() => '') === 'Aperol-freier Spritz' && (await p.inputValue('#ed [name=ings]').catch(() => '')).includes('Bitter-Limonade') && /^Ein Vorschlag\. Bitte prüfen\.$/.test((await p.locator('#ed .hinweis').innerText().catch(() => '')).trim()), await p.locator('#ed .hinweis').innerText().catch(() => 'kein Hinweis'));
+  await p.keyboard.press('Escape'); await fotoAuf(); await p.click('[data-a=scan-kamera]'); await p.setInputFiles('#datei-kamera', { name: 'zettel.jpg', mimeType: 'image/jpeg', buffer: glasFoto }); await p.waitForSelector('.scan-vor img', { timeout: 30000 });
+  const kk = (await p.locator('[data-a=scan-senden]').innerText()).replace(/\s+/g, ' ');
+  pruefe('ein gewöhnliches Kamerafoto danach heißt wieder „Getränk lesen“ und geht den gewählten Weg', /Getränk lesen/.test(kk) && /Mistral/.test(kk), kk);
+  await c.close();
+}
+
 if (will(7)) {
   console.log('7 · Hoher Kontrast');
   ({ p, c } = await seite({ getraenke: [D(1, 'Zitronen-Spritz')] }));

@@ -51,7 +51,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor27';
+export const FASSUNG = '10.0.0-vor28';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -584,20 +584,20 @@ function scanInhalt() {
   const wahl = `<details class="mehr" id="scan-mehr" ${Z.scanMehr ? 'open' : ''}><summary>${I('sparkle')}<span>${an === 'mistral' ? 'Mistral + Claude' : 'Claude'} · ${esc(L(STUFEN[st].name[0], STUFEN[st].name[1]))}</span></summary>
    <div class="scan-wahl">${[['anthropic', 'Claude'], ['mistral', 'Mistral (EU)']].map(([a, t]) => `<button class="chip" data-a="scan-anbieter" data-w="${a}" aria-pressed="${an === a}" title="${esc(tip[a])}">${esc(t)}</button>`).join('')}</div>
    <div class="scan-wahl">${Object.entries(STUFEN).map(([k, x]) => `<button class="chip" data-a="scan-stufe" data-w="${k}" aria-pressed="${st === k}" title="${esc(tip[k] || '')}">${esc(L(x.name[0], x.name[1]))}</button>`).join('')}</div></details>`;
-  if (!n) return `<div class="zwei-gross"><button class="knopf hell gross" style="--kc:${WF.koralle}" data-a="scan-kamera">${kfeld('camera')}${L('Kamera', 'Camera')}</button><button class="knopf hell gross" style="--kc:${WF.violett}" data-a="scan-datei" title="${L('Fotos oder PDFs wählen; mehrere werden nacheinander gelesen', 'Choose photos or PDFs; several are read one after another')}">${kfeld('folder')}${L('Datei', 'File')}</button></div>${wahl}`;
+  if (!n) return `<div class="zwei-gross"><button class="knopf hell gross" style="--kc:${WF.koralle}" data-a="scan-kamera">${kfeld('camera')}${L('Kamera', 'Camera')}</button><button class="knopf hell gross" style="--kc:${WF.violett}" data-a="scan-datei" title="${L('Fotos oder PDFs wählen; mehrere werden nacheinander gelesen', 'Choose photos or PDFs; several are read one after another')}">${kfeld('folder')}${L('Datei', 'File')}</button><button class="knopf hell gross" style="--kc:${WF.gelb}" data-a="scan-glas" title="${L('Ein fertiges Getränk fotografieren; Claude schlägt ein Rezept dazu vor', 'Take a picture of a finished drink; Claude suggests a recipe for it')}">${kfeld('drinks')}${L('Vom Glas', 'From the glass')}</button></div>${wahl}`;
   const weg = rund('scan-neu', 'x', n === 1 ? L('Andere Datei', 'Other file') : L('Andere Dateien', 'Other files'));
   if (n === 1) { const v = sc.v, d = sc.dateien[0];
     if (fundeZumEntscheiden(v.liste).length && !sc.entschieden) return `<div class="scan-fund" data-ki-halt><div class="fund-bilder ${sc.gross ? 'gross' : ''}" data-a="fund-gross" role="button" tabindex="0" aria-label="${L('Fundstellen größer oder kleiner zeigen', 'Show the marked passages larger or smaller')}">${v.marken.map((m) => `<img src="${esc(m.bild)}" alt="${esc(fundName(v.liste, sprache()))}, ${L('Seite', 'page')} ${m.seite}">`).join('')}<span class="fund-name">${I('schild')}${esc(fundName(v.liste, sprache()))}</span></div>
       <div class="reihe"><button class="knopf gross" data-a="scan-raus" title="${L('Die markierten Stellen gehen nicht mit an die KI; die Datei bleibt, wie sie ist', 'The marked passages are not sent to the AI; the file stays as it is')}">${I('check')}${L('Entfernen', 'Remove')}</button><button class="knopf hell gross" data-a="scan-rein" title="${L('Die Seiten gehen so an die KI, wie sie sind', 'The pages go to the AI as they are')}">${L('Drin lassen', 'Keep')}</button>${weg}</div></div>`;
     return `<div class="scan-vor" title="${esc(d.name || '')}">${v.bilder.slice(0, 6).map((b) => `<img src="${esc(b)}" alt="">`).join('')}${v.bilder.length > 6 ? `<span>+${v.bilder.length - 6}</span>` : ''}</div>
-     <div class="reihe"><button class="knopf gross" data-a="scan-senden" title="${esc(wasGehtHinaus(v, an, sprache()))}">${I('scan')}<span>${L('Getränk lesen', 'Read drink')}</span><small id="scan-was">${esc(wohinKurz(v, an, sprache()))}</small></button>${rund('scan-pruefen', 'schild', L('Datei gründlich prüfen (im Gerät, auch Text im Bild)', 'Check the file thoroughly (on this device, including text in the picture)'))}${weg}</div>${wahl}`; }
+     <div class="reihe"><button class="knopf gross" data-a="scan-senden" title="${esc(wasGehtHinaus(v, sc.glas ? 'anthropic' : an, sprache()))}">${I(sc.glas ? 'drinks' : 'scan')}<span>${sc.glas ? L('Rezept vorschlagen', 'Suggest a recipe') : L('Getränk lesen', 'Read drink')}</span><small id="scan-was">${esc(wohinKurz(v, sc.glas ? 'anthropic' : an, sprache()))}</small></button>${rund('scan-pruefen', 'schild', L('Datei gründlich prüfen (im Gerät, auch Text im Bild)', 'Check the file thoroughly (on this device, including text in the picture)'))}${weg}</div>${wahl}`; }
   const lang = L('Je Foto geht die verkleinerte Fassung ohne Aufnahmedaten hinaus, je PDF die gereinigten Seitenbilder (höchstens 10 Seiten). Versteckter Text geht nicht mit. Jede gelesene Datei wird gleich eingetragen; vorher kommt der jetzige Stand in den Tresor.', 'Per photo the reduced version without capture data is sent, per PDF the cleaned page images (10 pages at most). Hidden text is not sent. Each file that was read is added right away; before that the current state goes into the vault.');
   return `<p class="scan-liste" title="${esc(sc.dateien.map((d) => d.name).join(', '))}">${sc.dateien.slice(0, 4).map((d) => esc(d.name)).join(' · ')}${n > 4 ? ' …' : ''}</p>
    <div class="reihe"><button class="knopf gross" data-a="scan-senden" title="${esc(lang)}">${I('scan')}<span>${fuelle(L('{0} Dateien lesen', 'Read {0} files'), n)}</span><small id="scan-was">${an === 'mistral' ? L('Mistral, dann Anthropic', 'Mistral, then Anthropic') : 'Anthropic'}</small></button>${weg}</div>${wahl}`;
 }
 async function scanGewaehlt(dateien) {
   dateien = dateien.filter((d) => istPdf(d) || istBild(d)); if (!dateien.length) return melde(L('Bitte Fotos oder PDFs wählen.', 'Please choose photos or PDFs.'));
-  Z.scan = { dateien, v: null, entschieden: '', gross: false };
+  Z.scan = { dateien, v: null, entschieden: '', gross: false, glas: !!Z.glasWahl && dateien.length === 1 && istBild(dateien[0]) }; Z.glasWahl = false;   /* „Vom Glas“: ein Foto eines fertigen Getränks */
   if (dateien.length === 1) { try { Z.scan.v = await W.mit(L('Datei wird vorbereitet …', 'Preparing the file …'), (w) => vorbereiten(dateien[0], { sprache: sprache(), fortschritt: (i, n) => { w.anteil(n ? (i - 1) / n : null); w.text(fuelle(L('Seite {0} von {1} wird gezeichnet …', 'Drawing page {0} of {1} …'), i, n)); } })); } catch (f) { Z.scan = null; melde(f.message); } }
   neuBlatt('scan');
 }
@@ -653,13 +653,13 @@ async function scanSenden() {
   const sc = Z.scan; if (!sc || !sc.dateien.length) return;
   await schlLaden();
   if (!SK.anthropic) return schluesselFenster('anthropic', 'scan');
-  if (E.scan.anbieter === 'mistral' && !SK.mistral) return schluesselFenster('mistral', 'scan');
+  if (E.scan.anbieter === 'mistral' && !SK.mistral && !sc.glas) return schluesselFenster('mistral', 'scan');   /* „Vom Glas“ geht immer nur an Claude */
   const opt = { anbieter: E.scan.anbieter, stufe: E.scan.stufe, schluessel: SK, kategorien: scanKats(), sprache: sprache() }, n = sc.dateien.length;
   Z.fenster = null; zeichne();
   if (n === 1) {
     try {
-      const roh = await W.mit(L('Getränk wird gelesen …', 'Reading the drink …'), (w) => erkennen(sc.v, { ...opt, fortschritt: (t) => w.text(t), beiAnweisung: befehlFrage })), g = getraenkAusScan(roh, sc.v.store);
-      Z.scan = null; editor({ ...g, hinweis: L('Gelesen. Bitte prüfen.', 'Read. Please check.') }, true); Z.fenster.kiEntfernt = sc.v.liste.filter((e) => e.grund === 'meta' || sc.v.zugedeckt);
+      const roh = await W.mit(sc.glas ? L('Claude sieht sich das Getränk an …', 'Claude is looking at the drink …') : L('Getränk wird gelesen …', 'Reading the drink …'), (w) => erkennen(sc.v, { ...opt, vomTeller: !!sc.glas, fortschritt: (t) => w.text(t), beiAnweisung: befehlFrage })), g = getraenkAusScan(roh, sc.v.store);
+      Z.scan = null; editor({ ...g, hinweis: sc.glas ? L('Ein Vorschlag. Bitte prüfen.', 'A suggestion. Please check.') : L('Gelesen. Bitte prüfen.', 'Read. Please check.') }, true); Z.fenster.kiEntfernt = sc.v.liste.filter((e) => e.grund === 'meta' || sc.v.zugedeckt);
     } catch (f) { if (!f.abgebrochen) melde(f.message); neuBlatt('scan'); }
     return;
   }
@@ -1045,7 +1045,8 @@ const TUN = {
   'web-eingefuegt'() { webLesen(); if (Z.web) webAuswerten(Z.web.text); return false; },
   'web-ohne-ki'() { const w = Z.web, r = w && ohneKi(w.seitentext, webAdresse(w.adresse)); if (!r) { melde(L('Ohne KI ließ sich kein Getränk erkennen.', 'No drink could be recognised without AI.')); return false; } webInsFormular({ ...r, cat: '' }, r.sicher ? L('Ohne KI aufgeteilt. Bitte prüfen und speichern.', 'Split without AI. Please check and save.') : L('Ohne Überschriften aufgeteilt. Bitte genau prüfen.', 'Split without headings. Please check carefully.')); return false; },
   'web-mit-ki'() { webMitKi(); return false; },
-  'scan-kamera'() { $('#datei-kamera').click(); return false; }, 'scan-datei'() { $('#datei-scan').click(); return false; },
+  'scan-kamera'() { Z.glasWahl = false; $('#datei-kamera').click(); return false; }, 'scan-datei'() { Z.glasWahl = false; $('#datei-scan').click(); return false; },
+  'scan-glas'() { Z.glasWahl = true; $('#datei-kamera').click(); return false; },
   'scan-anbieter'(b) { E.scan = { ...E.scan, anbieter: b.dataset.w }; Z.scanMehr = true; einstSichern(); neuBlatt('scan'); return false; },
   'scan-stufe'(b) { E.scan = { ...E.scan, stufe: b.dataset.w }; Z.scanMehr = true; einstSichern(); neuBlatt('scan'); return false; },
   'scan-neu'() { Z.scan = null; neuBlatt('scan'); return false; },
