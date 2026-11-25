@@ -36,6 +36,7 @@ import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, recht
 import { druckRezept, drucke } from '../kern/ausgabe/druck.mjs';
 import { teilLink, ausTeilLink, qrSvg, passtInQr } from '../kern/teilen/qr.mjs';
 import { zusatz } from './zusatz.mjs';
+import { findeDoppel, wendeAn, dHash } from '../kern/modell/doppel.mjs';
 import { handbuch } from './handbuch.mjs';
 import { installation, istApple, aktualisieren } from '../kern/oberflaeche/app-pflege.mjs';
 
@@ -51,7 +52,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor32';
+export const FASSUNG = '10.0.0-vor33';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -143,7 +144,7 @@ function bild(r, klasse = '') {
   if (r.img) { const c = r.imgCrop || {}; return `<img class="foto ${klasse}" src="${esc(r.img)}" alt="" loading="lazy" decoding="async" style="object-position:${Number(c.x) >= 0 ? Number(c.x) : 50}% ${Number(c.y) >= 0 ? Number(c.y) : 50}%">`; }
   return platzbild(r);
 }
-function logo() { return `<img class="logo" src="../icons/mixarium-neu-192.png?v=1" alt="" width="34" height="34">`; }   /* das App-Zeichen (Klaus 24.11.), wie auf dem Startbildschirm */
+function logo() { return `<img class="logo" src="../icons/mixarium-neu-192.png?v=2" alt="" width="34" height="34">`; }   /* das App-Zeichen (Klaus 24.11.), wie auf dem Startbildschirm */
 /* Spracheingabe (Küchen-Kern, `diktat`): nur wo der Browser sie kann. Der Ton geht zur Erkennung an den Dienst des Browsers. */
 const mikro = (ziel) => (diktatMoeglich() ? `<button type="button" class="mikro" data-a="diktat" data-ziel="${ziel}" aria-pressed="false" aria-label="${L('Diktieren', 'Dictate')}" title="${L('Diktieren', 'Dictate')}">${I('mic')}</button>` : '');
 function suchfeld(voll) { return `<label class="suchfeld" ${voll ? 'style="width:100%;margin-top:12px"' : ''}>${I('search')}<input id="suche" type="search" value="${esc(Z.suche)}" placeholder="${L('Getränk oder Zutat suchen', 'Search drink or ingredient')}" aria-label="${L('Suchen', 'Search')}" autocomplete="off">${mikro('#suche')}<button type="button" class="sinn" data-a="sinn" aria-pressed="${!!E.sinn}" aria-label="${L('Sinn-Suche: auch nach Bedeutung suchen', 'Meaning search: also search by meaning')}" title="${L('Sinn-Suche', 'Meaning search')}">${I('sparkle')}</button></label>`; }
@@ -515,19 +516,77 @@ function editor(r, vorlage = false) {
    <div class="reihe ende">${neu ? '' : `<button type="button" class="knopf hell rotschrift" data-a="ed-loeschen">${I('trash')}${L('Löschen', 'Delete')}</button>`}<button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Speichern', 'Save')}</button></div></form>` };
   zeichne();
 }
-function editorSpeichern(form) {
+async function editorSpeichern(form, wahl = '') {
   const d = new FormData(form), f = Z.fenster, name = String(d.get('name') || '').trim();
   if (!name) return;
   const zeilen = (k) => String(d.get(k) || '').split('\n').map((x) => x.trim()).filter(Boolean);
   const fo = d.has('folder') ? String(d.get('folder') || '') : null;   /* das Feld gibt es nur, wenn es Ordner gibt */
   const felder = { name, cat: String(d.get('cat') || ''), ...(fo !== null && (fo === '' || findeOrdner(A.ordner, fo)) ? { folder: fo } : {}), glass: String(d.get('glass') || ''), temp: String(d.get('temp') || '') || undefined, servings: Math.max(1, Number(d.get('servings')) || 1), prepTime: d.get('prepTime') === '' ? null : Math.max(0, Number(d.get('prepTime')) || 0), alcohol: d.get('alcohol') === 'on', ings: zeilen('ings').map((t, i) => ({ id: i, ck: false, note: '', ...G.zutatAusText(t) })), steps: zeilen('steps').map((t, i) => ({ id: i, txt: t })), notes: String(d.get('notes') || '').trim(), img: f.img || '', modified: Date.now() };
   let r = f.uid && getr(f.uid);
+  if (!r && wahl !== 'eigen') {   /* R6: ein neues Getränk, das es ähnlich schon gibt – Hinweis im Formular, kein Zwischenfenster */
+    const roh = G.getraenkNormalisieren({ ...felder, uid: '__neu' });
+    if (wahl && f.doppel && getr(f.doppel.alt)) { const ziel = getr(f.doppel.alt), zus = { ...wendeAn(ziel, { ...roh, uid: ziel.uid, translations: undefined }, wahl), modified: Date.now() }; delete zus.beispiel; if (f.quelle && wahl !== 'bild') zus.source = f.quelle;
+      A.getraenke = A.getraenke.map((x) => (x.uid === ziel.uid ? zus : x)); sichern(); Z.fenster = null; Z.uid = ziel.uid; Z.view = 'getraenk'; Z.port = Number(zus.servings) || 1; melde(fuelle(L('In „{0}“ übernommen', 'Merged into “{0}”'), ziel.name)); return zeichne(); }
+    const hash = await fingerabdruecke([...A.getraenke, roh]).catch(() => new Map()), p = findeDoppel([...A.getraenke, roh], [roh], { hash })[0];
+    if (Z.fenster !== f) return;
+    if (p) { f.doppel = p; const alt = $('#ed-doppel'); if (alt) alt.remove(); form.querySelector('.reihe.ende').insertAdjacentHTML('beforebegin', formDoppelBand(f, felder.img)); $('#ed-doppel').scrollIntoView({ block: 'center' }); return; }
+  }
   if (r) Object.assign(r, felder);
   else { r = G.getraenkNormalisieren({ ...felder, id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, created: Date.now(), uid: G.neueUid(A.knoten) }); A.getraenke.unshift(r); }
   if (f.quelle && !f.uid) r.source = f.quelle;
   if (f.db && !f.uid) Object.assign(r, f.db);   /* aus „Entdecken“: die Nummer bei TheCocktailDB, damit derselbe Drink nicht zweimal kommt */
   if (f.kiEntfernt && f.kiEntfernt.length) vermerken(r, f.kiEntfernt, 'scan');   /* was vor der KI herausgenommen wurde, steht am Getränk */
-  sichern(); Z.fenster = null; Z.uid = r.uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; melde(L('Gespeichert', 'Saved'));
+  sichern(); Z.fenster = null; Z.uid = r.uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; melde(L('Gespeichert', 'Saved')); zeichne();
+}
+/* ── R6 Doppelungen (Klaus 25.11., wie im Rezeptbuch 0.18): erkannt im Kern (modell/doppel.mjs) an Name, Zutaten und Bild; „mit Alkohol“
+   und „alkoholfrei“ sind nie ein Doppel. Hier entsteht nur der Bild-Fingerabdruck (9×8 Graustufen), einmal je Bild und Sitzung.
+   Nach dem Einlesen (Datei „Hinzufügen“, Beispielpaket, Stapel-Scan): ein Fenster mit den Paaren; je Paar Meins · Bild vom neuen ·
+   Text vom neuen · Ganz das neue · Beide behalten. Kategorie, Ordner, Bewertung und Kennung bleiben die eigenen. ── */
+const fpVorrat = new Map();
+async function bildFingerabdruck(src) {
+  if (!src) return ''; if (fpVorrat.has(src)) return fpVorrat.get(src);
+  let h = '';
+  try {
+    const bm = await createImageBitmap(await (await fetch(src)).blob(), { resizeWidth: 9, resizeHeight: 8, resizeQuality: 'medium' });
+    const c = document.createElement('canvas'); c.width = 9; c.height = 8; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(bm, 0, 0, 9, 8); if (bm.close) bm.close();
+    const px = g.getImageData(0, 0, 9, 8).data, grau = []; for (let i = 0; i < px.length; i += 4) grau.push(0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]);
+    h = dHash(grau);
+  } catch (e) { h = ''; }   /* ein Bild, das sich nicht lesen lässt, wird nur an seiner Adresse verglichen */
+  fpVorrat.set(src, h); return h;
+}
+async function fingerabdruecke(rs) { const m = new Map(); for (const r of rs) if (r && r.name && r.img) m.set(r.uid, await bildFingerabdruck(r.img)); return m; }
+const dpGrund = (p) => [p.name === 1 ? L('Name gleich', 'Same name') : p.name >= 0.5 ? L('Name ähnlich', 'Similar name') : '', p.zutaten ? fuelle(L('Zutaten zu {0} % gleich', 'Ingredients {0} % the same'), Math.round(p.zutaten * 100)) : '', p.bild ? L('gleiches Bild', 'same picture') : ''].filter(Boolean).join(' · ');
+const dpSeite = (r, titel) => `<figure class="dp-seite"><span class="dp-bild">${r.img ? `<img src="${esc(r.img)}" alt="" loading="lazy">` : platzbild(r)}</span><figcaption><small>${esc(titel)}</small><b>${esc(r.name)}</b><small>${fuelle(L('{0} Zutaten', '{0} ingredients'), (r.ings || []).length)} · ${fuelle(L('{0} Schritte', '{0} steps'), (r.steps || []).length)}</small></figcaption></figure>`;
+const dpStufe = (p) => `<span class="dp-stufe ${p.stufe}">${p.stufe === 'sicher' ? L('sicher doppelt', 'surely a duplicate') : L('vielleicht doppelt', 'maybe a duplicate')}</span>`;
+function dpWahl(p, w) {
+  const neu = getr(p.neu), opt = [['meins', L('Meins behalten', 'Keep mine')], ...(neu && neu.img ? [['bild', L('Bild vom neuen', 'Picture from the new one')]] : []), ['text', L('Text vom neuen', 'Text from the new one')], ['ganz', L('Ganz das neue', 'All of the new one')], ['beide', L('Beide behalten', 'Keep both')]];
+  return opt.map(([k, t]) => `<button type="button" class="chip" data-a="dp-wahl" data-neu="${esc(p.neu)}" data-w="${k}" aria-pressed="${w === k}">${esc(t)}</button>`).join('');
+}
+/* vorher: der Stand vor dem Einlesen ({ getraenke }); neu ist, was danach dazugekommen ist. */
+async function doppelNach(vorher) {
+  const alt = new Set(vorher.getraenke.map((r) => r.uid)), neuIds = A.getraenke.filter((r) => !alt.has(r.uid)).map((r) => r.uid); if (!neuIds.length) return;
+  const hash = await W.mit(L('Doppelte Getränke werden gesucht …', 'Looking for duplicate drinks …'), () => fingerabdruecke(A.getraenke)).catch(() => new Map());
+  const paare = findeDoppel(A.getraenke, neuIds.filter((u) => getr(u)), { hash }); if (!paare.length) return;
+  const wahl = new Map(paare.map((p) => [p.neu, p.stufe === 'sicher' ? 'meins' : 'beide']));
+  Z.fenster = { titel: fuelle(L('Mögliche Doppel ({0})', 'Possible duplicates ({0})'), paare.length), dopp: { paare, wahl }, html: `<p class="ftext">${L('Links steht dein Getränk, rechts das neue. Wähle je Paar, was bleibt. „Später“ behält beide.', 'Your drink is on the left, the new one on the right. Choose what stays for each pair. “Later” keeps both.')}</p>
+   <div class="dp-liste" id="doppel-liste">${paare.map((p) => `<div class="dp" data-neu="${esc(p.neu)}"><div class="dp-kopf">${dpStufe(p)}<small>${esc(dpGrund(p))}</small></div><div class="dp-paar">${dpSeite(getr(p.alt), L('Meins', 'Mine'))}${dpSeite(getr(p.neu), L('Neu', 'New'))}</div><div class="dp-wahl" role="group" aria-label="${L('Was bleibt', 'What stays')}">${dpWahl(p, wahl.get(p.neu))}</div></div>`).join('')}</div>
+   <div class="reihe ende"><button class="knopf hell" data-a="fenster-zu">${L('Später', 'Later')}</button><button class="knopf" data-a="dp-fertig">${I('check')}${L('Übernehmen', 'Apply')}</button></div>` };
+  zeichne();
+}
+function doppelAnwenden() {
+  const dp = Z.fenster && Z.fenster.dopp; if (!dp) return; const vorher = A.getraenke; let n = 0;
+  for (const p of dp.paare) {
+    const w = dp.wahl.get(p.neu), alt = getr(p.alt), neu = getr(p.neu); if (!alt || !neu || w === 'beide') continue;
+    const zus = w === 'meins' ? alt : { ...wendeAn(alt, neu, w), modified: Date.now() }; if (w !== 'meins') delete zus.beispiel;
+    A.getraenke = A.getraenke.filter((r) => r.uid !== neu.uid).map((r) => (r.uid === alt.uid ? zus : r)); n++;
+  }
+  Z.fenster = null; if (!n) return;
+  sichern();
+  melde(n === 1 ? L('1 Doppel zusammengeführt', '1 duplicate merged') : fuelle(L('{0} Doppel zusammengeführt', '{0} duplicates merged'), n), L('Rückgängig', 'Undo'), () => { A.getraenke = vorher; sichern(); zeichne(true); });
+}
+function formDoppelBand(f, img) {
+  const p = f.doppel, alt = p && getr(p.alt); if (!alt) return '';
+  return `<div class="dp-band" id="ed-doppel" role="status">${dpSeite(alt, L('Gibt es schon', 'Already there'))}<div class="dp-kopf">${dpStufe(p)}<small>${esc(dpGrund(p))}</small></div><div class="dp-wahl" role="group" aria-label="${L('Was tun', 'What to do')}">${[...(img ? [['bild', L('Nur das Bild übernehmen', 'Take only the picture')]] : []), ['text', L('Nur den Text übernehmen', 'Take only the text')], ['ganz', L('Ganz übernehmen', 'Take all of it')], ['eigen', L('Als eigenes Getränk speichern', 'Save as a drink of its own')]].map(([k, t]) => `<button type="button" class="chip" data-a="ed-doppel" data-w="${k}">${esc(t)}</button>`).join('')}</div></div>`;
 }
 /* ── Blatt hinter „+“ (wie im Rezeptbuch): jeder Weg zu einem neuen Getränk an einem Ort ──
    Klaus 23.11. abends: Bilder und Symbole sprechen, kein Erklärtext. Das Plus zeigt acht Kacheln mit je einem Wort (Farbfelder in
@@ -665,7 +724,7 @@ async function scanSenden() {
   }
   /* Stapel: versteckter Text geht nie mit (ohne Rückfrage, am Getränk vermerkt); ein Befehl an eine KI im gelesenen Text → die Datei wird nicht gesendet. */
   await tresorAuto(L('vor dem Foto-Scan', 'before the photo scan'));
-  const fehler = []; let ok = 0, entfernt = 0;
+  const fehler = [], vorStapel = { getraenke: [...A.getraenke] }; let ok = 0, entfernt = 0;
   await W.mit(L('Dateien werden gelesen …', 'Reading the files …'), async (w) => {
     for (let i = 0; i < n; i++) { const d = sc.dateien[i]; w.anteil(i / n); w.text(fuelle(L('Datei {0} von {1}: {2}', 'File {0} of {1}: {2}'), i + 1, n, d.name));
       try {
@@ -679,6 +738,7 @@ async function scanSenden() {
   sichern(); Z.scan = null; Z.view = 'start'; Z.kat = 'all'; Z.suche = '';
   if (fehler.length) Z.fenster = { titel: L('Nicht gelesen', 'Not read'), html: `<ul class="ki-liste" id="scan-fehler">${fehler.map(([name, grund]) => `<li><b>${esc(name)}</b><br>${esc(grund)}</li>`).join('')}</ul>` };
   melde(fuelle(L('{0} von {1} gelesen', '{0} of {1} read'), ok, n) + (entfernt ? ' · ' + fuelle(L('{0} versteckt entfernt', '{0} hidden removed'), entfernt) : ''));
+  if (!fehler.length) doppelNach(vorStapel);
 }
 /* ── Beispiele ── Welche Pakete es gibt, sagt die Ausgabe (Küchen-Kern: ausgaben/<name>/ausgabe.json + KATALOG.json). */
 const AUSGABE = 'mixarium-voll'; // die Web-Fassung; die Store-Fassung wird beim Bauen der App mit `mixarium-store` erzeugt
@@ -700,9 +760,10 @@ async function paketEinspielen(id) {
   Z.fenster.html = `<p class="ftext">${L('Paket wird geladen …', 'Loading package …')}</p>`; zeichne();
   try {
     const roh = await W.mit(fuelle(L('„{0}“ wird geladen …', 'Loading “{0}” …'), p.titel), async (w) => { const ant = await fetch('../beispiele/' + p.datei); if (!ant.ok) throw new Error(String(ant.status)); return new TextDecoder().decode(await bytesMitAnteil(ant, (a) => w.anteil(a))); });
-    const e = G.beispielPaketEinspielen(A, roh, p.id, { knoten: A.knoten });
+    const vorPaket = { getraenke: A.getraenke }, e = G.beispielPaketEinspielen(A, roh, p.id, { knoten: A.knoten });
     A = { ...A, ...e.sammlung }; sichern(); Z.fenster = null; Z.view = 'start'; Z.kat = 'all';
     melde(e.neu.length ? fuelle(L('+{0} Getränke', '+{0} drinks'), e.neu.length) : L('Schon in deiner Sammlung', 'Already in your collection'));
+    if (e.neu.length) doppelNach(vorPaket);
   } catch (err) { Z.fenster.html = `<p class="ftext">${L('Das Paket ließ sich nicht laden.', 'The package could not be loaded.')}</p>`; zeichne(); }
 }
 function beispieleWeg() {
@@ -757,11 +818,11 @@ async function tresorHolen(id) {
     ersetzeSammlung(s); melde(L('Stand zurückgeholt.', 'State restored.')); zeichne(true);
   });
 }
-/* Ersetzen (Datei und „Zurückholen“ im Tresor, ein Weg): Getränke, Ordner, Karten, Einkauf und Anlässe kommen aus der Sicherung,
-   Kategorien, Läden und Plan, wenn sie welche trägt. Einstellungen, Knoten und Schlüssel bleiben. Den Tresor legt der Aufrufer an. */
+/* Ersetzen (Datei und „Zurückholen“ im Tresor, ein Weg): Getränke, Ordner, Karten und Anlässe kommen aus der Sicherung,
+   Einkauf, Kategorien, Läden und Plan, wenn sie welche trägt (Einkauf: E1, Klaus 25.11., wie im Rezeptbuch). Einstellungen, Knoten und Schlüssel bleiben. Den Tresor legt der Aufrufer an. */
 function ersetzeSammlung(s) {
   const g = G.sicherungLesen(s, { knoten: A.knoten });
-  A = { ...G.leereSammlung(A), getraenke: g.getraenke, ordner: g.ordner, karten: g.karten, einkauf: Array.isArray(s.einkauf) ? s.einkauf : [], anlaesse: Array.isArray(s.anlaesse) ? s.anlaesse : [], kategorien: A.kategorien, einstellungen: A.einstellungen, knoten: A.knoten };
+  A = { ...G.leereSammlung(A), getraenke: g.getraenke, ordner: g.ordner, karten: g.karten, einkauf: Array.isArray(s.einkauf) ? s.einkauf : A.einkauf, anlaesse: Array.isArray(s.anlaesse) ? s.anlaesse : [], kategorien: A.kategorien, einstellungen: A.einstellungen, knoten: A.knoten };
   A.kategorien = G.katZustandZuKern({ ...(s.kategorienZustand || A.kategorien), neu: g.kategorien }); if (s.einkaufLaeden) A.einkaufLaeden = s.einkaufLaeden; if (s.plan && typeof s.plan === 'object') A.plan = s.plan;
   sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; Z.kat = 'all';
 }
@@ -803,6 +864,7 @@ async function einspielenDatei(text) {
     melde(fuelle(ohne ? (schon ? L('{0} Getränke hinzugefügt, {1} waren schon da, {2} ohne Kategorie.', '{0} drinks added, {1} already there.') : L('{0} Getränke hinzugefügt, {2} ohne Kategorie.', '{0} drinks added.'))
       : (schon ? L('{0} Getränke hinzugefügt, {1} waren schon da.', '{0} drinks added, {1} already there.') : L('{0} Getränke hinzugefügt.', '{0} drinks added.')), e.neu.length, schon, ohne),
       e.neu.length ? L('Rückgängig', 'Undo') : '', () => { A = vorher; sichern(); zeichne(true); });
+    doppelNach(vorher);
   } catch (err) { melde(L('Diese Datei ist keine Sicherung, die ich lesen kann.', 'This file is not a backup I can read.')); }
 }
 async function ausAlterApp(still) {
@@ -1150,7 +1212,10 @@ const TUN = {
   bearbeiten() { editor(getr(Z.uid)); return false; },
   'ed-bildweg'() { Z.fenster.img = ''; $('#edbild').innerHTML = platzbild({ name: 'x' }); return false; },
   'ed-loeschen'() { const r = getr(Z.fenster.uid); frage(L('Getränk löschen', 'Delete drink'), fuelle(L('„{0}“ wird aus deiner Sammlung entfernt.', '“{0}” will be removed from your collection.'), esc(r.name)), L('Löschen', 'Delete'), () => { A.getraenke = A.getraenke.filter((x) => x.uid !== r.uid); (A.anlaesse || []).forEach((a) => { a.posten = a.posten.filter((p) => p.uid !== r.uid); }); sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L('Gelöscht.', 'Deleted.')); }, true); return false; },
-  'fenster-zu'() { Z.fenster = null; }, 'fenster-ja'() { const f = Z.fenster; if (f && f.ja) f.ja(); return false; },
+  'fenster-zu'() { Z.fenster = null; },
+  'dp-wahl'(b) { const dp = Z.fenster && Z.fenster.dopp; if (!dp) return false; dp.wahl.set(b.dataset.neu, b.dataset.w); b.parentElement.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); return false; },
+  'dp-fertig'() { doppelAnwenden(); },
+  'ed-doppel'(b) { const f = $('#ed'); if (!f || !Z.fenster) return false; editorSpeichern(f, b.dataset.w); return false; }, 'fenster-ja'() { const f = Z.fenster; if (f && f.ja) f.ja(); return false; },
   'einkauf-dazu'() { const r = zeig(getr(Z.uid)); einkaufDazu(r, Z.port, r.name); sichern(); melde(L('Zutaten stehen auf der Einkaufsliste.', 'Ingredients are on the shopping list.')); return false; },
   'einkauf-erledigt'() { A.einkauf = A.einkauf.filter((p) => !p.ok); sichern(); },
   'einkauf-leeren'() { frage(L('Liste leeren', 'Clear list'), L('Alle Posten werden entfernt.', 'All items will be removed.'), L('Leeren', 'Clear'), () => { A.einkauf = []; sichern(); fZu(); }, true); return false; },
@@ -1221,7 +1286,7 @@ document.addEventListener('click', (ev) => {
 });
 document.addEventListener('submit', (ev) => {
   ev.preventDefault();
-  if (ev.target.id === 'ed') return editorSpeichern(ev.target);
+  if (ev.target.id === 'ed') { editorSpeichern(ev.target).then(() => {}, (e) => melde(String(e && e.message || e))); return; }
   if (ev.target.id === 'webform') return webHolen();
   if (ev.target.id === 'entdform') return entdeckenHolen(false);
   if (ev.target.id === 'rechtform') { const f = Z.fenster, r = f && getr(f.uid), wahl = new FormData(ev.target).getAll('n').map(Number); if (!r || !f.recht) return;

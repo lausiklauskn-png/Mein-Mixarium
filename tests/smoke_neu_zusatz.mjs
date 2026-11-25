@@ -32,7 +32,7 @@ const D = (n, name, mehr = {}, zutaten = [['4', 'cl', 'Limettensaft'], ['2', 'dl
 /* Das gestellte Sprachmodell der Sinn-Suche: alles mit „spritz“ oder „erfrischend“ liegt beieinander. */
 const MODELL = `(function(){const v=(t)=>{const a=new Float32Array(384);const s=/erfrischend/i.test(t)||/spritz/i.test(t)?'spritz':String(t).toLowerCase();for(const c of s)a[c.charCodeAt(0)%384]+=1;let n=0;for(const x of a)n+=x*x;n=Math.sqrt(n)||1;return a.map((x)=>x/n)};window.SbkimEmbedding={init:async()=>{},isReady:()=>true,embedQuery:async(t)=>v(t),embedPassage:async(t)=>v(t),embedQueryBatch:async(a)=>a.map(v),embedPassageBatch:async(a)=>a.map(v)};})();`;
 /* Startet die App mit einer gestellten Sammlung im Speicher des Geräts (kein erster Start). vorher(p): läuft vor dem Öffnen der App. */
-async function seite({ getraenke = [], ordner = [], einst = {}, schluessel = {}, ohneAlkohol = false, breite = 390, vorher = null } = {}) {
+async function seite({ getraenke = [], ordner = [], einkauf = [], einst = {}, schluessel = {}, ohneAlkohol = false, breite = 390, vorher = null } = {}) {
   const c = await b.newContext({ viewport: { width: breite, height: 800 }, locale: 'de-DE', serviceWorkers: 'block', acceptDownloads: true }), p = mitThemen(await c.newPage()); p.setDefaultTimeout(10000);
   const netz = { claude: [], bild: [], claudeAntwort: () => ({}), bildWarte: 0, bildStatus: 200 };
   p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) fehler.push(m.text()); });
@@ -42,10 +42,10 @@ async function seite({ getraenke = [], ordner = [], einst = {}, schluessel = {},
   await p.route('**/sbkim/03_embedding.js', (r) => r.fulfill({ contentType: 'text/javascript', body: MODELL }));
   await p.goto(U + 'impressum.html');
   /* Ein Fehler beim Anlegen wirft, statt die Probe für immer warten zu lassen. */
-  await p.evaluate(({ g, o, e, s, oa }) => new Promise((ja, nein) => { const a = indexedDB.open('KuechenKern-mixarium', 1); a.onupgradeneeded = () => a.result.createObjectStore('zustand'); a.onerror = () => nein(a.error); a.onblocked = () => nein(new Error('gesperrt'));
+  await p.evaluate(({ g, o, ek, e, s, oa }) => new Promise((ja, nein) => { const a = indexedDB.open('KuechenKern-mixarium', 1); a.onupgradeneeded = () => a.result.createObjectStore('zustand'); a.onerror = () => nein(a.error); a.onblocked = () => nein(new Error('gesperrt'));
     a.onsuccess = () => { try { const t = a.result.transaction('zustand', 'readwrite'), l = t.objectStore('zustand');
-      l.put({ getraenke: g, ordner: o, karten: [], einkauf: [], anlaesse: [], einstellungen: { ohneAlkohol: oa, sprache: null }, knoten: null }, 'alles'); l.put({ ton: 'hell', ...e }, 'einst'); for (const [n, w] of Object.entries(s)) l.put(w, 'schluessel-' + n);
-      t.oncomplete = () => { a.result.close(); ja(); }; t.onerror = () => nein(t.error); t.onabort = () => nein(t.error || new Error('abgebrochen')); } catch (f) { nein(f); } }; }), { g: getraenke, o: ordner, e: einst, s: schluessel, oa: ohneAlkohol });
+      l.put({ getraenke: g, ordner: o, karten: [], einkauf: ek, anlaesse: [], einstellungen: { ohneAlkohol: oa, sprache: null }, knoten: null }, 'alles'); l.put({ ton: 'hell', ...e }, 'einst'); for (const [n, w] of Object.entries(s)) l.put(w, 'schluessel-' + n);
+      t.oncomplete = () => { a.result.close(); ja(); }; t.onerror = () => nein(t.error); t.onabort = () => nein(t.error || new Error('abgebrochen')); } catch (f) { nein(f); } }; }), { g: getraenke, o: ordner, ek: einkauf, e: einst, s: schluessel, oa: ohneAlkohol });
   if (vorher) await vorher(p);
   await p.goto(ORT); await p.waitForSelector('.mx .titel'); return { p, c, netz };
 }
@@ -389,6 +389,17 @@ if (will(22)) {
   await p.click('[data-a=datei-ersetzen]').catch(() => {}); const tLeer = await toastMit(p, /Keine Getränke/); await p.waitForTimeout(500);
   pruefe('eine Datei ohne Getränke ersetzt nichts, das wird gesagt', /^0 Getränke in der Datei$/.test(leerZeile) && /Keine Getränke in der Datei, nichts ersetzt/.test(tLeer) && uids(await sammlung(p)) === 'g-1,g-2', leerZeile + ' · ' + tLeer + ' · ' + uids(await sammlung(p)));
   await c.close();
+  { /* E1 (Klaus 25.11.): trägt die Datei keine Einkaufsliste, bleibt die eigene; trägt sie eine (auch eine leere), gilt die der Datei */
+    const EK = [{ id: 1, name: 'Zitronen', unit: '', wert: 3, text: '', fuer: ['Limo'], ok: false }];
+    ({ p, c } = await seite({ ...START, einkauf: EK }));
+    const { einkauf: _weg, ...OHNE_EK } = DATEI;
+    await einspielen(p, OHNE_EK); await p.click('[data-a=datei-ersetzen]').catch(() => {}); await toastMit(p, /Ersetzt/);
+    s = await sammlungWenn(p, (x) => x.getraenke.length === 3);
+    pruefe('M1/E1: Ersetzen mit einer Datei ohne Einkaufsliste lässt die eigene Liste stehen', s.getraenke.length === 3 && s.einkauf.length === 1 && s.einkauf[0].name === 'Zitronen', JSON.stringify(s.einkauf));
+    await einspielen(p, DATEI); await p.click('[data-a=datei-ersetzen]').catch(() => {}); await toastMit(p, /Ersetzt/); await p.waitForTimeout(300);
+    pruefe('M1/E1: trägt die Datei eine Einkaufsliste (hier leer), gilt die der Datei', (await sammlung(p)).einkauf.length === 0);
+    await c.close();
+  }
   /* Ein Beispielpaket fragt nicht: gestellt als kleines Paket unter dem Namen des echten. */
   const BSP = JSON.stringify({ version: 10, recipes: [D(7, 'Beispiel-Limo'), D(8, 'Beispiel-Schorle')] });
   ({ p, c } = await seite({ ...START, vorher: (q) => q.route('**/beispiele/getraenke-ohne-alkohol-start.json', (r) => r.fulfill({ contentType: 'application/json', body: BSP })) }));

@@ -57,7 +57,9 @@ try {
   ok(await p.inputValue('#web-adresse') === 'https://zu.example/rezept', 'die Adresse steht noch da');
   await p.fill('#web-text', SEITE); await p.click('[data-a=web-eingefuegt]'); await p.waitForSelector('#ed', { timeout: 20000 });
   ok(await p.inputValue('#ed [name=name]') === 'Omas Ingwer-Limo' && (await p.inputValue('#ed [name=ings]')).split('\n').length === 3 && /Bild ließ sich nicht übernehmen/.test(await p.locator('#ed .hinweis').innerText()), 'eingefügter Seitenquelltext: die Rezeptdaten werden gelesen; das Bild einer gesperrten Seite kommt nicht mit, und das wird gesagt');
-  await p.click('#ed [type=submit]'); await ruhe(p); ok((await p.locator('.quelle').innerText()).includes('https://zu.example/rezept'), 'die Quelle ist die eingetragene Adresse');
+  await p.click('#ed [type=submit]'); await ruhe(p);
+  ok(await p.locator('#ed-doppel').count() === 1, 'R6: dieselbe Limo ein zweites Mal – das Band „Gibt es schon“ steht im Formular'); await p.click('#ed-doppel [data-w=eigen]'); await ruhe(p);
+  ok((await p.locator('.quelle').innerText()).includes('https://zu.example/rezept'), 'die Quelle ist die eingetragene Adresse');
 
   console.log('3 · Kopierter Text ohne Rezeptdaten: ohne KI aufteilen');
   await webAuf(p); await einfuegen(p); await p.fill('#web-text', 'Ingwertee\n\nZutaten\n1 l Wasser\n20 g Ingwer\n\nZubereitung\n1. Wasser aufkochen.\n2. Ingwer 10 Minuten ziehen lassen.'); await p.click('[data-a=web-eingefuegt]'); await p.waitForSelector('#web-ohne');

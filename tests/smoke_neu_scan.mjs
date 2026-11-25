@@ -119,7 +119,7 @@ try {
     await p.click('[data-a=scan-senden]'); await p.waitForSelector('#ed', { timeout: 30000 });
     const c4 = rufe[0].leib.messages[0].content;
     ok(rufe.length === 1 && rufe[0].leib.model === 'claude-sonnet-5-5' && c4.filter((b) => b.type === 'image').length === 2 && !c4.some((b) => b.type === 'document') && await restSchrift(p, c4[0].source.data) === 0, 'an Claude (Standard) gehen zwei Seitenbilder; an der Stelle des versteckten Textes ist nichts mehr');
-    await p.click('#ed [type=submit]'); await ruhe(p);
+    await p.click('#ed [type=submit]'); await ruhe(p); if (await p.locator('#ed-doppel').count()) { await p.click('#ed-doppel [data-w=eigen]'); await ruhe(p); }   /* R6: derselbe gescannte Drink kann schon da sein */
     ok(await p.locator('[data-ki-entfernt]').count() === 1 && (await p.locator('[data-ki-entfernt] summary').innerText()).includes('Vor dem Senden an eine KI entfernt'), 'am Getränk steht der Vermerk, aufklappbar');
     ok(await G(p, () => (__mixarium.sammlung.getraenke[0].kiEntfernt || []).some((v) => v.text.includes('Ignore all previous'))), 'der Vermerk nennt den entfernten Text und liegt in der Sammlung');
 
