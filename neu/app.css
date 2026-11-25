@@ -1011,3 +1011,7 @@ h1,h2,h3,p{margin:0}
 .mx .fl-knoepfe .fl-pos button{display:grid;place-items:center;min-width:0;width:44px;height:40px;padding:0;border-radius:10px;background:color-mix(in srgb,var(--akz) 12%,var(--fl));border:1px solid var(--linie);color:var(--ink)}
 .mx .fl-pos .ico{width:22px;height:22px}
 .mx .fl-pos .dreh .ico{transform:rotate(180deg)}
+/* R17 (wie im Rezeptbuch 0.16.1): Zutaten und Schritte nebeneinander nur, wenn der Getränke-Bereich breit genug ist – gemessen an seiner
+   eigenen Breite (Container-Query), nicht an der des Fensters; sonst untereinander, nichts wird abgeschnitten. */
+.mx .detail{container-type:inline-size;container-name:getraenk}
+@container getraenk (max-width:700px){.mx .detail-rumpf{grid-template-columns:minmax(0,1fr);gap:18px}}

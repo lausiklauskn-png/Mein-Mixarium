@@ -52,7 +52,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor35';
+export const FASSUNG = '10.0.0-vor36';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -491,7 +491,7 @@ function vMehr() {
     ['ordnung', 'folder', WF.gelb, L('Ordnung', 'Order'), '',
       z(I('box'), L('Kategorien', 'Categories'), String(kats().length), 'data-a="kategorien"') + z(I('folder'), ordMehr(), String(A.ordner.length), 'data-a="ordner"') + z(I('image'), L('Bilder', 'Pictures'), String(bilder), 'data-go="bilder"') + z(I('noalc'), L('Ohne Alkohol', 'Alcohol-free'), ohneAlk() ? L('an', 'on') : L('aus', 'off'), `data-a="alk" aria-pressed="${ohneAlk()}"`)],
     ['sichern', 'safe', WF.gruen, L('Sichern', 'Backup'), L('Die Getränke liegen nur in diesem Gerät. Eine Sicherung als Datei schützt sie und bringt sie auf ein anderes Gerät; beim Einspielen werden Doppelte erkannt. Der Tresor hält dazu mehrere Stände im Gerät und hilft, wenn etwas falsch gelöscht wurde. KI-Schlüssel kommen nie in eine Sicherung.', 'The drinks are stored on this device only. A backup file protects them and takes them to another device; duplicates are detected when restoring. The vault additionally keeps several states on the device and helps when something was deleted by mistake. AI keys never go into a backup.'),
-      z(I('download'), L('Sicherung speichern', 'Save a backup'), `${alle}`, 'data-a="sichern"') + z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), '', 'data-a="einspielen"') + z(I('safe'), L('Tresor', 'Vault'), '', 'data-a="tresor"') + ZU.buchZeilen(z) + z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), '', 'data-a="uebernehmen"')],
+      z(I('download'), L('Sicherung speichern', 'Save a backup'), `${alle}`, 'data-a="sichern"') + (navigator.canShare ? z(I('share'), L('Sicherung teilen', 'Share backup'), L('Quick Share, Bluetooth, E-Mail …', 'Quick Share, Bluetooth, email …'), 'data-a="sicherung-teilen"') : '') + z(I('upload'), L('Sicherung einspielen', 'Restore a backup'), '', 'data-a="einspielen"') + z(I('safe'), L('Tresor', 'Vault'), '', 'data-a="tresor"') + ZU.buchZeilen(z) + z(I('back'), L('Aus der bisherigen App übernehmen', 'Take over from the previous app'), '', 'data-a="uebernehmen"')],
     ['ki', 'sparkle', WF.violett, L('KI-Schlüssel', 'AI keys'), L('KI läuft nur mit deinem eigenen Schlüssel und nur, wenn du es auslöst. Anthropic (Claude) arbeitet im Labor und liest Fotos und Webseiten, OpenAI malt Bilder, Mistral liest Text (EU). Ein Schlüssel bleibt in diesem Gerät und kommt in keine Sicherung; die Kosten rechnet der Anbieter direkt mit dir ab.', 'AI runs only with your own key and only when you start it. Anthropic (Claude) works in the lab and reads photos and web pages, OpenAI draws pictures, Mistral reads text (EU). A key stays on this device and is in no backup; the provider bills you directly.'),
       `<div id="schl-liste">${Object.keys(ANBIETER).map((a) => z(I('schluessel'), ANBIETER[a].name, SK[a] ? L('gespeichert', 'saved') : L('noch keiner', 'none yet'), `data-a="schluessel" data-anbieter="${a}"`)).join('')}</div>` + z(I('uebersetzen'), L('Alle übersetzen', 'Translate all'), '', 'data-a="alle-ueb"')],
     ['beispiele', 'box', WF.petrol, L('Beispiele', 'Examples'), '',
@@ -1336,6 +1336,10 @@ const TUN = {
   'ed-bildweg'() { Z.fenster.img = ''; $('#edbild').innerHTML = platzbild({ name: 'x' }); return false; },
   'ed-loeschen'() { const r = getr(Z.fenster.uid); frage(L('Getränk löschen', 'Delete drink'), fuelle(L('„{0}“ wird aus deiner Sammlung entfernt.', '“{0}” will be removed from your collection.'), esc(r.name)), L('Löschen', 'Delete'), () => { A.getraenke = A.getraenke.filter((x) => x.uid !== r.uid); (A.anlaesse || []).forEach((a) => { a.posten = a.posten.filter((p) => p.uid !== r.uid); }); sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L('Gelöscht.', 'Deleted.')); }, true); return false; },
   'fenster-zu'() { Z.fenster = null; },
+  /* R4 (wie im Rezeptbuch 0.15.2): die Sicherung über das Teilen-Menü des Geräts schicken (Quick Share, Bluetooth, E-Mail); geht das nicht, als Datei. */
+  async 'sicherung-teilen'() { const d = new Date(), name = `mein-mixarium-${d.toISOString().slice(0, 10)}.json`, datei = new File([sicherungText()], name, { type: 'application/json' });
+    if (!(navigator.canShare && navigator.canShare({ files: [datei] }))) { sichernDatei(); melde(L('Teilen geht hier nicht, die Sicherung liegt als Datei bei den Downloads.', 'Sharing is not possible here; the backup is in your downloads.')); return; }
+    try { await navigator.share({ files: [datei], title: name }); } catch (e) { /* abgebrochen */ } },
   'dp-wahl'(b) { const dp = Z.fenster && Z.fenster.dopp; if (!dp) return false; dp.wahl.set(b.dataset.neu, b.dataset.w); b.parentElement.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); return false; },
   'dp-fertig'() { doppelAnwenden(); },
   'ed-doppel'(b) { const f = $('#ed'); if (!f || !Z.fenster) return false; editorSpeichern(f, b.dataset.w); return false; }, 'fenster-ja'() { const f = Z.fenster; if (f && f.ja) f.ja(); return false; },

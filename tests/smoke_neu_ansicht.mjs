@@ -75,6 +75,28 @@ try {
     await p.reload(); await p.waitForSelector('.mx .titel');
     ok((await p.evaluate(() => __mixarium.einstellungen.fl.seite)) === 'u', 'der neue Platz bleibt nach dem Neuladen');
     await c.close(); }
+
+  console.log('3 · R17 Zutaten und Schritte nebeneinander nur, wenn Platz ist');
+  for (const [breite, spalten] of [[1000, 1], [1100, 1], [1280, 2], [1600, 2]]) {
+    const { p, c } = await seite([D(1, 'Gurken-Limetten-Spritz', { ings: ['Salatgurke', 'Holunderblütensirup aus dem eigenen Garten', 'Sprudelwasser'].map((n, i) => ({ id: i, amt: '2', unit: 'cl', name: n, note: '', ck: false })), steps: [{ id: 0, txt: 'Gurkenscheiben und Sirup ins Glas geben und mit dem Stößel andrücken.' }] })], breite);
+    await p.locator('.zeile, .karte').first().click(); await p.waitForSelector('.detail-rumpf');
+    const m = await p.evaluate(() => { const g = document.querySelector('.detail-rumpf'), n = getComputedStyle(g).gridTemplateColumns.split(' ').length, ab = [...g.querySelectorAll('*')].filter((e) => !e.children.length && e.textContent.trim() && e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent.trim()); return { n, ab }; });
+    ok(m.n === spalten && !m.ab.length, `${breite} px: ${spalten === 1 ? 'untereinander' : 'nebeneinander'}, kein Wort abgeschnitten`, JSON.stringify(m));
+    await c.close();
+  }
+
+  console.log('4 · R4 Sicherung teilen (Teilen-Menü des Geräts, gestellt)');
+  { const { p, c } = await seite([D(1, 'Limo')], 390);
+    await p.evaluate(() => { window.__geteilt = null; navigator.canShare = (d) => !!(d && d.files); navigator.share = async (d) => { window.__geteilt = { name: d.files[0].name, typ: d.files[0].type, inhalt: await d.files[0].text() }; }; });
+    await geh(p, 'mehr'); await p.waitForTimeout(300);
+    for (const k of await p.locator('.einst details:not([open]) > summary, .eklapp:not([open]) > summary').all()) await k.click().catch(() => {});
+    const z = p.locator('[data-a=sicherung-teilen]');
+    if (!(await z.count())) { await p.evaluate(() => { const n = [...document.querySelectorAll('[data-a]')].find((e) => /sichern/.test(e.dataset.a)); if (n) n.scrollIntoView(); }); }
+    ok(await z.count() === 1, 'in „Sichern“ steht „Sicherung teilen“');
+    await z.click().catch(() => {}); await p.waitForFunction(() => window.__geteilt, null, { timeout: 5000 }).catch(() => {});
+    const g = await p.evaluate(() => window.__geteilt);
+    ok(g && /^mein-mixarium-\d{4}-\d\d-\d\d\.json$/.test(g.name) && g.typ === 'application/json' && JSON.parse(g.inhalt).recipes.length === 1, 'geteilt wird die Sicherung als Datei (mein-mixarium-Datum.json) mit dem Getränk', JSON.stringify(g && g.name));
+    await c.close(); }
   ok(!fehler.length, 'keine Fehler im Browser', fehler.slice(0, 3).join(' | '));
 } catch (f) { rot++; console.log('  ✗ ROT Absturz — ' + String(f && f.message || f).split('\n')[0]); }
 await b.close(); server.close();
