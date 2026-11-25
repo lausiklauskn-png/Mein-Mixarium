@@ -986,3 +986,28 @@ h1,h2,h3,p{margin:0}
 .mx .ueb-fass>.ico{width:14px;height:14px;opacity:.8}
 .mx .ueb-fass .umsch{margin:-4px 0 -4px 2px}
 .mx .ueb-wege{margin-bottom:10px}
+/* R34 Symbol-Knöpfe mit Untertext, Portionen kompakt (wie im Rezeptbuch) */
+.mx .rz-aktion{display:flex;align-items:stretch;gap:6px;margin:12px 0 4px;flex-wrap:wrap}
+.mx .sym{display:grid;justify-items:center;align-content:center;gap:2px;min-width:62px;padding:6px 8px 5px;border-radius:12px;border:1px solid var(--linie);background:var(--fl);color:var(--ink);cursor:pointer}
+.mx .sym .ico{width:22px;height:22px;color:var(--akz)}
+.mx .sym small{font-size:11.5px;color:var(--muted);line-height:1.1}
+.mx .sym.akz{background:linear-gradient(120deg,var(--kn1),var(--kn2));color:var(--knt);border-color:transparent}
+.mx .sym.akz .ico,.mx .sym.akz small{color:inherit}.mx .sym.akz small{font-weight:650}
+.mx .portion.kompakt{flex-direction:column;align-items:center;justify-content:center;gap:2px;margin:0;padding:4px 8px}
+.mx .portion.kompakt small{display:block;font-size:11.5px;color:var(--muted);line-height:1.1}
+.mx .portion.kompakt small b{font-size:11.5px;font-weight:600}
+.mx .portion.kompakt .stepper{gap:2px}
+.mx .portion.kompakt .stepper button{width:28px;height:28px}
+.mx .portion.kompakt .pz .ico{width:18px;height:18px;color:var(--akz)}
+/* R32 Vollbild-Knopf im Bild (wie im Rezeptbuch): am Handy oben rechts (unten steht der Titel mit dem Winkel), am Monitor unten rechts */
+.mx .held-voll{position:absolute;right:12px;top:12px;z-index:3;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:rgba(10,16,36,.5);color:#fff;border:1px solid rgba(255,255,255,.3);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.mx .held .held-voll svg{width:20px;height:20px}
+.mx .detail .held .held-voll{top:auto;bottom:12px}
+.mx .held-voll:focus-visible{outline:2px solid #fff}
+@media print{.mx .held-voll{display:none!important}}
+/* R35 Leiste mit Pfeilen verschieben (Handy, wie im Rezeptbuch) */
+.mx .fl-nur-pos{display:grid;gap:4px;padding:6px;width:auto}
+.mx .fl-pos{display:grid;grid-template-columns:repeat(2,44px);gap:4px}
+.mx .fl-knoepfe .fl-pos button{display:grid;place-items:center;min-width:0;width:44px;height:40px;padding:0;border-radius:10px;background:color-mix(in srgb,var(--akz) 12%,var(--fl));border:1px solid var(--linie);color:var(--ink)}
+.mx .fl-pos .ico{width:22px;height:22px}
+.mx .fl-pos .dreh .ico{transform:rotate(180deg)}
