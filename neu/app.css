@@ -981,3 +981,8 @@ h1,h2,h3,p{margin:0}
 .mx .dp-wahl{display:flex;flex-wrap:wrap;gap:6px}
 .mx .dp-wahl .chip{min-height:34px}
 @media (max-width:420px){.mx .dp-paar{grid-template-columns:1fr}}
+/* R28 Sprach-Chips (Original · EN · IT …) */
+.mx .ueb-fass{display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap;vertical-align:bottom;margin-left:6px}
+.mx .ueb-fass>.ico{width:14px;height:14px;opacity:.8}
+.mx .ueb-fass .umsch{margin:-4px 0 -4px 2px}
+.mx .ueb-wege{margin-bottom:10px}

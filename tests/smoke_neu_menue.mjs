@@ -113,15 +113,16 @@ rufe.length = 0; await menue(p); await p.click('#gmenue [data-a=gm-uebersetzen]'
 antwort = () => ({ en: { name: 'Ginger lemonade', ingredients: ['Ginger syrup', 'Lime juice', 'Sparkling water'], steps: ['Stir syrup and juice.', 'Top up with sparkling water.'] } });
 await p.click('#ueb-wahl [data-ziel=en]'); await toastBis(p, /Übersetzt: English/);
 pruefe('Englisch: ein Aufruf mit Name, Zutaten und Schritten; das Ergebnis liegt in translations.en', rufe.length === 1 && rufe[0].leib.includes('Translate this recipe into English') && rufe[0].leib.includes('verrühren') && (await limo(p)).translations?.en?.name === 'Ginger lemonade' && (await limo(p)).translations.en.ingredients.length === 3 && (await limo(p)).name === 'Ingwer-Limonade');
-pruefe('die Oberfläche ist deutsch: am Getränk ändert sich nichts, kein Umschalter', (await p.locator('.held h2').innerText()) === 'Ingwer-Limonade' && await p.locator('.umsch').count() === 0);
+await bis(p, () => document.querySelector('.held h2')?.innerText === 'Ginger lemonade');
+pruefe('R28 (Klaus 25.11.): nach dem Übersetzen steht die neue Fassung da, Sprach-Chips Original · EN, EN gedrückt', (await p.locator('.held h2').innerText()) === 'Ginger lemonade' && await p.locator('.ueb-fass .umsch').count() === 2 && (await p.locator('.umsch[data-s=en]').getAttribute('aria-pressed')) === 'true' && (await p.locator('.umsch[data-s=orig]').getAttribute('aria-pressed')) === 'false');
 antwort = () => ({ de: { name: 'Ingwerlimo', ingredients: ['Ingwersirup (hausgemacht)', 'Limettensaft', 'Sprudel'], steps: ['Sirup mit Saft verrühren.', 'Mit Sprudel auffüllen.'] } });
 await menue(p); await p.click('#gmenue [data-a=gm-uebersetzen]'); await p.waitForSelector('#ueb-wahl');
 pruefe('eine vorhandene Übersetzung trägt im Fenster einen Haken', await p.locator('#ueb-wahl .chip[data-da]').count() === 1 && (await p.locator('#ueb-wahl .chip[data-da]').innerText()).trim() === 'English');
 await p.click('#ueb-wahl [data-ziel=de]'); await bis(p, () => document.querySelector('.held h2')?.innerText === 'Ingwerlimo');
 pruefe('in der Sprache der Oberfläche zeigt die Ansicht die Übersetzung', (await p.locator('.held h2').innerText()) === 'Ingwerlimo' && (await p.locator('.zutaten').innerText()).includes('Sprudel') && (await limo(p)).name === 'Ingwer-Limonade');
-pruefe('ein kleiner Umschalter aufs Original steht in der Zeile der Kategorie, ohne eigene Zeile', await p.locator('.held .ueber p .umsch').count() === 1 && (await p.locator('.umsch').getAttribute('aria-pressed')) === 'false' && await Zs(p, () => { const u = document.querySelector('.umsch').getBoundingClientRect(), z = document.querySelector('.held .ueber p').getBoundingClientRect(); return z.height < 34 && u.top >= z.top - 6 && u.bottom <= z.bottom + 6; }));
-await p.click('.umsch'); await bis(p, () => document.querySelector('.held h2')?.innerText === 'Ingwer-Limonade');
-pruefe('ein Tipp zeigt das Original, ein zweiter wieder die Übersetzung', (await p.locator('.held h2').innerText()) === 'Ingwer-Limonade' && (await p.locator('.zutaten').innerText()).includes('Sprudelwasser') && (await p.locator('.umsch').getAttribute('aria-pressed')) === 'true' && await (async () => { await p.click('.umsch'); return bis(p, () => document.querySelector('.held h2')?.innerText === 'Ingwerlimo'); })());
+pruefe('die Sprach-Chips stehen in der Zeile der Kategorie (Original · EN · DE), ohne eigene Zeile', await p.locator('.held .ueber p .ueb-fass .umsch').count() === 3 && (await p.locator('.umsch[data-s=de]').getAttribute('aria-pressed')) === 'true' && await Zs(p, () => { const u = document.querySelector('.ueb-fass').getBoundingClientRect(), z = document.querySelector('.held .ueber p').getBoundingClientRect(); return z.height < 40 && u.top >= z.top - 6 && u.bottom <= z.bottom + 6; }));
+await p.click('.umsch[data-s=orig]'); await bis(p, () => document.querySelector('.held h2')?.innerText === 'Ingwer-Limonade');
+pruefe('ein Tipp aufs Original zeigt es, ein Tipp auf EN die englische Fassung, auf DE wieder die deutsche', (await p.locator('.held h2').innerText()) === 'Ingwer-Limonade' && (await p.locator('.zutaten').innerText()).includes('Sprudelwasser') && (await p.locator('.umsch[data-s=orig]').getAttribute('aria-pressed')) === 'true' && await (async () => { await p.click('.umsch[data-s=en]'); if (!(await bis(p, () => document.querySelector('.held h2')?.innerText === 'Ginger lemonade'))) return false; await p.click('.umsch[data-s=de]'); return bis(p, () => document.querySelector('.held h2')?.innerText === 'Ingwerlimo'); })());
 antwort = () => ({ fr: { name: 'Limonade au gingembre', ingredients: ['Sirop', 'Jus'], steps: ['Mélanger.', 'Compléter.'] } });
 await menue(p); await p.click('#gmenue [data-a=gm-uebersetzen]'); await p.click('#ueb-wahl [data-ziel=fr]');
 pruefe('eine Übersetzung mit falscher Zahl an Zutaten wird nicht übernommen; die Meldung sagt es', await toastBis(p, /passt nicht/) && !(await limo(p)).translations.fr, await toast(p));
@@ -174,9 +175,52 @@ await c.close();
 console.log('9 · Monitor 1280 px');
 ({ p, c } = await seite({ breite: 1280, getraenke: [{ ...LIMO, translations: { de: { name: 'Ingwerlimo', ingredients: ['Sirup', 'Saft', 'Sprudel'], steps: ['Rühren.', 'Auffüllen.'] } }, nutrition: { kcal: 96, carbs: 24, fat: 0, protein: 0, quelle: 'ki' } }] }));
 await p.locator('.karte').first().click(); await p.waitForSelector('.seite .tzeile'); await p.click('.seite [data-a=bildwerk]'); await p.waitForSelector('.seite .rwerk');
-pruefe('am Monitor trägt „Mehr“ sein Wort; Umschalter und Nährwert-Zeile stehen da', (await p.locator('.seite .rwerk [data-a=gmenue]').innerText()).trim().startsWith('Mehr') && await p.locator('.seite .unter .umsch').count() === 1 && await p.locator('.detail-rumpf [data-naehr]').count() === 1 && (await p.locator('.seite .tzeile h2').innerText()) === 'Ingwerlimo');
+pruefe('am Monitor trägt „Mehr“ sein Wort; Sprach-Chips (Original · DE) und Nährwert-Zeile stehen da', (await p.locator('.seite .rwerk [data-a=gmenue]').innerText()).trim().startsWith('Mehr') && await p.locator('.seite .unter .ueb-fass .umsch').count() === 2 && await p.locator('.detail-rumpf [data-naehr]').count() === 1 && (await p.locator('.seite .tzeile h2').innerText()) === 'Ingwerlimo');
 await p.click('.seite .rwerk [data-a=gmenue]'); pruefe('am Monitor öffnet „Mehr“ dasselbe Menü', await p.waitForSelector('#gmenue').then(() => true, () => false) && await p.locator('#gmenue .ezeile').count() === 5);
 await c.close();
+
+console.log('10 · R14 eine gezeigte Übersetzung bearbeiten, R30 das Original ändern, R15 im Gerät übersetzen');
+{ const UEB = { ...LIMO, sprache: 'en', name: 'Ginger lemonade', ings: [{ id: 0, amt: '4', unit: 'cl', name: 'Ginger syrup', note: '', ck: false }, { id: 1, amt: '2', unit: 'cl', name: 'Lime juice', note: '', ck: false }, { id: 2, amt: '2', unit: 'dl', name: 'Sparkling water', note: '', ck: false }], steps: [{ id: 0, txt: 'Stir syrup and juice.' }, { id: 1, txt: 'Top up.' }],
+    translations: { de: { name: 'Ingwerlimo', ingredients: ['4 cl Ingwersirup', '2 cl Limettensaft', '2 dl Sprudel'], steps: ['Sirup und Saft verrühren.', 'Auffüllen.'] } } };
+  ({ p, c } = await seite({ getraenke: [UEB] }));
+  await p.locator('.karte').first().click(); await p.waitForSelector('.held h2');
+  await p.click('[data-a=bildwerk]'); await p.click('.rwerk [data-a=bearbeiten]'); await p.waitForSelector('#ed');
+  pruefe('R14: „Bearbeiten“ zeigt, was dasteht (die deutsche Fassung), nicht das englische Original', await p.inputValue('#ed [name=name]') === 'Ingwerlimo' && /Sprudel/.test(await p.inputValue('#ed [name=ings]')), await p.inputValue('#ed [name=name]'));
+  await p.fill('#ed [name=name]', 'Ingwer-Limo'); await p.click('#ed [type=submit]'); await p.waitForSelector('#fassung-wahl').catch(() => {});
+  pruefe('R14: geänderter Text einer Übersetzung → einmal fragen (Hauptfassung oder nur Übersetzung)', await p.locator('#fassung-wahl [data-a=fassung-haupt]').count() === 1 && await p.locator('#fassung-wahl [data-a=fassung-ueb]').count() === 1);
+  await p.click('[data-a=fassung-ueb]'); await toastBis(p, /Gespeichert/);
+  let g = await Zs(p, () => __mixarium.sammlung.getraenke[0]);
+  pruefe('„Nein, nur die Übersetzung“: die deutsche Fassung trägt den neuen Namen, das englische Original bleibt', g.translations.de.name === 'Ingwer-Limo' && g.name === 'Ginger lemonade' && (await p.locator('.held h2').innerText()) === 'Ingwer-Limo', JSON.stringify([g.name, g.translations.de.name]));
+  await p.waitForSelector('.fenster', { state: 'detached' }); if (!(await p.locator('.rwerk').count())) await p.click('[data-a=bildwerk]'); await p.click('.rwerk [data-a=bearbeiten]'); await p.waitForSelector('#ed');
+  await p.fill('#ed [name=name]', 'Ingwerlimonade'); await p.click('#ed [type=submit]'); await p.waitForSelector('#fassung-wahl'); await p.click('[data-a=fassung-haupt]'); await toastBis(p, /Gespeichert/);
+  g = await Zs(p, () => __mixarium.sammlung.getraenke[0]);
+  pruefe('„Ja, als Hauptfassung“: der deutsche Text wird das Getränk, das englische Original liegt als Übersetzung (Sprache aus r.sprache)', g.name === 'Ingwerlimonade' && g.sprache === 'de' && g.translations.en && g.translations.en.name === 'Ginger lemonade' && !g.translations.de, JSON.stringify([g.name, g.sprache, Object.keys(g.translations || {})]));
+  /* R30: das Original ändern, wenn eine Übersetzung daran hängt */
+  await p.waitForSelector('.fenster', { state: 'detached' }); if (!(await p.locator('.rwerk').count())) await p.click('[data-a=bildwerk]'); await p.click('.rwerk [data-a=bearbeiten]'); await p.waitForSelector('#ed');
+  pruefe('ohne gezeigte Übersetzung wird das Original bearbeitet', await p.inputValue('#ed [name=name]') === 'Ingwerlimonade');
+  await p.fill('#ed [name=steps]', 'Sirup und Saft verrühren.\nMit Sprudel auffüllen.\nEis dazu.'); await p.click('#ed [type=submit]');
+  const t30 = await toastBis(p, /neu zu übersetzen/) ? await toast(p) : await toast(p);
+  g = await Zs(p, () => __mixarium.sammlung.getraenke[0]);
+  pruefe('R30: geänderter Text → die alte Fassung fällt weg, eine Meldung „ist neu zu übersetzen · Übersetzen“ (Claude erst auf Tipp)', !g.translations && /neu zu übersetzen/.test(t30) && /Übersetzen/.test(t30), t30);
+  await p.click('.mxtoast [data-a=toast-tun]').catch(() => {}); await p.waitForSelector('#ueb-wahl', { timeout: 5000 }).catch(() => {});
+  pruefe('R30: „Übersetzen“ in der Meldung öffnet die Übersetzung dieses Getränks (mit Weg und Kosten)', await p.locator('#ueb-wahl').count() === 1); await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+  const vorRufe = rufe.length; await p.waitForSelector('.fenster', { state: 'detached' }); if (!(await p.locator('.rwerk').count())) await p.click('[data-a=bildwerk]'); await p.click('.rwerk [data-a=bearbeiten]'); await p.waitForSelector('#ed');
+  await p.selectOption('#ed [name=glass]', { index: 1 }); await p.click('#ed [type=submit]'); await toastBis(p, /Gespeichert/); await p.waitForTimeout(400);
+  pruefe('nur das Glas geändert: keine Frage, kein Aufruf', await p.locator('#fassung-wahl').count() === 0 && rufe.length === vorRufe);
+  await c.close(); }
+{ /* R15: Chromes Übersetzer im Gerät, gestellt */
+  ({ p, c } = await seite({ getraenke: [{ ...LIMO, sprache: 'de' }] }));
+  await c.addInitScript(() => { self.Translator = { availability: async () => 'available', create: async ({ targetLanguage }) => ({ translate: async (x) => '[' + targetLanguage + '] ' + x, destroy() {} }) }; });
+  await p.reload(); await p.waitForSelector('.mx .titel');
+  await p.locator('.karte').first().click(); await p.waitForSelector('.held h2');
+  const vor = rufe.length; await menue(p); await p.click('#gmenue [data-a=gm-uebersetzen]'); await p.waitForSelector('#ueb-wahl');
+  pruefe('R15: mit Übersetzer im Gerät zwei Wege, „Im Gerät · kostenlos“ ist gewählt', await p.locator('#ueb-weg [data-w]').count() === 2 && (await p.locator('#ueb-weg [data-w=geraet]').getAttribute('aria-checked')) === 'true' && (await p.locator('#ueb-wahl').getAttribute('data-weg')) === 'geraet');
+  await p.click('#ueb-wahl [data-ziel=fr]'); await toastBis(p, /Im Gerät übersetzt/);
+  const g = await Zs(p, () => __mixarium.sammlung.getraenke[0]);
+  pruefe('R15: im Gerät übersetzt, nichts geht an Anthropic, die französische Fassung steht da', rufe.length === vor && g.translations && g.translations.fr && /^\[fr\]/.test(g.translations.fr.name) && /^\[fr\]/.test(await p.locator('.held h2').innerText()), JSON.stringify(g.translations && g.translations.fr && g.translations.fr.name));
+  await menue(p); await p.click('#gmenue [data-a=gm-uebersetzen]'); await p.waitForSelector('#ueb-weg'); await p.click('#ueb-weg [data-w=claude]'); await p.waitForSelector('#ueb-wahl[data-weg=claude]').catch(() => {});
+  pruefe('R15: „Claude“ wählbar, dann geht es an Anthropic', (await p.locator('#ueb-wahl').getAttribute('data-weg')) === 'claude');
+  await p.keyboard.press('Escape'); await c.close(); }
 
 pruefe('keine Fehler in der Konsole, kein Netz nach draußen', fehler.length === 0, fehler.join(' · '));
 await b.close(); server.close();
