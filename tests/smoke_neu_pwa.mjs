@@ -136,8 +136,8 @@ await p.click('[data-a=schluessel][data-anbieter=openai]'); await p.fill('#skfor
 pruefe('der OpenAI-Schlüssel steht weder in der Sammlung noch in der Sicherung', await Zs(p, () => !JSON.stringify(__mixarium.sammlung).includes('geheim-456') && !__mixarium.sicherung().includes('geheim-456')));
 { // Kern 0.11: das Mixarium schickt einen Getränke-Auftrag, keinen „angerichteten Teller“ (Netz nachgestellt, nichts geht hinaus)
   const auftraege = [], fehlerVorher = fehler.length;
-  await p.route('https://api.openai.com/**', async (r) => { auftraege.push(JSON.parse(r.request().postData()).prompt); await new Promise((f) => setTimeout(f, 1500)); await r.fulfill({ status: 400, contentType: 'application/json', body: '{"error":{"message":"Probe"}}' }); });
-  await p.route('https://image.pollinations.ai/**', async (r) => { auftraege.push(decodeURIComponent(r.request().url())); await r.fulfill({ status: 502, body: '' }); });
+  await p.route('https://api.openai.com/**', async (r) => { if (r.request().method() === 'GET') return r.fulfill({ contentType: 'application/json', body: '{"data":[]}' }); /* Kern 0.27.1: fragt die Bildmodelle des Schlüssels */ auftraege.push(JSON.parse(r.request().postData()).prompt); await new Promise((f) => setTimeout(f, 1500)); await r.fulfill({ status: 400, contentType: 'application/json', body: '{"error":{"message":"Probe"}}' }); });
+  await p.route(/https:\/\/(image|gen)\.pollinations\.ai\//, async (r) => { if (/\/image\/models/.test(r.request().url())) return r.fulfill({ contentType: 'application/json', body: '[]' }); auftraege.push(decodeURIComponent(r.request().url())); await r.fulfill({ status: 502, body: '' }); });
   await p.click('.nav [data-go=start]'); await ruhe(p); await p.click('.karte >> nth=0'); await ruhe(p);
   const werkAuf = async () => { if (!(await p.locator('.seite [data-a=bildblatt]').count())) await p.click('.seite [data-a=bildwerk]'); await ruhe(p); };
   await werkAuf(); await p.click('.seite [data-a=bildblatt]'); await ruhe(p);
@@ -146,7 +146,10 @@ pruefe('der OpenAI-Schlüssel steht weder in der Sammlung noch in der Sicherung'
   pruefe('Ladebalken (Klaus 23.11.): während das KI-Bild entsteht, stehen Balken und Zeile da', await p.locator('#warten-zeile.an').isVisible().catch(() => false) && /KI-Bild/.test(await p.locator('#warten-zeile').innerText().catch(() => '')) && await p.locator('#warten-balken.an').count() === 1);
   /* kiBild versucht zwei Modelle nacheinander (je 1,5 s gestellte Wartezeit): auf das Ende warten, nicht auf die Uhr */
   await p.waitForFunction(() => !document.querySelector('#warten-zeile.an'), null, { timeout: 8000 }).catch(() => {}); pruefe('Ladebalken: auch nach einem Fehler ist er wieder weg', await p.locator('#warten-zeile.an, #warten-balken.an').count() === 0);
-  await werkAuf(); await p.click('.seite [data-a=bildblatt]'); await ruhe(p); await p.click('.fenster [data-a=gratis-bild]'); await p.waitForTimeout(800);
+  await werkAuf(); await p.click('.seite [data-a=bildblatt]'); await ruhe(p); const vorGratis = auftraege.length; await p.click('.fenster [data-a=gratis-bild]'); await ruhe(p);
+  pruefe('R1: ohne Pollinations-Schlüssel fragt das Foto danach (Pollinations verlangt einen eigenen)', await p.locator('#pkform').count() === 1 && auftraege.length === vorGratis);
+  await p.fill('#pkform [name=k]', 'sk_probe_pollinations'); await p.click('#pkform [type=submit]'); await p.waitForTimeout(800);
+  pruefe('R1: danach geht der Auftrag mit dem Schlüssel an gen.pollinations.ai', auftraege.some((t) => /gen\.pollinations\.ai\/image\/.*key=sk_probe_pollinations/.test(t)));
   pruefe('KI-Bild und Gratis-Foto fragen ein GETRÄNK an, kein Essen', auftraege.length >= 2 && auftraege.every((t) => /drink/i.test(t) && !/plated|food/i.test(t)), auftraege.join(' | ').slice(0, 300));
   await p.unroute('https://api.openai.com/**'); await p.unroute('https://image.pollinations.ai/**');
   // die nachgestellten Fehlerantworten (400/502) meldet der Browser als „Failed to load resource“; nur diese fallen heraus

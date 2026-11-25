@@ -164,7 +164,7 @@ try {
   ({ p, k } = await seite(() => { localStorage.setItem('mxkey9m', 'sk-ant-alt-aus-der-alten-app-0000'); localStorage.setItem('claudeKey9m', 'sk-ant-rezeptbuch-0000000000000'); }));
   await zuDenEinstellungen(p);
   const zeilen = await p.locator('#schl-liste .ezeile').allInnerTexts();
-  ok(zeilen.length === 3 && /Anthropic/.test(zeilen[0]) && /OpenAI/.test(zeilen[1]) && /Mistral/.test(zeilen[2]), 'Einstellungen: Anthropic, OpenAI, Mistral', zeilen.join(' | ').replace(/\n/g, ' '));
+  ok(zeilen.length === 4 && /Anthropic/.test(zeilen[0]) && /OpenAI/.test(zeilen[1]) && /Mistral/.test(zeilen[2]) && /Pollinations/.test(zeilen[3]), 'Einstellungen: Anthropic, OpenAI, Mistral, Pollinations (Kern 0.27, R1)', zeilen.join(' | ').replace(/\n/g, ' '));
   ok(/gespeichert/.test(zeilen[0]) && /noch keiner/.test(zeilen[1]) && /noch keiner/.test(zeilen[2]), 'der Schlüssel der bisherigen Mixarium-App gilt (der des Rezeptbuchs spielt keine Rolle)');
   await p.click('#schl-liste [data-anbieter=anthropic]'); await p.waitForSelector('#akform'); ok(/gespeichert/.test(await p.getAttribute('#akform [name=k]', 'placeholder')) && await p.inputValue('#akform [name=k]') === '' && await p.locator('[data-a=schluessel-weg]').count() === 1 && await p.locator('#schl-holen').getAttribute('href') === 'https://platform.claude.com/settings/keys' && await p.locator('#schl-holen').getAttribute('target') === '_blank', 'das Fenster sagt, dass ein Schlüssel gespeichert ist, zeigt ihn nicht und bietet den Direktlink zur Schlüssel-Seite');
   await p.click('[data-a=schluessel-pruefen]'); await p.waitForFunction(() => document.getElementById('schl-stand')?.dataset.ok === 'true');
