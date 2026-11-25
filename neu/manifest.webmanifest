@@ -1,7 +1,7 @@
 {
   "id": "/Mein-Mixarium/neu/",
-  "name": "Mein Mixarium (neu)",
-  "short_name": "Mixarium neu",
+  "name": "Mein Mixarium neu",
+  "short_name": "Mein Mixarium neu",
   "description": "Dein persönliches Getränke-Labor: Mocktails, Smoothies, Limonaden, Tees, Sirupe. Neue Gestaltung zum Ansehen.",
   "start_url": "./",
   "scope": "./",
