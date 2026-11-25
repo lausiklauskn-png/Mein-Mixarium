@@ -32,7 +32,7 @@ import { vermerken, vermerkHtml, fundeZumEntscheiden, fundName } from '../kern/k
 import { dateiPruefen, pruefHtml, kiAnweisungen } from '../kern/pruefung/datei.mjs';
 import * as DB from '../getraenke/entdecken.mjs';
 import { webAdresse, holeSeite, ausEingefuegtem, ohneKi, fuerKi, mitKi, holeBild } from '../kern/import/web.mjs';
-import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, rechtschreibungAnwenden, uebersetze, uebersetzungAnRezept, uebersetzungPasst, kostenSchaetzung, wasGehtHinaus as helferHinaus, wasKurz } from '../kern/ki/helfer.mjs';
+import { naehrwerte, naehrwerteAnRezept, naehrwertZeilen, rechtschreibung, rechtschreibungAnwenden, uebersetze, uebersetzungAnRezept, uebersetzungPasst, uebersetzeMit, rateSprache, alsUebersetzung, alsHauptfassung, SPRACH_CODES, kostenSchaetzung, wasGehtHinaus as helferHinaus, wasKurz } from '../kern/ki/helfer.mjs';
 import { druckRezept, drucke } from '../kern/ausgabe/druck.mjs';
 import { teilLink, ausTeilLink, qrSvg, passtInQr } from '../kern/teilen/qr.mjs';
 import { zusatz } from './zusatz.mjs';
@@ -52,7 +52,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor33';
+export const FASSUNG = '10.0.0-vor34';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -83,7 +83,10 @@ const glasText = (g) => { const n = G.glasName(g, sprache()); if (n !== g) retur
    Zutaten und Schritte passt; bearbeitet wird immer das Original. */
 const sicht = (r) => (r ? kernSicht(r, sprache()) : r);
 /* Am offenen Getränk lässt sich aufs Original umschalten (Z.original); Liste, Karte und Plan zeigen immer die Fassung der Sprache. */
-const zeig = (r) => (r && !Z.original ? sicht(r) : r);
+/* R28 (wie im Rezeptbuch 0.17.2): nach dem Übersetzen steht die neue Fassung da; Sprach-Chips (Original · EN · IT …) wählen sie (Z.lese, nur am offenen Getränk). */
+const leseSprache = (r) => (Z.lese && r && Z.lese.uid === r.uid ? Z.lese.s : sprache());
+const zeig = (r) => (r && !Z.original ? kernSicht(r, leseSprache(r)) : r);
+const uebGezeigt = (roh) => (roh && !Z.original && kernSicht(roh, leseSprache(roh)) !== roh ? leseSprache(roh) : '');
 const sprName = (k) => (SPRACHEN.find((x) => x[0] === k) || [k, k])[1];
 const getr = (uid) => A.getraenke.find((r) => r.uid === uid) || null;
 const zahl = (t) => (sprache() === 'de' ? String(t).replace('.', ',') : String(t));
@@ -278,7 +281,9 @@ function vGetraenk(br) {
      über dem Bild aufklappt, ohne neue Zeile und ohne etwas zu verschieben; „Zurück“ als Winkel links vom Namen. */
   const imOrd = findeOrdner(A.ordner, ordnerVonRezept(r, A.ordner)), ordHtml = imOrd ? ` <span class="im-ordner">${I('folder')}${esc(ordTitel(imOrd))}</span>` : '';
   /* Liegt eine Übersetzung in der Sprache der Oberfläche am Getränk, steht neben der Kategorie ein kleiner Umschalter aufs Original. */
-  const umsch = kernSicht(roh, sprache()) !== roh ? ` <button class="umsch" data-a="original" aria-pressed="${!!Z.original}" title="${Z.original ? L('Übersetzung zeigen', 'Show translation') : L('Original zeigen', 'Show original')}">${I('uebersetzen')}${L('Original', 'Original')}</button>` : '';
+  const fass = Object.keys(roh.translations || {}).filter((c) => SPRACH_CODES.includes(c) && uebersetzungPasst(roh, roh.translations[c])), jetzt = uebGezeigt(roh);
+  const fChip = (c, an, txt, tipp) => `<button class="umsch" data-a="lese" data-s="${c}" aria-pressed="${an}" aria-label="${esc(tipp)}" title="${esc(tipp)}" lang="${c === 'orig' ? '' : c}">${txt}</button>`;
+  const umsch = fass.length ? ` <span class="ueb-fass" role="group" aria-label="${esc(L('Fassungen', 'Versions'))}">${I('uebersetzen')}${fChip('orig', !jetzt, esc(SPRACH_CODES.includes(roh.sprache) ? roh.sprache.toUpperCase() : L('Original', 'Original')), L('Original zeigen', 'Show the original'))}${fass.map((c) => fChip(c, jetzt === c, c.toUpperCase(), fuelle(L('Fassung {0} zeigen', 'Show the {0} version'), sprName(c)))).join('')}</span>` : '';
   const werk = Z.bildWerk ? `<div class="rwerk">${wk('bearbeiten', 'pencil', L('Bearbeiten', 'Edit'))}${wk('ordner-zuordnen', 'folder', L('Ordner', 'Folder'))}${wk('bildblatt', 'image', L('Bild', 'Picture'))}${wk('teilen', 'share', L('Teilen', 'Share'))}${wk('gmenue', 'mehr', L('Mehr: Drucken, QR-Code, Übersetzen …', 'More: print, QR code, translate …'))}${wk('loeschen', 'trash', L('Getränk löschen', 'Delete drink'), 'rot')}</div>` : '';
   if (!br) return `<div class="held" data-a="held" role="button" tabindex="0" aria-label="${r.img ? L('Bild ansehen, anpassen oder ersetzen', 'View, adjust or replace picture') : L('Bild einfügen', 'Add picture')}">${bild(r)}<div class="ueber">${werk}<div class="tzeile"><button class="wk-pf zur" data-a="zurueck" aria-label="${L('Zurück', 'Back')}">${winkel('M15 5l-7 7 7 7')}</button><h2>${esc(r.name)}</h2><button class="wk-pf" data-a="bildwerk" aria-expanded="${!!Z.bildWerk}" aria-label="${L('Werkzeuge für Getränk und Bild', 'Tools for drink and picture')}">${winkel(Z.bildWerk ? 'M5 9l7 7 7-7' : 'M5 15l7-7 7 7')}</button></div><p>${esc(katNameVon(r))}${ordHtml}${umsch}</p></div></div><div class="innen-p">${fakten(r)}${aktionen(r)}${portion(r)}<div class="abschnitt"><h3>${L('Zutaten', 'Ingredients')}</h3>${zutatenListe(r)}${naehrHtml(r)}</div>${gerAbs}<div class="abschnitt"><h3>${L('Schritte', 'Steps')}</h3>${schritteListe(r)}</div>${notiz}${quelle}${vermerkHtml(r, sprache())}</div>`;
   const fk = Z.fokus;
@@ -366,6 +371,15 @@ function planWahl(tag, uidFest) {
 /* ── Labor (zieht als Nächstes um) ── */
 /* ── Mix-Labor (Logik: getraenke/labor.mjs, aus der alten App übernommen; Gestaltung: abgenommene Vorschau) ── */
 /* Erklärung hinter einem „?“ genau an der Stelle, die sie erklärt (Klaus 23.11.; Baustein aus Mein Rezeptbuch). */
+/* R13 (wie im Rezeptbuch 0.15.3): die Blase einer Erklärung steht ganz im Bild – fest zum Fenster, an den Rand geschoben, wandert beim Rollen mit. */
+function fragLegen(d) {
+  const p = d && d.querySelector('p'), s = d && d.querySelector('summary'); if (!p || !s || !d.open) return;
+  const q = s.getBoundingClientRect(), w = Math.min(260, innerWidth - 16); p.style.position = 'fixed'; p.style.width = w + 'px'; p.style.maxWidth = 'none';
+  p.style.left = Math.round(Math.max(8, Math.min(q.left + q.width / 2 - w / 2, innerWidth - w - 8))) + 'px';
+  const h = p.offsetHeight, unten = q.bottom + 6; p.style.top = Math.round(unten + h > innerHeight - 8 && q.top - 6 - h > 8 ? q.top - 6 - h : unten) + 'px';
+}
+document.addEventListener('toggle', (e) => { if (e.target.classList && e.target.classList.contains('frag')) { if (e.target.open) document.querySelectorAll('details.frag[open]').forEach((x) => { if (x !== e.target) x.open = false; }); fragLegen(e.target); } }, true);
+addEventListener('scroll', () => document.querySelectorAll('details.frag[open]').forEach(fragLegen), true); addEventListener('resize', () => document.querySelectorAll('details.frag[open]').forEach(fragLegen));
 const frag = (t) => `<details class="frag"><summary aria-label="${L('Erklärung', 'Explanation')}">?</summary><p>${esc(t)}</p></details>`;
 const GESCHMACK_FARBE = { frisch: '#2fa57a', 'süß': '#d9628f', herb: '#7d7a3a', fruchtig: '#ec7f2e', cremig: '#c9a25e', intensiv: '#7c3aa8' };
 const sterneHtml = (n) => `<span class="sterne" aria-label="${Math.round(n)} / 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= Math.round(n) ? 'an' : ''}">${I('star')}</i>`).join('')}</span>`;
@@ -531,8 +545,20 @@ async function editorSpeichern(form, wahl = '') {
     if (Z.fenster !== f) return;
     if (p) { f.doppel = p; const alt = $('#ed-doppel'); if (alt) alt.remove(); form.querySelector('.reihe.ende').insertAdjacentHTML('beforebegin', formDoppelBand(f, felder.img)); $('#ed-doppel').scrollIntoView({ block: 'center' }); return; }
   }
-  if (r) Object.assign(r, felder);
-  else { r = G.getraenkNormalisieren({ ...felder, id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, created: Date.now(), uid: G.neueUid(A.knoten) }); A.getraenke.unshift(r); }
+  if (r) {
+    /* verglichen wird der Text, wie er im Formular stand und wie er jetzt dasteht (nicht das zerlegte Ergebnis: „1/2 Stück“ bleibt „1/2 Stück“) */
+    const basis = f.ueb ? { ...r, ...kernSicht(r, f.ueb) } : r, zl = (t) => String(t || '').trim();
+    const textNeu = JSON.stringify([name, zeilen('ings'), zeilen('steps')]) !== JSON.stringify([zl(basis.name), (basis.ings || []).map((z) => zl([z.amt, z.unit, z.name].filter(Boolean).join(' '))).filter(Boolean), (basis.steps || []).map((s) => zl(s.txt)).filter(Boolean)]);
+    const { name: _n, ings: _i, steps: _s, modified: _m, ...sonst } = felder;
+    if (f.ueb) {   /* eine Übersetzung bearbeitet: Kategorie, Glas, Bild … gelten sofort; der Text wird erst nach der Frage gesetzt */
+      if (!textNeu) { getraenkSetzen({ ...r, ...sonst }); Z.fenster = null; melde(L('Gespeichert', 'Saved')); return zeichne(); }
+      return fassungFrage(r, { name: felder.name, ings: felder.ings, steps: felder.steps }, f.ueb, sonst);
+    }
+    const vorher = { ...r };
+    Object.assign(r, felder);
+    if (textNeu && r.translations && Object.keys(r.translations).length) { delete r.translations; sichern(); setTimeout(() => nachUebersetzen([r.uid], Object.keys(vorher.translations).filter((c) => SPRACH_CODES.includes(c)), true), 3600); }
+  }
+  else { r = G.getraenkNormalisieren({ ...felder, id: A.getraenke.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1, created: Date.now(), uid: G.neueUid(A.knoten) }); A.getraenke.unshift(r); const neuUid = r.uid; setTimeout(() => nachUebersetzen([neuUid]), 3600); }   /* R23: ein neues Getränk bekommt die Sprachen der Sammlung */
   if (f.quelle && !f.uid) r.source = f.quelle;
   if (f.db && !f.uid) Object.assign(r, f.db);   /* aus „Entdecken“: die Nummer bei TheCocktailDB, damit derselbe Drink nicht zweimal kommt */
   if (f.kiEntfernt && f.kiEntfernt.length) vermerken(r, f.kiEntfernt, 'scan');   /* was vor der KI herausgenommen wurde, steht am Getränk */
@@ -565,6 +591,7 @@ function dpWahl(p, w) {
 /* vorher: der Stand vor dem Einlesen ({ getraenke }); neu ist, was danach dazugekommen ist. */
 async function doppelNach(vorher) {
   const alt = new Set(vorher.getraenke.map((r) => r.uid)), neuIds = A.getraenke.filter((r) => !alt.has(r.uid)).map((r) => r.uid); if (!neuIds.length) return;
+  setTimeout(() => nachUebersetzen(neuIds.filter((u) => getr(u))), 7200);   /* R23: nach der Meldung mit „Rückgängig“; was ein Doppel war und wegfiel, wird übergangen */
   const hash = await W.mit(L('Doppelte Getränke werden gesucht …', 'Looking for duplicate drinks …'), () => fingerabdruecke(A.getraenke)).catch(() => new Map());
   const paare = findeDoppel(A.getraenke, neuIds.filter((u) => getr(u)), { hash }); if (!paare.length) return;
   const wahl = new Map(paare.map((p) => [p.neu, p.stufe === 'sicher' ? 'meins' : 'beide']));
@@ -921,7 +948,7 @@ function setze(f, frisch) {
 }
 function geh(v) { history.pushState({ v }, ''); setze(() => { Z.view = v; Z.flAuf = false; Z.menue = null; if (v === 'mix') { Z.step = 0; Z.richt = 'vor'; wachAn(); } if (v !== 'karte') Z.anlass = null; }, true); }
 function zurueck() { if (Z.bildVoll) { Z.bildVoll = false; if (Z.nachBild) { Z.nachBild = false; Z.bildWerk = false; return bildBlatt(); } return zeichne(); } if (Z.fenster) return fZu(); if (Z.menue) { Z.menue = null; return zeichne(); } if (Z.view === 'mix') return mixZu(); if (Z.view === 'karte' && Z.anlass) return setze(() => { Z.anlass = null; }, true); if (Z.view !== 'start') return setze(() => { Z.view = Z.view === 'getraenk' ? 'start' : 'start'; Z.fokus = false; }, true); }
-function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; Z.bildWerk = false; Z.original = false; }, true); }
+function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; Z.bildWerk = false; Z.original = false; Z.lese = null; }, true); }
 
 /* Bildschirm wach halten, solange die Mix-Ansicht offen ist (wo das Gerät es erlaubt). */
 let wachSperre = null;
@@ -998,18 +1025,92 @@ async function kiAmGetraenk(art) {
   } catch (f) { melde(f.message); }
 }
 /* Übersetzen, einzeln: Ziel ist eine der acht Sprachen; das Ergebnis liegt in translations[ziel]. Die Ansicht zeigt die Fassung der Oberflächensprache. */
-function uebersetzFenster() {
+/* R15 (wie im Rezeptbuch 0.16.1, Klaus 25.11.): kostenlos im Gerät, wo der Browser einen Übersetzer mitbringt (Chromes Translator-API; am
+   Android-Chrome fehlt sie bisher, dann steht dieser Weg nicht da). Claude bleibt der zweite Weg (beste Qualität, eigener Schlüssel). */
+const geraetUebersetzer = () => typeof self !== 'undefined' && 'Translator' in self && typeof (self.Translator && self.Translator.create) === 'function';
+const quelleVon = (r) => (SPRACH_CODES.includes(r.sprache) ? r.sprache : rateSprache(r));
+const geraetKann = new Map();
+async function geraetMoeglich(r) {
+  if (!geraetUebersetzer()) return false;
+  const q = quelleVon(r) || 'en';
+  if (!geraetKann.has(q)) geraetKann.set(q, Promise.race([new Promise((ja) => { const ziele = SPRACH_CODES.filter((z) => z !== q); let offen = ziele.length; const eins = (v) => { if (v && v !== 'unavailable') ja(true); else if (--offen === 0) ja(false); };
+    for (const z of ziele) { try { self.Translator.availability({ sourceLanguage: q, targetLanguage: z }).then(eins, () => eins('')); } catch (e) { eins(''); } } }), new Promise((w) => setTimeout(() => w(false), 1500))]));
+  return geraetKann.get(q);
+}
+async function imGeraetUebersetzen(r, quelle, ziel, w) {
+  const v = await self.Translator.availability({ sourceLanguage: quelle, targetLanguage: ziel });
+  if (v === 'unavailable') throw new Error(fuelle(L('Der Übersetzer im Gerät kann {0} → {1} nicht. Bitte Claude wählen.', 'The translator on the device cannot do {0} → {1}. Please choose Claude.'), sprName(quelle), sprName(ziel)));
+  if (v !== 'available' && w) w.text(L('Sprachpaket wird geladen …', 'Downloading the language pack …'));
+  const tr = await self.Translator.create({ sourceLanguage: quelle, targetLanguage: ziel, monitor(m) { if (w) m.addEventListener('downloadprogress', (e) => { w.anteil(e.loaded); w.text(fuelle(L('Sprachpaket wird geladen: {0} %', 'Downloading the language pack: {0} %'), Math.round((e.loaded || 0) * 100))); }); } });
+  try { return await uebersetzeMit(r, ziel, (x) => tr.translate(x), { sprache: sprache() }); } finally { try { if (tr.destroy) tr.destroy(); } catch (e) { /* schon frei */ } }
+}
+async function uebersetzFenster() {
   const r = getr(Z.uid); if (!r) return; const was = helferHinaus('uebersetzung', r, sprache()), folge = [...SPRACHEN].sort((a, b) => (b[0] === sprache()) - (a[0] === sprache()));
-  Z.fenster = { titel: L('Übersetzen', 'Translate'), kopfHtml: `<h2 class="mit-frag">${I('uebersetzen')}<span>${L('Übersetzen', 'Translate')}</span><i class="ki-marke">KI</i></h2>`,
-    html: `<div class="tagwahl" id="ueb-wahl" role="group" aria-label="${L('Zielsprache', 'Target language')}">${folge.map(([k, n]) => { const da = uebersetzungPasst(r, (r.translations || {})[k]); return `<button class="chip" data-a="gm-ueb-los" data-ziel="${k}" ${da ? 'data-da' : ''} title="${esc(da ? L('Schon übersetzt; ein Tipp übersetzt neu.', 'Already translated; a tap translates again.') + ' ' + was : was)}">${esc(n)}${da ? I('check') : ''}</button>`; }).join('')}</div>` };
+  const geraet = await geraetMoeglich(r), weg = geraet && Z.uebWeg !== 'claude' ? 'geraet' : 'claude';
+  const wk = (w, t, u) => `<button class="chip" role="radio" aria-checked="${weg === w}" aria-pressed="${weg === w}" data-a="ueb-weg" data-w="${w}">${esc(t)}<small>&nbsp;${esc(u)}</small></button>`;
+  Z.fenster = { titel: L('Übersetzen', 'Translate'), kopfHtml: `<h2 class="mit-frag">${I('uebersetzen')}<span>${L('Übersetzen', 'Translate')}</span>${weg === 'claude' ? '<i class="ki-marke">KI</i>' : ''}</h2>`,
+    html: `${geraet ? `<div class="tagwahl ueb-wege" id="ueb-weg" role="radiogroup" aria-label="${L('Weg', 'Way')}">${wk('geraet', L('Im Gerät', 'On the device'), L('kostenlos', 'free'))}${wk('claude', 'Claude', L('beste Qualität', 'best quality'))}</div>` : ''}<div class="tagwahl" id="ueb-wahl" data-weg="${weg}" role="group" aria-label="${L('Zielsprache', 'Target language')}">${folge.map(([k, n]) => { const da = uebersetzungPasst(r, (r.translations || {})[k]); return `<button class="chip" data-a="gm-ueb-los" data-ziel="${k}" ${da ? 'data-da' : ''} title="${esc(da ? L('Schon übersetzt; ein Tipp übersetzt neu.', 'Already translated; a tap translates again.') + ' ' + was : was)}">${esc(n)}${da ? I('check') : ''}</button>`; }).join('')}</div>` };
 }
 async function uebersetzeEins(ziel) {
   const r = getr(Z.uid); if (!r) return;
+  const wahl = document.querySelector('#ueb-wahl'), imGeraet = geraetUebersetzer() && wahl && wahl.dataset.weg === 'geraet';
+  if (imGeraet) {
+    const quelle = quelleVon(r); if (!quelle || quelle === ziel) return melde(L('Das ist schon die Sprache des Getränks.', 'That is already the language of the drink.'));
+    Z.fenster = null; zeichne();
+    try { const t = await W.mit(fuelle(L('Wird im Gerät übersetzt: {0} …', 'Translating on the device: {0} …'), sprName(ziel)), (w) => imGeraetUebersetzen(r, quelle, ziel, w));
+      const da = getr(r.uid) || r; getraenkSetzen(uebersetzungAnRezept(SPRACH_CODES.includes(da.sprache) ? da : { ...da, sprache: quelle }, ziel, t, sprache())); Z.original = false; Z.lese = { uid: r.uid, s: ziel }; melde(fuelle(L('Im Gerät übersetzt: {0}', 'Translated on the device: {0}'), sprName(ziel))); }
+    catch (f) { melde((f && f.message) || L('Die Übersetzung im Gerät ist fehlgeschlagen.', 'Translating on the device failed.')); }
+    return;
+  }
   await schlLaden(); if (!SK.anthropic) return schluesselFenster('anthropic', 'gmenue');
   Z.fenster = null; zeichne();
   try { const t = await W.mit(fuelle(L('Wird übersetzt: {0} …', 'Translating: {0} …'), sprName(ziel)), () => uebersetze(r, ziel, { schluessel: SK.anthropic, stufe: E.scan.stufe, sprache: sprache() }));
-    getraenkSetzen(uebersetzungAnRezept(getr(r.uid) || r, ziel, t, sprache())); Z.original = false; melde(fuelle(L('Übersetzt: {0}', 'Translated: {0}'), sprName(ziel))); }
+    getraenkSetzen(uebersetzungAnRezept(getr(r.uid) || r, ziel, t, sprache())); Z.original = false; Z.lese = { uid: r.uid, s: ziel }; melde(fuelle(L('Übersetzt: {0}', 'Translated: {0}'), sprName(ziel))); }
   catch (f) { melde(f.message); }
+}
+/* R30 (Klaus 25.11.): ändert sich der Text eines übersetzten Getränks, fällt die alte Fassung weg (sie stimmt nicht mehr) und wird neu übersetzt:
+   im Gerät gratis und still, wo das Sprachpaket schon da ist; sonst eine Meldung mit „Übersetzen“ (Claude erst auf diesen Tipp). Dasselbe
+   gilt nach dem Einlesen neuer Getränke (R23): sie bekommen die Sprachen, in denen die Sammlung schon Übersetzungen hat. */
+const sammlungsZiele = () => { const m = new Set(); for (const r of A.getraenke) if (G.istSichtbar(r)) for (const c of Object.keys(r.translations || {})) if (SPRACH_CODES.includes(c) && uebersetzungPasst(r, r.translations[c])) m.add(c); return [...m]; };
+async function nachUebersetzen(uids, ziele = sammlungsZiele(), geaendert = false) {
+  if (!uids || !uids.length || !ziele.length) return;
+  let imGeraet = 0; const rest = new Map();
+  for (const ziel of ziele) for (const uid of uids) {
+    const r = getr(uid); if (!r || !G.istSichtbar(r) || uebersetzungPasst(r, (r.translations || {})[ziel])) continue;
+    const q = quelleVon(r); if (!q || q === ziel) continue;
+    let geschafft = false;
+    if (geraetUebersetzer()) try {
+      const v = await Promise.race([self.Translator.availability({ sourceLanguage: q, targetLanguage: ziel }), new Promise((w) => setTimeout(() => w(''), 1500))]);
+      if (v === 'available') { const t = await imGeraetUebersetzen(r, q, ziel, null), da = getr(uid); if (da) { getraenkSetzen(uebersetzungAnRezept(SPRACH_CODES.includes(da.sprache) ? da : { ...da, sprache: q }, ziel, t, sprache())); imGeraet++; geschafft = true; } }
+    } catch (e) { /* bleibt für Claude */ }
+    if (!geschafft) rest.set(ziel, (rest.get(ziel) || 0) + 1);
+  }
+  if (imGeraet) zeichne();
+  const [ziel, n] = [...rest][0] || [];
+  if (n) melde(geaendert ? fuelle(L('Geändert: die Fassung {0} ist neu zu übersetzen', 'Changed: the {0} version needs translating again'), sprName(ziel)) : fuelle(L('{0} neue Getränke noch nicht auf {1}', '{0} new drinks not yet in {1}'), n, sprName(ziel)) + (imGeraet ? ' · ' + fuelle(L('{0} im Gerät übersetzt', '{0} translated on the device'), imGeraet) : ''), L('Übersetzen', 'Translate'), () => { if (geaendert && Z.uid === uids[0]) { uebersetzFenster().then(zeichne); } else { alleUebFenster(ziel); zeichne(); } });
+  else if (imGeraet) melde(geaendert ? L('Geändert und im Gerät neu übersetzt', 'Changed and translated again on the device') : fuelle(L('{0} neue Übersetzungen im Gerät angelegt', '{0} new translations made on the device'), imGeraet));
+}
+/* R14 (wie im Rezeptbuch 0.16.1): bearbeitet wird, was dasteht. Wer eine Übersetzung bearbeitet, wird einmal gefragt: als Hauptfassung
+   (der Text wird das Getränk, das bisherige Original bleibt als Übersetzung) oder nur als Übersetzung. */
+function fassungFrage(r, neu, ziel, sonst) {
+  Z.fenster = { titel: L('Als Hauptfassung übernehmen?', 'Use as the main version?'), fassung: { uid: r.uid, neu, ziel, sonst },
+    html: `<p class="ftext">${esc(fuelle(L('Du hast die Übersetzung ({0}) bearbeitet. Als Hauptfassung wird sie der Text des Getränks; das bisherige Original bleibt als Übersetzung erhalten.', 'You edited the translation ({0}). As the main version it becomes the text of the drink; the previous original stays as a translation.'), sprName(ziel)))}</p>
+     <div class="reihe" id="fassung-wahl"><button class="knopf" data-a="fassung-haupt">${L('Ja, als Hauptfassung', 'Yes, as the main version')}</button><button class="knopf hell" data-a="fassung-ueb">${L('Nein, nur die Übersetzung', 'No, only the translation')}</button><button class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button></div>` };
+  zeichne();
+}
+function fassungAnwenden(art) {
+  const f = Z.fenster && Z.fenster.fassung, alt = f && getr(f.uid); if (!alt) return;
+  try {
+    let neu;
+    if (art === 'ueb') neu = alsUebersetzung(alt, f.ziel, f.neu, sprache());
+    else {
+      const q = f.quelle || [alt.sprache, rateSprache(alt)].find((c) => SPRACH_CODES.includes(c) && c !== f.ziel);
+      if (!q) { Z.fenster.titel = L('Sprache des Originals', 'Language of the original'); Z.fenster.html = `<p class="ftext">${esc(L('In welcher Sprache ist das bisherige Original geschrieben?', 'In which language is the previous original written?'))}</p><div class="tagwahl" id="quelle-wahl">${SPRACHEN.filter(([c]) => c !== f.ziel).map(([c, n]) => `<button class="chip" data-a="quelle-wahl" data-s="${c}" lang="${c}">${esc(n)}</button>`).join('')}</div>`; return zeichne(); }
+      neu = alsHauptfassung(alt, f.ziel, f.neu, q, sprache()); Z.original = false; Z.lese = null;
+    }
+    getraenkSetzen({ ...alt, ...neu, ...(f.sonst || {}) });
+    Z.fenster = null; Z.uid = alt.uid; Z.view = 'getraenk'; melde(L('Gespeichert', 'Saved'));
+  } catch (x) { melde(x.message); }
 }
 /* ── Alle übersetzen (Einstellungen → KI): EIN Fenster. Ziel wählen; es nennt, wie viele Getränke diese Übersetzung noch nicht haben, und die
    geschätzten Kosten (Kern: kostenSchaetzung). Der Ladebalken zeigt den Stand. Schon Übersetzte werden übersprungen, ein Fehlschlag hält den
@@ -1083,11 +1184,16 @@ const TUN = {
   'gm-qr'() { qrFenster(); return false; },
   'qr-kopieren'() { (navigator.clipboard ? navigator.clipboard.writeText(Z.teil || '') : Promise.reject(new Error('ohne Zwischenablage'))).then(() => melde(L('Link kopiert', 'Link copied')), () => melde(L('Kopieren ging nicht', 'Copying failed'))); return false; },
   'qr-teilen'() { const r = getr(Z.uid); if (navigator.share) navigator.share({ title: r ? zeig(r).name : '', url: Z.teil }).catch(() => {}); return false; },
-  'gm-uebersetzen'() { uebersetzFenster(); },
+  'gm-uebersetzen'() { uebersetzFenster().then(zeichne); return false; },
   'gm-ueb-los'(b) { uebersetzeEins(b.dataset.ziel); return false; },
   'gm-recht'() { kiAmGetraenk('rechtschreibung'); return false; },
   'gm-naehr'() { kiAmGetraenk('naehrwerte'); return false; },
   original() { Z.original = !Z.original; },
+  lese(b) { const c = b.dataset.s; if (c === 'orig') Z.original = true; else { Z.original = false; Z.lese = { uid: Z.uid, s: c }; } },
+  'ueb-weg'(b) { Z.uebWeg = b.dataset.w; uebersetzFenster().then(zeichne); return false; },
+  'fassung-haupt'() { fassungAnwenden('haupt'); return false; },
+  'fassung-ueb'() { fassungAnwenden('ueb'); return false; },
+  'quelle-wahl'(b) { const f = Z.fenster && Z.fenster.fassung; if (f) { f.quelle = b.dataset.s; fassungAnwenden('haupt'); } return false; },
   'alle-ueb'() { alleUebFenster(); },
   'alle-ueb-ziel'(b) { alleUebFenster(b.dataset.ziel); },
   'alle-ueb-los'() { alleUebersetzen(); return false; },
@@ -1209,7 +1315,7 @@ const TUN = {
   'schrift-100'() { E.schrift = 100; einstSichern(); },
   einheit() { const f = ['auto', 'orig', 'ml', 'cl', 'oz']; E.einheit = f[(f.indexOf(E.einheit) + 1) % f.length]; Z.einheit = null; einstSichern(); },
   neu() { Z.flAuf = false; neuBlatt(''); return false; },
-  bearbeiten() { editor(getr(Z.uid)); return false; },
+  bearbeiten() { const roh = getr(Z.uid), ueb = uebGezeigt(roh); editor(ueb ? { ...roh, ...kernSicht(roh, ueb), uid: roh.uid } : roh); if (Z.fenster && ueb) Z.fenster.ueb = ueb; return false; },
   'ed-bildweg'() { Z.fenster.img = ''; $('#edbild').innerHTML = platzbild({ name: 'x' }); return false; },
   'ed-loeschen'() { const r = getr(Z.fenster.uid); frage(L('Getränk löschen', 'Delete drink'), fuelle(L('„{0}“ wird aus deiner Sammlung entfernt.', '“{0}” will be removed from your collection.'), esc(r.name)), L('Löschen', 'Delete'), () => { A.getraenke = A.getraenke.filter((x) => x.uid !== r.uid); (A.anlaesse || []).forEach((a) => { a.posten = a.posten.filter((p) => p.uid !== r.uid); }); sichern(); Z.fenster = null; Z.view = 'start'; Z.uid = null; melde(L('Gelöscht.', 'Deleted.')); }, true); return false; },
   'fenster-zu'() { Z.fenster = null; },
