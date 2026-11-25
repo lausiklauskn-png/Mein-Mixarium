@@ -60,7 +60,7 @@ pruefe('das Menü läuft am Handy nicht quer; jede Zeile bleibt einzeilig', awai
 
 console.log('2 · Drucken: ein unsichtbarer Rahmen mit dem Getränk, wie es am Bildschirm steht');
 await p.keyboard.press('Escape'); await p.waitForSelector('.fenster', { state: 'detached' });
-await p.click('[data-e=oz]'); await p.click('[data-a=plus]'); await bis(p, () => document.querySelector('.portion output')?.textContent === '3' && document.querySelector('[data-e=oz]')?.getAttribute('aria-pressed') === 'true');
+await p.click('[data-e=oz]'); await p.click('[data-a=plus]'); await bis(p, () => /^3 /.test(document.querySelector('.portion b')?.textContent || '') && document.querySelector('[data-e=oz]')?.getAttribute('aria-pressed') === 'true');
 const amSchirm = await p.locator('.zutaten li').evaluateAll((l) => l.map((x) => x.innerText.trim().replace(/\s+/g, ' ')));
 await Zs(p, () => { window.__gedruckt = 0; const alt = HTMLIFrameElement.prototype.__lookupGetter__('contentWindow'); Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', { get() { const w = alt.call(this); if (w && this.hasAttribute('data-kern-druck')) w.print = () => { window.__gedruckt++; }; return w; } }); });
 const seitenVor = c.pages().length; await menue(p); await p.click('#gmenue [data-a=gm-drucken]'); const gedruckt = await bis(p, () => window.__gedruckt === 1);

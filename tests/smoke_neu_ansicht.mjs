@@ -56,6 +56,25 @@ try {
       ok(vor && nach && Math.abs((nach[1] - nach[0]) - (vor[1] - vor[0])) <= 2, 'die offene Blase wandert beim Rollen mit dem „?“', JSON.stringify([vor, nach])); }
     await c.close();
   }
+
+  console.log('2 · R35 Leiste mit Pfeilen verschieben (390 px)');
+  { const { p, c } = await seite([D(1, 'Limo')], 390);
+    await p.click('.fl-griff'); await p.waitForTimeout(150);
+    ok(await p.locator('.fl-werk [data-a=fl-pos]').count() === 1, 'in der Leiste steht „Verschieben“');
+    await p.click('.fl-werk [data-a=fl-pos]'); await p.waitForTimeout(150);
+    ok(await p.locator('.fl-nur-pos [data-a=fl-schieb]').count() === 4 && await p.locator('.fl-knoepfe:not(.fl-nur-pos)').count() === 0, 'statt der Leiste steht nur das Pfeil-Viereck (vier Pfeile)');
+    const lage = () => p.evaluate(() => { const a = document.querySelector('.fl-leiste').getBoundingClientRect(); return { y: Math.round(a.top + a.height / 2), x: Math.round(a.left + a.width / 2), fl: __mixarium.einstellungen.fl }; });
+    const l0 = await lage(); await p.click('[data-r=hoch]'); await p.waitForTimeout(150); const l1 = await lage();
+    ok(l1.fl.oben < l0.fl.oben && l1.y < l0.y && await p.locator('.fl-nur-pos').count() === 1, 'ein Tipp „nach oben“ bewegt die Leiste sichtbar nach oben, das Viereck bleibt offen (kein Bestätigen)', JSON.stringify([l0, l1]));
+    await p.click('[data-r=links]'); await p.waitForTimeout(150); const l2 = await lage();
+    ok(l2.fl.seite === 'l' && l2.x < 195, '„nach links“ legt sie an den linken Rand', JSON.stringify(l2));
+    for (let i = 0; i < 6; i++) { await p.click('[data-r=runter]'); await p.waitForTimeout(80); }
+    const l3 = await lage(); ok(l3.fl.seite === 'u', 'ganz unten weiter „nach unten“: an den unteren Rand', JSON.stringify(l3.fl));
+    await p.mouse.click(200, 200); await p.waitForTimeout(200);
+    ok(await p.locator('.fl-nur-pos').count() === 0 && await p.locator('.fl-griff').count() === 1, 'ein Tipp daneben schließt; der Griff steht am neuen Platz');
+    await p.reload(); await p.waitForSelector('.mx .titel');
+    ok((await p.evaluate(() => __mixarium.einstellungen.fl.seite)) === 'u', 'der neue Platz bleibt nach dem Neuladen');
+    await c.close(); }
   ok(!fehler.length, 'keine Fehler im Browser', fehler.slice(0, 3).join(' | '));
 } catch (f) { rot++; console.log('  ✗ ROT Absturz — ' + String(f && f.message || f).split('\n')[0]); }
 await b.close(); server.close();
