@@ -48,10 +48,10 @@ const EK = einkaufMit({ gruppen: G.GETRAENKE_WARENGRUPPEN, einheiten: G.GETRAENK
 const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 /* KI-Schlüssel (Kern 0.18): nur im Kern-Speicher dieses Geräts, in keiner Sicherung. Ein Schlüssel der bisherigen App gilt weiter;
    die alte App wird dabei nur gelesen. SK hält den Stand für die Anzeige. */
-const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '' };
+const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor31';
+export const FASSUNG = '10.0.0-vor32';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -433,7 +433,7 @@ function labBewertenFenster(r) {
    <div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('check')}${L('Bewertung speichern', 'Save rating')}</button></div></form>` };
 }
 /* Ein Fenster für alle drei Schlüssel (Anthropic, OpenAI, Mistral). danach: 'labor' | 'bild' | 'scan' – was nach dem Speichern weitergeht. */
-const SCHL_FORM = { anthropic: 'akform', openai: 'skform', mistral: 'mkform' };
+const SCHL_FORM = { anthropic: 'akform', openai: 'skform', mistral: 'mkform', pollinations: 'pkform' };
 function schluesselFenster(a = 'openai', danach = '') {
   const B = ANBIETER[a] || ANBIETER.openai, tP = fuelle(L('Prüfen: schickt eine kleinste Anfrage an {0} und sagt, ob der Schlüssel funktioniert', 'Check: sends a minimal request to {0} and tells whether the key works'), B.name);
   Z.fenster = { titel: B.name, danach, kopfHtml: `<h2 class="mit-frag">${I('schluessel')}<span>${esc(B.name)}</span>${frag(schlErklaerung(a, sprache()))}</h2>`,
@@ -717,7 +717,7 @@ function bildBlatt() {
   const r = getr(Z.uid); if (!r) return;
   const z = (akt, i, t, w) => `<button class="ezeile" data-a="${akt}">${I(i)}<span><b>${t}</b><small>${w}</small></span>${I('right')}</button>`;
   Z.fenster = { titel: sicht(r).name, html: `${r.img ? `<button class="bb-bild" data-a="bildvoll" aria-label="${L('Ganzes Bild im Vollbild', 'Whole picture full screen')}"><img src="${esc(r.img)}" alt=""></button>` : `<p class="ftext">${L('Dieses Getränk hat noch kein Bild.', 'This drink has no picture yet.')}</p>`}
-   <div class="eliste">${r.img ? z('bildvoll', 'full', L('Ganzes Bild', 'Whole picture'), L('im Vollbild ansehen', 'view full screen')) + z('ausschnitt', 'crop', L('Ausschnitt anpassen', 'Adjust section'), L('verschieben, was auf Karte und Kopfbild zu sehen ist', 'move what shows on card and header')) : ''}${z('bild-datei', 'camera', r.img ? L('Bild ersetzen', 'Replace picture') : L('Bild einfügen', 'Add picture'), L('Foto aufnehmen oder Datei wählen', 'Take a photo or choose a file'))}${z('ki-bild', 'sparkle', L('Bild von der KI erzeugen', 'Create picture with AI'), 'OpenAI, ' + L(KOSTEN.de, KOSTEN.en))}${z('gratis-bild', 'image', L('Gratis-Foto erzeugen', 'Create free photo'), L('ohne Schlüssel; der Name des Getränks geht an den Dienst Pollinations', 'no key; the drink name goes to the Pollinations service'))}</div>
+   <div class="eliste">${r.img ? z('bildvoll', 'full', L('Ganzes Bild', 'Whole picture'), L('im Vollbild ansehen', 'view full screen')) + z('ausschnitt', 'crop', L('Ausschnitt anpassen', 'Adjust section'), L('verschieben, was auf Karte und Kopfbild zu sehen ist', 'move what shows on card and header')) : ''}${z('bild-datei', 'camera', r.img ? L('Bild ersetzen', 'Replace picture') : L('Bild einfügen', 'Add picture'), L('Foto aufnehmen oder Datei wählen', 'Take a photo or choose a file'))}${z('ki-bild', 'sparkle', L('Bild von der KI erzeugen', 'Create picture with AI'), 'OpenAI, ' + L(KOSTEN.de, KOSTEN.en))}${z('gratis-bild', 'image', L('Foto über Pollinations', 'Photo via Pollinations'), SK.pollinations ? L('mit deinem Pollinations-Schlüssel', 'with your Pollinations key') : L('braucht einen eigenen Pollinations-Schlüssel', 'needs your own Pollinations key'))}</div>
    <input type="file" id="bbdatei" accept="image/*" hidden>` };
   zeichne();
 }
@@ -731,14 +731,15 @@ async function bildErzeugen(gratis) {
   const r = getr(Z.uid); if (!r) return;
   let schluessel = '';
   if (!gratis) { schluessel = await S.hol('openai'); if (!schluessel) return schluesselFenster('openai', 'bild'); }
+  else { schluessel = await S.hol('pollinations').catch(() => ''); SK.pollinations = schluessel; if (!schluessel) return schluesselFenster('pollinations', 'gratis'); }   /* Pollinations verlangt seit Ende 2026 einen eigenen Schlüssel (R1, Kern 0.27) */
   const frei = await ZU.bildFreigabe(sicht(r), gratis); if (!frei) return;   /* steht im Auftrag ein Befehl an eine KI, entscheidet erst der Mensch (neu/zusatz.mjs) */
   Z.fenster = null; zeichne();
   try {
     const img = await W.mit(gratis ? L('Gratis-Foto wird erzeugt …', 'Creating free photo …') : L('KI-Bild wird erzeugt (etwa 20 s) …', 'Creating AI picture (about 20 s) …'), async (w) => {
-      const roh = gratis ? await gratisBild(frei, { art: 'getraenk' }) : await kiBild(schluessel, frei, { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
+      const roh = gratis ? await gratisBild(frei, { art: 'getraenk', schluessel }) : await kiBild(schluessel, frei, { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
       w.text(L('Bild wird gespeichert …', 'Saving the picture …')); return bildAusDatei(await (await fetch(roh)).blob()); });
     bildSetzen(img); melde(L('Das neue Bild ist da.', 'The new picture is there.'));
-  } catch (f) { melde(L('Das hat nicht geklappt: ', 'That did not work: ') + (f && f.message ? f.message : L('unbekannter Fehler', 'unknown error'))); }
+  } catch (f) { const t = L('Das hat nicht geklappt: ', 'That did not work: ') + (f && f.message ? f.message : L('unbekannter Fehler', 'unknown error')); if (gratis && f && f.schluessel) melde(t, L('Schlüssel', 'key'), () => schluesselFenster('pollinations', 'gratis')); else melde(t); }
 }
 /* ── Tresor (Küchen-Kern): bis zu 5 automatische und 10 benannte Stände im Gerät. Schützt vor Versehen; gegen das Leeren
    des Browsers schützt nur die Sicherung als Datei. Automatisch wird vor jedem Eingriff abgelegt, der viel ändert. */
@@ -1227,7 +1228,7 @@ document.addEventListener('submit', (ev) => {
     getraenkSetzen(rechtschreibungAnwenden(r, f.recht.aenderungen.filter((_, i) => wahl.includes(i)))); Z.fenster = null; return melde(wahl.length === 1 ? L('1 übernommen', '1 applied') : fuelle(L('{0} übernommen', '{0} applied'), wahl.length)); }
   if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
-    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } else if (ZU.danach.includes(danach)) { if (TUN[danach]() !== false) zeichne(); } }); return; }
+    S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'gratis') bildErzeugen(true); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } else if (ZU.danach.includes(danach)) { if (TUN[danach]() !== false) zeichne(); } }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
     const f = LAB.bewerten(r, { taste: d.get('taste'), practicality: d.get('practicality'), originality: d.get('originality'), description: d.get('description') }, String(d.get('fb') || ''), { solo: labSolo() });
     Z.fenster = null; sichern();
