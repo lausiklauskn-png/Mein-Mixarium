@@ -241,6 +241,25 @@ Die dritte Zeile hat einen blinden Punkt der Probe gezeigt: die Nachfrage im Bro
   26.18.0 · `haupt.cjs` lief in Electron 45.4.1 unter Linux mit allen vier Ausgaben: eigene Adresse `app://paket/`, Beispiele,
   pdf.js und Texterkennung aus dem Paket, eigener Datenordner je Ausgabe, kein zweites Fenster.
 
+## 6a · Erster echter Bau (26.11.2026, Mixarium)
+
+Klaus 25.11.: „die APK und Windows-Version herstellen und hier in der Sitzung zum Download anbieten“. In der Sitzung selbst ging es
+nicht: das Netz sperrt `dl.google.com` (Android-SDK), `downloads.gradle.org` und die Electron-Downloads. Gebaut wurde deshalb mit
+`.github/workflows/paket-bauen.yml` (#313) auf GitHub, Ausgabe **`mixarium-voll`**, Stand `0bda1c2` (PWA 10.0.0-vor36, Kern 0.31.0):
+
+| Ziel | Lauf | Ergebnis |
+|---|---|---|
+| Android | 45725414032 | ✅ `app-debug.apk`, 18,4 MB, Name „App Mein Mixarium (voll)“, Kennung `de.family_projekt.mixarium.voll`, `paket.json` nennt 10.0.0-vor36 · Kern 0.31.0; Bau in rund 1,5 min |
+| Windows | 45725417708 | ✅ `mixarium-voll-10.0.0-vor36-windows-setup.exe`, 120 MB, NSIS, ohne Signatur |
+
+Zeichen: das Wasserfarben-Zeichen (Klaus: Pro-Fassung), `paket/zeichen/mixarium-voll/`. Die Artefakte liegen 14 Tage am Lauf. Für den
+Download in eine Sitzung brauchte die Umgebung „Standard“ zwei Speicher-Adressen von GitHub (`productionresultssa31` und `sa12`
+`.blob.core.windows.net`; Klaus hat sie freigegeben).
+
+⚠ Nicht gemessen: am Gerät und unter Windows installiert und gestartet. Die APK ist eine **Debug-APK** (Schlüssel des Baurechners,
+je Lauf ein anderer): eine neue lässt sich nicht über diese installieren, vorher in der App eine Sicherung speichern. Release-Schlüssel und
+Update-Weg wie in Private Akte stehen noch aus. Die Store-Ausgabe `mixarium-store` ist nicht gebaut (Probe grün, 67).
+
 ## 7 · Nicht gemessen
 
 - **Kein Bau.** Keine APK, kein Gradle-Lauf, kein Installer; `electron-builder` ist nie gelaufen (nur die Schlüssel von
