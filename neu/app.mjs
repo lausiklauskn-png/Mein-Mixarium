@@ -52,7 +52,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor43';
+export const FASSUNG = '10.0.0-vor44';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -177,7 +177,8 @@ const huelleUpdates = () => { const c = window.Capacitor; return (c && c.Plugins
 const proUpd = { neu: '', ruhe: 0, laeuft: false };
 async function proUpdatePruefen(laut) {
   const u = huelleUpdates();
-  if (!u) { if (laut) melde(L('Updates sind in dieser Fassung noch nicht eingerichtet.', 'Updates are not set up in this version yet.')); return; }
+  /* Ohne Update-Baustein (Stand 26.11.2026): eine neue Fassung ist eine neue App-Datei; die Seite mit der neuesten öffnet sich. */
+  if (!u) { if (laut) { melde(L('Neue Fassungen kommen als neue App-Datei – die Seite dazu öffnet sich.', 'New versions come as a new app file – opening the page.')); setTimeout(() => { location.href = 'https://github.com/lausiklauskn-png/Mein-Mixarium/releases/latest'; }, 1200); } return; }
   if (proUpd.laeuft || (!laut && Date.now() < proUpd.ruhe)) return; proUpd.laeuft = true;
   try { const e = await u.pruefen(); proUpd.ruhe = Date.now() + 15 * 60000; proUpd.neu = (e && e.neu) || ''; zeichne(); if (laut && !proUpd.neu) melde(fuelle(L('{0} ist aktuell.', '{0} is up to date.'), FASSUNG)); }
   catch (f) { proUpd.ruhe = Date.now() + 2 * 60000; if (laut) melde(L('Update-Server gerade nicht erreichbar.', 'Update server not reachable right now.')); }

@@ -18,7 +18,7 @@ export default {
   'Suchen': 'Поиск',
   'Sinn-Suche: auch nach Bedeutung suchen': 'Поиск по смыслу: искать и по значению',
   'Sinn-Suche': 'Поиск по смыслу',
-  'Updates sind in dieser Fassung noch nicht eingerichtet.': 'Обновления в этой версии ещё не настроены.',
+  'Neue Fassungen kommen als neue App-Datei – die Seite dazu öffnet sich.': 'Новые версии приходят в виде нового файла приложения — открывается страница.',
   '{0} ist aktuell.': '{0} — актуальная версия.',
   'Update-Server gerade nicht erreichbar.': 'Сервер обновлений сейчас недоступен.',
   'Als App installieren': 'Установить как приложение',
