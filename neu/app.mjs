@@ -52,7 +52,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor44';
+export const FASSUNG = '10.0.0-vor45';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -707,20 +707,39 @@ function neuBlatt(tab = '') {
 /* ── Bekannte Drinks entdecken (getraenke/entdecken.mjs, TheCocktailDB). Netz nur auf Knopfdruck: hinaus geht der Suchtext, sonst nichts.
    Eine Zeile zum Suchen; die Treffer als Bilder. Ein Tipp holt das Getränk ins Formular (prüfen, dann speichern); „schon da“ trägt einen Haken. ── */
 function entdeckenInhalt() {
-  const e = Z.entd || (Z.entd = { frage: '', treffer: null });
-  const feld = `<form id="entdform" class="webzeile">${I('search')}<input id="entd-frage" name="q" value="${esc(e.frage)}" placeholder="Margarita, Mojito …" aria-label="${L('Name eines bekannten Drinks', 'Name of a well-known drink')}" autocomplete="off" enterkeyhint="search"><button type="button" class="feldknopf" data-a="entd-zufall" aria-label="${L('Zufällige Auswahl', 'Random selection')}" title="${L('Zufällige Auswahl', 'Random selection')}">${I('sparkle')}</button><button type="button" class="feldknopf akz" data-a="entd-suchen" aria-label="${L('Suchen', 'Search')}" title="${esc(DB.wasGehtHinaus(sprache()))}">${I('right')}</button></form>`;
-  if (!e.treffer) return feld;
-  const liste = ohneAlk() ? e.treffer.filter(DB.sicherOhneAlkohol) : e.treffer;   /* „Ohne Alkohol“ gilt auch hier, und zwar beim Zeigen: ein Umschalten wirkt sofort auf die schon geholten Treffer */
-  if (!liste.length) return feld + `<p class="scan-was" id="entd-leer">${L('Nichts gefunden', 'Nothing found')}</p>`;
-  return feld + `<div class="entd-gitter" id="entd-treffer">${liste.map((d) => { const k = DB.kurz(d, { sprache: sprache(), kategorien: scanKats() }), da = !!DB.schonDa(A.getraenke, d);
+  /* Klaus 26.11.2026 (am alten Mixarium gezeigt): stöbern statt nur suchen – Gruppen nach dem, was die Datenbank anbietet,
+     „Neue Vorschläge“ als großer Knopf, sechs Karten in voller Breite. Der Name bleibt als Suche daneben. Ein Tipp auf das
+     Blatt „Entdecken“ holt die ersten sechs Vorschläge von selbst (das Öffnen ist der Knopfdruck; hinaus geht nur die Gruppe). */
+  const e = Z.entd || (Z.entd = { frage: '', treffer: null, gruppe: 'alle' });
+  if (!e.treffer && !e.versucht) { e.versucht = true; setTimeout(() => entdeckenHolen('vorschlag'), 0); }
+  const gruppen = `<div class="entd-gruppen" role="group" aria-label="${L('Was möchtest du entdecken?', 'What would you like to discover?')}">${DB.GRUPPEN.map((g) => `<button class="chip" data-a="entd-gruppe" data-g="${g.id}" aria-pressed="${e.gruppe === g.id}">${esc(L(g.de, g.en))}</button>`).join('')}</div>`;
+  const neuKn = `<button class="knopf voll entd-neu" data-a="entd-zufall">${I('sparkle')} ${L('Neue Vorschläge', 'New suggestions')}</button>`;
+  const feld = `<form id="entdform" class="webzeile">${I('search')}<input id="entd-frage" name="q" value="${esc(e.frage)}" placeholder="${L('Name suchen: Margarita, Mojito …', 'Search a name: Margarita, Mojito …')}" aria-label="${L('Name eines bekannten Drinks', 'Name of a well-known drink')}" autocomplete="off" enterkeyhint="search"><button type="button" class="feldknopf akz" data-a="entd-suchen" aria-label="${L('Suchen', 'Search')}" title="${esc(DB.wasGehtHinaus(sprache()))}">${I('right')}</button></form>`;
+  const kopf = gruppen + neuKn + feld;
+  if (!e.treffer) return kopf;
+  const liste = ohneAlk() ? e.treffer.filter((d) => DB.sicherOhneAlkohol(d) || (!DB.istVoll(d) && !!e.alkfrei && e.alkfrei.has(DB.dbNummer(d)))) : e.treffer;   /* „Ohne Alkohol“ gilt auch hier, und zwar beim Zeigen: ein Umschalten wirkt sofort auf die schon geholten Treffer */
+  if (!liste.length) return kopf + `<p class="scan-was" id="entd-leer">${L('Nichts gefunden', 'Nothing found')}</p>`;
+  return kopf + `<div class="entd-gitter" id="entd-treffer">${liste.map((d) => { const k = DB.kurz(d, { sprache: sprache(), kategorien: scanKats() }), da = !!DB.schonDa(A.getraenke, d);
     return `<button class="entd-k" data-a="entd-nimm" data-id="${esc(k.id)}" ${da ? `data-da title="${L('Schon in deiner Sammlung', 'Already in your collection')}"` : ''}><img src="${esc(k.bild)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span>${esc(k.name)}</span>${da ? `<i>${I('check')}</i>` : ''}</button>`; }).join('')}</div>`;
 }
-async function entdeckenHolen(zufall) {
+/* art: 'suche' (Name) · 'vorschlag' (sechs aus der gewählten Gruppe, bei „Alle“ sechs zufällige). */
+async function entdeckenHolen(art) {
   const e = Z.entd; if (!e) return; const f = $('#entd-frage'); if (f) e.frage = f.value.trim();
-  if (!zufall && !e.frage) return melde(L('Bitte einen Namen eintragen.', 'Please enter a name.'));
-  try { const t = await W.mit(L('thecocktaildb.com wird gefragt …', 'Asking thecocktaildb.com …'), () => (zufall ? DB.zufall({ sprache: sprache() }) : DB.suche(e.frage, { sprache: sprache() })));
-    e.treffer = t; } catch (x) { melde(x.message); }
+  if (art === 'suche' && !e.frage) return melde(L('Bitte einen Namen eintragen.', 'Please enter a name.'));
+  const o = { sprache: sprache() }, nr = (e.nr = (e.nr || 0) + 1);   /* zwei schnelle Tipps: nur die zuletzt angeforderte Antwort zählt */
+  try { const t = await W.mit(L('thecocktaildb.com wird gefragt …', 'Asking thecocktaildb.com …'), async () => {
+      if (art === 'suche') return DB.suche(e.frage, o);
+      /* Bei „Ohne Alkohol“ tragen die gekürzten Treffer keine Angabe: einmal die Liste der alkoholfreien holen und nur
+         daraus wählen, damit trotzdem sechs dastehen. */
+      if (ohneAlk() && !e.alkfrei) e.alkfrei = await DB.alkfreiNummern(o);
+      if (e.gruppe === 'alle') return ohneAlk() ? DB.nachGruppe('alkfrei', o) : DB.zufall(o);
+      return DB.nachGruppe(e.gruppe, { ...o, nur: ohneAlk() ? e.alkfrei : null });
+    });
+    if (nr !== e.nr) return; e.treffer = t; } catch (x) { if (nr !== e.nr) return; melde(x.message); }
+  /* Wer schon tippt, während die Vorschläge laden, verliert beim Neuzeichnen weder den Text noch den Cursor. */
+  const vorher = $('#entd-frage'), tippt = !!vorher && document.activeElement === vorher, pos = vorher ? vorher.selectionStart : null; if (vorher) e.frage = vorher.value;
   if (Z.fenster && Z.fenster.neuTab === 'entdecken') neuBlatt('entdecken');
+  const nachher = $('#entd-frage'); if (tippt && nachher) { nachher.focus(); if (pos != null) try { nachher.setSelectionRange(pos, pos); } catch (x) { /* nicht jedes Feld kann das */ } }
 }
 async function entdeckenNimm(id) {
   const e = Z.entd; if (!e) return; let d = (e.treffer || []).find((x) => String(DB.dbNummer(x)) === String(id)); if (!d) return;
@@ -1317,7 +1336,8 @@ const TUN = {
   'neu-tab'(b) { diktatAus(); neuBlatt(b.dataset.t); return false; },
   'neu-form'() { editor(null); return false; },
   'neu-labor'() { Z.fenster = null; geh('labor'); return false; },
-  'entd-suchen'() { entdeckenHolen(false); return false; }, 'entd-zufall'() { entdeckenHolen(true); return false; }, 'entd-nimm'(b) { entdeckenNimm(b.dataset.id); return false; },
+  'entd-suchen'() { entdeckenHolen('suche'); return false; }, 'entd-zufall'() { entdeckenHolen('vorschlag'); return false; }, 'entd-nimm'(b) { entdeckenNimm(b.dataset.id); return false; },
+  'entd-gruppe'(b) { if (Z.entd) { Z.entd.gruppe = b.dataset.g; entdeckenHolen('vorschlag'); } return false; },
   'web-einfuegen'() { const w = Z.web; if (!w) return false; webLesen(); w.stand = 'einfuegen'; neuBlatt('web'); const t = $('#web-text'); if (t) t.focus(); return false; },
   'scan-raus'() { if (Z.scan) { Z.scan.entschieden = 'raus'; neuBlatt('scan'); } return false; },
   'scan-rein'() { const sc = Z.scan; if (!sc) return false; W.mit(L('Datei wird vorbereitet …', 'Preparing the file …'), () => vorbereiten(sc.dateien[0], { sprache: sprache(), zudecken: false })).then((v) => { sc.v = v; sc.entschieden = 'rein'; }, (f) => melde(f.message)).then(() => neuBlatt('scan')); return false; },
@@ -1508,7 +1528,7 @@ document.addEventListener('submit', (ev) => {
   ev.preventDefault();
   if (ev.target.id === 'ed') { editorSpeichern(ev.target).then(() => {}, (e) => melde(String(e && e.message || e))); return; }
   if (ev.target.id === 'webform') return webHolen();
-  if (ev.target.id === 'entdform') return entdeckenHolen(false);
+  if (ev.target.id === 'entdform') return entdeckenHolen('suche');
   if (ev.target.id === 'rechtform') { const f = Z.fenster, r = f && getr(f.uid), wahl = new FormData(ev.target).getAll('n').map(Number); if (!r || !f.recht) return;
     getraenkSetzen(rechtschreibungAnwenden(r, f.recht.aenderungen.filter((_, i) => wahl.includes(i)))); Z.fenster = null; return melde(wahl.length === 1 ? L('1 übernommen', '1 applied') : fuelle(L('{0} übernommen', '{0} applied'), wahl.length)); }
   if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
