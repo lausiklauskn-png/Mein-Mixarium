@@ -1,7 +1,7 @@
 # Gegenprobe zu tests/smoke_neu_ansicht.mjs (R13 „?“-Blasen, R35 Pfeil-Leiste) und tests/smoke_neu_pwa.mjs (R32 Vollbild, R34 Symbol-Knöpfe):
 # je Fall eine Sabotage in einer Wegwerf-Kopie; die rote Zeile muss den Namen der Zusicherung tragen.  python3 -u tests/gegenprobe_neu_ansicht.py (NUR_FALL · NUR_ANKER=1)
 import subprocess, shutil, os, tempfile, sys
-APP='neu/app.mjs'; A='tests/smoke_neu_ansicht.mjs'; P='tests/smoke_neu_pwa.mjs'
+APP='neu/app.mjs'; APP_CSS='neu/app.css'; A='tests/smoke_neu_ansicht.mjs'; P='tests/smoke_neu_pwa.mjs'
 F=[('blase-fest', "fragLegen(e.target); } }, true);", "} }, true);", APP, A, 'jede Blase'),
    ('blase-rollt-nicht', "addEventListener('scroll', () => document.querySelectorAll('details.frag[open]').forEach(fragLegen), true); ", "", APP, A, 'wandert beim Rollen'),
    ('pfeil-bewegt-nicht', "    E.fl = f; einstSichern(); },", "    einstSichern(); },", APP, A, 'nach oben'),
@@ -18,6 +18,9 @@ F=[('blase-fest', "fragLegen(e.target); } }, true);", "} }, true);", APP, A, 'je
    ('blatt-ohne-tasten', "if (ev.key === 'ArrowRight') blaettern(1); if (ev.key === 'ArrowLeft') blaettern(-1); }", "}", APP, A, 'Pfeil und Taste'),
    ('blatt-ohne-wischen', "Math.abs(dx) > 2 * Math.abs(dy)) blaettern(dx < 0 ? 1 : -1); });", "Math.abs(dx) > 2 * Math.abs(dy)) {} });", APP, A, 'Wischen nach links'),
    ('blatt-immer', "const blaetternAn = () => Z.view === 'getraenk' && (Z.fokus || Z.bildVoll)", "const blaetternAn = () => Z.view === 'getraenk'", APP, A, 'ohne Vollbild'),
+   ('bild-hart', ".mx .detail-kopf .held.ganz>:is(.foto,svg.platzbild){", ".mx .detail-kopf .held.ganz>:is(.nichts){", APP_CSS, A, 'laufen weich aus'),
+   ('bild-briefmarke', ".mx .detail-kopf{border-bottom:0}", ".mx .detail-kopf{border-bottom:1px solid #888}", APP_CSS, A, 'keine Briefmarke'),
+   ('text-neben-bild', ".mx .detail-kopf .seite{position:relative;z-index:1;margin-left:clamp(-90px,-6vw,-40px)}", ".mx .detail-kopf .seite{position:relative;z-index:1}", APP_CSS, A, 'im auslaufenden Bild'),
    ('blatt-handy-pfeile', "if (!blaetternAn() || !breit()) return '';", "if (!blaetternAn()) return '';", APP, A, 'am Handy keine Pfeile')]
 nur=os.environ.get('NUR_FALL'); nur=nur.split(',') if nur else None; gefangen=0; durch=0; anders=0; tot=0
 if os.environ.get('NUR_ANKER'):
