@@ -3,6 +3,8 @@
 import subprocess, shutil, os, tempfile
 F=[('kopfzeile',"'anthropic-dangerous-direct-browser-access': 'true' ","",'neu/app.mjs'),
    ('ueberarbeitung',"    if (f.ueberarbeiten) labUeberarbeiten(r); return zeichne(); }","    return zeichne(); }",'neu/app.mjs'),
+   ('ohne-bild',"content: bild ? [{ type: 'image'","content: false ? [{ type: 'image'",'neu/app.mjs'),
+   ('ohne-hinweis',"${h ? `Der Nutzer sagt","${false ? `Der Nutzer sagt",'getraenke/labor.mjs'),
    ('modell',"export const LAB_MODELL = 'claude-haiku-5-5';","export const LAB_MODELL = 'claude-opus-5-5';",'getraenke/labor.mjs')]
 for name,a,b,f in F:
     W=tempfile.mkdtemp(prefix='mx-gl-')

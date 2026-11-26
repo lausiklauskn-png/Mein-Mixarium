@@ -172,6 +172,9 @@ if (will(4)) {
   netz.bildWarte = 700; await p.click('[data-a=sammel-start]'); await p.waitForSelector('#sammel-stand').catch(() => {});
   await bis(p, () => /1 von 3/.test((document.querySelector('#sammel-stand') || {}).textContent || ''), null, 5000);
   pruefe('während des Laufs steht da, welches Bild gerade entsteht', /1 von 3 · Ingwer-Limonade/.test(await p.locator('#sammel-stand').innerText().catch(() => '')));
+  { await p.waitForTimeout(500); const m = await p.evaluate(() => ({ breite: parseFloat((document.querySelector('#sammel-balken') || {}).style?.width) || 0, noch: /1 von 3/.test((document.querySelector('#sammel-stand') || {}).textContent || ''), pille: !!document.querySelector('#bild-arbeit.an') }));
+    pruefe('Klaus 26.11.: der Balken im Fenster bewegt sich schon während des ersten Bildes', m.breite > 0 && m.noch, JSON.stringify(m));
+    pruefe('… und der Fortschritt steht nur einmal da (keine Pille oben)', !m.pille, JSON.stringify(m)); }
   let t = await toastMit(p, /\+2 Bilder/, 15000);
   pruefe('zwei Bilder sind entstanden; das Getränk mit dem Befehl wurde übersprungen und ging nicht hinaus', /\+2 Bilder · 1 mit Befehl übersprungen/.test(t) && netz.bild.length === 2 && netz.bild.every((x) => !/Ignore/i.test(x.prompt)), t);
   pruefe('das ausgeblendete Getränk mit Alkohol ging nicht hinaus; die Aufträge sind Getränke-Aufträge', netz.bild.every((x) => !/Rum/.test(x.prompt) && /^Drink photography/.test(x.prompt)), netz.bild.map((x) => x.prompt.slice(0, 50)).join(' | '));

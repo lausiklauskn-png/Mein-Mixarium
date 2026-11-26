@@ -119,17 +119,21 @@ Schreibe alle Texte auf ${SPRACHE[sprache] || 'Deutsch'}. Mengen mit Einheit (z.
 Antworte NUR als gültiges JSON-Objekt, kein Text davor/danach:
 ${SCHEMA}`;
 }
-export function auftragUeberarbeiten(r, { kategorie, feedback = '', sprache = 'de' }) {
+/* hinweis: was der Nutzer selbst dazu sagt (Klaus 26.11.: „das Getränk ist nicht grün, prüft das bitte nochmal nach“) — er geht dem
+   gesammelten Feedback vor. mitBild: das Bild des Getränks liegt der Anfrage bei; dann gleicht die KI Name, Beschreibung und Zutaten
+   mit dem ab, was zu sehen ist und was die Zutaten wirklich ergeben. */
+export function auftragUeberarbeiten(r, { kategorie, feedback = '', hinweis = '', mitBild = false, sprache = 'de' }) {
   const zut = (r.ings || []).map((i) => [i.amt, i.unit, i.name].filter(Boolean).join(' ')).join(', ');
   const schr = (r.steps || []).map((s, i) => (i + 1) + '. ' + (s.txt || s)).join(' ');
   const fb = String(feedback || '').trim() || (r.labFeedback || []).slice(-3).join('; ') || 'Kein spezifisches Feedback';
+  const h = String(hinweis || '').trim();
   return `Du bist Mixologe. Verbessere dieses ${kategorie}-Rezept basierend auf dem Nutzer-Feedback.
 Original: "${r.name}"
 Zutaten: ${zut}
 Zubereitung: ${schr}
 Bewertungsscore: ${(r.labScore || 0).toFixed(1)}/5
 Feedback: ${fb}
-Schreibe alle Texte auf ${SPRACHE[sprache] || 'Deutsch'}.
+${h ? `Der Nutzer sagt ausdrücklich: "${h}". Nimm das ernst, prüfe es nach und richte die Überarbeitung danach.\n` : ''}${mitBild ? `Das Bild des Getränks liegt bei. Gleiche Name, Beschreibung und Zutaten mit dem ab, was zu sehen ist und was die Zutaten wirklich ergeben (Farbe, Schichten, Glas, Garnitur). Ein Name oder eine Beschreibung darf nichts behaupten, was das Getränk nicht ist – heißt es „Grüner …“, muss es auch grün sein; sonst ändere Name oder Zutaten.\n` : ''}Schreibe alle Texte auf ${SPRACHE[sprache] || 'Deutsch'}.
 Antworte NUR als JSON:
 ${SCHEMA}`;
 }

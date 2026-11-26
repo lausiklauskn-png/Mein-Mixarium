@@ -61,11 +61,15 @@ export function zusatz(app) {
     const stand = (t, a) => { zeile = t; anteil = a; f.html = bau(); const el = document.getElementById('sammel-stand'), b = document.getElementById('sammel-balken'); if (el) el.textContent = t; if (b) b.style.width = a + '%'; };
     TUN['sammel-stopp'] = () => { stopp = true; stand(L('Hört nach diesem Bild auf …', 'Stops after this picture …'), anteil); return false; };
     app.warte(f, () => { stopp = true; });   /* Fenster zu = aufhören nach dem laufenden Bild */
+    /* Klaus 26.11.: EIN Fortschritt, und er bewegt sich. Der Balken im Fenster wandert während jedes Bildes geschätzt weiter (ein Bild dauert
+       rund 20 s) und springt vor, sobald es da ist; die kleine Pille oben bleibt bei diesem Lauf weg (sonst stand der Fortschritt doppelt da). */
+    let lauf = null;
+    const uhr = setInterval(() => { if (!lauf || stopp) return; const p = Math.min(0.95, 1 - Math.exp(-(Date.now() - lauf.t0) / 9000)); stand(zeile, Math.min(99, Math.round(((lauf.i + p) / lauf.alle) * 100))); }, 400);
     Z.fenster = f; zeichne();
     await app.tresorAuto(L('vor den KI-Bildern', 'before the AI pictures'));
     const e = await sammelBilder(app.sichtbare(), { schluessel: SK.openai, pruefe: kiAnweisungen, art: 'getraenk', abbruch: () => stopp,
-      fortschritt: (i, alle, r) => { if (!stopp) stand(fuelle(L('{0} von {1} · {2}', '{0} of {1} · {2}'), i + 1, alle, r.name), Math.round((i / alle) * 100)); app.bildArbeit.start(fuelle(L('KI-Bild {0} von {1}', 'AI picture {0} of {1}'), i + 1, alle), 22); },
-      je: async (r, roh) => { app.bildAn(r.uid, await app.bildAusDatei(await (await fetch(roh)).blob())); app.bildArbeit.fertig(); } }).finally(() => setTimeout(() => app.bildArbeit.weg(), 1000));   /* Klaus 26.11.: kreisende Punkte und geschätzte Prozent, auch wenn man die Seite wechselt */
+      fortschritt: (i, alle, r) => { lauf = { i, alle, t0: Date.now() }; if (!stopp) stand(fuelle(L('{0} von {1} · {2}', '{0} of {1} · {2}'), i + 1, alle, r.name), Math.round((i / alle) * 100)); },
+      je: async (r, roh) => { app.bildAn(r.uid, await app.bildAusDatei(await (await fetch(roh)).blob())); if (lauf) lauf = { ...lauf, i: lauf.i + 1, t0: Date.now() }; } }).finally(() => clearInterval(uhr));
     if (Z.fenster === f) Z.fenster = null;
     const teile = [e.fertig === 1 ? L('+1 Bild', '+1 picture') : fuelle(L('+{0} Bilder', '+{0} pictures'), e.fertig)];
     if (e.uebersprungen.length) teile.push(fuelle(L('{0} mit Befehl übersprungen', '{0} with instruction skipped'), e.uebersprungen.length));
