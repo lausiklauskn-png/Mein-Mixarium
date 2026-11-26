@@ -1056,8 +1056,8 @@ h1,h2,h3,p{margin:0}
 .mx .detail-kopf .held.ganz::before{display:none}
 .mx .detail-kopf .held.ganz .foto{inset:0;margin:auto;width:auto;height:100%;max-width:100%;object-fit:contain}   /* so groß wie das Bild selbst: ganz zu sehen, und die weichen Ränder liegen auf seinen Kanten */
 .mx .detail-kopf .held.ganz>:is(.foto,svg.platzbild){
- -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 72%,transparent),linear-gradient(180deg,transparent,#000 6%,#000 74%,transparent);-webkit-mask-composite:source-in;
- mask-image:linear-gradient(90deg,transparent,#000 6%,#000 72%,transparent),linear-gradient(180deg,transparent,#000 6%,#000 74%,transparent);mask-composite:intersect}
+ -webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 80%,transparent),linear-gradient(180deg,transparent,#000 3%,#000 82%,transparent);-webkit-mask-composite:source-in;
+ mask-image:linear-gradient(90deg,transparent,#000 4%,#000 80%,transparent),linear-gradient(180deg,transparent,#000 3%,#000 82%,transparent);mask-composite:intersect}
 .mx .detail-kopf .seite{position:relative;z-index:1;margin-left:clamp(-90px,-6vw,-40px)}   /* der Text beginnt schon im auslaufenden Bild */
 .mx .detail-kopf .seite :is(h2,.unter){text-shadow:0 0 14px var(--bg),0 0 4px var(--bg)}
 .mx .detail-kopf .held.ganz>:is(.blatt-pfeil.rechts,.held-voll){right:calc(clamp(40px,6vw,90px) + 12px)}   /* nicht unter dem Text, der ins Bild hineinragt */
