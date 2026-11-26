@@ -50,10 +50,10 @@ try {
       ok(m.length > 0 && !schlecht.length, `${z}: jede Blase (${m.length}) steht ganz im Fenster`, JSON.stringify(schlecht.slice(0, 3)));
     }
     { await geh(p, 'mehr'); await p.waitForTimeout(300); const s = p.locator('details.frag summary:visible').first(); await s.scrollIntoViewIfNeeded(); await s.click(); await p.waitForTimeout(80);
-      const vor = await p.evaluate(() => { const d = document.querySelector('details.frag[open]'); return d && [d.querySelector('summary').getBoundingClientRect().bottom, d.querySelector('p').getBoundingClientRect().top]; });
+      const vor = await p.evaluate(() => { const d = document.querySelector('details.frag[open]'); return d && (() => { const q = d.querySelector('summary').getBoundingClientRect(), r = d.querySelector('p').getBoundingClientRect(); return Math.round(Math.min(Math.abs(r.top - q.bottom), Math.abs(q.top - r.bottom))); })(); });
       await p.mouse.wheel(0, 60); await p.waitForTimeout(250);
-      const nach = await p.evaluate(() => { const d = document.querySelector('details.frag[open]'); return d && [d.querySelector('summary').getBoundingClientRect().bottom, d.querySelector('p').getBoundingClientRect().top]; });
-      ok(vor && nach && Math.abs((nach[1] - nach[0]) - (vor[1] - vor[0])) <= 2, 'die offene Blase wandert beim Rollen mit dem „?“', JSON.stringify([vor, nach])); }
+      const nach = await p.evaluate(() => { const d = document.querySelector('details.frag[open]'); return d && (() => { const q = d.querySelector('summary').getBoundingClientRect(), r = d.querySelector('p').getBoundingClientRect(); return Math.round(Math.min(Math.abs(r.top - q.bottom), Math.abs(q.top - r.bottom))); })(); });
+      ok(vor != null && nach != null && vor <= 8 && nach <= 8, 'die offene Blase wandert beim Rollen mit dem „?“ (bleibt direkt darüber oder darunter)', JSON.stringify([vor, nach])); }
     await c.close();
   }
 
@@ -97,6 +97,55 @@ try {
     const g = await p.evaluate(() => window.__geteilt);
     ok(g && /^mein-mixarium-\d{4}-\d\d-\d\d\.json$/.test(g.name) && g.typ === 'application/json' && JSON.parse(g.inhalt).recipes.length === 1, 'geteilt wird die Sicherung als Datei (mein-mixarium-Datum.json) mit dem Getränk', JSON.stringify(g && g.name));
     await c.close(); }
+
+  console.log('5 · P2 „Mein Mixarium Pro“: Pro-Zeile nur in der Hülle, rotes Schild „Update“ nur bei neuem Update');
+  { const { p, c } = await seite([D(1, 'Limo')], 390);
+    ok(await p.locator('.name .pro-zeile').count() === 0 && await p.locator('.name .ver').count() === 1, 'PWA: keine Pro-Zeile, die Versionsnummer wie bisher');
+    await c.close(); }
+  for (const [neuDa, name] of [['', 'ohne Update'], ['10.0.1', 'mit Update']]) {
+    const c = await b.newContext({ viewport: { width: 390, height: 820 }, locale: 'de-DE', serviceWorkers: 'block' }), p = await c.newPage();
+    await c.addInitScript((n) => { window.__inst = 0; window.Capacitor = { isNativePlatform: () => true, Plugins: { DoUpdates: { pruefen: async () => ({ neu: n }), installieren: async () => { window.__inst++; return {}; } } } }; }, neuDa);
+    await p.route(/^https?:\/\/(?!localhost)/, (r) => r.abort()); p.on('pageerror', (e) => fehler.push(e.message));
+    await p.goto(ORT + '?leer'); await p.waitForSelector('.mx .titel'); await p.waitForTimeout(4600);
+    const z = await p.evaluate(() => { const n = document.querySelector('.name'), q = n && n.querySelector('.pro-zeile'); return { zeile: q ? q.innerText.replace(/\s+/g, ' ').trim() : '', zweite: !!q && q.getBoundingClientRect().top > n.firstChild.parentElement.getBoundingClientRect().top + 8, schild: !!document.querySelector('.upd-schild'), farbe: document.querySelector('.upd-schild') ? getComputedStyle(document.querySelector('.upd-schild')).backgroundColor : '' }; });
+    ok(/^Pro 10\.0\.0-vor\d+/.test(z.zeile) && z.zweite, `Hülle (${name}): Zeile 2 „Pro“ + Versionsnummer`, JSON.stringify(z));
+    ok(neuDa ? z.schild && z.farbe === 'rgb(198, 40, 40)' && /Update$/.test(z.zeile) : !z.schild, neuDa ? 'Hülle mit Update: rotes Schild „Update“ hinter der Versionsnummer' : 'Hülle ohne Update: kein Schild', JSON.stringify(z));
+    if (neuDa) { await p.click('.upd-schild'); await p.waitForTimeout(300); ok(await p.evaluate(() => window.__inst) === 1, 'ein Tipp aufs Schild startet die Installation über die Hülle'); }
+    await c.close();
+  }
+
+  console.log('6 · Bild entsteht: kreisende Punkte und geschätzte Prozent, auch nach einem Seitenwechsel (Klaus 26.11.)');
+  { const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const { p, c } = await seite([D(1, 'Limo')], 390);
+    await p.evaluate(() => new Promise((ja) => { const a = indexedDB.open('KuechenKern-mixarium'); a.onsuccess = () => { const t = a.result.transaction('zustand', 'readwrite'); t.objectStore('zustand').put('sk-probe-bild-0000000000000000', 'schluessel-openai'); t.oncomplete = () => { a.result.close(); ja(); }; }; }));
+    await p.route('https://api.openai.com/**', (r) => { if (r.request().method() === 'GET') return r.fulfill({ contentType: 'application/json', body: '{"data":[]}' }); setTimeout(() => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ data: [{ b64_json: PNG }] }) }).catch(() => {}), 3000); });
+    await p.reload(); await p.waitForSelector('.mx .titel');
+    await p.locator('.karte').first().click(); await p.waitForSelector('.held');
+    if (!(await p.locator('[data-a=bildblatt]').count())) await p.click('[data-a=bildwerk]');
+    await p.click('[data-a=bildblatt]'); await p.click('.fenster [data-a=ki-bild]');
+    await p.waitForTimeout(1200);
+    const a = await p.evaluate(() => { const e = document.getElementById('bild-arbeit'); return e && { an: e.classList.contains('an'), punkte: e.querySelectorAll('.ba-punkte i').length, zahl: parseInt(e.querySelector('.ba-zahl').textContent, 10), text: e.querySelector('.ba-text').textContent, oben: Math.round(e.getBoundingClientRect().top) }; });
+    ok(a && a.an && a.punkte === 3 && a.zahl > 0 && a.zahl < 100 && /KI-Bild/.test(a.text) && a.oben >= 0, 'während das Bild entsteht: Pille oben mit drei Punkten und geschätzter Prozentzahl unter 100', JSON.stringify(a));
+    await geh(p, 'mehr'); await p.waitForTimeout(800);
+    const b2 = await p.evaluate(() => { const e = document.getElementById('bild-arbeit'); return e && { an: e.classList.contains('an'), zahl: parseInt(e.querySelector('.ba-zahl').textContent, 10) }; });
+    ok(b2 && b2.an && b2.zahl > a.zahl, 'nach einem Wechsel in die Einstellungen steht sie weiter da, die Zahl ist gestiegen', JSON.stringify([a && a.zahl, b2]));
+    const ende = await p.waitForFunction(() => { const e = document.getElementById('bild-arbeit'); return e && e.classList.contains('fertig') && e.querySelector('.ba-zahl').textContent; }, null, { timeout: 8000 }).then((h) => h.jsonValue(), () => '');
+    ok(ende === '100 %', 'ist das Bild da, springt die Zahl auf 100 %', ende);
+    await p.waitForTimeout(1200);
+    ok(await p.evaluate(() => !document.getElementById('bild-arbeit').classList.contains('an')), 'danach verschwindet die Pille');
+    await c.close(); }
+
+  console.log('7 · Zahlen an der Navi-Leiste statt „8 Getränke“ im Kopf (Klaus 26.11.)');
+  for (const breite of [390, 1280]) {
+    const { p, c } = await seite([D(1, 'Limo'), D(2, 'Tee'), D(3, 'Punsch', { alcohol: true })], breite);
+    await p.evaluate(() => new Promise((ja) => { const a = indexedDB.open('KuechenKern-mixarium'); a.onsuccess = () => { const t = a.result.transaction('zustand', 'readwrite'), l = t.objectStore('zustand'), q = l.get('alles'); q.onsuccess = () => { const z = q.result; z.einkauf = [{ id: 1, name: 'Zitronen', ok: false, fuer: [] }, { id: 2, name: 'Minze', ok: false, fuer: [] }, { id: 3, name: 'Eis', ok: true, fuer: [] }]; z.anlaesse = [{ id: 1, titel: 'Sommerfest', posten: [] }]; l.put(z, 'alles'); }; t.oncomplete = () => { a.result.close(); ja(); }; }; }));
+    await p.reload(); await p.waitForSelector('.mx .titel');
+    ok(!/Getränke/.test(await p.locator('.kopf .name').innerText()), `${breite} px: im Kopf steht keine Zahl der Getränke mehr`, await p.locator('.kopf .name').innerText());
+    if (breite < 600) { await p.click('.fl-griff'); await p.waitForTimeout(200); }
+    const z = await p.evaluate(() => Object.fromEntries(['start', 'karte', 'einkauf', 'labor', 'mehr'].map((v) => { const b = document.querySelector(`.nav [data-go=${v}], .fl-knoepfe [data-go=${v}]`), n = b && b.querySelector('.nzahl'); return [v, n && getComputedStyle(n).display !== 'none' ? n.textContent : '']; })));
+    ok(z.start === '3' && z.karte === '1' && z.einkauf === '2' && z.labor === '' && z.mehr === '', `${breite} px: Getränke 3 · Karte 1 · Einkauf 2 (nur offene) · Labor und Einstellungen ohne Zahl`, JSON.stringify(z));
+    await c.close();
+  }
   ok(!fehler.length, 'keine Fehler im Browser', fehler.slice(0, 3).join(' | '));
 } catch (f) { rot++; console.log('  ✗ ROT Absturz — ' + String(f && f.message || f).split('\n')[0]); }
 await b.close(); server.close();

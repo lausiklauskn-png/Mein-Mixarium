@@ -1,5 +1,5 @@
 {
- "hinweis": "Einstellungen des Paket-Werkzeugs für Mein Mixarium. Was in ein Paket kommt, entscheidet ausgaben/<name>/ausgabe.json (Küchen-Kern); hier steht nur, was die Hüllen dazu brauchen. App-Kennung: Vorschlag (bestätigen, bevor eine Fassung dauerhaft auf ein Gerät oder in den Store geht). App-Name nach Klaus 25.11.2026 (E4): „App Mein Mixarium“.",
+ "hinweis": "Einstellungen des Paket-Werkzeugs für Mein Mixarium. Was in ein Paket kommt, entscheidet ausgaben/<name>/ausgabe.json (Küchen-Kern); hier steht nur, was die Hüllen dazu brauchen. App-Kennung: Vorschlag (bestätigen, bevor eine Fassung dauerhaft auf ein Gerät oder in den Store geht). App-Name nach Klaus 26.11.2026 (Brief Pro P1/P2): „Mein Mixarium Pro“ (löst E4 „App Mein Mixarium“ ab).",
  "inhalt": [
   {
    "ordner": "neu",
@@ -51,12 +51,12 @@
  "ausgaben": {
   "mixarium-store": {
    "appId": "de.family_projekt.mixarium",
-   "appName": "App Mein Mixarium",
+   "appName": "Mein Mixarium Pro",
    "grund": "#10202e"
   },
   "mixarium-voll": {
    "appId": "de.family_projekt.mixarium.voll",
-   "appName": "App Mein Mixarium (voll)",
+   "appName": "Mein Mixarium Pro (voll)",
    "grund": "#10202e"
   }
  },

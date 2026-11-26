@@ -52,7 +52,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor36';
+export const FASSUNG = '10.0.0-vor37';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -60,6 +60,16 @@ const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&':
 /* Farben, Ton (hell/dunkel) und Schrift-Regler kommen aus dem Küchen-Kern. Englische Farbnamen hat der Kern nicht; sie stehen hier. */
 const farbName = (k) => kernFarbName(FARBEN[k] ? k : 'blau', sprache());   // Namen de/en stehen seit Kern 0.11 im Kern
 const SPRACHEN = [['de', 'Deutsch'], ['en', 'English'], ['es', 'Español'], ['fr', 'Français'], ['it', 'Italiano'], ['pt', 'Português'], ['ru', 'Русский'], ['zh', '中文']];
+/* Klaus 26.11.: die Zahl der Einträge steht nicht mehr oben im Kopf („8 Getränke“ machte die Leiste dick), sondern als kleine Zahl an
+   dem Punkt der Navi-Leiste, zu dem sie gehört: Getränke (sichtbar, „Ohne Alkohol“ gilt), Karte (Getränkekarten), Einkauf (noch offene
+   Posten), Labor (Getränke im Labor). Null zeigt keine Zahl. */
+const navZahl = (v) => { try {
+  if (v === 'start') return G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter(G.istSichtbar).length;
+  if (v === 'karte') return (A.anlaesse || []).length;
+  if (v === 'einkauf') return (A.einkauf || []).filter((x) => !x.ok).length;
+  if (v === 'labor') return LAB.imLabor(A.getraenke).length;
+} catch (e) { /* keine Zahl */ } return 0; };
+const navZahlHtml = (v) => { const z = navZahl(v); return z ? `<span class="nzahl" aria-label="${esc(fuelle(L('{0} Einträge', '{0} entries'), z))}">${z}</span>` : ''; };
 const NAV = [['start', ['Getränke', 'Drinks'], 'drinks'], ['karte', ['Karte', 'Drinks list'], 'plan'], ['einkauf', ['Einkauf', 'Shopping'], 'cart'], ['labor', ['Labor', 'Lab'], 'lab'], ['mehr', ['Einstellungen', 'Settings'], 'settings']];
 const KAT_SYM = { all: 'drinks', mock: 'drinks', afckt: 'drinks', ckt: 'wine', smooth: 'glass', limo: 'citrus', tee: 'coffee', sirup: 'drop', bowle: 'users', knab: 'box', finger: 'box' };
 
@@ -158,21 +168,38 @@ function logo() { return `<img class="logo" src="../icons/mixarium-neu-192.png?v
 const mikro = (ziel) => (diktatMoeglich() ? `<button type="button" class="mikro" data-a="diktat" data-ziel="${ziel}" aria-pressed="false" aria-label="${L('Diktieren', 'Dictate')}" title="${L('Diktieren', 'Dictate')}">${I('mic')}</button>` : '');
 function suchfeld(voll) { return `<label class="suchfeld" ${voll ? 'style="width:100%;margin-top:12px"' : ''}>${I('search')}<input id="suche" type="search" value="${esc(Z.suche)}" placeholder="${L('Getränk oder Zutat suchen', 'Search drink or ingredient')}" aria-label="${L('Suchen', 'Search')}" autocomplete="off">${mikro('#suche')}<button type="button" class="sinn" data-a="sinn" aria-pressed="${!!E.sinn}" aria-label="${L('Sinn-Suche: auch nach Bedeutung suchen', 'Meaning search: also search by meaning')}" title="${L('Sinn-Suche', 'Meaning search')}">${I('sparkle')}</button></label>`; }
 const INST = installation(() => zeichne());   /* Knopf „Installieren“ oben; weg, sobald die Seite als App läuft oder installiert wurde (Klaus 24.11.) */
-const kopfInstall = () => (INST.zeigen() ? `<button class="rund" data-a="installieren" aria-label="${L('Als App installieren', 'Install as an app')}" title="${L('Als App installieren', 'Install as an app')}">${I('download')}</button>` : '');
-const kopfFassung = () => `<button class="ver" data-a="aktualisieren" title="${L('Tippen: App aktualisieren', 'Tap: update the app')}" aria-label="${fuelle(L('Fassung {0} – tippen zum Aktualisieren', 'Version {0} – tap to update'), FASSUNG)}">${FASSUNG}</button>`;
+/* P2 (Klaus 26.11., Brief Pro im Rezeptbuch, „Mein Mixarium Pro“): in der Hülle (Android-APK oder Windows) steht unter dem Namen „Pro“ und direkt
+   dahinter die Versionsnummer als Knopf für Updates; liegt ein neues Update bereit, steht daneben ein kleines rotes Schild „Update“ (wie in Private
+   Akte). Gemeldet wird es über den Update-Baustein der Hülle (DoUpdates wie in Private Akte); solange der fehlt, erscheint das Schild nie.
+   In der PWA bleibt alles wie bisher (Versionsnummer tippen = aktualisieren). */
+const PRO = (() => { try { const c = window.Capacitor; return location.protocol === 'app:' || !!(c && c.isNativePlatform && c.isNativePlatform()); } catch (e) { return false; } })();
+const huelleUpdates = () => { const c = window.Capacitor; return (c && c.Plugins && c.Plugins.DoUpdates) || null; };
+const proUpd = { neu: '', ruhe: 0, laeuft: false };
+async function proUpdatePruefen(laut) {
+  const u = huelleUpdates();
+  if (!u) { if (laut) melde(L('Updates sind in dieser Fassung noch nicht eingerichtet.', 'Updates are not set up in this version yet.')); return; }
+  if (proUpd.laeuft || (!laut && Date.now() < proUpd.ruhe)) return; proUpd.laeuft = true;
+  try { const e = await u.pruefen(); proUpd.ruhe = Date.now() + 15 * 60000; proUpd.neu = (e && e.neu) || ''; zeichne(); if (laut && !proUpd.neu) melde(fuelle(L('{0} ist aktuell.', '{0} is up to date.'), FASSUNG)); }
+  catch (f) { proUpd.ruhe = Date.now() + 2 * 60000; if (laut) melde(L('Update-Server gerade nicht erreichbar.', 'Update server not reachable right now.')); }
+  finally { proUpd.laeuft = false; }
+}
+if (PRO && huelleUpdates()) { setTimeout(() => proUpdatePruefen(false), 4000); document.addEventListener('visibilitychange', () => { if (!document.hidden) proUpdatePruefen(false); }); }
+const kopfInstall = () => (!PRO && INST.zeigen() ? `<button class="rund" data-a="installieren" aria-label="${L('Als App installieren', 'Install as an app')}" title="${L('Als App installieren', 'Install as an app')}">${I('download')}</button>` : '');
+const proZeile = () => `<span class="pro-zeile"><b>Pro</b><button class="ver" data-a="pro-update" title="${L('Tippen: nach einem Update sehen', 'Tap: check for an update')}" aria-label="${fuelle(L('Fassung {0} – tippen: nach einem Update sehen', 'Version {0} – tap to check for an update'), FASSUNG)}">${FASSUNG}</button>${proUpd.neu ? `<button class="upd-schild" data-a="pro-update-laden" title="${esc(fuelle(L('Update {0} laden', 'Load update {0}'), proUpd.neu))}">Update</button>` : ''}</span>`;
+const kopfFassung = () => PRO ? proZeile() : `<button class="ver" data-a="aktualisieren" title="${L('Tippen: App aktualisieren', 'Tap: update the app')}" aria-label="${fuelle(L('Fassung {0} – tippen zum Aktualisieren', 'Version {0} – tap to update'), FASSUNG)}">${FASSUNG}</button>`;
 function kopf(br) {
-  const auf = Z.kopfAuf, n = sichtbar().length;
+  const auf = Z.kopfAuf;
   /* Aufgeklappt bleibt der Kopf EINE Zeile (Klaus 23.11.): am Handy weicht der Name, die Werkzeuge sind nur Symbole. */
   const alk = br ? `<button class="schalter ${ohneAlk() ? '' : 'aus'}" data-a="alk" aria-pressed="${ohneAlk()}">${I('noalc')}${ohneAlk() ? L('Ohne Alkohol', 'Alcohol-free') : L('Alkohol an', 'Alcohol on')}</button>` : `<button class="alkmini ${ohneAlk() ? '' : 'aus'}" data-a="alk" aria-pressed="${ohneAlk()}" aria-label="${L('Ohne Alkohol', 'Alcohol-free')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>`;
   const werk = `${alk}<button class="rund schriftknopf" data-a="menue" data-m="schrift" aria-label="${L('Schriftgröße', 'Text size')}" title="${L('Schriftgröße', 'Text size')}"><span aria-hidden="true">A<b>A</b></span></button><button class="rund" data-a="menue" data-m="sprache" aria-label="${L('Sprache', 'Language')}" title="${L('Sprache', 'Language')}">${I('lang')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund" data-go="mehr" aria-label="${L('Einstellungen', 'Settings')}" title="${L('Einstellungen', 'Settings')}">${I('settings')}</button>`;
   const mini = ohneAlk() ? `<button class="alkmini" data-a="alk" aria-pressed="true" aria-label="${L('Ohne Alkohol ist an', 'Alcohol-free is on')}" title="${L('Ohne Alkohol', 'Alcohol-free')}">${I('noalc')}</button>` : '';
-  const name = !br && auf ? '<span class="name"></span>' : `<div class="name">Mein Mixarium<small>${n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n)}</small>${kopfFassung()}</div>${kopfInstall()}`;
-  if (!br) return `<header class="kopf">${logo()}<div class="name">Mein Mixarium<small>${n === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), n)}</small>${kopfFassung()}</div>${kopfInstall()}${mini}<button class="rund" data-a="zur-suche" aria-label="${L('Suchen', 'Search')}" title="${L('Suchen', 'Search')}">${I('search')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button></header>`;
+  const name = !br && auf ? '<span class="name"></span>' : `<div class="name">Mein Mixarium${kopfFassung()}</div>${kopfInstall()}`;
+  if (!br) return `<header class="kopf">${logo()}<div class="name">Mein Mixarium${kopfFassung()}</div>${kopfInstall()}${mini}<button class="rund" data-a="zur-suche" aria-label="${L('Suchen', 'Search')}" title="${L('Suchen', 'Search')}">${I('search')}</button><button class="rund farbknopf" data-a="menue" data-m="farbe" aria-label="${L('Farbe', 'Colour')}" title="${L('Farbe', 'Colour')}"></button><button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button></header>`;
   return `<header class="kopf ${auf ? 'auf' : ''}">${logo()}${name}${br ? suchfeld(false) : ''}${auf ? werk : mini}<button class="rund neu" data-a="neu" aria-label="${L('Neues Getränk', 'New drink')}" title="${L('Neues Getränk', 'New drink')}">${I('plus')}</button><button class="klapp" data-a="kopf" aria-expanded="${auf}" aria-label="${auf ? L('Werkzeuge einklappen', 'Collapse tools') : L('Werkzeuge aufklappen', 'Expand tools')}">${I(auf ? 'right' : 'left')}</button></header>`;
 }
 function navLinks() {
   const akt = Z.view === 'getraenk' ? 'start' : Z.view === 'plan' ? 'karte' : Z.view, zu = E.navZu;
-  return `<nav class="nav ${zu ? 'zu' : ''}" aria-label="${L('Bereiche', 'Sections')}">${NAV.map(([v, n, i]) => `<button data-go="${v}" ${akt === v ? 'aria-current="page"' : ''} ${zu ? `aria-label="${L(...n)}" title="${L(...n)}"` : ''}>${I(i)}<span>${L(...n)}</span></button>`).join('')}<button class="navgriff" data-a="navzu" aria-expanded="${!zu}" aria-label="${zu ? L('Leiste aufklappen', 'Expand bar') : L('Leiste einklappen', 'Collapse bar')}">${I(zu ? 'right' : 'left')}</button></nav>`;
+  return `<nav class="nav ${zu ? 'zu' : ''}" aria-label="${L('Bereiche', 'Sections')}">${NAV.map(([v, n, i]) => `<button data-go="${v}" ${akt === v ? 'aria-current="page"' : ''} ${zu ? `aria-label="${L(...n)}" title="${L(...n)}"` : ''}>${navZahlHtml(v)}${I(i)}<span>${L(...n)}</span></button>`).join('')}<button class="navgriff" data-a="navzu" aria-expanded="${!zu}" aria-label="${zu ? L('Leiste aufklappen', 'Expand bar') : L('Leiste einklappen', 'Collapse bar')}">${I(zu ? 'right' : 'left')}</button></nav>`;
 }
 function flLeiste() {
   const f = E.fl, akt = Z.view === 'getraenk' ? 'start' : Z.view === 'plan' ? 'karte' : Z.view;
@@ -184,7 +211,7 @@ function flLeiste() {
   if (!Z.flAuf) return `<aside class="${cls}" style="${ort}"><button class="fl-griff" data-a="fl-auf" aria-label="${L('Leiste öffnen. Ziehen verschiebt sie.', 'Open bar. Drag to move it.')}"><span aria-hidden="true"></span></button></aside>`;
   const k = (attr, i, t, cur) => `<button ${attr} ${cur ? 'aria-current="page"' : ''}>${i}<span>${t}</span></button>`;
   const w = (attr, i, t, an) => `<button ${attr} ${an == null ? '' : `aria-pressed="${an}"`}>${i}<span>${t}</span></button>`;
-  return `<aside class="${cls}" style="${ort}"><div class="fl-knoepfe" role="menu"><button class="fl-zu" data-a="fl-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button>${k('data-a="oben"', I('up'), L('Nach oben', 'To top'))}${Z.view !== 'start' ? k('data-a="zurueck"', I('left'), L('Zurück', 'Back')) : ''}${NAV.map(([v, n, i]) => k(`data-go="${v}"`, I(i), L(...n), akt === v)).join('')}<hr><div class="fl-werk" role="group" aria-label="${L('Werkzeuge', 'Tools')}">${w('data-ton="hell"', I('sun'), L('Hell', 'Light'), !dunkel())}${w('data-ton="dunkel"', I('moon'), L('Dunkel', 'Dark'), dunkel())}${w('data-a="menue" data-m="farbe"', '<span class="fleck farbknopf"></span>', L('Farbe', 'Colour'))}${w('data-a="menue" data-m="schrift"', '<span class="aa" aria-hidden="true">A<b>A</b></span>', L('Schrift', 'Text'))}${w('data-a="menue" data-m="sprache"', I('lang'), L('Sprache', 'Language'))}${w(`data-a="alk" title="${L('Ohne Alkohol: Getränke mit Alkohol ausblenden', 'Alcohol-free: hide drinks with alcohol')}"`, I('noalc'), L('Ohne Alk.', 'No alc.'), ohneAlk())}${w(`data-a="fl-pos" class="breit" title="${L('Leiste verschieben', 'Move the bar')}"`, I('pfeile'), L('Leiste verschieben', 'Move the bar'))}${w(`data-a="sichern" class="breit" title="${L('Sicherung als Datei speichern', 'Save a backup file')}"`, I('download'), L('Sichern', 'Backup'))}</div></div></aside>`;
+  return `<aside class="${cls}" style="${ort}"><div class="fl-knoepfe" role="menu"><button class="fl-zu" data-a="fl-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button>${k('data-a="oben"', I('up'), L('Nach oben', 'To top'))}${Z.view !== 'start' ? k('data-a="zurueck"', I('left'), L('Zurück', 'Back')) : ''}${NAV.map(([v, n, i]) => k(`data-go="${v}"`, navZahlHtml(v) + I(i), L(...n), akt === v)).join('')}<hr><div class="fl-werk" role="group" aria-label="${L('Werkzeuge', 'Tools')}">${w('data-ton="hell"', I('sun'), L('Hell', 'Light'), !dunkel())}${w('data-ton="dunkel"', I('moon'), L('Dunkel', 'Dark'), dunkel())}${w('data-a="menue" data-m="farbe"', '<span class="fleck farbknopf"></span>', L('Farbe', 'Colour'))}${w('data-a="menue" data-m="schrift"', '<span class="aa" aria-hidden="true">A<b>A</b></span>', L('Schrift', 'Text'))}${w('data-a="menue" data-m="sprache"', I('lang'), L('Sprache', 'Language'))}${w(`data-a="alk" title="${L('Ohne Alkohol: Getränke mit Alkohol ausblenden', 'Alcohol-free: hide drinks with alcohol')}"`, I('noalc'), L('Ohne Alk.', 'No alc.'), ohneAlk())}${w(`data-a="fl-pos" class="breit" title="${L('Leiste verschieben', 'Move the bar')}"`, I('pfeile'), L('Leiste verschieben', 'Move the bar'))}${w(`data-a="sichern" class="breit" title="${L('Sicherung als Datei speichern', 'Save a backup file')}"`, I('download'), L('Sichern', 'Backup'))}</div></div></aside>`;
 }
 function menue() {
   if (Z.menue === 'sprache') return `<div class="sprachmenue" role="menu"><h3>${L('Sprache der App', 'App language')}</h3><button role="menuitemradio" aria-checked="${!E.sprache}" data-lang="">${L('Wie das Gerät', 'Same as device')}${!E.sprache ? I('check') : ''}</button>${SPRACHEN.map(([k, n]) => `<button role="menuitemradio" aria-checked="${E.sprache === k}" data-lang="${k}">${n}${E.sprache === k ? I('check') : ''}</button>`).join('')}</div>`;
@@ -825,6 +852,22 @@ function ausschnittFenster() {
   zeichne();
 }
 function bildSetzen(img, uid = Z.uid) { const r = getr(uid); if (!r) return; r.img = img; r.imgCrop = { x: 50, y: 50, scale: 1 }; r.modified = Date.now(); sichern(); }
+/* Klaus 26.11.: „Der Ladebalken hat nichts angezeigt … kreisende Punkte wären besser … eine simulierte Prozentzahl, die am Ende auf 100
+   springt.“ Eine kleine Pille oben in der Mitte, außerhalb der Seite (sie bleibt stehen, wenn man woanders hingeht): drei kreisende
+   Punkte, der Text und eine Prozentzahl, die sich der erwarteten Dauer entsprechend 95 % nähert und mit dem fertigen Bild auf 100 % springt.
+   Die Zahl ist geschätzt, nicht gemessen – die Bild-Dienste melden keinen Fortschritt. */
+const bildArbeit = (() => {
+  let el = null, uhr = null, start = 0, tau = 8, text = '';
+  const bau = () => { if (el && el.isConnected) return; el = document.createElement('div'); el.id = 'bild-arbeit'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); el.innerHTML = '<span class="ba-punkte" aria-hidden="true"><i></i><i></i><i></i></span><span class="ba-text"></span><b class="ba-zahl"></b>'; document.body.appendChild(el); };
+  const zeig = (p) => { if (!el) return; el.querySelector('.ba-text').textContent = text; el.querySelector('.ba-zahl').textContent = p + ' %'; };
+  const tick = () => { const t = (Date.now() - start) / 1000; zeig(Math.min(95, Math.round(95 * (1 - Math.exp(-t / tau))))); };
+  return {
+    start(t, sekunden = 20) { bau(); text = t; start = Date.now(); tau = Math.max(2, sekunden / 2.3); el.classList.remove('fertig'); el.classList.add('an'); clearInterval(uhr); tick(); uhr = setInterval(tick, 400); },
+    text(t) { text = t; tick(); },
+    fertig() { if (!el) return; clearInterval(uhr); zeig(100); el.classList.add('fertig'); setTimeout(() => { if (el && el.classList.contains('fertig')) el.classList.remove('an'); }, 900); },
+    weg() { clearInterval(uhr); if (el) el.classList.remove('an', 'fertig'); },
+  };
+})();
 async function bildErzeugen(gratis) {
   const r = getr(Z.uid); if (!r) return;
   let schluessel = '';
@@ -833,11 +876,12 @@ async function bildErzeugen(gratis) {
   const frei = await ZU.bildFreigabe(sicht(r), gratis); if (!frei) return;   /* steht im Auftrag ein Befehl an eine KI, entscheidet erst der Mensch (neu/zusatz.mjs) */
   Z.fenster = null; zeichne();
   try {
+    bildArbeit.start(gratis ? L('Foto entsteht', 'Photo in progress') : L('KI-Bild entsteht', 'AI picture in progress'), gratis ? 10 : 22);
     const img = await W.mit(gratis ? L('Gratis-Foto wird erzeugt …', 'Creating free photo …') : L('KI-Bild wird erzeugt (etwa 20 s) …', 'Creating AI picture (about 20 s) …'), async (w) => {
       const roh = gratis ? await gratisBild(frei, { art: 'getraenk', schluessel }) : await kiBild(schluessel, frei, { art: 'getraenk' });   // Getränke-Auftrag aus dem Kern (0.11)
       w.text(L('Bild wird gespeichert …', 'Saving the picture …')); return bildAusDatei(await (await fetch(roh)).blob()); });
-    bildSetzen(img); melde(L('Das neue Bild ist da.', 'The new picture is there.'));
-  } catch (f) { const t = L('Das hat nicht geklappt: ', 'That did not work: ') + (f && f.message ? f.message : L('unbekannter Fehler', 'unknown error')); if (gratis && f && f.schluessel) melde(t, L('Schlüssel', 'key'), () => schluesselFenster('pollinations', 'gratis')); else melde(t); }
+    bildArbeit.fertig(); bildSetzen(img); melde(L('Das neue Bild ist da.', 'The new picture is there.'));
+  } catch (f) { const t = L('Das hat nicht geklappt: ', 'That did not work: ') + (f && f.message ? f.message : L('unbekannter Fehler', 'unknown error')); bildArbeit.weg(); if (gratis && f && f.schluessel) melde(t, L('Schlüssel', 'key'), () => schluesselFenster('pollinations', 'gratis')); else melde(t); }
 }
 /* ── Tresor (Küchen-Kern): bis zu 5 automatische und 10 benannte Stände im Gerät. Schützt vor Versehen; gegen das Leeren
    des Browsers schützt nur die Sicherung als Datei. Automatisch wird vor jedem Eingriff abgelegt, der viel ändert. */
@@ -1294,6 +1338,11 @@ const TUN = {
   alk() { A.einstellungen.ohneAlkohol = !ohneAlk(); const r = getr(Z.uid); if (ohneAlk() && r && G.hatAlkohol(r)) { Z.view = 'start'; Z.uid = null; } if (!ordWahl() && !kats().some((x) => x.c.id === Z.kat)) Z.kat = 'all'; sichern(); },
   kopf() { Z.kopfAuf = !Z.kopfAuf; Z.menue = null; },
   async installieren() { if (INST.kannFragen()) await INST.fragen(); else melde(istApple() ? L('Teilen → „Zum Home-Bildschirm“', 'Share → “Add to Home Screen”') : L('Browser-Menü ⋮ → „App installieren“', 'Browser menu ⋮ → “Install app”')); },
+  'pro-update'() { proUpdatePruefen(true); return false; },
+  async 'pro-update-laden'() { const u = huelleUpdates(); if (!u || !proUpd.neu) return false; melde(L('Update wird geladen …', 'Loading the update …'));
+    try { const e = await u.installieren(); if (e && e.erlaubnis) melde(L('Bitte „Apps installieren“ erlauben, dann noch einmal auf „Update“ tippen.', 'Please allow “Install apps”, then tap “Update” again.')); }
+    catch (f) { proUpd.neu = ''; proUpd.ruhe = 0; melde(L('Update nicht geladen – die Datei bestand die Prüfung nicht oder der Server war nicht erreichbar.', 'Update not loaded – the file failed the check or the server was not reachable.')); }
+    return false; },
   async aktualisieren() { melde(L('Neueste Fassung wird geholt …', 'Fetching the latest version …')); const e = await aktualisieren({ cachePrefix: 'mixarium-neu-', probe: './sw.js' }); if (e === 'offline') melde(L('Ohne Netz – die App bleibt, wie sie ist', 'Offline – the app stays as it is')); else location.reload(); },
   navzu() { E.navZu = !E.navZu; einstSichern(); },
   menue(b) { Z.menue = Z.menue === b.dataset.m ? null : b.dataset.m; Z.flAuf = false; },
@@ -1373,7 +1422,7 @@ const TUN = {
 };
 /* Zusätze (neu/zusatz.mjs): Prüfung des Bildauftrags, KI-Bilder für alle ohne Bild, KI-Richter der Suche, Tresor-Stände der bisherigen App. Sie hängen ihre Aktionen selbst in TUN.
    `sichtbare` ist, was zu sehen ist: nichts Ausgeblendetes („Ohne Alkohol“) geht an eine KI. */
-const ZU = zusatz({ sprache, esc, I, Z, TUN, SK, W, tr, E: () => E, einstSichern, melde, sichern, zeichne, schluesselFenster, bildAusDatei, tresorAuto, bildAn: (uid, img) => bildSetzen(img, uid),
+const ZU = zusatz({ sprache, esc, I, Z, TUN, SK, W, bildArbeit, tr, E: () => E, einstSichern, melde, sichern, zeichne, schluesselFenster, bildAusDatei, tresorAuto, bildAn: (uid, img) => bildSetzen(img, uid),
   sichtbare: () => G.filterOhneAlkohol(A.getraenke, ohneAlk()).filter(G.istSichtbar), sinnTreffer: semTreffer, sicht, katName: katNameVon,
   buchKats: () => K.alleKategorien(A.getraenke, A.kategorien).map((c) => ({ id: c.id, name: katText(c) })), ordner: () => A.ordner, ordTitel, warte: (f, fertig) => { wartend = { f, fertig }; } });
 const postenVon = (b) => A.anlaesse.find((x) => x.id === Z.anlass).posten.find((p) => String(p.id) === b.dataset.p);

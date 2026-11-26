@@ -7,6 +7,12 @@ F=[('blase-fest', "fragLegen(e.target); } }, true);", "} }, true);", APP, A, 'je
    ('pfeil-bewegt-nicht', "    E.fl = f; einstSichern(); },", "    einstSichern(); },", APP, A, 'nach oben'),
    ('pfeil-schliesst', "  'fl-pos'() { Z.flPos = true; Z.flAuf = true; },", "  'fl-pos'() { Z.flPos = false; Z.flAuf = false; },", APP, A, 'Pfeil-Viereck'),
    ('voll-ohne-fokus', "const an = !(vollAn() || Z.fokus); Z.fokus = an;", "const an = !(vollAn() || Z.fokus);", APP, P, 'R32'),
+   ('zahl-weg', "return z ? `<span class=\"nzahl\"", "return false ? `<span class=\"nzahl\"", APP, A, 'Getränke 3'),
+   ('einkauf-alle', "return (A.einkauf || []).filter((x) => !x.ok).length;", "return (A.einkauf || []).length;", APP, A, 'Einkauf 2'),
+   ('bild-ohne-pille', "    bildArbeit.start(gratis ? L('Foto entsteht'", "    if (0) bildArbeit.start(gratis ? L('Foto entsteht'", APP, A, 'Pille oben'),
+   ('bild-ohne-hundert', "bildArbeit.fertig(); bildSetzen(img);", "bildArbeit.weg(); bildSetzen(img);", APP, A, '100 %'),
+   ('pro-immer', "return location.protocol === 'app:' || !!(c && c.isNativePlatform && c.isNativePlatform());", "return true;", APP, A, 'PWA: keine Pro-Zeile'),
+   ('pro-schild-immer', "${proUpd.neu ? `<button class=\"upd-schild\"", "${true ? `<button class=\"upd-schild\"", APP, A, 'ohne Update: kein Schild'),
    ('portion-weg', "<div class=\"portion kompakt\"", "<div class=\"portion\"", APP, P, 'R34')]
 nur=os.environ.get('NUR_FALL'); nur=nur.split(',') if nur else None; gefangen=0; durch=0; anders=0; tot=0
 if os.environ.get('NUR_ANKER'):

@@ -151,8 +151,10 @@ for (const c of ['de', ...CODES]) {
       zahlsatz.push(ist.port === (ist.n === 1 ? tab['1 Portion'] : tab['{0} Portionen'].replace('{0}', ist.n)) ? '' : `Portionen: ${ist.port}`);
     }
     if (name === 'Start mit Getränken' && c !== 'de') {
-      const ist = await p.evaluate(() => ({ kopf: document.querySelector('.kopf .name small').textContent.trim(), n: document.querySelectorAll('.karte').length }));
-      zahlsatz.push(ist.n > 1 && ist.kopf === tab['{0} Getränke'].replace('{0}', ist.n) ? '' : `Kopf: ${ist.kopf}`);
+      /* Klaus 26.11.: die Zahl steht nicht mehr im Kopf, sondern an „Getränke“ in der Leiste; ihr Vorlesetext ist ein ganzer Satz aus der Tabelle */
+      const ist = await p.evaluate(() => { const g = document.querySelector('.fl-griff'); if (g) g.click(); return new Promise((ja) => setTimeout(() => { const z = document.querySelector('[data-go=start] .nzahl'); ja({ etikett: z ? z.getAttribute('aria-label') : '', n: z ? Number(z.textContent) : 0 }); }, 300)); });
+      zahlsatz.push(ist.n > 1 && ist.etikett === tab['{0} Einträge'].replace('{0}', ist.n) ? '' : `Zahl an „Getränke“: ${ist.etikett}`);
+      await p.keyboard.press('Escape');
     }
     const z = await zeilen(p), namen = z.map((x) => x[0]).sort().join('\n');
     if (c === 'de') { einzeilig[name] = new Set(z.filter((x) => x[1] === 1 && !x[3]).map((x) => x[0])); knoepfe[name] = namen; continue; }

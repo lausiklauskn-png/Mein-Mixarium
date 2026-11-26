@@ -64,8 +64,8 @@ export function zusatz(app) {
     Z.fenster = f; zeichne();
     await app.tresorAuto(L('vor den KI-Bildern', 'before the AI pictures'));
     const e = await sammelBilder(app.sichtbare(), { schluessel: SK.openai, pruefe: kiAnweisungen, art: 'getraenk', abbruch: () => stopp,
-      fortschritt: (i, alle, r) => { if (!stopp) stand(fuelle(L('{0} von {1} · {2}', '{0} of {1} · {2}'), i + 1, alle, r.name), Math.round((i / alle) * 100)); },
-      je: async (r, roh) => app.bildAn(r.uid, await app.bildAusDatei(await (await fetch(roh)).blob())) });
+      fortschritt: (i, alle, r) => { if (!stopp) stand(fuelle(L('{0} von {1} · {2}', '{0} of {1} · {2}'), i + 1, alle, r.name), Math.round((i / alle) * 100)); app.bildArbeit.start(fuelle(L('KI-Bild {0} von {1}', 'AI picture {0} of {1}'), i + 1, alle), 22); },
+      je: async (r, roh) => { app.bildAn(r.uid, await app.bildAusDatei(await (await fetch(roh)).blob())); app.bildArbeit.fertig(); } }).finally(() => setTimeout(() => app.bildArbeit.weg(), 1000));   /* Klaus 26.11.: kreisende Punkte und geschätzte Prozent, auch wenn man die Seite wechselt */
     if (Z.fenster === f) Z.fenster = null;
     const teile = [e.fertig === 1 ? L('+1 Bild', '+1 picture') : fuelle(L('+{0} Bilder', '+{0} pictures'), e.fertig)];
     if (e.uebersprungen.length) teile.push(fuelle(L('{0} mit Befehl übersprungen', '{0} with instruction skipped'), e.uebersprungen.length));
