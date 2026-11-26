@@ -18,7 +18,7 @@ export default {
   'Suchen': 'Buscar',
   'Sinn-Suche: auch nach Bedeutung suchen': 'Búsqueda por significado: buscar también por el sentido',
   'Sinn-Suche': 'Búsqueda por significado',
-  'Updates sind in dieser Fassung noch nicht eingerichtet.': 'Las actualizaciones aún no están configuradas en esta versión.',
+  'Neue Fassungen kommen als neue App-Datei – die Seite dazu öffnet sich.': 'Las nuevas versiones llegan como un nuevo archivo de la app: se abre la página.',
   '{0} ist aktuell.': '{0} está al día.',
   'Update-Server gerade nicht erreichbar.': 'El servidor de actualizaciones no responde ahora.',
   'Als App installieren': 'Instalar como app',

@@ -18,7 +18,7 @@ export default {
   'Suchen': '搜索',
   'Sinn-Suche: auch nach Bedeutung suchen': '语义搜索：同时按含义查找',
   'Sinn-Suche': '语义搜索',
-  'Updates sind in dieser Fassung noch nicht eingerichtet.': '此版本尚未设置更新。',
+  'Neue Fassungen kommen als neue App-Datei – die Seite dazu öffnet sich.': '新版本以新的应用文件形式提供——正在打开页面。',
   '{0} ist aktuell.': '{0} 已是最新版本。',
   'Update-Server gerade nicht erreichbar.': '更新服务器暂时无法访问。',
   'Als App installieren': '安装为应用',
