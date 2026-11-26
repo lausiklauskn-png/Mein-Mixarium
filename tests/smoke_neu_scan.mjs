@@ -80,11 +80,11 @@ try {
   ok(!roh.includes('GEHEIM-ORT') && !roh.includes('Exif') && Math.max(...masse) === 1200, 'Reinigung: verkleinert auf 1200 px, die Aufnahmedaten (Ort) gehen NICHT hinaus', masse.join('×'));
   ok(await p.inputValue('#ed [name=name]') === 'Ingwer-Limo' && await p.inputValue('#ed [name=cat]') === 'limo' && await p.inputValue('#ed [name=servings]') === '2', 'das Ergebnis steht im Formular: Name, Kategorie, Portionen');
   ok((await p.inputValue('#ed [name=ings]')).split('\n').length === 3 && (await p.inputValue('#ed [name=ings]')).startsWith('4 cl Zitronensaft') && (await p.inputValue('#ed [name=steps]')).split('\n').length === 2 && await p.locator('#ed .hinweis').count() === 1, 'drei Zutaten und zwei Schritte, mit dem Hinweis „Bitte prüfen“');
-  ok((await p.locator('#edbild img').getAttribute('src')).startsWith('data:image/jpeg') && !(await p.isChecked('#ed [name=alcohol]')), 'das Foto liegt als Bild bereit; ohne Alkohol erkannt');
+  ok((await p.locator('#edbild img').getAttribute('src')).startsWith('data:image/webp') && !(await p.isChecked('#ed [name=alcohol]')), 'das Foto liegt als Bild bereit; ohne Alkohol erkannt');
   await p.click('#ed [type=submit]'); await ruhe(p);
   const g1 = await G(p, () => { const r = __mixarium.sammlung.getraenke[0]; return { name: r.name, cat: r.cat, img: r.img, n: r.ings.length, einheit: r.ings[0].unit, ki: (r.kiEntfernt || []).length, uid: r.uid }; });
   const m2 = await bildMasse(p, g1.img.split(',')[1]);
-  ok(g1.name === 'Ingwer-Limo' && g1.cat === 'limo' && g1.n === 3 && g1.einheit === 'cl' && g1.uid && Math.max(...m2) === 1024 && g1.ki === 0, 'gespeichert: Getränk mit Bild (1024 px), Mengen und Einheiten getrennt, kein Vermerk', JSON.stringify({ ...g1, img: m2.join('×') }));
+  ok(g1.name === 'Ingwer-Limo' && g1.cat === 'limo' && g1.n === 3 && g1.einheit === 'cl' && g1.uid && Math.max(...m2) === 1600 && g1.ki === 0, 'gespeichert: Getränk mit Bild (1600 px, Kern 0.33), Mengen und Einheiten getrennt, kein Vermerk', JSON.stringify({ ...g1, img: m2.join('×') }));
 
   console.log('3 · Mistral liest den Text, Claude sortiert; Stufe Profi; die Wahl bleibt');
   rufe.length = 0; await p.goto(URL0); await p.waitForSelector('.mx .titel'); await ruhe(p); await scanAuf(p);
