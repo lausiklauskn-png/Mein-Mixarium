@@ -269,6 +269,8 @@ export default {
   'Über': 'О приложении',
   'Handbuch': 'Справка',
   'Impressum': 'Выходные данные',
+  'Voriges Getränk': 'Предыдущий напиток',
+  'Nächstes Getränk': 'Следующий напиток',
   'Bild bearbeiten': 'Изменить изображение',
   'Getränk bearbeiten': 'Изменить напиток',
   'Name': 'Название',

@@ -269,6 +269,8 @@ export default {
   'Über': 'Informazioni',
   'Handbuch': 'Manuale',
   'Impressum': 'Note legali',
+  'Voriges Getränk': 'Bevanda precedente',
+  'Nächstes Getränk': 'Bevanda successiva',
   'Bild bearbeiten': 'Modifica immagine',
   'Getränk bearbeiten': 'Modifica bevanda',
   'Name': 'Nome',

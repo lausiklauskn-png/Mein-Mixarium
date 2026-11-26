@@ -146,6 +146,38 @@ try {
     ok(z.start === '3' && z.karte === '1' && z.einkauf === '2' && z.labor === '' && z.mehr === '', `${breite} px: Getränke 3 · Karte 1 · Einkauf 2 (nur offene) · Labor und Einstellungen ohne Zahl`, JSON.stringify(z));
     await c.close();
   }
+
+  console.log('8 · Vor und Zurück im Vollbild, in der gewählten Kategorie (Klaus 26.11.)');
+  { const G = [D(1, 'Apfel-Limo', { cat: 'limo' }), D(2, 'Birnen-Limo', { cat: 'limo' }), D(3, 'Cola-Mocktail', { cat: 'mock' }), D(4, 'Dattel-Limo', { cat: 'limo' })];
+    const titel = (p) => p.evaluate(() => __mixarium.sammlung.getraenke.find((r) => r.uid === __mixarium.zustand.uid).name);
+    { const { p, c } = await seite(G, 1280);
+      await p.click('.stk[data-kat=limo]'); await p.waitForTimeout(300);
+      await p.locator('.karte', { hasText: 'Apfel-Limo' }).first().click(); await p.waitForSelector('.held-voll');
+      ok(await p.locator('.blatt-pfeil').count() === 0, 'ohne Vollbild keine Pfeile');
+      await p.click('.held-voll'); await p.waitForTimeout(300);
+      ok(await p.locator('.blatt-pfeil').count() === 2 && await p.locator('.blatt-pfeil.links').isDisabled() && /^1 \/ 3$/.test(await p.locator('.blatt-stand').innerText()), 'im Vollbild zwei Pfeile im Bild, „1 / 3“ (nur Limonaden), am Anfang ist „zurück“ aus', await p.locator('.blatt-stand').innerText().catch(() => ''));
+      await p.click('.blatt-pfeil.rechts'); await p.waitForTimeout(200); const t1 = await titel(p);
+      await p.keyboard.press('ArrowRight'); await p.waitForTimeout(200); const t2 = await titel(p);
+      ok(t1 === 'Birnen-Limo' && t2 === 'Dattel-Limo', 'Pfeil und Taste → gehen weiter, der Cola-Mocktail (andere Kategorie) wird übersprungen', t1 + ' → ' + t2);
+      ok(await p.locator('.blatt-pfeil.rechts').isDisabled() && await p.locator('.md.fokus').count() === 1, 'am Ende ist „weiter“ aus; das Vollbild bleibt');
+      await p.keyboard.press('ArrowLeft'); await p.waitForTimeout(200); ok(await titel(p) === 'Birnen-Limo', '← geht zurück');
+      await p.evaluate(() => { __mixarium.zustand.bildVoll = true; __mixarium.zeichne(); }); await p.waitForSelector('.bildvoll'); await p.click('.bildvoll .blatt-pfeil.rechts'); await p.waitForTimeout(200);
+      ok(await p.locator('.bildvoll').count() === 1 && await titel(p) === 'Dattel-Limo', 'auch im Vollbild des Bildes: weiter zum nächsten Getränk der Kategorie');
+      await c.close(); }
+    { const { p, c } = await seite(G, 390);
+      await p.locator('.karte', { hasText: 'Apfel-Limo' }).first().click(); await p.waitForSelector('.held-voll'); await p.click('.held-voll'); await p.waitForTimeout(300);
+      await p.evaluate(() => { __mixarium.zustand.bildVoll = true; __mixarium.zeichne(); }); const imBild = await p.locator('.bildvoll .blatt-pfeil').count();
+      await p.evaluate(() => { __mixarium.zustand.bildVoll = false; __mixarium.zeichne(); });
+      ok(await p.locator('.blatt-pfeil').count() === 0 && imBild === 0, 'am Handy keine Pfeile (Klaus: sie stören), auch nicht im Vollbild des Bildes; dafür Wischen', 'im Bild ' + imBild);
+      const wisch = (von, bis) => p.evaluate(([a, z]) => { const el = document.querySelector('.innen-p') || document.querySelector('.haupt'); const t = (x) => new Touch({ identifier: 1, target: el, clientX: x, clientY: 400 }); el.dispatchEvent(new TouchEvent('touchstart', { touches: [t(a)], changedTouches: [t(a)], bubbles: true })); el.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t(z)], bubbles: true })); }, [von, bis]);
+      await wisch(300, 100); await p.waitForTimeout(200); const w1 = await titel(p);
+      await wisch(300, 100); await p.waitForTimeout(200); const w2 = await titel(p);
+      await wisch(100, 300); await p.waitForTimeout(200); const w3 = await titel(p);
+      ok(w1 === 'Birnen-Limo' && w2 === 'Cola-Mocktail' && w3 === 'Birnen-Limo', 'Wischen nach links: nächstes, nach rechts: voriges (Kategorie „Alle“: durch alle)', [w1, w2, w3].join(' · '));
+      await p.click('.held-voll'); await p.waitForTimeout(200); await wisch(300, 100); await p.waitForTimeout(200);
+      ok(await titel(p) === 'Birnen-Limo', 'ohne Vollbild blättert Wischen nicht');
+      await c.close(); }
+  }
   ok(!fehler.length, 'keine Fehler im Browser', fehler.slice(0, 3).join(' | '));
 } catch (f) { rot++; console.log('  ✗ ROT Absturz — ' + String(f && f.message || f).split('\n')[0]); }
 await b.close(); server.close();

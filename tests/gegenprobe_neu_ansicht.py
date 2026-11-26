@@ -13,7 +13,12 @@ F=[('blase-fest', "fragLegen(e.target); } }, true);", "} }, true);", APP, A, 'je
    ('bild-ohne-hundert', "bildArbeit.fertig(); bildSetzen(img);", "bildArbeit.weg(); bildSetzen(img);", APP, A, '100 %'),
    ('pro-immer', "return location.protocol === 'app:' || !!(c && c.isNativePlatform && c.isNativePlatform());", "return true;", APP, A, 'PWA: keine Pro-Zeile'),
    ('pro-schild-immer', "${proUpd.neu ? `<button class=\"upd-schild\"", "${true ? `<button class=\"upd-schild\"", APP, A, 'ohne Update: kein Schild'),
-   ('portion-weg', "<div class=\"portion kompakt\"", "<div class=\"portion\"", APP, P, 'R34')]
+   ('portion-weg', "<div class=\"portion kompakt\"", "<div class=\"portion\"", APP, P, 'R34'),
+   ('blatt-alle', "const blaetterListe = () => sichtbar();", "const blaetterListe = () => A.getraenke;", APP, A, 'Cola-Mocktail'),
+   ('blatt-ohne-tasten', "if (ev.key === 'ArrowRight') blaettern(1); if (ev.key === 'ArrowLeft') blaettern(-1); }", "}", APP, A, 'Pfeil und Taste'),
+   ('blatt-ohne-wischen', "Math.abs(dx) > 2 * Math.abs(dy)) blaettern(dx < 0 ? 1 : -1); });", "Math.abs(dx) > 2 * Math.abs(dy)) {} });", APP, A, 'Wischen nach links'),
+   ('blatt-immer', "const blaetternAn = () => Z.view === 'getraenk' && (Z.fokus || Z.bildVoll)", "const blaetternAn = () => Z.view === 'getraenk'", APP, A, 'ohne Vollbild'),
+   ('blatt-handy-pfeile', "if (!blaetternAn() || !breit()) return '';", "if (!blaetternAn()) return '';", APP, A, 'am Handy keine Pfeile')]
 nur=os.environ.get('NUR_FALL'); nur=nur.split(',') if nur else None; gefangen=0; durch=0; anders=0; tot=0
 if os.environ.get('NUR_ANKER'):
     for name,a,b,f,pr,e in F:
