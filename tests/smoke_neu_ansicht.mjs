@@ -178,6 +178,15 @@ try {
       ok(await titel(p) === 'Birnen-Limo', 'ohne Vollbild blättert Wischen nicht');
       await c.close(); }
   }
+  console.log('9 · Das Bild läuft weich aus, wie in „Ordnung auf Japanisch“ (Klaus 26.11.)');
+  { const { p, c } = await seite([D(1, 'Apfel-Limo', { cat: 'limo' })], 1280);
+    await p.locator('.karte', { hasText: 'Apfel-Limo' }).first().click(); await p.waitForSelector('.detail-kopf .held.ganz');
+    const m = await p.evaluate(() => { const h = document.querySelector('.detail-kopf .held.ganz'), b = h.querySelector(':scope>:is(.foto,svg.platzbild)'), s = document.querySelector('.detail-kopf .seite'), cs = getComputedStyle(b), rb = b.getBoundingClientRect(), rs = s.getBoundingClientRect();
+      return { maske: String(cs.maskImage || cs.webkitMaskImage || ''), randlos: getComputedStyle(h).backgroundColor, ueber: rs.left < rb.right - 20, linie: getComputedStyle(document.querySelector('.detail-kopf')).borderBottomWidth }; });
+    ok((m.maske.match(/linear-gradient/g) || []).length === 2, 'alle vier Ränder des Bildes laufen weich aus (zwei Verläufe als Maske)', m.maske.slice(0, 80));
+    ok(/rgba\(0, 0, 0, 0\)|transparent/.test(m.randlos) && m.linie === '0px', 'keine Fläche und keine Linie um das Bild (keine Briefmarke)', m.randlos + ' · ' + m.linie);
+    ok(m.ueber, 'Name und Angaben beginnen schon im auslaufenden Bild', JSON.stringify(m));
+    await c.close(); }
   ok(!fehler.length, 'keine Fehler im Browser', fehler.slice(0, 3).join(' | '));
 } catch (f) { rot++; console.log('  ✗ ROT Absturz — ' + String(f && f.message || f).split('\n')[0]); }
 await b.close(); server.close();
