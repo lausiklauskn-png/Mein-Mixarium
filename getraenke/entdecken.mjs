@@ -8,7 +8,8 @@
    Die zwei Wörterbücher sind WÖRTLICH übernommen (von einem Skript herausgeschrieben, nicht abgetippt); die Probe
    vergleicht sie mit der QC-Datei und rechnet Namen, Schritte und Mengen gegen `discoverConfirmImport`.
 
-   NETZ: nur über `hol` (Vorgabe `fetch`) und nur in `suche`, `zufall`, `nachschlagen`, `nachKategorie`, `holeBild`.
+   NETZ: nur über `hol` (Vorgabe `fetch`) und nur in `suche`, `zufall`, `nachschlagen`, `nachKategorie`, `nachGruppe`,
+   `alkfreiNummern`, `holeBild`.
    Alles andere ist rein: kein Speicher, keine Oberfläche. Die Antworten der Datenbank sind fremde Daten: Nummern werden
    geprüft, Bilder nur von thecocktaildb.com geholt, Kategorie und Glas nur gesetzt, wenn die App sie kennt.
 
@@ -259,6 +260,42 @@ export async function nachKategorie(katId, optionen = {}) {
   const f = Object.prototype.hasOwnProperty.call(KAT_FILTER, katId) ? KAT_FILTER[katId] : null; if (!f) return [];
   const l = await abruf('filter.php?' + (f.art === 'alcoholic' ? 'a=' : 'c=') + encodeURIComponent(f.wert), optionen);
   return mischen(l, optionen.wuerfel).slice(0, Math.max(1, Number(optionen.anzahl) || 12));
+}
+
+/* ── Gruppen zum Stöbern (Klaus 26.11.2026: „Alles, Smoothies, Cocktails, Mocktails … Neue Vorschläge … Tees, Kaffees,
+   Knabbereien kannst du rausnehmen … aber die Cocktails, Tees, Kaffees, Sirup und all die Sachen, die da angeboten werden“).
+   Jede Gruppe sind die Filter der Datenbank, die zusammengehören; Knabbereien und Fingerfood gibt es dort nicht.
+   ⚠ Die Liste der Kategorien ist aus dem Gedächtnis gebaut, nicht abgerufen (das Netz der Sitzung sperrt die Adresse).
+   „Shake“ und das ältere „Milk / Float / Shake“ werden beide gefragt: eine Kategorie, die es nicht gibt, liefert eine leere
+   Liste, keinen Fehler. ── */
+export const GRUPPEN = Object.freeze([
+  { id: 'alle', de: 'Alle', en: 'All', filter: [] },
+  { id: 'ckt', de: 'Cocktails', en: 'Cocktails', filter: [['c', 'Cocktail'], ['c', 'Ordinary Drink']] },
+  { id: 'alkfrei', de: 'Ohne Alkohol', en: 'Alcohol-free', filter: [['a', 'Non_Alcoholic']] },
+  { id: 'smooth', de: 'Shakes & Smoothies', en: 'Shakes & smoothies', filter: [['c', 'Shake'], ['c', 'Milk / Float / Shake']] },
+  { id: 'limo', de: 'Limonaden', en: 'Soft drinks', filter: [['c', 'Soft Drink']] },
+  { id: 'tee', de: 'Tee & Kaffee', en: 'Tea & coffee', filter: [['c', 'Coffee / Tea']] },
+  { id: 'kakao', de: 'Kakao', en: 'Cocoa', filter: [['c', 'Cocoa']] },
+  { id: 'bowle', de: 'Bowlen & Punsch', en: 'Punch', filter: [['c', 'Punch / Party Drink']] },
+  { id: 'sirup', de: 'Likör & Sirup', en: 'Liqueur & syrup', filter: [['c', 'Homemade Liqueur']] },
+  { id: 'shot', de: 'Shots', en: 'Shots', filter: [['c', 'Shot']] },
+  { id: 'bier', de: 'Bier', en: 'Beer', filter: [['c', 'Beer']] },
+  { id: 'sonst', de: 'Sonstiges', en: 'Other', filter: [['c', 'Other / Unknown'], ['c', 'Other/Unknown']] },
+]);
+/* Alle (gekürzten) Drinks einer Gruppe, ohne Doppelte, gemischt, höchstens `anzahl` (Vorgabe 6). `nur` (Set von Nummern)
+   lässt nur diese zu – so bleiben bei „Ohne Alkohol“ trotzdem sechs übrig. „alle“ und eine unbekannte Gruppe: leere Liste,
+   kein Abruf (für „alle“ gibt es `zufall`). Einzelne Filter dürfen scheitern; scheitern alle, kommt der Fehler des ersten. */
+export async function nachGruppe(gruppe, optionen = {}) {
+  const g = GRUPPEN.find((x) => x.id === gruppe); if (!g || !g.filter.length) return [];
+  const erg = await Promise.all(g.filter.map(([art, wert]) => abruf('filter.php?' + art + '=' + encodeURIComponent(wert), optionen).then((l) => ({ l }), (f) => ({ f, l: [] }))));
+  if (erg.every((x) => x.f)) throw erg[0].f;
+  const gesehen = new Set(), alle = [];
+  for (const { l } of erg) for (const d of l) { const nr = dbNummer(d); if (gesehen.has(nr) || (optionen.nur && !optionen.nur.has(nr))) continue; gesehen.add(nr); alle.push(d); }
+  return mischen(alle, optionen.wuerfel).slice(0, Math.max(1, Number(optionen.anzahl) || 6));
+}
+/* Die Nummern aller Drinks, die die Datenbank alkoholfrei nennt (für „Ohne Alkohol“ bei gekürzten Treffern). */
+export async function alkfreiNummern(optionen = {}) {
+  return new Set((await abruf('filter.php?a=Non_Alcoholic', optionen)).map(dbNummer));
 }
 
 /* ── Lesen eines Datensatzes ── */

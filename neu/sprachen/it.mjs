@@ -336,7 +336,6 @@ export default {
   'Aufteilen': 'Dividi',
   'Wege zu einem neuen Getränk': 'Modi per aggiungere una bevanda',
   'Name eines bekannten Drinks': 'Nome di un drink famoso',
-  'Zufällige Auswahl': 'Selezione casuale',
   'Nichts gefunden': 'Nessun risultato',
   'Schon in deiner Sammlung': 'Già nella tua raccolta',
   'Bitte einen Namen eintragen.': 'Inserisci un nome.',
@@ -785,4 +784,7 @@ export default {
   'fruchtig': 'fruttato',
   'cremig': 'cremoso',
   'intensiv': 'intenso',
+  'Was möchtest du entdecken?': 'Cosa vuoi scoprire?',
+  'Neue Vorschläge': 'Nuovi suggerimenti',
+  'Name suchen: Margarita, Mojito …': 'Cerca un nome: Margarita, Mojito …',
 };

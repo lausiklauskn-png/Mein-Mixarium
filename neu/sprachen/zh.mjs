@@ -336,7 +336,6 @@ export default {
   'Aufteilen': '拆分',
   'Wege zu einem neuen Getränk': '添加新饮品的方式',
   'Name eines bekannten Drinks': '知名饮品的名称',
-  'Zufällige Auswahl': '随机精选',
   'Nichts gefunden': '未找到',
   'Schon in deiner Sammlung': '已在你的收藏中',
   'Bitte einen Namen eintragen.': '请输入名称。',
@@ -785,4 +784,7 @@ export default {
   'fruchtig': '果香',
   'cremig': '绵密',
   'intensiv': '浓郁',
+  'Was möchtest du entdecken?': '想发现什么？',
+  'Neue Vorschläge': '新的推荐',
+  'Name suchen: Margarita, Mojito …': '按名称搜索：Margarita、Mojito …',
 };

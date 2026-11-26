@@ -844,7 +844,10 @@ h1,h2,h3,p{margin:0}
 .mx .schl-stand{min-height:0;margin:0;font-size:12.5px}.mx .schl-stand:empty{display:none}
 .mx .fkopf h2.mit-frag{display:flex;align-items:center;gap:8px;flex:1;min-width:0}.mx .fkopf h2.mit-frag>.ico{width:20px;height:20px;color:var(--akz)}.mx .fkopf h2.mit-frag>span{flex:1;min-width:0}
 .mx .rund.rotschrift{color:var(--rot)}
-.mx .entd-gitter{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52svh;overflow:auto}
+.mx .entd-gruppen{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.mx .entd-neu{margin-bottom:10px}
+.mx .entd-gitter{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+@media (max-width:520px){.mx .entd-gitter{grid-template-columns:repeat(2,1fr)}}
 .mx .entd-k{position:relative;display:grid;gap:4px;text-align:left;font-size:12.5px;font-weight:600;line-height:1.2;color:var(--ink)}
 .mx .entd-k img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;background:var(--fl2)}
 .mx .entd-k span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}

@@ -163,6 +163,23 @@ test('Filter nach Kategorie: wie _DB_CAT_MAP (plus Bowlen), filter.php?a= oder ?
   assert.deepEqual(await E.nachKategorie('limo', { hol: async () => json('') }), [], 'leere Antwort der Datenbank');
 });
 
+test('Gruppen zum Stöbern (Klaus 26.11.): alle Filter einer Gruppe, ohne Doppelte, sechs, „nur“ lässt nur Erlaubte zu, Knabbereien gibt es nicht', async () => {
+  assert.ok(!E.GRUPPEN.some((g) => /knab|finger/i.test(g.id + g.de)), 'Knabbereien und Fingerfood stehen nicht in der Cocktail-Datenbank');
+  assert.equal(new Set(E.GRUPPEN.map((g) => g.id)).size, E.GRUPPEN.length, 'jede Gruppe einmal'); assert.equal(E.GRUPPEN[0].id, 'alle');
+  const a = Array.from({ length: 8 }, (_, i) => ({ strDrink: 'A' + i, idDrink: String(100 + i) })), b = Array.from({ length: 8 }, (_, i) => ({ strDrink: 'B' + i, idDrink: String(104 + i) }));
+  const n = netz((u) => json({ drinks: /Ordinary/.test(u) ? b : a }));
+  const l = await E.nachGruppe('ckt', { hol: n.hol, anzahl: 100 });
+  assert.deepEqual(n.rufe.map((r) => r.adresse), [E.BASIS + 'filter.php?c=Cocktail', E.BASIS + 'filter.php?c=Ordinary%20Drink']);
+  assert.equal(l.length, 12, '16 Treffer, davon 4 doppelt'); assert.equal(new Set(l.map((d) => d.idDrink)).size, 12);
+  assert.equal((await E.nachGruppe('ckt', { hol: n.hol })).length, 6, 'Vorgabe: sechs');
+  const nur = new Set(['100', '111']); assert.deepEqual((await E.nachGruppe('ckt', { hol: n.hol, nur })).map((d) => d.idDrink).sort(), ['100', '111']);
+  const zaehl = netz(() => json({ drinks: a })); assert.deepEqual(await E.nachGruppe('alle', { hol: zaehl.hol }), []); assert.deepEqual(await E.nachGruppe('gibtsnicht', { hol: zaehl.hol }), []); assert.equal(zaehl.rufe.length, 0, '„alle“ und Unbekanntes fragen nicht');
+  const halb = netz((u) => (/Milk/.test(u) ? json('') : json({ drinks: a })));
+  assert.equal((await E.nachGruppe('smooth', { hol: halb.hol, anzahl: 50 })).length, 8, 'eine leere Kategorie (alter Name) stört nicht');
+  await assert.rejects(E.nachGruppe('ckt', { hol: async () => { throw new TypeError('aus'); } }), /Keine Verbindung/, 'scheitern alle Filter, kommt der Klartext');
+  const alkfrei = await E.alkfreiNummern({ hol: netz(() => json({ drinks: a })).hol }); assert.ok(alkfrei instanceof Set && alkfrei.has('100') && alkfrei.size === 8);
+});
+
 test('Wörterbücher und Sprach-Felder: wörtlich wie in der alten App', () => {
   assert.deepEqual(schlicht(E.ZUTAT_WOERTER), schlicht(ALT._DISC_INGRX)); assert.deepEqual(schlicht(E.MASS_WOERTER), schlicht(ALT._DISC_UNITX));
   assert.deepEqual(schlicht(E.ANLEITUNG_FELD), schlicht(ALT._DB_LANG_FIELD));
