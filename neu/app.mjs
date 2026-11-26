@@ -28,7 +28,7 @@ import { text as spText, fuelle, ladeTabelle } from '../kern/oberflaeche/sprache
 import { schluessel as schluesselLager, ANBIETER, erklaerung as schlErklaerung, formPasst, pruefeSchluessel, schluesselAdresse } from '../kern/ki/schluessel.mjs';
 import { STUFEN } from '../kern/ki/claude.mjs';
 import { vorbereiten, erkennen, rezeptAusScan, wasGehtHinaus, wohinKurz, istPdf, istBild } from '../kern/import/scan.mjs';
-import { vermerken, vermerkHtml, fundeZumEntscheiden, fundName } from '../kern/ki/reinigung.mjs';
+import { vermerken, vermerkHtml, fundeZumEntscheiden, fundName, bildFuersNetz } from '../kern/ki/reinigung.mjs';
 import { dateiPruefen, pruefHtml, kiAnweisungen } from '../kern/pruefung/datei.mjs';
 import * as DB from '../getraenke/entdecken.mjs';
 import { webAdresse, holeSeite, ausEingefuegtem, ohneKi, fuerKi, mitKi, holeBild } from '../kern/import/web.mjs';
@@ -52,7 +52,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor39';
+export const FASSUNG = '10.0.0-vor40';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -455,12 +455,12 @@ function vLabor() {
 }
 /* Ein Aufruf an Claude (Anthropic), wie in der alten App direkt aus dem Browser mit dem eigenen Schlüssel. Kein SDK:
    die PWA hat keinen Bauschritt und soll offline starten. Prüft stop_reason (Ablehnung, abgeschnitten) über LAB.antwortLesen. */
-async function kiRezept(auftrag, text) {
+async function kiRezept(auftrag, text, bild = '') {   /* bild: data:-Adresse (schon über bildFuersNetz verkleinert und gereinigt) oder leer */
   const k = await S.hol('anthropic'); if (!k) { const f = new Error('kein-schluessel'); f.keinSchluessel = true; throw f; }
   const warte = W.start(text || L('Die KI arbeitet …', 'The AI is working …'));
   try {
   let ant;
-  try { ant = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': k, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: LAB.LAB_MODELL, max_tokens: LAB.LAB_MAX_TOKENS, messages: [{ role: 'user', content: auftrag }] }) }); }
+  try { ant = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': k, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: LAB.LAB_MODELL, max_tokens: LAB.LAB_MAX_TOKENS, messages: [{ role: 'user', content: bild ? [{ type: 'image', source: { type: 'base64', media_type: (bild.match(/^data:([^;]+)/) || [])[1] || 'image/jpeg', data: bild.split(',')[1] } }, { type: 'text', text: auftrag }] : auftrag }] }) }); }
   catch (e) { throw new Error(L('Keine Verbindung. Das Labor braucht Internet.', 'No connection. The lab needs internet.')); }
   if (!ant.ok) { const j = await ant.json().catch(() => ({})); throw new Error(ant.status === 401 ? L('Der Anthropic-Schlüssel wurde abgelehnt. Bitte in den Einstellungen prüfen.', 'The Anthropic key was rejected. Please check it in the settings.') : ant.status === 429 ? L('Anthropic meldet: zu viele Anfragen oder kein Guthaben.', 'Anthropic reports: too many requests or no credit.') : ((j.error && j.error.message) || 'HTTP ' + ant.status)); }
   return LAB.antwortLesen(await ant.json());
@@ -473,11 +473,21 @@ async function labErfinden() {
   catch (e) { if (e.keinSchluessel) { lb.laeuft = false; return schluesselFenster('anthropic', 'labor'); } lb.fehler = e.message; }
   finally { lb.laeuft = false; zeichne(); }
 }
-async function labUeberarbeiten(r) {
+async function labUeberarbeiten(r, { hinweis = '', mitBild = false } = {}) {
   r.labRevisionPending = true; sichern(); zeichne();
-  try { LAB.ueberarbeitungBereit(r, await kiRezept(LAB.auftragUeberarbeiten(r, { kategorie: labKatName(r.cat), sprache: sprache() }), L('Getränk wird überarbeitet …', 'Revising the drink …'))); melde(L('Entwurf bereit', 'Draft ready')); }
+  try {
+    let bild = '';
+    if (mitBild && r.img) { bild = await bildFuersNetz(r.img, 1024, 0.86); if (!bild) throw new Error(L('Das Bild ließ sich nicht lesen; es geht kein Original hinaus.', 'The picture could not be read; no original is sent.')); }
+    LAB.ueberarbeitungBereit(r, await kiRezept(LAB.auftragUeberarbeiten(r, { kategorie: labKatName(r.cat), hinweis, mitBild: !!bild, sprache: sprache() }), bild ? L('Die KI sieht sich das Bild an …', 'The AI looks at the picture …') : L('Getränk wird überarbeitet …', 'Revising the drink …'), bild)); melde(L('Entwurf bereit', 'Draft ready')); }
   catch (e) { LAB.ueberarbeitungFehlgeschlagen(r, e.keinSchluessel ? 'kein Schlüssel' : e.message); melde(e.keinSchluessel ? L('Für die Überarbeitung fehlt der Anthropic-Schlüssel.', 'The Anthropic key is missing for the revision.') : L('Überarbeitung fehlgeschlagen: ', 'Revision failed: ') + e.message); }
   sichern(); zeichne();
+}
+/* Klaus 26.11.: „nochmal die KI über das Bild schauen lassen mit einer Aussage von mir“ – Texteingabe mit Mikrofon, das Bild auf Wunsch dabei. */
+function labUeberarbeitenFenster(r) {
+  Z.fenster = { titel: L('Überarbeiten', 'Revise') + ': ' + r.name, labUid: r.uid, html: `<form id="labrev" class="felder">
+   <label>${L('Was soll die KI ändern oder nachprüfen?', 'What should the AI change or check?')}${mikro('#labrev [name=h]')}<textarea class="feld" name="h" rows="3" placeholder="${L('z. B. Das Getränk ist nicht grün, prüf das bitte nach.', 'e.g. The drink is not green, please check.')}"></textarea></label>
+   ${r.img ? `<label class="haken"><input type="checkbox" name="bild" checked> ${L('Bild mitschicken: die KI gleicht Name und Zutaten mit dem Bild ab', 'Send the picture: the AI checks name and ingredients against it')}</label><p class="klein">${L('Das Bild geht verkleinert und ohne Metadaten an Anthropic.', 'The picture goes to Anthropic reduced and without metadata.')}</p>` : ''}
+   <div class="reihe ende"><button type="button" class="knopf hell" data-a="fenster-zu">${L('Abbrechen', 'Cancel')}</button><button class="knopf" type="submit">${I('wand')}${L('Überarbeiten', 'Revise')}</button></div></form>` };
 }
 function labBewertenFenster(r) {
   Z.fenster = { titel: L('Bewerten', 'Rate') + ': ' + r.name, labUid: r.uid, html: `<form id="labrate" class="felder">${LAB.DIMENSIONEN.map((d) => `<label class="regler">${L(d.de, d.en)} <output id="lro-${d.id}">3</output><input type="range" name="${d.id}" min="1" max="5" step="1" value="3" data-lro="${d.id}"></label>`).join('')}
@@ -1286,7 +1296,7 @@ const TUN = {
     frage(L('Aus dem Labor verwerfen', 'Discard from the lab'), fuelle(L('„{0}“ wird verworfen. Es bleibt unter „Entfernte Getränke“ und lässt sich wiederherstellen.', '“{0}” will be discarded. It stays under “Removed drinks” and can be restored.'), esc(r.name)), L('Verwerfen', 'Discard'), () => { LAB.entfernen(r); sichern(); fZu(); }, true); return false; },
   'lab-zurueck'(b) { const r = getr(b.dataset.u); if (!r) return; LAB.wiederherstellen(r); sichern(); melde(L('Zurück im Labor', 'Back in the lab')); },
   'lab-entfernte'() { Z.lab.entfernteAuf = !Z.lab.entfernteAuf; },
-  'lab-ueberarbeiten'(b) { const r = getr(b.dataset.u); if (r) labUeberarbeiten(r); return false; },
+  'lab-ueberarbeiten'(b) { const r = getr(b.dataset.u); if (r) labUeberarbeitenFenster(r); },
   'lab-rev-ja'(b) { const r = getr(b.dataset.u); if (!r) return; LAB.ueberarbeitungAnnehmen(r); sichern(); melde(L('Neue Fassung aktiv', 'New version active')); },
   'lab-rev-nein'(b) { const r = getr(b.dataset.u); if (!r) return; LAB.ueberarbeitungAblehnen(r); sichern(); melde(L('Original bleibt', 'Original kept')); },
   'lab-solo'() { A.einstellungen.labSolo = !labSolo(); sichern(); melde(labSolo() ? L('Eine Bewertung genügt', 'One rating is enough') : L('Drei Bewertungen', 'Three ratings')); },
@@ -1486,6 +1496,7 @@ document.addEventListener('submit', (ev) => {
   if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
     S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'gratis') bildErzeugen(true); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } else if (ZU.danach.includes(danach)) { if (TUN[danach]() !== false) zeichne(); } }); return; }
+  if (ev.target.id === 'labrev') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; Z.fenster = null; zeichne(); labUeberarbeiten(r, { hinweis: String(d.get('h') || ''), mitBild: d.get('bild') === 'on' }); return; }
   if (ev.target.id === 'labrate') { const d = new FormData(ev.target), r = getr(Z.fenster.labUid); if (!r) return; const vor = r.labStatus;
     const f = LAB.bewerten(r, { taste: d.get('taste'), practicality: d.get('practicality'), originality: d.get('originality'), description: d.get('description') }, String(d.get('fb') || ''), { solo: labSolo() });
     Z.fenster = null; sichern();
