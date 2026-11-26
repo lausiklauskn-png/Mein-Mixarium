@@ -269,6 +269,8 @@ export default {
   'Über': '关于',
   'Handbuch': '使用手册',
   'Impressum': '法律声明',
+  'Voriges Getränk': '上一个饮品',
+  'Nächstes Getränk': '下一个饮品',
   'Bild bearbeiten': '编辑图片',
   'Getränk bearbeiten': '编辑饮品',
   'Name': '名称',

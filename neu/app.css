@@ -1039,3 +1039,11 @@ h1,h2,h3,p{margin:0}
 #bild-arbeit.fertig .ba-punkte{animation:none}
 @keyframes ba-dreh{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){#bild-arbeit .ba-punkte{animation-duration:3s}}
+/* Blättern im Vollbild (Klaus 26.11.): zwei runde Pfeile im Bildbereich (breiter Schirm), dazu „3 / 12“ */
+.mx .blatt-pfeil{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:rgba(10,16,36,.5);color:#fff;border:1px solid rgba(255,255,255,.35);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.mx .blatt-pfeil .ico{width:24px;height:24px;color:#fff}
+.mx .blatt-pfeil.links{left:12px}.mx .blatt-pfeil.rechts{right:12px}
+.mx .blatt-pfeil:disabled{opacity:.25;cursor:default}
+.mx .blatt-stand{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:3;padding:2px 10px;border-radius:999px;background:rgba(10,16,36,.5);color:#fff;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;pointer-events:none}
+.mx .bildvoll .blatt-pfeil{position:fixed}.mx .bildvoll .blatt-stand{position:fixed;bottom:18px}
+@media print{.mx .blatt-pfeil,.mx .blatt-stand{display:none!important}}

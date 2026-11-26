@@ -269,6 +269,8 @@ export default {
   'Über': 'Acerca de',
   'Handbuch': 'Manual',
   'Impressum': 'Aviso legal',
+  'Voriges Getränk': 'Bebida anterior',
+  'Nächstes Getränk': 'Bebida siguiente',
   'Bild bearbeiten': 'Editar imagen',
   'Getränk bearbeiten': 'Editar bebida',
   'Name': 'Nombre',
