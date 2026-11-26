@@ -109,6 +109,26 @@ try {
     ok((await sammlungWenn(p, (x) => x.getraenke.length === 7)).getraenke.length === 7, 'ohne Ähnliches wird sofort gespeichert, ohne Band');
     await c.close(); }
 
+  console.log('4 · Klaus 26.11.: auf der Bilder-Seite „Doppelte suchen“ (ganze Sammlung) und „Platz sparen“');
+  { const gk = await b.newContext(), gp = await gk.newPage(); await gp.goto(U + 'impressum.html');
+    const GROSS = await gp.evaluate(() => { const c = document.createElement('canvas'); c.width = 2400; c.height = 1800; const g = c.getContext('2d'); const v = g.createLinearGradient(0, 0, 2400, 1800); v.addColorStop(0, '#2e86de'); v.addColorStop(1, '#f6b93b'); g.fillStyle = v; g.fillRect(0, 0, 2400, 1800); for (let i = 0; i < 60; i++) { g.fillStyle = `hsl(${i * 6},70%,55%)`; g.beginPath(); g.arc((i * 397) % 2400, (i * 211) % 1800, 60 + (i % 5) * 20, 0, 7); g.fill(); } return c.toDataURL('image/jpeg', 0.97); });
+    await gk.close();
+    const { p, c } = await seite([...BESTAND, D(21, 'Ingwer-Limo', {}, ['Ingwer', 'Zitronensaft', 'Honig', 'Sprudelwasser']), D(22, 'Kirsch-Schorle', { img: GROSS }, ['Kirschsaft', 'Sprudelwasser'])]);
+    const zuBildern = async () => { await zuEinst(p); await p.click('.ezeile[data-go=bilder]'); await p.waitForSelector('.bildgitter'); };
+    await zuBildern(); await p.click('[data-a=doppel-buch]'); await p.waitForSelector('#doppel-liste', { timeout: 15000 }).catch(() => {});
+    const paare = await p.locator('.dp').evaluateAll((l) => l.map((e) => e.dataset.neu));
+    ok(paare.length === 1 && paare[0] === 'g-21', '„Doppelte suchen“ findet in der Sammlung genau die doppelte Ingwer-Limo, sonst nichts', JSON.stringify(paare));
+    await p.click('.fenster [data-a=fenster-zu]'); await p.waitForTimeout(400);
+    const vor = (await sammlung(p)).getraenke.find((r) => r.uid === 'g-22').img;
+    await p.click('[data-a=bilder-sparen]'); const t = await toastMit(p, /gespart|platzsparend/, 20000);
+    const nach = (await sammlungWenn(p, (x) => x.getraenke.find((r) => r.uid === 'g-22').img !== vor)).getraenke.find((r) => r.uid === 'g-22').img;
+    ok(nach.startsWith('data:image/webp') && nach.length < vor.length * 0.9 && /^2 Bilder neu gespeichert/.test(t), '„Platz sparen“: beide JPEG-Fotos (das große und die Beerenschorle) werden neu gespeichert, das große Foto liegt danach als WebP und mindestens ein Zehntel kleiner da', `${vor.length} → ${nach.length} · ${t}`);
+    /* Benannte Grenze (gemessen 26.11.): ohne die WebP-Regel in platzSparen (Kern 0.33.2) bleibt diese Zeile grün; die Schwelle
+     * „mindestens ein Zehntel kleiner“ fängt ein zweites Rechnen hier schon ab. Die Regel ist eine Absicherung, keine messbare Wirkung. */
+    await p.evaluate(() => document.querySelector('.mxtoast')?.remove()); await p.click('[data-a=bilder-sparen]'); const t2 = await toastMit(p, /schon platzsparend|gespart/, 20000);
+    ok(/schon platzsparend/.test(t2), 'ein zweites Mal: „schon platzsparend gespeichert“, nichts wird schlechter gerechnet', t2);
+    await c.close(); }
+
   ok(!fehler.length, 'keine Fehler im Browser', fehler.slice(0, 3).join(' | '));
 } catch (f) { rot++; console.log('  ✗ ROT Absturz — ' + String(f && f.message || f).split('\n')[0]); }
 await b.close(); server.close();
