@@ -8,7 +8,19 @@ liest ihn einmal zum Einstieg. Alles Offene steht in `docs/UEBERGABE_GEMEINSAME_
 
 ---
 
-## Runde 7 · 23./24.11.2026 nachts · Antwort auf Rezeptbuch Runde D und E, Kern 0.22.1 nachgezogen (Pin `43d204c`), PWA 10.0.0-vor23
+## Runde 8 · 26.11.2026 · Antwort auf Rezeptbuch Runde K, Kern 0.33.3 nachgezogen, PWA 10.0.0-vor43
+
+- **Übernommen:** Kern 0.32–0.33.3 (Doppelte im ganzen Bestand, Mengen-Regel mit mindestens drei verschiedenen Mengen, Namen in anderer
+  Schrift, Fotos als WebP 1600, „Platz sparen“). Auf der Bilder-Seite „Doppelte suchen“ und „Platz sparen“ (vor42).
+- **Aus Klaus' Rezeptbuch (26.11.):** die 8 Getränke mit Alkohol in der überarbeiteten Fassung (bisherige Kennungen bleiben), dazu ein
+  neues Paket „Getränke & Fingerfood aus dem Rezeptbuch“ (10 alkoholfreie Getränke, Pizza-Toast, Gyoza, Ebi Tempura), erzeugt mit
+  `tools/rezeptbuch-getraenke.py` aus `Mein-Rezeptbuch/beispiele/rezeptbuch-2026-11-26.json`. Glas-Angaben werden auf die Kennungen des
+  Mixariums gebracht. Die Startgetränke bleiben (Klaus: „vorläufig“).
+- **Zurück an das Rezeptbuch:** die Paket-Prüfung des Mixariums fand fünf Rezepte, in denen eine Zutat in keinem Schritt vorkam
+  (Solero, Frucht-Shake, Amaretto Sunrise, Pizza-Toast, Gyoza) – im Rezeptbuch nachgebessert (0.19.13).
+- **Warengruppen:** neue Gruppe „Kaffee, Tee & Gewürze“; Obst/Kräuter und Kühlregal kennen mehr Wörter (Zucker bleibt Vorrat).
+
+## Runde 7 · 23./24.11.2026 nachts · Antwort auf Rezeptbuch Runde D und E, Kern 0.22.1 nachgezogen (Pin `43d204c`), PWA 10.0.0-vor23 (vorige Fassung)
 
 Gelesen: `BRIEFKASTEN_MIXARIUM.md` Runde D und E. Kern per Pin übernommen, nichts von Hand geändert.
 
@@ -29,18 +41,3 @@ Gelesen: `BRIEFKASTEN_MIXARIUM.md` Runde D und E. Kern per Pin übernommen, nich
 - Offen im Kern: die Kostenschätzung liefert nur den langen Satz (die Kurzzeile baut das Mixarium selbst); der Ladebalken hat kein „Abbrechen“.
 
 ---
-
-## Runde 6 · 23.11.2026 · Kern 0.16 nachgezogen, PWA 10.0.0-vor17 (gemeinsame Sitzung) (vorige Fassung)
-
-Gelesen: Rezeptbuch-Briefkasten Runde C. Kern 0.16 per Pin übernommen, nichts von Hand geändert.
-
-| Punkt | Entscheidung fürs Mixarium |
-|---|---|
-| Kategorien/Einkauf je Ausgabe (Kern 0.11–0.13) | **übernommen** über `getraenke/warengruppen.mjs` und `getraenke/kategorien.mjs` |
-| Wochenplan, Text-Import, Bilder-Ordner, Sinn-Suche | **übernommen**, Bar-Einheiten (cl, oz, Dash) im Import |
-| Sticker (Kern 0.14–0.15) | **übernommen** |
-| Hinweis-Blasen (Kern 0.16) | **übernommen**, abschaltbar in den Einstellungen |
-| Erklärtexte hinter „?“ | **übernommen**: Labor, Anthropic- und OpenAI-Schlüssel, Tresor, Text-Import, Pakete, Kategorien, Läden, Bilder |
-| Mix-Labor | **nur Mixarium** (`getraenke/labor.mjs`, Haiku über den eigenen Anthropic-Schlüssel); kein Kern-Baustein, solange das Rezeptbuch kein Labor hat |
-
-Offen: Bekannte Drinks entdecken, Foto-Scan, Web-Import, Übersetzen, Ordner-Ansicht, Drucken/QR, Handbuch, Mistral-Schlüssel, die übrigen 6 Sprachen.

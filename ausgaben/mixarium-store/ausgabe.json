@@ -39,6 +39,7 @@
  "netzmodule": "eingebaut-nicht-geladen",
  "alkoholErlaubt": false,
  "beispiele": [
-  "getraenke-ohne-alkohol-start"
+  "getraenke-ohne-alkohol-start",
+  "getraenke-und-fingerfood-aus-dem-rezeptbuch"
  ]
 }
