@@ -96,7 +96,7 @@ pruefe('im Fenster ist der jetzige Ordner markiert; „aus dem Ordner nehmen“ 
 await p.keyboard.press('Escape'); await p.waitForSelector('.fenster', { state: 'detached' }); await zurListe(p);
 await p.locator('.leiste .ord', { hasText: 'Sommerfest' }).click(); await bis(p, () => document.querySelectorAll('.karte').length === 1);
 pruefe('Tipp auf den Ordner zeigt sein Getränk; der Ordner ist in der Leiste gewählt, keine zweite Überschrift', await p.locator('.karte').count() === 1 && (await p.locator('.karte strong').innerText()).trim() === zweites && await p.locator('.haupt h3').count() === 0 && await p.locator('.leiste .ord[aria-pressed=true]', { hasText: 'Sommerfest' }).count() === 1);
-pruefe('der Kopf zählt, was zu sehen ist', (await p.locator('.kopf .name small').innerText()).trim() === '1 Getränk', await p.locator('.kopf .name small').innerText());
+pruefe('Klaus 26.11.: der Kopf zählt nicht mehr (die Zahl steht an „Getränke“ in der Leiste)', await p.locator('.kopf .name small').count() === 0 && !/Getränk/.test(await p.locator('.kopf .name').innerText()), await p.locator('.kopf .name').innerText());
 
 console.log('4 · Neues Getränk aus dem Ordner heraus; Formular mit Ordner-Wahl');
 await p.click('.kopf [data-a=neu]'); await p.click('[data-a=neu-form]'); await p.waitForSelector('#ed');

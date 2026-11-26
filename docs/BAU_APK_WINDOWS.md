@@ -260,6 +260,12 @@ Download in eine Sitzung brauchte die Umgebung „Standard“ zwei Speicher-Adre
 je Lauf ein anderer): eine neue lässt sich nicht über diese installieren, vorher in der App eine Sicherung speichern. Release-Schlüssel und
 Update-Weg wie in Private Akte stehen noch aus. Die Store-Ausgabe `mixarium-store` ist nicht gebaut (Probe grün, 67).
 
+**Pro-Anzeige (P2, Klaus 26.11., gebaut in 10.0.0-vor37):** in der Hülle steht unter dem Namen „Pro“ und dahinter die Versionsnummer als
+Knopf; meldet der Update-Baustein (`Capacitor.Plugins.DoUpdates`, wie in Private Akte) ein neues Update, steht daneben ein rotes Schild
+„Update“, ein Tipp darauf installiert. Der Baustein selbst (P3, mit „dem Geheimnis“) ist **nicht** eingebaut – bis dahin sagt ein Tipp auf die
+Versionsnummer „Updates sind in dieser Fassung noch nicht eingerichtet“, und das Schild erscheint nie. Name der App: **„Mein Mixarium Pro“**
+(`paket/ausgaben.json`, löst E4 „App Mein Mixarium“ ab). Probe `smoke_neu_ansicht` Teil 5 (Hülle gestellt).
+
 ## 7 · Nicht gemessen
 
 - **Kein Bau.** Keine APK, kein Gradle-Lauf, kein Installer; `electron-builder` ist nie gelaufen (nur die Schlüssel von
@@ -302,6 +308,7 @@ Keine laufenden Kosten (alles im Gerät oder ohne Dienst). Reihenfolge = Reihenf
 | 5 | **Food-Zine an die ChatGPT-/Claude-App übergeben**: Teilen mit Bild **und** Auftrag in einem Schritt statt kopieren/wechseln/einfügen | Zwischenablage mit Text + Bild über `clipboard.write` der Hülle, immer verlässlich |
 | 6 | **Kochwecker und Erinnerungen als echte Benachrichtigung**, auch bei gesperrtem Schirm (Local Notifications); Notizbuch ohne `.ics`-Umweg | Benachrichtigung des Systems |
 | 7 | **Diktat offline** über den Sprach-Baustein der Familienakte (ProSpeech) | Diktat des Systems, sonst wie heute |
+| 7a | **Gerätekalender anschließen** (Klaus 25.11., wie Private Akte/Private Brain): Anlässe der Getränkekarte und auf Wunsch der Wochenplan als Termine im Android-Kalender (Calendar Provider), mit Abgleich (im Rezeptbuch: Event-Ordner, Notiz-Erinnerungen) | Kalender des Systems (Outlook/Windows-Kalender über `.ics` oder Graph, entscheiden beim Bau) |
 | 8 | **Verknüpfungen am App-Zeichen** (langer Druck: Neues Rezept, Einkaufsliste, Notiz); später ein Widget „Einkaufsliste“ | **Bücher direkt als PDF-Datei** (`printToPDF`, ohne Druckdialog) · **zweites Fenster** (Kochansicht auf zweitem Bildschirm) · Tastenkürzel (Strg+N, Strg+F) |
 
 Je Punkt beim Bau: eine Probe, die mit **und** ohne Hülle läuft (ohne Hülle muss der PWA-Weg unverändert grün bleiben), und

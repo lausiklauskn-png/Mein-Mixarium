@@ -1015,3 +1015,27 @@ h1,h2,h3,p{margin:0}
    eigenen Breite (Container-Query), nicht an der des Fensters; sonst untereinander, nichts wird abgeschnitten. */
 .mx .detail{container-type:inline-size;container-name:getraenk}
 @container getraenk (max-width:700px){.mx .detail-rumpf{grid-template-columns:minmax(0,1fr);gap:18px}}
+/* P2 Pro-Zeile in der Hülle (wie Private Akte): „Pro“, Versionsnummer als Knopf, rotes Schild „Update“ */
+.mx .name .pro-zeile{display:flex;align-items:center;gap:5px;margin-top:1px;font-size:11px;line-height:1.2}
+.mx .name .pro-zeile b{font-weight:700;letter-spacing:.04em}
+.mx .name .pro-zeile .ver{display:inline;font-size:11px;opacity:.8}
+.mx .name .upd-schild{border:1px solid #c62828;background:#c62828;color:#fff;font:inherit;font-size:10.5px;font-weight:700;line-height:1.3;padding:0 6px;border-radius:999px;cursor:pointer}
+/* Zahl der Einträge an der Navi-Leiste (Klaus 26.11.): klein, links am Symbol, statt „8 Getränke“ im Kopf */
+.mx .nav button,.mx .fl-knoepfe button{position:relative}
+.mx .nzahl{position:absolute;left:2px;top:2px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--akz);color:var(--bg);font-size:10px;font-weight:700;line-height:16px;text-align:center;font-variant-numeric:tabular-nums;pointer-events:none}
+.mx .nav button[aria-current=page] .nzahl{background:var(--ink);color:var(--fl)}
+.mx .nav.zu>button[data-go] span.nzahl{display:block}
+.mx .nav.zu>button[data-go] .nzahl{left:auto;right:2px;top:1px}
+/* Bild entsteht (Klaus 26.11.): drei kreisende Punkte, Text, geschätzte Prozent; außerhalb der Seite, oben in der Mitte */
+#bild-arbeit{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translate(-50%,-140%);z-index:99999;display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:999px;background:rgba(14,22,44,.9);color:#fff;font:600 13px/1.2 system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:transform .25s ease,opacity .25s ease}
+#bild-arbeit.an{transform:translate(-50%,0);opacity:1}
+#bild-arbeit .ba-zahl{font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+#bild-arbeit.fertig .ba-zahl{color:#7fe0a8}
+#bild-arbeit .ba-punkte{position:relative;width:20px;height:20px;flex:none;animation:ba-dreh 1.1s linear infinite}
+#bild-arbeit .ba-punkte i{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff}
+#bild-arbeit .ba-punkte i:nth-child(1){left:7px;top:0}
+#bild-arbeit .ba-punkte i:nth-child(2){left:0;bottom:1px;opacity:.75}
+#bild-arbeit .ba-punkte i:nth-child(3){right:0;bottom:1px;opacity:.5}
+#bild-arbeit.fertig .ba-punkte{animation:none}
+@keyframes ba-dreh{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#bild-arbeit .ba-punkte{animation-duration:3s}}
