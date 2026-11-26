@@ -364,7 +364,7 @@ test('dbId und schonDa: ein übernommener Drink wird beim zweiten Mal wiedergefu
   assert.deepEqual(buch.map((r) => r.name), ['Afterglow', 'Margarita']);
   /* an echten Daten: das Beispielpaket trägt Drinks, die die alte App aus der Datenbank übernommen hat */
   const bsp = paket('getraenke-mit-alkohol-fuer-mixarium.json');
-  assert.equal(E.schonDa(bsp, { idDrink: '17167' }).name, 'Raspberry Cooler'); assert.equal(E.schonDa(bsp, '178321').name, 'Amaretto Fizz'); assert.equal(E.schonDa(bsp, MARGARITA), undefined);
+  assert.equal(E.schonDa(bsp, { idDrink: '17167' }).name, 'Himbeer-Cooler');   /* seit 26.11. die überarbeitete deutsche Fassung (Klaus' Rezeptbuch) */ assert.equal(E.schonDa(bsp, '178321').name, 'Amaretto Fizz'); assert.equal(E.schonDa(bsp, MARGARITA), undefined);
   assert.equal(E.quelleAdresse({ idDrink: '17207', strDrink: 'Piña Colada' }), 'https://www.thecocktaildb.com/drink/17207-Pina-Colada'); assert.equal(E.quelleAdresse({ idDrink: 'x', strDrink: 'Kein' }), '');
 });
 

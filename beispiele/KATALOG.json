@@ -16,14 +16,28 @@
    ]
   },
   {
+   "id": "getraenke-und-fingerfood-aus-dem-rezeptbuch",
+   "titel": "Getränke & Fingerfood aus dem Rezeptbuch: 13 Rezepte",
+   "datei": "getraenke-und-fingerfood-aus-dem-rezeptbuch.json",
+   "art": "rezepte",
+   "alkohol": false,
+   "fuer": [
+    "mixarium-store",
+    "mixarium-voll"
+   ],
+   "anzahl": 13,
+   "bytes": 2214771,
+   "sha256": "ee65a2a47496326f6184fc753ee69cc7fea37d67c2533164a004f0fc12078efb"
+  },
+  {
    "id": "getraenke-mit-alkohol-fuer-mixarium",
    "titel": "Getränke mit Alkohol: 8 Rezepte",
    "datei": "getraenke-mit-alkohol-fuer-mixarium.json",
    "art": "rezepte",
    "alkohol": true,
    "anzahl": 8,
-   "bytes": 1565497,
-   "sha256": "8915c3231923c7072ac694c98fac6f42787b1bd57de3bd4218e76eb734151aee",
+   "bytes": 1294116,
+   "sha256": "8527207336140b0686dd459087dd6241178453af31d734e26231d8c415de0027",
    "fuer": [
     "mixarium-voll"
    ]

@@ -30,7 +30,7 @@ pruefe('leere App: ein Bild, eine Zeile, zwei Knöpfe; kein Lesetext', await p.l
 pruefe('unten gibt es keine Leiste, am Rand den Griff', await p.locator('.nav').count() === 0 && await p.locator('.fl-griff').count() === 1);
 pruefe('die App füllt den Bildschirm genau', await Zs(p, () => Math.round(document.querySelector('.mx').getBoundingClientRect().height) === innerHeight));
 await p.click('[data-a=beispiele]'); await p.waitForSelector('[data-paket]');
-pruefe('Pakete werden erst auf Tippen angeboten: 2 Stück (Ohne Alkohol ist aus)', await p.locator('[data-paket]').count() === 2);
+pruefe('Pakete werden erst auf Tippen angeboten: 3 Stück (Ohne Alkohol ist aus; seit vor43 dazu Getränke & Fingerfood aus dem Rezeptbuch)', await p.locator('[data-paket]').count() === 3 && await p.locator('[data-paket=getraenke-und-fingerfood-aus-dem-rezeptbuch]').count() === 1);
 await p.click('[data-paket=getraenke-ohne-alkohol-start]'); await p.waitForSelector('.karte'); await ruhe(p);
 pruefe('Startpaket: 7 Karten', await p.locator('.karte').count() === 7);
 pruefe('jedes Beispiel trägt Marke und Kennung', await Zs(p, () => __mixarium.sammlung.getraenke.every((r) => r.beispiel === 'getraenke-ohne-alkohol-start' && r.uid && r.beispielPruef)));
@@ -90,7 +90,7 @@ await p.click('[data-a=beispiele-weg]'); await ruhe(p); await p.click('[data-a=f
 pruefe('„Alle Beispiele löschen“ lässt nur das eigene Getränk stehen', await Zs(p, () => __mixarium.sammlung.getraenke.map((r) => r.name).join() === 'Testlimo'));
 await p.click('.fl-griff'); await p.click('.fl-knoepfe [data-go=mehr]'); await ruhe(p);
 await p.click('[data-a=alk]'); await ruhe(p); await p.click('[data-a=beispiele]'); await p.waitForSelector('[data-paket]');
-pruefe('mit „Ohne Alkohol“ wird das Alkohol-Paket nicht angeboten', await p.locator('[data-paket]').count() === 1 && await p.locator('[data-paket=getraenke-mit-alkohol-fuer-mixarium]').count() === 0);
+pruefe('mit „Ohne Alkohol“ wird das Alkohol-Paket nicht angeboten', await p.locator('[data-paket]').count() === 2 && await p.locator('[data-paket=getraenke-mit-alkohol-fuer-mixarium]').count() === 0);
 await p.context().close();
 
 console.log('Monitor 1280 px, Übernahme aus der bisherigen App');
