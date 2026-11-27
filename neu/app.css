@@ -658,6 +658,7 @@ h1,h2,h3,p{margin:0}
 .mx .sticker{width:100%;height:100%;object-fit:cover;display:block}
 .mx .stk-name{display:block;max-width:66px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .mx .stk-name .zahl{opacity:.75;font-weight:400}
+.mx .stk-name .kat-stift{display:inline-grid;vertical-align:-2px;margin-left:2px;color:var(--akz)}.mx .stk-name .kat-stift .ico{width:12px;height:12px}
 .mx .leiste.stickers .chip.stk[aria-pressed="true"]{color:var(--ink);font-weight:650}
 .mx .leiste.stickers .chip.stk[aria-pressed="true"] .stk-bild{box-shadow:0 0 0 2.5px var(--akz)}
 .mx .kat-zeichen{overflow:hidden}.mx .kat-zeichen:has(.sticker){border-radius:50%}
@@ -1065,3 +1066,38 @@ h1,h2,h3,p{margin:0}
 .mx .detail-kopf .seite :is(h2,.unter){text-shadow:0 0 14px var(--bg),0 0 4px var(--bg)}
 .mx .detail-kopf .held.ganz>:is(.blatt-pfeil.rechts,.held-voll){right:calc(clamp(40px,6vw,90px) + 12px)}   /* nicht unter dem Text, der ins Bild hineinragt */
 @media(min-width:1000px){.mx .md.fokus .detail-kopf .held.ganz{min-height:min(64vh,680px)}}   /* im Vollbild darf das Bild am großen Schirm wachsen */
+/* Klaus 27.11.: Bild anpassen wie im Rezeptbuch (Rahmen zum Ziehen, Zoom, Lagen, Vorschau, Werkzeuge am Bild) */
+.mx .bildanpassen{position:absolute;inset:0;z-index:85;background:#0b0f1a;color:#eef2fb;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px));animation:mx-auf .16s ease both}
+.mx .bildanpassen .bv-kopf{display:flex;align-items:flex-start;gap:10px}
+.mx .bildanpassen .bv-kopf h2{flex:1;min-width:0;font-size:17px;font-weight:650}
+.mx .bildanpassen .bv-kopf h2 small{display:block;font-weight:400;font-size:12.5px;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mx .bildanpassen .bvzu{position:static;flex:none}
+.mx .bildanpassen .bv-bildort{position:relative;align-self:center;width:min(100%,calc(58svh * var(--bild,var(--vh,1.3))))}
+.mx .bildanpassen .zs-rahmen{position:relative;aspect-ratio:var(--bild,var(--vh,1.3));width:100%;border-radius:16px;overflow:hidden;background:#000;touch-action:none;cursor:grab;outline:2px solid #fff;outline-offset:2px}
+.mx .bildanpassen .zs-rahmen img,.mx .bildanpassen .zs-vor img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none}
+.mx .bildanpassen .bv-werk{position:absolute;right:8px;bottom:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 16px)}
+.mx .bildanpassen .bv-k{height:38px;min-width:38px;padding:0 10px;border-radius:19px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(6,10,24,.62);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:13px;font-weight:600;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.mx .bildanpassen .bv-k .ico{width:18px;height:18px}.mx .bildanpassen .bv-k.rot{color:#ffc2b5}
+.mx .bildanpassen .bv-k span{display:none}
+.mx .bildanpassen .bv-bildort{container-type:inline-size}
+@container (min-width:1000px){.mx .bildanpassen .bv-k span{display:inline}}   /* Klaus 27.11.: Text nur, wenn das Bild breit genug ist – sonst deckt er es zu */
+.mx .bildanpassen .bv-regler{width:min(100%,720px);align-self:center;display:grid;gap:10px}
+.mx .bildanpassen .laeden{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex-wrap:wrap}
+.mx .bildanpassen .chip{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.22)}
+.mx .bildanpassen .zs-regler{display:grid;grid-template-columns:48px 1fr 40px;align-items:center;gap:8px;font-size:12.5px;color:rgba(238,242,251,.8)}
+.mx .bildanpassen .zs-regler input{width:100%;accent-color:var(--akz)}
+.mx .bildanpassen .zs-regler b{font-variant-numeric:tabular-nums;text-align:right;color:#fff}
+.mx .bildanpassen .zs-vor{display:flex;gap:10px;align-items:flex-end;font-size:11px;color:rgba(238,242,251,.8);text-align:center}
+.mx .bildanpassen .zs-vor span{display:block;border-radius:10px;overflow:hidden;margin-bottom:3px}
+.mx .bildanpassen .zs-vor .vk{width:110px;aspect-ratio:var(--vk,1.33)}.mx .bildanpassen .zs-vor .vh{width:150px;aspect-ratio:var(--vh,1.3)}
+.mx .bildanpassen .reihe{display:flex;gap:8px;flex-wrap:wrap}
+.mx .bildanpassen .knopf.hell{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.22)}
+/* Klaus 27.11.: im großen Bild nur das Symbol, der Text erst an sehr breiten Schirmen */
+.mx .bvwerk>span{display:none}.mx .bvwerk{padding:0;width:42px;justify-content:center}
+@media(min-width:1400px){.mx .bvwerk>span{display:inline}.mx .bvwerk{width:auto;padding:0 15px 0 12px}}
+/* Klaus 27.11.: die Maske zeigt, wo das Bild in der Ausgabe sitzt */
+.mx .bildanpassen .zs-rahmen #zs-bild{object-fit:fill}
+.mx .bildanpassen .zs-maske{position:absolute;pointer-events:none;border-radius:6px;background:none;display:block;margin:0;padding:0}
+.mx .bildanpassen .zs-maske i{position:absolute;left:6px;top:4px;font-style:normal;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.mx .bildanpassen .zs-maske.kopf{border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.55)}
+.mx .bildanpassen .zs-maske.karte{border:2px dashed rgba(255,255,255,.9)}.mx .bildanpassen .zs-maske.karte i{top:auto;bottom:4px}
