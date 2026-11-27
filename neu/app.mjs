@@ -10,12 +10,12 @@ import { speicher } from '../kern/speicher/speicher.mjs';
 import { tresor } from '../kern/speicher/tresor.mjs';
 import { FARBEN, TOENE, istDunkel, farbeSetzen, farbName as kernFarbName, tonName } from '../kern/oberflaeche/farben.mjs';
 import { schriftWert, schriftSetzen, schriftRegler } from '../kern/oberflaeche/schrift.mjs';
-import { bildAusDatei, platzSparen, datenGroesse } from '../kern/oberflaeche/bild.mjs';
+import { bildAusDatei, platzSparen, datenGroesse, ausschnittRechteck } from '../kern/oberflaeche/bild.mjs';
 import { kiBild, gratisBild, KOSTEN } from '../kern/ki/bild.mjs';
 import { sicht as kernSicht } from '../kern/modell/rezept.mjs';
 import { diktat, diktatAus, diktatMoeglich } from '../kern/oberflaeche/diktat.mjs';
 import { kategorienMit, beschriftung as katBeschr, anzahl as katZahl, anlegen as katAnlegen, umbenennen as katUmbenennen, KATEGORIEN_FEST, katBild, bildWaehlen } from '../kern/modell/kategorien.mjs';
-import { katVonRezept, ordnerVonRezept, KAT_OHNE } from '../kern/modell/rezept.mjs';
+import { katVonRezept, ordnerVonRezept, KAT_OHNE, istInhalt } from '../kern/modell/rezept.mjs';
 import { anlegen as ordAnlegen, umbenennen as ordUmbenennen, loeschen as ordLoeschen, legeIn, umsortieren as ordUmsortieren, uebersicht as ordUebersicht, findeOrdner, ordnerName } from '../kern/modell/ordner.mjs';
 import { einkaufMit } from '../kern/modell/einkauf.mjs';
 import { rezeptAusText } from '../kern/import/text.mjs';
@@ -39,6 +39,7 @@ import { zusatz } from './zusatz.mjs';
 import { findeDoppel, findeDoppelImBuch, wendeAn, dHash } from '../kern/modell/doppel.mjs';
 import { handbuch } from './handbuch.mjs';
 import { installation, istApple, aktualisieren } from '../kern/oberflaeche/app-pflege.mjs';
+import { vollbildSetzen } from '../kern/oberflaeche/vollbild.mjs';
 
 /* Kategorien und Einkauf aus dem Küchen-Kern (ab 10.0.0-vor8), mit den Getränke-Kategorien und -Warengruppen dieser Ausgabe.
    Eine mitgebrachte Kennung (z. B. „vorsp“ aus einem Rezeptbuch-Paket) trägt den Namen aus der Familie, nie die rohe Kennung. */
@@ -52,7 +53,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor45';
+export const FASSUNG = '10.0.0-vor47';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -160,7 +161,7 @@ const ecken = (innen) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="
 const vollKnopf = () => { const an = vollAn() || !!Z.fokus, t = an ? L('Zurück zur ganzen App', 'Back to the whole app') : L('Nur das Getränk, im Vollbild', 'Only the drink, full screen'); return `<button class="held-voll" data-a="vollbild" aria-pressed="${an}" aria-label="${t}" title="${t}">${ecken(an)}</button>`; };
 document.addEventListener('fullscreenchange', () => { if (!vollAn() && Z.fokus) { Z.fokus = false; zeichne(); return; } document.querySelectorAll('.held-voll').forEach((k) => { k.outerHTML = vollKnopf(); }); });
 function bild(r, klasse = '') {
-  if (r.img) { const c = r.imgCrop || {}; return `<img class="foto ${klasse}" src="${esc(r.img)}" alt="" loading="lazy" decoding="async" style="object-position:${Number(c.x) >= 0 ? Number(c.x) : 50}% ${Number(c.y) >= 0 ? Number(c.y) : 50}%">`; }
+  if (r.img) { const c = r.imgCrop || {}, x = Number(c.x) >= 0 ? Number(c.x) : 50, y = Number(c.y) >= 0 ? Number(c.y) : 50, z = Math.min(3, Math.max(1, Number(c.scale) || 1)); return `<img class="foto ${klasse}" src="${esc(r.img)}" alt="" loading="lazy" decoding="async" style="object-position:${x}% ${y}%${z > 1 ? `;transform:scale(${z});transform-origin:${x}% ${y}%` : ''}">`; }
   return platzbild(r);
 }
 function logo() { return `<img class="logo" src="../icons/mixarium-neu-192.png?v=2" alt="" width="34" height="34">`; }   /* das App-Zeichen (Klaus 24.11.), wie auf dem Startbildschirm */
@@ -223,7 +224,7 @@ function menue() {
 function leiste() {
   const l = lage(), alle = l.getraenke.filter(G.istSichtbar).length;
   const gl = l.getraenke, alleBild = katBild(gl, A.kategorien, 'alle'), ordner = ordListe().filter((o) => o.anzahl > 0);   /* ein leerer Ordner steht nicht in der Leiste */
-  const stk = (id, bildHtml, name, n) => `<button class="chip stk" data-kat="${esc(id)}" aria-pressed="${Z.kat === id}"><span class="stk-bild">${bildHtml}</span><span class="stk-name">${esc(name)} <span class="zahl">${n}</span></span></button>`;
+  const stk = (id, bildHtml, name, n) => `<button class="chip stk" data-kat="${esc(id)}" aria-pressed="${Z.kat === id}"><span class="stk-bild">${bildHtml}</span><span class="stk-name">${esc(name)} <span class="zahl">${n}</span>${id !== 'all' && Z.kat === id ? `<i class="kat-stift" title="${L('Noch einmal tippen: umbenennen oder alle verschieben', 'Tap again: rename or move all')}">${I('pencil')}</i>` : ''}</span></button>`;
   return `<div class="leiste stickers" role="group" aria-label="${L('Kategorien', 'Categories')}">${stk('all', alleBild ? `<img class="sticker" src="${esc(alleBild.img)}" alt="" loading="lazy">` : I('book'), L('Alle', 'All'), alle)}${kats().map(({ c, n }) => stk(c.id, katSticker(c, gl), katText(c), n)).join('')}${ordner.map((o) => `<button class="chip stk ord" data-kat="ordner:${esc(o.id)}" aria-pressed="${Z.kat === 'ordner:' + o.id}" title="${L('Ordner', 'Folder')}"><span class="stk-bild">${o.bild ? `<img class="sticker" src="${esc(o.bild)}" alt="" loading="lazy">` : ''}<i class="ord-marke">${o.ico ? esc(o.ico) : I('folder')}</i></span><span class="stk-name">${esc(ordTitel(o))} <span class="zahl">${o.anzahl}</span></span></button>`).join('')}</div>`;
 }
 function karte(r, i) { r = sicht(r); return `<button class="karte" style="--i:${Math.min(i || 0, 7)}" data-d="${esc(r.uid)}"><div class="bild">${bild(r)}${G.hatAlkohol(r) ? `<span class="marke">${I('wine')}${L('mit Alkohol', 'with alcohol')}</span>` : ''}${r.labGen && r.labStatus && r.labStatus !== 'accepted' ? `<span class="marke rechts">${I('lab')}${L('Labor', 'Lab')}${r.labScore ? ' · ' + zahl(r.labScore.toFixed(1)) : ''}</span>` : ''}</div><div class="txt"><strong>${esc(r.name)}</strong><small><span class="nw">${I('glass')}${esc(r.glass ? glasText(r.glass) : katNameVon(r))}</span>${r.prepTime ? `<span class="nw">${I('timer')}${Number(r.prepTime)} min</span>` : ''}</small></div></button>`; }
@@ -557,7 +558,40 @@ function blaettern(d) {
 }
 const blaetterPfeile = () => { if (!blaetternAn() || !breit()) return ''; const v = nachbar(-1), n = nachbar(1), l = blaetterListe(), i = l.findIndex((x) => x.uid === Z.uid) + 1;
   return `<button class="blatt-pfeil links" data-a="blatt-zur" ${v ? `title="${esc(v.name)}"` : 'disabled'} aria-label="${L('Voriges Getränk', 'Previous drink')}">${I('left')}</button><button class="blatt-pfeil rechts" data-a="blatt-vor" ${n ? `title="${esc(n.name)}"` : 'disabled'} aria-label="${L('Nächstes Getränk', 'Next drink')}">${I('right')}</button>${i > 0 ? `<span class="blatt-stand">${i} / ${l.length}</span>` : ''}`; };
-function bildVoll() { const r = Z.bildVoll && getr(Z.uid); if (!r) return ''; return `<div class="bildvoll" data-a="bildvoll-zu" role="dialog" aria-modal="true" aria-label="${esc(r.name)}">${r.img ? `<img src="${esc(r.img)}" alt="${esc(r.name)}">` : platzbild(r)}<span class="bvname">${esc(r.name)}</span><button class="bvwerk" data-a="bildvoll-werk">${I('image')}${L('Bild bearbeiten', 'Edit picture')}</button><button class="bvzu" data-a="bildvoll-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button>${blaetterPfeile()}</div>`; }
+function bildVoll() { const r = Z.bildVoll && getr(Z.uid); if (!r) return ''; return `<div class="bildvoll" data-a="bildvoll-zu" role="dialog" aria-modal="true" aria-label="${esc(r.name)}">${r.img ? `<img src="${esc(r.img)}" alt="${esc(r.name)}">` : platzbild(r)}<span class="bvname">${esc(r.name)}</span><button class="bvwerk" data-a="bildvoll-werk" aria-label="${L('Bild bearbeiten', 'Edit picture')}" title="${L('Bild bearbeiten', 'Edit picture')}">${I('image')}<span>${L('Bild bearbeiten', 'Edit picture')}</span></button><button class="bvzu" data-a="bildvoll-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button>${blaetterPfeile()}</div>`; }
+
+/* Klaus 27.11.: Bild bearbeiten wie im Rezeptbuch – das Bild im Rahmen mit dem Finger oder der Maus verschieben, zoomen, fünf Lagen,
+   Vorschau für Karte und Kopfbild, und die Werkzeuge (ersetzen, KI, Pollinations, entfernen) gleich am Bild. Vorher: erst ein Menü, dann
+   ein Fenster mit zwei Schiebereglern. */
+function bildMasse() { const v = (el) => { const b = el && el.getBoundingClientRect(); return b && b.width > 20 && b.height > 20 ? b.width / b.height : 0; }; return { karte: +(v($('.karte .foto')) || 4 / 3).toFixed(4), kopf: +(v($('.held')) || 4 / 3.1).toFixed(4) }; }
+function bildAnpassen() {
+  const z = Z.zs, r = z && getr(z.uid); if (!r || !r.img) return '';
+  const m = Z.zsMass || { karte: 4 / 3, kopf: 4 / 3.1 }, bw = (a, i, t, kl = '') => `<button class="bv-k ${kl}" data-a="${a}" aria-label="${esc(t)}" title="${esc(t)}">${I(i)}<span>${esc(t)}</span></button>`;
+  return `<div class="bildanpassen" role="dialog" aria-modal="true" aria-label="${L('Bild anpassen', 'Adjust picture')}" style="--vh:${m.kopf};--vk:${m.karte}">
+   <div class="bv-kopf"><h2>${L('Bild anpassen', 'Adjust picture')}<small>${esc(sicht(r).name)}</small></h2><button class="bvzu" data-a="zs-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div>
+   <div class="bv-bildort"><div class="zs-rahmen" id="zs-rahmen"><img src="${esc(r.img)}" alt="" draggable="false" id="zs-bild"><span class="zs-maske karte" id="zs-mk" aria-hidden="true"><i>${L('Kachel', 'Tile')}</i></span><span class="zs-maske kopf" id="zs-mh" aria-hidden="true"><i>${L('Kopfbild', 'Header picture')}</i></span></div>
+    <div class="bv-werk" role="toolbar" aria-label="${L('Bild', 'Picture')}">${bw('zs-datei', 'camera', L('Bild ersetzen', 'Replace picture'))}${bw('zs-ki', 'sparkle', L('Bild von der KI erzeugen', 'Create picture with AI'))}${bw('zs-gratis', 'image', L('Foto über Pollinations', 'Photo via Pollinations'))}${bw('zs-weg', 'trash', L('Bild entfernen', 'Remove picture'), 'rot')}</div></div>
+   <div class="bv-regler"><div class="laeden">${[[L('Mitte', 'Centre'), '50,50'], [L('Oben', 'Top'), '50,0'], [L('Unten', 'Bottom'), '50,100'], [L('Links', 'Left'), '0,50'], [L('Rechts', 'Right'), '100,50']].map(([t, l]) => `<button class="chip" data-a="zs-lage" data-l="${l}">${t}</button>`).join('')}</div>
+    <label class="zs-regler">${L('Größe', 'Zoom')}<input type="range" id="zs-zoom" min="100" max="300" value="${Math.round(z.z * 100)}"><b id="zs-wert"></b></label>
+    <div class="zs-vor"><div><span class="vk"><img src="${esc(r.img)}" alt=""></span>${L('Kachel', 'Tile')}</div><div><span class="vh"><img src="${esc(r.img)}" alt=""></span>${L('Kopfbild', 'Header picture')}</div></div>
+    <div class="reihe"><button class="knopf" data-a="zs-ok">${I('check')}${L('Übernehmen', 'Apply')}</button><button class="knopf hell" data-a="zs-null">${L('Zurücksetzen', 'Reset')}</button><button class="knopf hell" data-a="zs-zu">${L('Abbrechen', 'Cancel')}</button></div></div>
+   <input type="file" id="bbdatei" accept="image/*" hidden></div>`;
+}
+function zsOeffnen(uid) { const r = getr(uid); if (!r || !r.img) return false; const c = r.imgCrop || {}; Z.zsMass = bildMasse(); Z.zs = { uid, x: Number(c.x) >= 0 ? Number(c.x) : 50, y: Number(c.y) >= 0 ? Number(c.y) : 50, z: Math.min(3, Math.max(1, Number(c.scale) || 1)) }; return true; }
+/* Klaus 27.11.: im Rahmen steht das GANZE Bild; abgedunkelt ist, was im Kopfbild nicht zu sehen ist, gestrichelt der Teil der Kachel. */
+function zsMaske() {
+  const z = Z.zs, i = $('#zs-bild'), m = Z.zsMass || { karte: 4 / 3, kopf: 4 / 3.1 }; if (!z || !i) return;
+  if (!z.bild && i.naturalWidth) { z.bild = i.naturalWidth / i.naturalHeight; const o = i.closest('.bv-bildort'); if (o) o.style.setProperty('--bild', z.bild); }
+  if (!z.bild) { i.addEventListener('load', zsZeigen, { once: true }); return; }
+  const setz = (el, q) => { if (el) Object.assign(el.style, { left: q.l * 100 + '%', top: q.t * 100 + '%', width: q.w * 100 + '%', height: q.h * 100 + '%' }); };
+  z.kopf = ausschnittRechteck(z.bild, m.kopf, z.x, z.y, z.z); setz($('#zs-mh'), z.kopf); setz($('#zs-mk'), ausschnittRechteck(z.bild, m.karte, z.x, z.y, z.z));
+}
+function zsZeigen() { const z = Z.zs; if (!z) return; zsMaske(); document.querySelectorAll('.zs-vor img').forEach((i) => { i.style.objectPosition = `${z.x}% ${z.y}%`; i.style.transformOrigin = `${z.x}% ${z.y}%`; i.style.transform = `scale(${z.z})`; }); const w = $('#zs-wert'); if (w) w.textContent = z.z.toLocaleString(sprache(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '×'; }
+let zsZug = null;
+document.addEventListener('pointerdown', (ev) => { const b = ev.target.closest && ev.target.closest('#zs-rahmen'); if (!b || !Z.zs) return; zsZug = { b, x: ev.clientX, y: ev.clientY, cx: Z.zs.x, cy: Z.zs.y }; try { b.setPointerCapture(ev.pointerId); } catch (e) { /* ohne */ } });
+document.addEventListener('pointermove', (ev) => { if (!zsZug || !Z.zs) return; const r = zsZug.b.getBoundingClientRect(), z = Z.zs; const k = z.kopf || { w: 1 / z.z, h: 1 / z.z }, fw = 1 - k.w, fh = 1 - k.h;   /* das helle Feld folgt dem Finger */
+  if (fw > 0.001) z.x = Math.min(100, Math.max(0, zsZug.cx + (ev.clientX - zsZug.x) / r.width / fw * 100)); if (fh > 0.001) z.y = Math.min(100, Math.max(0, zsZug.cy + (ev.clientY - zsZug.y) / r.height / fh * 100)); zsZeigen(); });
+document.addEventListener('pointerup', () => { zsZug = null; }); document.addEventListener('pointercancel', () => { zsZug = null; });
 
 /* ── Fenster (Dialoge) ── */
 function fenster() {
@@ -892,6 +926,24 @@ function beispieleWeg() {
 }
 
 /* ── Bild-Blatt (wie im Rezeptbuch): ganzes Bild, Ausschnitt, ersetzen, KI-Bild, Gratis-Foto. Gelöscht wird ein Bild hier nicht. */
+/* Klaus 27.11.: eine Kategorie aus der Leiste heraus umbenennen oder ALLE ihre Getränke auf einmal in eine andere (auch eine neue)
+   Kategorie legen – statt jedes Getränk einzeln umzustellen. Ein Ordner bleibt dabei, wo er ist. */
+function katBearbeiten(id) {
+  const alle = K.alleKategorien(A.getraenke, A.kategorien), c = alle.find((k) => k.id === id); if (!c) return;
+  const n = A.getraenke.filter((r) => istInhalt(r) && katVonRezept(r) === id).length, name = katText(c), ziele = alle.filter((k) => k.art !== 'ohne' && k.id !== id);
+  const ziel = (k) => `<button class="ezeile" data-a="kat-alle-ziel" data-kid="${esc(id)}" data-ziel="${esc(k ? k.id : '')}">${k ? `<span class="kat-zeichen">${katSticker(k)}</span>` : I('frage')}<span><b>${esc(k ? katText(k) : L('ohne Kategorie', 'no category'))}</b></span>${I('right')}</button>`;
+  Z.fenster = { titel: name, html: `${c.art === 'ohne' ? '' : `<h3 class="eh">${L('Umbenennen', 'Rename')}</h3><form id="katumform" class="webzeile" data-kid="${esc(id)}">${I('pencil')}<input name="n" value="${esc(name)}" aria-label="${L('Neuer Name', 'New name')}" autocomplete="off" enterkeyhint="done"><button class="feldknopf akz" aria-label="${L('Speichern', 'Save')}" title="${L('Speichern', 'Save')}">${I('check')}</button></form>`}
+   ${n ? `<h3 class="eh">${esc(fuelle(L('Alle {0} Getränke verschieben nach …', 'Move all {0} drinks to …'), n))}</h3><div class="eliste" id="kat-alle-ziele">${ziele.map(ziel).join('')}${c.art === 'ohne' ? '' : ziel(null)}</div>
+   <form id="katalleform" class="webzeile" data-kid="${esc(id)}" style="margin-top:10px">${I('plus')}<input name="n" placeholder="${L('Neue Kategorie anlegen und alle dorthin', 'Create a new category and move all there')}" aria-label="${L('Neue Kategorie', 'New category')}" autocomplete="off" enterkeyhint="done"><button class="feldknopf akz" aria-label="${L('Anlegen und verschieben', 'Create and move')}" title="${L('Anlegen und verschieben', 'Create and move')}">${I('check')}</button></form>` : ''}` };
+  zeichne();
+}
+function katAlleVerschieben(id, ziel) {
+  const vorher = A.getraenke.map((r) => ({ uid: r.uid, cat: r.cat })); let n = 0;
+  for (const r of A.getraenke) if (istInhalt(r) && katVonRezept(r) === id) { r.cat = ziel; r.modified = Date.now(); n++; }
+  if (Z.kat === id) Z.kat = ziel || KAT_OHNE;   /* die Leiste folgt den Getränken */
+  sichern(); Z.fenster = null; zeichne();
+  melde(fuelle(L('{0} Getränke zugeordnet', '{0} drinks assigned'), n), L('Rückgängig', 'Undo'), () => { const m = new Map(vorher.map((x) => [x.uid, x.cat])); for (const r of A.getraenke) if (m.has(r.uid)) r.cat = m.get(r.uid); sichern(); zeichne(); });
+}
 function bildBlatt() {
   const r = getr(Z.uid); if (!r) return;
   const z = (akt, i, t, w) => `<button class="ezeile" data-a="${akt}">${I(i)}<span><b>${t}</b><small>${w}</small></span>${I('right')}</button>`;
@@ -1042,7 +1094,7 @@ function zeichne(frisch) {
   const ohneKopf = !br && basis === 'getraenk', fokus = Z.fokus && basis === 'getraenk';
   const alt = $('.haupt'), roll = alt && zeichne.letzte === basis + '|' + Z.uid + '|' + Z.anlass ? alt.scrollTop : 0;
   const such = document.activeElement && document.activeElement.id === 'suche' ? document.activeElement.selectionStart : null;
-  $('#app').innerHTML = `<div class="mx ${br ? 'breit' : 'handy'} fl-${E.fl.seite} ${frisch ? 'frisch' : ''} ${dunkel() ? 'dunkel' : ''} ${E.navZu ? 'navzu' : ''} ${fokus ? 'fokus' : ''}">${ohneKopf ? '<div></div>' : kopf(br)}${br && !fokus ? navLinks() : ''}<main class="haupt" id="haupt">${h}</main>${br || mix || fokus ? '' : flLeiste()}${mix ? vMix(br) : ''}${menue()}${fenster()}${bildVoll()}${Z.toast ? (Z.toastKnopf ? `<div class="mxtoast mit" role="status">${I('check')}<span>${esc(Z.toast)}</span><button data-a="toast-tun">${esc(Z.toastKnopf)}</button></div>` : `<div class="mxtoast" role="status">${I('check')}${esc(Z.toast)}</div>`) : ''}</div>`;
+  $('#app').innerHTML = `<div class="mx ${br ? 'breit' : 'handy'} fl-${E.fl.seite} ${frisch ? 'frisch' : ''} ${dunkel() ? 'dunkel' : ''} ${E.navZu ? 'navzu' : ''} ${fokus ? 'fokus' : ''}">${ohneKopf ? '<div></div>' : kopf(br)}${br && !fokus ? navLinks() : ''}<main class="haupt" id="haupt">${h}</main>${br || mix || fokus ? '' : flLeiste()}${mix ? vMix(br) : ''}${menue()}${fenster()}${bildVoll()}${bildAnpassen()}${Z.toast ? (Z.toastKnopf ? `<div class="mxtoast mit" role="status">${I('check')}<span>${esc(Z.toast)}</span><button data-a="toast-tun">${esc(Z.toastKnopf)}</button></div>` : `<div class="mxtoast" role="status">${I('check')}${esc(Z.toast)}</div>`) : ''}</div>`;
   kernStil();
   zeichne.letzte = basis + '|' + Z.uid + '|' + Z.anlass;
   if (roll) $('.haupt').scrollTop = roll;
@@ -1050,13 +1102,19 @@ function zeichne(frisch) {
   document.documentElement.lang = sprache();
   document.body.style.background = getComputedStyle($('.mx')).backgroundColor;
   if ($('.kachelraster')) kachelnPacken();
+  if (Z.zs) zsZeigen();
+  vollAbgleich(fokus || !!Z.bildVoll);
 }
+/* Klaus 27.11.: echtes Vollbild (auch in der APK, dort über das Plugin der Hülle), solange „nur das Getränk“ an ist oder das Bild groß
+   dasteht; die Leisten des Systems kommen beim Zurückschalten wieder. */
+let vollZuletzt = false;
+function vollAbgleich(soll) { if (soll === vollZuletzt) return; vollZuletzt = soll; vollbildSetzen(soll); }
 function setze(f, frisch) {
   const go = () => { f(); zeichne(frisch); };
   if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
 }
 function geh(v) { history.pushState({ v }, ''); setze(() => { Z.view = v; Z.flAuf = false; Z.menue = null; if (v === 'mix') { Z.step = 0; Z.richt = 'vor'; wachAn(); } if (v !== 'karte') Z.anlass = null; }, true); }
-function zurueck() { if (Z.fokus && Z.view === 'getraenk' && !Z.bildVoll && !Z.fenster) { Z.fokus = false; if (vollAn()) { try { document.exitFullscreen(); } catch (e) { /* schon zu */ } } return zeichne(); } if (Z.bildVoll) { Z.bildVoll = false; if (Z.nachBild) { Z.nachBild = false; Z.bildWerk = false; return bildBlatt(); } return zeichne(); } if (Z.fenster) return fZu(); if (Z.menue) { Z.menue = null; return zeichne(); } if (Z.view === 'mix') return mixZu(); if (Z.view === 'karte' && Z.anlass) return setze(() => { Z.anlass = null; }, true); if (Z.view !== 'start') return setze(() => { Z.view = Z.view === 'getraenk' ? 'start' : 'start'; Z.fokus = false; }, true); }
+function zurueck() { if (Z.zs) { Z.zs = null; return zeichne(); } if (Z.fokus && Z.view === 'getraenk' && !Z.bildVoll && !Z.fenster) { Z.fokus = false; return zeichne(); } if (Z.bildVoll) { Z.bildVoll = false; if (Z.nachBild) { Z.nachBild = false; Z.bildWerk = false; return bildBlatt(); } return zeichne(); } if (Z.fenster) return fZu(); if (Z.menue) { Z.menue = null; return zeichne(); } if (Z.view === 'mix') return mixZu(); if (Z.view === 'karte' && Z.anlass) return setze(() => { Z.anlass = null; }, true); if (Z.view !== 'start') return setze(() => { Z.view = Z.view === 'getraenk' ? 'start' : 'start'; Z.fokus = false; }, true); }
 function oeffne(uid) { const r = getr(uid); if (!r) return; history.pushState({ v: 'getraenk' }, ''); setze(() => { Z.uid = uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; Z.einheit = null; Z.flAuf = false; Z.bildWerk = false; Z.original = false; Z.lese = null; }, true); }
 
 /* Bildschirm wach halten, solange die Mix-Ansicht offen ist (wo das Gerät es erlaubt). */
@@ -1414,15 +1472,23 @@ const TUN = {
   oben() { Z.flAuf = false; setTimeout(() => $('.haupt').scrollTo({ top: 0, behavior: 'smooth' })); },
   zurueck() { Z.flAuf = false; history.back(); return false; },
   fokus() { Z.fokus = !Z.fokus; },
-  vollbild() { const an = !(vollAn() || Z.fokus); Z.fokus = an;
-    try { const q = an ? (vollAn() ? null : document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()) : vollAn() ? document.exitFullscreen && document.exitFullscreen() : null; if (q && q.catch) q.catch(() => { /* ohne Browser-Vollbild steht das Getränk trotzdem allein da */ }); } catch (e) { /* ohne Vollbild */ } },
+  vollbild() { Z.fokus = !(vollAn() || Z.fokus); },   /* zeichne() gleicht das Vollbild ab; ohne Vollbild steht das Getränk trotzdem allein da */
   bildwerk() { Z.bildWerk = !Z.bildWerk; },
   stern(b) { const r = getr(Z.uid), n = Number(b.dataset.n); if (!r) return; const alt = (r.rating && Number(r.rating.stars)) || 0; r.rating = { comment: '', imps: [], ...(r.rating || {}), stars: alt === n ? 0 : n }; r.modified = Date.now(); sichern(); },
   diktat(b) { const feld = $(b.dataset.ziel); diktat(feld, { de: 'de-DE', en: 'en-US', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-PT', ru: 'ru-RU', zh: 'zh-CN' }[sprache()] || 'de-DE', (an) => { const k = document.querySelector(`.mikro[data-ziel="${b.dataset.ziel}"]`); if (k) { k.setAttribute('aria-pressed', String(an)); k.classList.toggle('an', an); } }); return false; },
   bildblatt() { Z.bildWerk = false; bildBlatt(); return false; },
-  ausschnitt() { ausschnittFenster(); return false; },
+  ausschnitt() { if (!zsOeffnen(Z.uid)) return ausschnittFenster(), false; Z.fenster = null; history.pushState({ v: 'bild' }, ''); },
+  'zs-lage'(b) { const [x, y] = b.dataset.l.split(','); Z.zs.x = +x; Z.zs.y = +y; zsZeigen(); return false; },
+  'zs-null'() { Object.assign(Z.zs, { x: 50, y: 50, z: 1 }); $('#zs-zoom').value = 100; zsZeigen(); return false; },
+  'zs-ok'() { const z = Z.zs, r = z && getr(z.uid); if (!r) return false; r.imgCrop = { ...(r.imgCrop || {}), x: Math.round(z.x), y: Math.round(z.y), scale: Math.round(z.z * 100) / 100 }; r.modified = Date.now(); sichern(); history.back(); melde(L('Bild angepasst.', 'Picture adjusted.')); return false; },
+  'zs-zu'() { history.back(); return false; },
+  'zs-datei'() { $('#bbdatei').click(); return false; },
+  'zs-ki'() { history.back(); bildErzeugen(false); return false; },
+  'zs-gratis'() { history.back(); bildErzeugen(true); return false; },
+  'zs-weg'() { const r = getr(Z.zs.uid); if (!r) return false; const alt = { img: r.img, imgCrop: r.imgCrop }; r.img = ''; delete r.imgCrop; r.modified = Date.now(); sichern(); history.back(); melde(L('Bild entfernt.', 'Picture removed.'), L('Rückgängig', 'Undo'), () => { Object.assign(r, alt); sichern(); zeichne(); }); return false; },
   'ausschnitt-ok'() { const r = getr(Z.uid); r.imgCrop = { ...(r.imgCrop || {}), x: Number($('#asx').value), y: Number($('#asy').value), scale: 1 }; sichern(); Z.fenster = null; melde(L('Ausschnitt gespeichert.', 'Section saved.')); return false; },
   'bild-datei'() { $('#bbdatei').click(); return false; },
+  'kat-alle-ziel'(b) { katAlleVerschieben(b.dataset.kid, b.dataset.ziel); return false; },
   'ki-bild'() { bildErzeugen(false); return false; }, 'gratis-bild'() { bildErzeugen(true); return false; },
   schluessel(b) { schluesselFenster((b && b.dataset.anbieter) || 'openai'); return false; },
   'schluessel-weg'(b) { const a = b.dataset.anbieter; S.weg(a).then(() => { SK[a] = ''; Z.fenster = null; melde(L('Schlüssel gelöscht', 'Key deleted')); }); return false; },
@@ -1465,7 +1531,7 @@ const TUN = {
   'bildvoll-zu'() { history.back(); return false; },
   /* Klaus 23.11.: ein Tipp aufs Bild öffnet das Vollbild, von dort ein Tipp das Bild-Blatt. Ohne Bild gleich das Bild-Blatt. */
   held() { const r = getr(Z.uid); if (r && r.img) return TUN.bildvoll(); Z.bildWerk = false; bildBlatt(); return false; },
-  'bildvoll-werk'() { Z.nachBild = true; history.back(); return false; },
+  'bildvoll-werk'() { if (zsOeffnen(Z.uid)) { Z.bildVoll = false; return; } Z.nachBild = true; history.back(); return false; },   /* der Verlauf-Eintrag des Vollbilds bleibt: Zurück schließt die Bearbeitung */
   beispiele() { beispieleFenster(); return false; }, 'beispiele-weg'() { beispieleWeg(); return false; },
   sichern() { sichernDatei(); return false; },
   einspielen() { $('#datei').click(); return false; },
@@ -1515,6 +1581,7 @@ document.addEventListener('click', (ev) => {
   if (d.ton) { E.ton = d.ton; einstSichern(); return zeichne(); }
   if (d.go) return geh(d.go);
   if (d.d) { if (Z.fenster) Z.fenster = null; return oeffne(d.d); }
+  if (d.kat && !d.geh && d.kat === Z.kat && d.kat !== 'all' && !d.kat.startsWith('ordner:')) return katBearbeiten(d.kat);   /* Klaus 27.11.: zweiter Tipp auf die gewählte Kategorie */
   if (d.kat) { if (d.geh) { Z.fenster = null; Z.kat = d.kat; Z.uid = null; return geh('start'); } return setze(() => { Z.kat = d.kat; }, true); }
   if (d.e) return setze(() => { Z.einheit = d.e; });
   if (d.h) { const p = A.einkauf.find((x) => String(x.id) === d.h); p.ok = !p.ok; Z.pop = p.ok ? p.id : null; sichern(); zeichne(); Z.pop = null; return; }
@@ -1531,6 +1598,9 @@ document.addEventListener('submit', (ev) => {
   if (ev.target.id === 'entdform') return entdeckenHolen('suche');
   if (ev.target.id === 'rechtform') { const f = Z.fenster, r = f && getr(f.uid), wahl = new FormData(ev.target).getAll('n').map(Number); if (!r || !f.recht) return;
     getraenkSetzen(rechtschreibungAnwenden(r, f.recht.aenderungen.filter((_, i) => wahl.includes(i)))); Z.fenster = null; return melde(wahl.length === 1 ? L('1 übernommen', '1 applied') : fuelle(L('{0} übernommen', '{0} applied'), wahl.length)); }
+  if (ev.target.id === 'katumform') { const n = String(new FormData(ev.target).get('n') || '').trim(), id = ev.target.dataset.kid; if (!n) return; const eig = A.kategorien.eigene.some((c) => c.id === id);
+    A.kategorien = eig ? { ...katUmbenennen(A.kategorien, id, ''), eigene: A.kategorien.eigene.map((c) => (c.id === id ? { ...c, de: n } : c)) } : katUmbenennen(A.kategorien, id, n); sichern(); Z.fenster = null; zeichne(); return melde(L('Kategorie umbenannt', 'Category renamed')); }
+  if (ev.target.id === 'katalleform') { const n = String(new FormData(ev.target).get('n') || '').trim(), id = ev.target.dataset.kid; if (!n) return; const a = katAnlegen(A.kategorien, n); A.kategorien = a.kat; return katAlleVerschieben(id, a.id); }
   if (ev.target.id === 'ordneuform') { const n = String(new FormData(ev.target).get('n') || '').trim(), uid = ev.target.dataset.uid; if (!n || !uid) return; const a = ordAnlegen(A.ordner, n); A.ordner = a.ordner; return ordnerSetzen(uid, a.id); }
   if (ev.target.classList.contains('schlform')) { const a = ev.target.dataset.anbieter, k = String(new FormData(ev.target).get('k') || '').trim(), danach = Z.fenster.danach; if (!k) return;
     S.setz(a, k).then(() => { SK[a] = k; Z.fenster = null; melde(formPasst(a, k) ? L('Schlüssel gespeichert', 'Key saved') : L('Gespeichert. Der Schlüssel sieht ungewohnt aus, bitte prüfen.', 'Saved. The key looks unusual, please check it.')); if (danach === 'labor') labErfinden(); else if (danach === 'bild') bildErzeugen(false); else if (danach === 'gratis') bildErzeugen(true); else if (danach === 'scan') neuBlatt('scan'); else if (danach === 'web') neuBlatt('web'); else if (danach === 'gmenue') { getraenkMenue(); zeichne(); } else if (danach === 'alle-ueb') { alleUebFenster(); zeichne(); } else if (ZU.danach.includes(danach)) { if (TUN[danach]() !== false) zeichne(); } }); return; }
@@ -1546,6 +1616,7 @@ document.addEventListener('submit', (ev) => {
 });
 document.addEventListener('input', (ev) => {
   if (ev.target.dataset && ev.target.dataset.lro) { const o = $('#lro-' + ev.target.dataset.lro); if (o) o.textContent = ev.target.value; return; }
+  if (ev.target.id === 'zs-zoom' && Z.zs) { Z.zs.z = Number(ev.target.value) / 100; zsZeigen(); return; }
   if (ev.target.id === 'asx' || ev.target.id === 'asy') { $('#asbild').style.objectPosition = `${$('#asx').value}% ${$('#asy').value}%`; return; }
   if (ev.target.id === 'schriftregler') { E.schrift = schriftSetzen($('.mx'), ev.target.value); $('#schriftzahl').textContent = E.schrift + ' %'; clearTimeout(einstSichern.uhr); einstSichern.uhr = setTimeout(einstSichern, 300); return; }
   if (ev.target.id === 'suche') { Z.suche = ev.target.value; semPlanen(); const o = $('#kartenort'); if (o) o.innerHTML = kartenHtml(); else if (Z.view !== 'start') { Z.view = 'start'; zeichne(); } const n = $('.kopf .name small'); if (n) { const z = sichtbar().length; n.textContent = z === 1 ? L('1 Getränk', '1 drink') : fuelle(L('{0} Getränke', '{0} drinks'), z); } } });
@@ -1555,7 +1626,7 @@ document.addEventListener('change', async (ev) => {
     if (eig && f.value.trim()) A.kategorien = { ...katUmbenennen(A.kategorien, id, ''), eigene: A.kategorien.eigene.map((c) => (c.id === id ? { ...c, de: f.value.trim() } : c)) }; else if (!eig) A.kategorien = katUmbenennen(A.kategorien, id, f.value);
     sichern(); katFenster(); return; }
   if (ev.target.id === 'edfoto' && ev.target.files[0]) { try { Z.fenster.img = await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0])); $('#edbild').innerHTML = `<img class="foto" src="${Z.fenster.img}" alt="">`; } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
-  if (ev.target.id === 'bbdatei' && ev.target.files[0]) { try { bildSetzen(await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0]))); Z.fenster = null; melde(L('Bild gespeichert.', 'Picture saved.')); } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
+  if (ev.target.id === 'bbdatei' && ev.target.files[0]) { try { bildSetzen(await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0])), Z.zs ? Z.zs.uid : Z.uid); Z.fenster = null; if (Z.zs) zsOeffnen(Z.zs.uid); melde(L('Bild gespeichert.', 'Picture saved.')); } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
   if ((ev.target.id === 'datei-scan' || ev.target.id === 'datei-kamera') && ev.target.files.length) { const d = [...ev.target.files]; ev.target.value = ''; return scanGewaehlt(d); }
   if (ev.target.id === 'datei' && ev.target.files[0]) { await W.mit(L('Datei wird eingelesen …', 'Reading the file …'), () => dateiGewaehlt(ev.target.files[0])); ev.target.value = ''; zeichne(true); }
 });

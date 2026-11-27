@@ -117,13 +117,16 @@ pruefe('am breiten Schirm ist das ganze Bild zu sehen (nicht beschnitten)', awai
 await p.click('.detail .held'); await ruhe(p);
 pruefe('Tipp aufs Bild öffnet das Vollbild mit „Bild bearbeiten“ (Klaus 23.11.)', await p.locator('.bildvoll').count() === 1 && await p.locator('.bildvoll [data-a=bildvoll-werk]').count() === 1);
 await p.click('.bildvoll [data-a=bildvoll-werk]'); await ruhe(p);
-pruefe('„Bild bearbeiten“ schließt das Vollbild und öffnet das Bild-Blatt', await p.locator('.bildvoll').count() === 0 && await Zs(p, () => history.state?.v !== 'bild'));
-pruefe('Bild-Blatt mit Bild: ganzes Bild, Ausschnitt, ersetzen, KI-Bild, Gratis-Foto', await p.locator('.fenster .ezeile').count() === 5);
-await p.click('.fenster [data-a=ausschnitt]'); await ruhe(p);
-await p.locator('#asy').evaluate((e) => { e.value = '20'; e.dispatchEvent(new Event('input', { bubbles: true })); });
-pruefe('Ausschnitt: das Bild folgt dem Regler sofort', await Zs(p, () => document.querySelector('#asbild').style.objectPosition.includes('20%')));
-await p.click('[data-a=ausschnitt-ok]'); await ruhe(p);
-pruefe('Ausschnitt wird am Getränk gespeichert', await Zs(p, () => __mixarium.sammlung.getraenke.find((r) => r.name === 'Alte Limo').imgCrop.y === 20));
+/* Klaus 27.11.: „Bild bearbeiten“ führt direkt in die Ansicht wie im Rezeptbuch (ziehen, Lagen, Zoom, Vorschau, Werkzeuge am Bild).
+   Ersetzt die Zusicherungen vom 23.11. (Bild-Blatt mit Menü, dann Ausschnitt mit zwei Reglern). */
+pruefe('„Bild bearbeiten“ schließt das Vollbild und öffnet „Bild anpassen“ direkt (kein Menü dazwischen)', await p.locator('.bildvoll').count() === 0 && await p.locator('.bildanpassen #zs-rahmen').count() === 1 && await p.locator('.fenster').count() === 0);
+pruefe('am Bild: ersetzen, KI-Bild, Gratis-Foto, entfernen', await p.locator('.bildanpassen .bv-werk .bv-k').count() === 4);
+{ const r = await p.locator('#zs-rahmen').boundingBox(); await p.mouse.move(r.x + r.width / 2, r.y + r.height / 2); await p.mouse.down(); await p.mouse.move(r.x + r.width / 2, r.y + r.height / 2 + 60, { steps: 4 }); await p.mouse.up(); }
+pruefe('das helle Feld (Maske) folgt dem Finger', await Zs(p, () => __mixarium.zustand.zs && __mixarium.zustand.zs.y !== 50));
+await p.click('[data-a=zs-lage][data-l="50,0"]'); await p.locator('#zs-zoom').fill('150'); await ruhe(p);
+pruefe('Lage „Oben“ und Zoom wirken sofort: die Maske steht oben, die Vorschau zeigt den Zoom', await Zs(p, () => document.querySelector('#zs-mh').style.top === '0%' && document.querySelector('.zs-vor img').style.transform === 'scale(1.5)'));
+await p.click('[data-a=zs-ok]'); await ruhe(p);
+pruefe('Ausschnitt und Zoom werden am Getränk gespeichert, die Ansicht schließt', await Zs(p, () => { const c = __mixarium.sammlung.getraenke.find((r) => r.name === 'Alte Limo').imgCrop; return c.y === 0 && c.scale === 1.5; }) && await p.locator('.bildanpassen').count() === 0);
 await p.click('.detail .held'); await ruhe(p);
 pruefe('Bild im Vollbild füllt den ganzen Schirm', await Zs(p, () => { const r = document.querySelector('.bildvoll').getBoundingClientRect(); return r.left === 0 && r.top === 0 && Math.round(r.width) === innerWidth && Math.round(r.height) === innerHeight; }));
 await p.keyboard.press('Escape'); await ruhe(p);
