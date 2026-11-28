@@ -120,7 +120,7 @@ await p.click('.bildvoll [data-a=bildvoll-werk]'); await ruhe(p);
 /* Klaus 27.11.: „Bild bearbeiten“ führt direkt in die Ansicht wie im Rezeptbuch (ziehen, Lagen, Zoom, Vorschau, Werkzeuge am Bild).
    Ersetzt die Zusicherungen vom 23.11. (Bild-Blatt mit Menü, dann Ausschnitt mit zwei Reglern). */
 pruefe('„Bild bearbeiten“ schließt das Vollbild und öffnet „Bild anpassen“ direkt (kein Menü dazwischen)', await p.locator('.bildvoll').count() === 0 && await p.locator('.bildanpassen #zs-rahmen').count() === 1 && await p.locator('.fenster').count() === 0);
-pruefe('am Bild: ersetzen, KI-Bild, Gratis-Foto, entfernen', await p.locator('.bildanpassen .bv-werk .bv-k').count() === 4);
+pruefe('am Bild: ersetzen, gerade ziehen & verbessern (28.11.), KI-Bild, Gratis-Foto, entfernen', (await p.$$eval('.bildanpassen .bv-werk .bv-k', (l) => l.map((x) => x.dataset.a))).join() === 'zs-datei,zs-blatt,zs-ki,zs-gratis,zs-weg');
 { const r = await p.locator('#zs-rahmen').boundingBox(); await p.mouse.move(r.x + r.width / 2, r.y + r.height / 2); await p.mouse.down(); await p.mouse.move(r.x + r.width / 2, r.y + r.height / 2 + 60, { steps: 4 }); await p.mouse.up(); }
 pruefe('das helle Feld (Maske) folgt dem Finger', await Zs(p, () => __mixarium.zustand.zs && __mixarium.zustand.zs.y !== 50));
 await p.click('[data-a=zs-lage][data-l="50,0"]'); await p.locator('#zs-zoom').fill('150'); await ruhe(p);

@@ -11,6 +11,7 @@ import { tresor } from '../kern/speicher/tresor.mjs';
 import { FARBEN, TOENE, istDunkel, farbeSetzen, farbName as kernFarbName, tonName } from '../kern/oberflaeche/farben.mjs';
 import { schriftWert, schriftSetzen, schriftRegler } from '../kern/oberflaeche/schrift.mjs';
 import { bildAusDatei, platzSparen, datenGroesse, ausschnittRechteck } from '../kern/oberflaeche/bild.mjs';
+import { blattFenster } from '../kern/oberflaeche/blatt-fenster.mjs';
 import { kiBild, gratisBild, KOSTEN } from '../kern/ki/bild.mjs';
 import { sicht as kernSicht } from '../kern/modell/rezept.mjs';
 import { diktat, diktatAus, diktatMoeglich } from '../kern/oberflaeche/diktat.mjs';
@@ -53,7 +54,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor48';
+export const FASSUNG = '10.0.0-vor49';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -570,7 +571,7 @@ function bildAnpassen() {
   return `<div class="bildanpassen" role="dialog" aria-modal="true" aria-label="${L('Bild anpassen', 'Adjust picture')}" style="--vh:${m.kopf};--vk:${m.karte}">
    <div class="bv-kopf"><h2>${L('Bild anpassen', 'Adjust picture')}<small>${esc(sicht(r).name)}</small></h2><button class="bvzu" data-a="zs-zu" aria-label="${L('Schließen', 'Close')}">${I('x')}</button></div>
    <div class="bv-bildort"><div class="zs-rahmen" id="zs-rahmen"><img src="${esc(r.img)}" alt="" draggable="false" id="zs-bild"><span class="zs-maske karte" id="zs-mk" aria-hidden="true"><i>${L('Kachel', 'Tile')}</i></span><span class="zs-maske kopf" id="zs-mh" aria-hidden="true"><i>${L('Kopfbild', 'Header picture')}</i></span></div>
-    <div class="bv-werk" role="toolbar" aria-label="${L('Bild', 'Picture')}">${bw('zs-datei', 'camera', L('Bild ersetzen', 'Replace picture'))}${bw('zs-ki', 'sparkle', L('Bild von der KI erzeugen', 'Create picture with AI'))}${bw('zs-gratis', 'image', L('Foto über Pollinations', 'Photo via Pollinations'))}${bw('zs-weg', 'trash', L('Bild entfernen', 'Remove picture'), 'rot')}</div></div>
+    <div class="bv-werk" role="toolbar" aria-label="${L('Bild', 'Picture')}">${bw('zs-datei', 'camera', L('Bild ersetzen', 'Replace picture'))}${bw('zs-blatt', 'zuschnitt', L('Gerade ziehen & verbessern', 'Straighten & enhance'))}${bw('zs-ki', 'sparkle', L('Bild von der KI erzeugen', 'Create picture with AI'))}${bw('zs-gratis', 'image', L('Foto über Pollinations', 'Photo via Pollinations'))}${bw('zs-weg', 'trash', L('Bild entfernen', 'Remove picture'), 'rot')}</div></div>
    <div class="bv-regler"><div class="laeden">${[[L('Mitte', 'Centre'), '50,50'], [L('Oben', 'Top'), '50,0'], [L('Unten', 'Bottom'), '50,100'], [L('Links', 'Left'), '0,50'], [L('Rechts', 'Right'), '100,50']].map(([t, l]) => `<button class="chip" data-a="zs-lage" data-l="${l}">${t}</button>`).join('')}</div>
     <label class="zs-regler">${L('Größe', 'Zoom')}<input type="range" id="zs-zoom" min="100" max="300" value="${Math.round(z.z * 100)}"><b id="zs-wert"></b></label>
     <div class="zs-vor"><div><span class="vk"><img src="${esc(r.img)}" alt=""></span>${L('Kachel', 'Tile')}</div><div><span class="vh"><img src="${esc(r.img)}" alt=""></span>${L('Kopfbild', 'Header picture')}</div></div>
@@ -956,6 +957,19 @@ function ausschnittFenster() {
   const r = getr(Z.uid), c = r.imgCrop || {}, x = Number(c.x) >= 0 ? Number(c.x) : 50, y = Number(c.y) >= 0 ? Number(c.y) : 50;
   Z.fenster = { titel: L('Ausschnitt anpassen', 'Adjust section'), html: `<div class="as-vor"><img id="asbild" src="${esc(r.img)}" alt="" style="object-position:${x}% ${y}%"></div><div class="felder"><label>${L('nach links / rechts', 'left / right')}<input type="range" id="asx" min="0" max="100" value="${x}"></label><label>${L('nach oben / unten', 'up / down')}<input type="range" id="asy" min="0" max="100" value="${y}"></label></div><div class="reihe ende"><button class="knopf hell" data-a="bildblatt">${L('Zurück', 'Back')}</button><button class="knopf" data-a="ausschnitt-ok">${I('check')}${L('Übernehmen', 'Apply')}</button></div>` };
   zeichne();
+}
+/* Klaus 28.11. (wie Mein Rezeptbuch 0.20.0): vier Ecken auf das Blatt, Perspektive gerade ziehen, Helligkeit, Kontrast, Farbe, Schärfe –
+   ohne Modell. Fenster und Rechnung kommen aus dem Kern (oberflaeche/blatt-fenster.mjs); es hat einen eigenen Ort, den zeichne() nicht anfasst. */
+const blattTexte = () => ({ titel: L('Gerade ziehen & verbessern', 'Straighten & enhance'), schliessen: L('Schließen', 'Close'), ecken: L('Ecken', 'Corners'), ergebnis: L('Ergebnis', 'Result'),
+  ecke: L('Ecke', 'Corner'), automatisch: L('Ecken finden', 'Find corners'), ganz: L('Ganzes Bild', 'Whole picture'), drehen: L('Drehen', 'Rotate'),
+  hell: L('Helligkeit', 'Brightness'), kontrast: L('Kontrast', 'Contrast'), farbe: L('Farbe', 'Colour'), schaerfe: L('Schärfe', 'Sharpness'), zuruecksetzen: L('Zurücksetzen', 'Reset'),
+  uebernehmen: L('Übernehmen', 'Apply'), abbrechen: L('Abbrechen', 'Cancel'), gefunden: L('Blatt gefunden – die Ecken bitte kurz prüfen.', 'Page found – please check the corners.'),
+  nichtGefunden: L('Kein Blatt sicher erkannt – die Ecken selbst auf die Blattecken ziehen.', 'No page detected for sure – drag the corners onto the page yourself.'), hand: L('Ecken von Hand gesetzt.', 'Corners set by hand.') });
+function blattOeffnen(uid) {
+  const r = getr(uid); if (!r || !r.img) return;
+  let ort = document.getElementById('bt-ort'); if (!ort) { ort = document.createElement('div'); ort.id = 'bt-ort'; document.body.appendChild(ort); }
+  blattFenster({ ort, adresse: r.img, ic: I, t: blattTexte(), zu: () => {}, fertig: (neu) => { const alt = { img: r.img, imgCrop: r.imgCrop }; bildSetzen(neu, uid); zeichne();
+    melde(L('Bild gerade gezogen und verbessert', 'Picture straightened and enhanced'), L('Rückgängig', 'Undo'), () => { Object.assign(r, alt); sichern(); zeichne(); }); } });
 }
 function bildSetzen(img, uid = Z.uid) { const r = getr(uid); if (!r) return; r.img = img; r.imgCrop = { x: 50, y: 50, scale: 1 }; r.modified = Date.now(); sichern(); }
 /* Klaus 26.11.: „Der Ladebalken hat nichts angezeigt … kreisende Punkte wären besser … eine simulierte Prozentzahl, die am Ende auf 100
@@ -1483,6 +1497,7 @@ const TUN = {
   'zs-ok'() { const z = Z.zs, r = z && getr(z.uid); if (!r) return false; r.imgCrop = { ...(r.imgCrop || {}), x: Math.round(z.x), y: Math.round(z.y), scale: Math.round(z.z * 100) / 100 }; r.modified = Date.now(); sichern(); history.back(); melde(L('Bild angepasst.', 'Picture adjusted.')); return false; },
   'zs-zu'() { history.back(); return false; },
   'zs-datei'() { $('#bbdatei').click(); return false; },
+  'zs-blatt'() { const uid = Z.zs && Z.zs.uid; history.back(); blattOeffnen(uid); return false; },
   'zs-ki'() { history.back(); bildErzeugen(false); return false; },
   'zs-gratis'() { history.back(); bildErzeugen(true); return false; },
   'zs-weg'() { const r = getr(Z.zs.uid); if (!r) return false; const alt = { img: r.img, imgCrop: r.imgCrop }; r.img = ''; delete r.imgCrop; r.modified = Date.now(); sichern(); history.back(); melde(L('Bild entfernt.', 'Picture removed.'), L('Rückgängig', 'Undo'), () => { Object.assign(r, alt); sichern(); zeichne(); }); return false; },
@@ -1626,7 +1641,7 @@ document.addEventListener('change', async (ev) => {
     if (eig && f.value.trim()) A.kategorien = { ...katUmbenennen(A.kategorien, id, ''), eigene: A.kategorien.eigene.map((c) => (c.id === id ? { ...c, de: f.value.trim() } : c)) }; else if (!eig) A.kategorien = katUmbenennen(A.kategorien, id, f.value);
     sichern(); katFenster(); return; }
   if (ev.target.id === 'edfoto' && ev.target.files[0]) { try { Z.fenster.img = await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0])); $('#edbild').innerHTML = `<img class="foto" src="${Z.fenster.img}" alt="">`; } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
-  if (ev.target.id === 'bbdatei' && ev.target.files[0]) { try { bildSetzen(await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0])), Z.zs ? Z.zs.uid : Z.uid); Z.fenster = null; if (Z.zs) zsOeffnen(Z.zs.uid); melde(L('Bild gespeichert.', 'Picture saved.')); } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
+  if (ev.target.id === 'bbdatei' && ev.target.files[0]) { try { bildSetzen(await W.mit(L('Foto wird aufbereitet …', 'Preparing the photo …'), () => bildAusDatei(ev.target.files[0])), Z.zs ? Z.zs.uid : Z.uid); Z.fenster = null; if (Z.zs) zsOeffnen(Z.zs.uid); const uidB = Z.zs ? Z.zs.uid : Z.uid; melde(L('Bild gespeichert.', 'Picture saved.'), L('Gerade ziehen', 'Straighten'), () => { if (Z.zs) history.back(); blattOeffnen(uidB); }); } catch (e) { melde(L('Dieses Bild ließ sich nicht lesen.', 'This picture could not be read.')); } }
   if ((ev.target.id === 'datei-scan' || ev.target.id === 'datei-kamera') && ev.target.files.length) { const d = [...ev.target.files]; ev.target.value = ''; return scanGewaehlt(d); }
   if (ev.target.id === 'datei' && ev.target.files[0]) { await W.mit(L('Datei wird eingelesen …', 'Reading the file …'), () => dateiGewaehlt(ev.target.files[0])); ev.target.value = ''; zeichne(true); }
 });
