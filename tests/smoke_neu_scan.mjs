@@ -20,6 +20,7 @@ async function seite(vorher) {
   p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => m.type() === 'error' && !/Failed to load resource/.test(m.text()) && fehler.push(m.text()));
   await p.route(/^https?:\/\/(?!localhost)/, (r) => { fehler.push('Netz nach draußen: ' + r.request().url()); r.abort(); });
   await p.route('https://api.anthropic.com/**', (r) => { const q = r.request(); rufe.push({ wer: 'anthropic', kopf: q.headers(), leib: JSON.parse(q.postData()) }); if (netzWeg) return r.abort(); if (claudeStatus !== 200) return r.fulfill({ status: claudeStatus, contentType: 'application/json', body: JSON.stringify({ error: { type: claudeStatus === 401 ? 'authentication_error' : 'x', message: 'gestellt' } }) }); r.fulfill({ contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: '```json\n' + JSON.stringify(claudeAntwort()) + '\n```' }], stop_reason: 'end_turn' }) }); });
+  await p.route('https://api.openai.com/**', (r) => { const q = r.request(); rufe.push({ wer: 'openai', kopf: q.headers() }); r.fulfill({ status: 500, contentType: 'application/json', body: '{"error":{"message":"Probe: kein Bild"}}' }); });   /* KI-Bild nach dem Scan (28.11.): gestellt, es entsteht kein Bild */
   await p.route('https://api.mistral.ai/**', (r) => { const q = r.request(); if (q.method() === 'GET') { rufe.push({ wer: 'mistral-modelle', kopf: q.headers() }); return r.fulfill({ status: q.headers().authorization === 'Bearer m-falsch' ? 401 : 200, contentType: 'application/json', body: '{"data":[]}' }); } rufe.push({ wer: 'mistral', kopf: q.headers(), leib: JSON.parse(q.postData()) }); r.fulfill({ contentType: 'application/json', body: JSON.stringify({ model: 'mistral-ocr-2505', pages: [{ markdown: '# Ingwer-Limo\n4 cl Zitronensaft' }] }) }); });
   if (vorher) { await p.goto(URL0.replace('?leer', '') + 'app.css'); await p.evaluate(vorher); } await p.goto(URL0); await p.waitForSelector('.mx .titel'); await p.waitForTimeout(300); return { p, k };
 }
@@ -82,6 +83,17 @@ try {
   ok((await p.inputValue('#ed [name=ings]')).split('\n').length === 3 && (await p.inputValue('#ed [name=ings]')).startsWith('4 cl Zitronensaft') && (await p.inputValue('#ed [name=steps]')).split('\n').length === 2 && await p.locator('#ed .hinweis').count() === 1, 'drei Zutaten und zwei Schritte, mit dem Hinweis „Bitte prüfen“');
   ok((await p.locator('#edbild img').getAttribute('src')).startsWith('data:image/webp') && !(await p.isChecked('#ed [name=alcohol]')), 'das Foto liegt als Bild bereit; ohne Alkohol erkannt');
   await p.click('#ed [type=submit]'); await ruhe(p);
+  /* Klaus 28.11.: nach dem Foto-Scan gleich ein KI-Bild anbieten; ohne OpenAI-Schlüssel führt der Knopf erst zum Schlüssel, dann weiter zum Bild */
+  const toastTxt = await p.locator('.mxtoast').innerText().catch(() => '');
+  ok(/OpenAI-Schlüssel/.test(toastTxt) && await p.locator('.mxtoast button', { hasText: 'Schlüssel eintragen' }).count() === 1, 'nach dem Speichern: Angebot für ein KI-Bild, ohne Schlüssel mit „Schlüssel eintragen“', toastTxt);
+  await p.locator('.mxtoast button', { hasText: 'Schlüssel eintragen' }).click().catch(() => {}); await ruhe(p);
+  ok(await p.locator('#skform').count() === 1, '… der Knopf öffnet direkt das Fenster für den OpenAI-Schlüssel');
+  const vorKi = rufe.length;
+  await p.fill('#skform [name=k]', 'sk-proj-probe-0000000000000000000000').catch(() => {}); await p.click('#skform [type=submit]').catch(() => {}); await ruhe(p);
+  for (let i = 0; i < 40 && !rufe.slice(vorKi).some((r) => r.wer === 'openai'); i++) await p.waitForTimeout(100);
+  const oa = rufe.slice(vorKi).find((r) => r.wer === 'openai');
+  ok(!!oa && /sk-proj-probe/.test(oa.kopf.authorization || ''), '… und nach dem Speichern des Schlüssels geht es gleich zum KI-Bild (mit dem neuen Schlüssel)', oa ? '' : 'kein Aufruf');
+  await p.waitForTimeout(600); await p.keyboard.press('Escape'); await ruhe(p);
   const g1 = await G(p, () => { const r = __mixarium.sammlung.getraenke[0]; return { name: r.name, cat: r.cat, img: r.img, n: r.ings.length, einheit: r.ings[0].unit, ki: (r.kiEntfernt || []).length, uid: r.uid }; });
   const m2 = await bildMasse(p, g1.img.split(',')[1]);
   ok(g1.name === 'Ingwer-Limo' && g1.cat === 'limo' && g1.n === 3 && g1.einheit === 'cl' && g1.uid && Math.max(...m2) === 1600 && g1.ki === 0, 'gespeichert: Getränk mit Bild (1600 px, Kern 0.33), Mengen und Einheiten getrennt, kein Vermerk', JSON.stringify({ ...g1, img: m2.join('×') }));
@@ -129,7 +141,9 @@ try {
     await p.click('[data-a=scan-rein]'); await p.waitForSelector('.scan-vor img', { timeout: 60000 }); await ruhe(p);
     await p.click('[data-a=scan-senden]'); await p.waitForSelector('#ed', { timeout: 30000 });
     ok(rufe.length === 1 && await restSchrift(p, rufe[0].leib.messages[0].content[0].source.data) > 0, '„Drin lassen“: im gesendeten Bild steht die blasse Zeile noch');
-    await p.click('#ed [type=submit]'); await ruhe(p); ok(await p.locator('[data-ki-entfernt]').count() === 0, 'und am Getränk steht kein Vermerk, denn es wurde nichts entfernt');
+    await p.click('#ed [type=submit]'); await ruhe(p); if (await p.locator('#ed-doppel').count()) { await p.click('#ed-doppel [data-w=eigen]'); await ruhe(p); }   /* dasselbe Getränk kam schon in 4: erst die Doppel-Frage beantworten, sonst ist nichts gespeichert und der Vermerk-Wächter blind (28.11.) */
+    ok(await p.locator('#ed').count() === 0 && await p.locator('[data-ki-entfernt]').count() === 0, 'und am Getränk steht kein Vermerk, denn es wurde nichts entfernt');
+    ok(await p.locator('.mxtoast button', { hasText: 'KI-Bild erzeugen' }).count() === 1, 'mit OpenAI-Schlüssel bietet die Meldung nach dem Scan gleich „KI-Bild erzeugen“ an', await p.locator('.mxtoast').innerText().catch(() => ''));
 
     console.log('5 · Stapel: versteckter Text geht nie mit, ohne Rückfrage; Vermerk am Getränk; Tresor');
     rufe.length = 0; await p.goto(URL0); await p.waitForSelector('.mx .titel'); await ruhe(p); const vorher = await G(p, () => __mixarium.sammlung.getraenke.length); await scanAuf(p);
