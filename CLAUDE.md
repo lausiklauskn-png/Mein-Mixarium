@@ -1506,3 +1506,17 @@ seinen Zähler. SW `mixarium-sw-v134`. `md5sum` von `index.html` und QC-Datei gl
 Gemessen (Playwright, `/Mein-Mixarium/`): sichtbar bei 320 · 360 · 412 · 1280 px ohne Angebot · kein Querlaufen,
 Kopfhöhe 30 px unverändert · standalone beide Knöpfe weg · nach `appinstalled` weg · mit Angebot `prompt()` · keine
 Installierbarkeits-Fehler. ⚠ Am Tablet nicht gemessen.
+
+## 📐 Gerade ziehen & verbessern (Klaus 2026-11-28, wie Mein Rezeptbuch 0.20.0)
+
+„Bild bearbeiten“ → „Bild anpassen“ → **Gerade ziehen & verbessern** (`zs-blatt`), auch aus der Meldung nach „Bild gespeichert.“
+Reiter **Ecken** (vier Punkte von selbst auf das Blatt, ziehen, „Ecken finden“, „Ganzes Bild“, „Drehen“) und **Ergebnis**
+(gerade gezogen; Helligkeit, Kontrast, Farbe ±40, Schärfe). Ohne Modell, ohne Netz.
+- Rechnung und Fenster aus dem Kern **0.34.0** (`kern/oberflaeche/blatt.mjs`, `blatt-fenster.mjs`, Pin `d60be4b`); das Fenster hat einen
+  eigenen Ort (`#bt-ort`), den `zeichne()` nicht anfasst. PWA **10.0.0-vor49**.
+- ⚠ **Die Meldung lag unter „Bild anpassen“** (Ebene 40/70 gegen 85) und am Handy unter der fliegenden Leiste – „Bild gespeichert.“
+  war dort nie zu sehen. Gefunden von der Probe, nicht vom Hinsehen. Jetzt `.mx .mxtoast{z-index:90}`.
+- Proben: `tests/smoke_neu_blatt.mjs` (25 grün; Gegenprobe von Hand: Knopf weg, Meldung darunter, Angebot weg, Rückgängig ohne altes
+  Bild – jeder Fall rot) · `smoke_neu_pwa` zählt das neue Werkzeug mit (101) · `npm test` 182/0. ⚠ Am Tablet nicht gemessen.
+- Die alte App (`index.html` / QC) ist nicht angefasst, `md5sum` beider gleich.
+
