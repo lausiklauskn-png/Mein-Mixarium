@@ -1519,4 +1519,8 @@ Reiter **Ecken** (vier Punkte von selbst auf das Blatt, ziehen, „Ecken finden�
 - Proben: `tests/smoke_neu_blatt.mjs` (25 grün; Gegenprobe von Hand: Knopf weg, Meldung darunter, Angebot weg, Rückgängig ohne altes
   Bild – jeder Fall rot) · `smoke_neu_pwa` zählt das neue Werkzeug mit (101) · `npm test` 182/0. ⚠ Am Tablet nicht gemessen.
 - Die alte App (`index.html` / QC) ist nicht angefasst, `md5sum` beider gleich.
+- **Nach dem Foto-Scan gleich ein KI-Bild (Klaus 28.11., vor50):** wird ein gescanntes Getränk gespeichert (`Z.fenster.ausScan`), bietet die
+  Meldung „KI-Bild erzeugen“ an; ohne OpenAI-Schlüssel „Schlüssel eintragen“ → Schlüsselfenster → `bildErzeugen` macht gleich weiter
+  (hier wie bisher ohne Kostenfrage). `smoke_neu_scan` 60 grün (ohne die Markierung 4 ROT). ⚠ Nebenbei: in Abschnitt 4b stand die
+  Doppel-Frage offen, das Getränk wurde gar nicht gespeichert, und „kein Vermerk“ war blind grün – die Probe beantwortet sie jetzt.
 

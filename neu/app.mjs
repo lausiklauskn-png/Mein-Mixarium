@@ -54,7 +54,7 @@ const lager = speicher('KuechenKern-mixarium'), tr = tresor(lager);
 const S = schluesselLager(lager, { altNamen: { anthropic: ['mxkey9m'], openai: ['mxoaiimg9m'], mistral: ['mxmistralkey9m'] } }), SK = { anthropic: '', openai: '', mistral: '', pollinations: '' };
 async function schlLaden() { for (const a of Object.keys(SK)) SK[a] = await S.hol(a).catch(() => ''); }
 
-export const FASSUNG = '10.0.0-vor49';
+export const FASSUNG = '10.0.0-vor50';
 const $ = (s, w = document) => w.querySelector(s);
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -659,7 +659,13 @@ async function editorSpeichern(form, wahl = '') {
   if (f.quelle && !f.uid) r.source = f.quelle;
   if (f.db && !f.uid) Object.assign(r, f.db);   /* aus „Entdecken“: die Nummer bei TheCocktailDB, damit derselbe Drink nicht zweimal kommt */
   if (f.kiEntfernt && f.kiEntfernt.length) vermerken(r, f.kiEntfernt, 'scan');   /* was vor der KI herausgenommen wurde, steht am Getränk */
-  sichern(); Z.fenster = null; Z.uid = r.uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1; melde(L('Gespeichert', 'Saved')); zeichne();
+  /* Klaus 28.11. (wie Mein Rezeptbuch): nach einem Foto-Scan ist das Bild meist das abfotografierte Blatt – gleich ein KI-Bild anbieten.
+     Ohne OpenAI-Schlüssel öffnet bildErzeugen erst das Schlüsselfenster und macht danach mit dem Bild weiter („bild“). */
+  const kiAngebot = !f.uid && f.ausScan;
+  sichern(); Z.fenster = null; Z.uid = r.uid; Z.view = 'getraenk'; Z.port = Number(r.servings) || 1;
+  if (kiAngebot) melde(SK.openai ? L('Gespeichert. Ein schöneres Bild von der KI?', 'Saved. A nicer picture from AI?') : L('Gespeichert. Für ein KI-Bild fehlt noch der OpenAI-Schlüssel.', 'Saved. An AI picture still needs the OpenAI key.'), SK.openai ? L('KI-Bild erzeugen', 'Create AI picture') : L('Schlüssel eintragen', 'Enter key'), () => { bildErzeugen(false); });
+  else melde(L('Gespeichert', 'Saved'));
+  zeichne();
 }
 /* ── R6 Doppelungen (Klaus 25.11., wie im Rezeptbuch 0.18): erkannt im Kern (modell/doppel.mjs) an Name, Zutaten und Bild; „mit Alkohol“
    und „alkoholfrei“ sind nie ein Doppel. Hier entsteht nur der Bild-Fingerabdruck (9×8 Graustufen), einmal je Bild und Sitzung.
@@ -871,7 +877,7 @@ async function scanSenden() {
   if (n === 1) {
     try {
       const roh = await W.mit(sc.glas ? L('Claude sieht sich das Getränk an …', 'Claude is looking at the drink …') : L('Getränk wird gelesen …', 'Reading the drink …'), (w) => erkennen(sc.v, { ...opt, vomTeller: !!sc.glas, fortschritt: (t) => w.text(t), beiAnweisung: befehlFrage })), g = getraenkAusScan(roh, sc.v.store);
-      Z.scan = null; editor({ ...g, hinweis: sc.glas ? L('Ein Vorschlag. Bitte prüfen.', 'A suggestion. Please check.') : L('Gelesen. Bitte prüfen.', 'Read. Please check.') }, true); Z.fenster.kiEntfernt = sc.v.liste.filter((e) => e.grund === 'meta' || sc.v.zugedeckt);
+      Z.scan = null; editor({ ...g, hinweis: sc.glas ? L('Ein Vorschlag. Bitte prüfen.', 'A suggestion. Please check.') : L('Gelesen. Bitte prüfen.', 'Read. Please check.') }, true); Z.fenster.kiEntfernt = sc.v.liste.filter((e) => e.grund === 'meta' || sc.v.zugedeckt); Z.fenster.ausScan = true;
     } catch (f) { if (!f.abgebrochen) melde(f.message); neuBlatt('scan'); }
     return;
   }
