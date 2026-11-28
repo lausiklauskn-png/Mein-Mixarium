@@ -187,6 +187,14 @@ try {
     ok(/rgba\(0, 0, 0, 0\)|transparent/.test(m.randlos) && m.linie === '0px', 'keine Fläche und keine Linie um das Bild (keine Briefmarke)', m.randlos + ' · ' + m.linie);
     ok(m.ueber, 'Name und Angaben beginnen schon im auslaufenden Bild', JSON.stringify(m));
     await c.close(); }
+  { /* Klaus 28.11.: Name im Kopfbild am Handy zu groß, lange Namen aus Foto/KI-Scan liefen über viele Zeilen oder aus dem Bild */
+    const lang = 'Frühlingskartoffelsuppengetränk mit Spargel und Bärlauch und noch viel mehr Text aus dem KI-Scan';
+    const { p, c } = await seite([D(1, lang, { cat: 'limo' })], 412);
+    await p.locator('.karte').first().click(); await p.waitForSelector('.held .ueber h2');
+    const m = await p.evaluate(() => { const h = document.querySelector('.held .ueber h2'), cs = getComputedStyle(h), r = h.getBoundingClientRect(), b = document.querySelector('.held').getBoundingClientRect(); return { gr: parseFloat(cs.fontSize), zeilen: Math.round(r.height / parseFloat(cs.lineHeight)), raus: h.scrollWidth > h.clientWidth + 1 || r.right > b.right + 1 }; });
+    ok(m.gr >= 17 && m.gr <= 21, 'Handy: Name im Kopfbild 17–21 px (vorher 24)', String(m.gr));
+    ok(m.zeilen <= 2 && !m.raus, '… höchstens zwei Zeilen, nichts läuft aus dem Bild', JSON.stringify(m));
+    await c.close(); }
   ok(!fehler.length, 'keine Fehler im Browser', fehler.slice(0, 3).join(' | '));
 } catch (f) { rot++; console.log('  ✗ ROT Absturz — ' + String(f && f.message || f).split('\n')[0]); }
 await b.close(); server.close();
